@@ -2,6 +2,7 @@ import { assertEquals } from "@std/assert/equals";
 import { toArrayBuffer } from "@std/streams";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { namedNode, quad, Store } from "oxigraph";
+import type { EncodableEncoding } from "#/oxigraph/oxigraph-encoding.ts";
 import {
   encodableEncodings,
   encodeStore,
@@ -19,10 +20,10 @@ const store = new Store([
 ]);
 
 // Helper to get encoded bytes
-const getEncodedBytes = async () => {
-  const stream = encodeStore(store, encodableEncodings.nq);
+async function getEncodedBytes(encoding: EncodableEncoding) {
+  const stream = encodeStore(store, encoding);
   return new Uint8Array(await toArrayBuffer(stream));
-};
+}
 
 // Use in-memory kv for testing.
 const kv = await Deno.openKv(":memory:");
@@ -32,25 +33,25 @@ const app = new OpenAPIHono();
 app.use(withOxigraphService(oxigraphService));
 
 // Mount the store app.
-app.route("/v1", storeApp);
+app.route("", storeApp);
 
-Deno.test("e2e Stores API", async (t) => {
-  const encodedBytes = await getEncodedBytes();
+Deno.test("e2e v1 stores API", async (t) => {
+  const encodedBytes = await getEncodedBytes(encodableEncodings.nq);
 
   // Set the store.
-  await t.step("POST /stores/{store}", async () => {
+  await t.step("PUT /v1/stores/{store}", async () => {
     const response = await app.request("/v1/stores/test-store", {
-      method: "POST",
+      method: "PUT",
       body: encodedBytes,
       headers: {
         "Content-Type": encodableEncodings.nq,
       },
     });
-    assertEquals(response.status, 201);
+    assertEquals(response.status, 204);
   });
 
   // Get the store.
-  await t.step("GET /stores/{store}", async () => {
+  await t.step("GET /v1/stores/{store}", async () => {
     const response = await app.request("/v1/stores/test-store", {
       method: "GET",
       headers: {
@@ -64,7 +65,7 @@ Deno.test("e2e Stores API", async (t) => {
   });
 
   // Delete the store.
-  await t.step("DELETE /stores/{store}", async () => {
+  await t.step("DELETE /v1/stores/{store}", async () => {
     const response = await app.request("/v1/stores/test-store", {
       method: "DELETE",
     });

@@ -14,7 +14,7 @@ for await (
     continue;
   }
 
-  app.route("/v1", module.app);
+  app.route("", module.app);
 }
 
 // Generate the OpenAPI documentation.

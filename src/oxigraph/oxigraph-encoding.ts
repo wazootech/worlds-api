@@ -33,9 +33,7 @@ export const encodableEncodings = {
 } as const;
 
 /**
- * Encodes a store into a byte stream.
- *
- * @returns A ReadableStream that can be passed directly to a Response or consumed by Deno KV.
+ * encodeStore encodes a store into a byte stream.
  */
 export function encodeStore(
   store: Store,
@@ -47,10 +45,9 @@ export function encodeStore(
 
   const stream = ReadableStream.from([stringData])
     .pipeThrough(new TextEncoderStream());
-
   if (compression) {
     return stream.pipeThrough(
-      compression as unknown as ReadableWritablePair<Uint8Array, Uint8Array>,
+      compression as ReadableWritablePair<Uint8Array, Uint8Array>,
     );
   }
 
@@ -58,8 +55,7 @@ export function encodeStore(
 }
 
 /**
- * Decodes a byte stream into a Store.
- * * @param stream - The raw byte stream (e.g. from ctx.req.raw.body)
+ * decodeStore decodes a byte stream into a Store.
  */
 export async function decodeStore(
   stream: ReadableStream<Uint8Array>,
@@ -71,7 +67,7 @@ export async function decodeStore(
   if (decompression) {
     textStream = stream
       .pipeThrough(
-        decompression as unknown as ReadableWritablePair<
+        decompression as ReadableWritablePair<
           Uint8Array,
           Uint8Array
         >,

@@ -1,3 +1,4 @@
+import { accepts } from "@std/http/negotiation";
 import type { MiddlewareHandler } from "hono";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import type { OxigraphService } from "#/oxigraph/oxigraph-service.ts";
@@ -5,9 +6,15 @@ import type {
   DecodableEncoding,
   EncodableEncoding,
 } from "#/oxigraph/oxigraph-encoding.ts";
-import { decodeStore, encodeStore } from "#/oxigraph/oxigraph-encoding.ts";
+import {
+  decodableEncodings,
+  decodeStore,
+  encodableEncodings,
+  encodeStore,
+} from "#/oxigraph/oxigraph-encoding.ts";
 
 // Establish the app's environment.
+
 export interface OxigraphServiceEnv {
   Variables: {
     oxigraphService: OxigraphService;
@@ -25,156 +32,136 @@ export function withOxigraphService(
 
 export const app = new OpenAPIHono<OxigraphServiceEnv>();
 
-// Define the schemas for GET /stores/{store}.
-export const storeSchema = z.object({
+// Define shared schemas.
+
+export const v1StoreParamsSchema = z.object({
+  store: z.string().min(1).openapi({
+    param: { name: "store", in: "path" },
+    example: "my-graph-db",
+  }),
+});
+
+const rdfContentSchema = z.string().openapi({ format: "binary" });
+
+export const v1StoreSchema = z.object({
   id: z.string(),
-}).openapi("Store");
+}).openapi("V1Store");
 
-export const getStoreParamsSchema = z.object({
-  store: z.string(),
-}).openapi("GetStoreParams");
+// Define routes.
 
-// Define the route for GET /stores/{store}.
-export const getStoreRoute = createRoute({
+export const v1GetStoreRoute = createRoute({
   method: "get",
-  path: "/stores/{store}",
+  path: "/v1/stores/{store}",
   request: {
-    params: getStoreParamsSchema,
+    params: v1StoreParamsSchema,
   },
   responses: {
     200: {
       description: "Get a store",
       content: {
-        "application/json": {
-          schema: storeSchema,
-        },
-        "application/ld+json": {
-          schema: z.string(),
-        },
-        "application/n-quads": {
-          schema: z.string(),
-        },
-        "application/trig": {
-          schema: z.string(),
-        },
-        "text/turtle": {
-          schema: z.string(),
-        },
-        "application/n-triples": {
-          schema: z.string(),
-        },
-        "text/n3": {
-          schema: z.string(),
-        },
-        "application/rdf+xml": {
-          schema: z.string(),
-        },
+        "application/json": { schema: v1StoreSchema },
+        ...Object.fromEntries(
+          Object.values(encodableEncodings).map((encoding) => [
+            encoding,
+            { schema: rdfContentSchema },
+          ]),
+        ),
       },
     },
-    404: {
-      description: "Store not found",
-    },
+    404: { description: "Store not found" },
+    406: { description: "Not Acceptable" },
   },
 });
 
-app.openapi(
-  getStoreRoute,
-  async (ctx) => {
-    const storeId = ctx.req.param("store");
-    const store = await ctx.var.oxigraphService.getStore(storeId);
-    if (!store) {
-      return ctx.notFound();
-    }
+export const v1PutStoreRoute = createRoute({
+  method: "put",
+  path: "/v1/stores/{store}",
+  description: "Overwrite the store's contents",
+  request: {
+    params: v1StoreParamsSchema,
+    body: {
+      description: "RDF Data",
+      content: {
+        "application/n-quads": { schema: rdfContentSchema },
+        "text/turtle": { schema: rdfContentSchema },
+        "application/ld+json": { schema: rdfContentSchema },
+        "application/trig": { schema: rdfContentSchema },
+      },
+    },
+  },
+  responses: {
+    204: { description: "Store updated successfully" },
+    400: { description: "Invalid RDF data" },
+  },
+});
 
-    const encoding = ctx.req.header("Accept") ?? "application/json";
-    if (encoding === "application/json") {
-      return ctx.json({ id: storeId });
-    }
+export const v1DeleteStoreRoute = createRoute({
+  method: "delete",
+  path: "/v1/stores/{store}",
+  description: "Delete the store",
+  request: {
+    params: v1StoreParamsSchema,
+  },
+  responses: {
+    204: { description: "Store deleted" },
+  },
+});
 
+// Implement routes.
+
+app.openapi(v1GetStoreRoute, async (ctx) => {
+  const storeId = ctx.req.param("store");
+  const store = await ctx.var.oxigraphService.getStore(storeId);
+  if (!store) {
+    return ctx.notFound();
+  }
+
+  const supported = ["application/json", ...Object.values(encodableEncodings)];
+  const encoding = accepts(ctx.req.raw, ...supported) ?? "application/json";
+  if (encoding === "application/json") {
+    return ctx.json({ id: storeId });
+  }
+
+  if (!(Object.values(encodableEncodings) as string[]).includes(encoding)) {
+    return ctx.json({ id: storeId });
+  }
+
+  try {
     const data = encodeStore(store, encoding as EncodableEncoding);
     return ctx.body(data, {
       headers: { "Content-Type": encoding },
     });
-  },
-);
-
-// Define the schemas for POST /store/{store}.
-export const postStoreParamsSchema = z.object({
-  store: z.string(),
-}).openapi("PostStoreParams");
-
-// Define the route for POST /store/{store}.
-export const postStoreRoute = createRoute({
-  method: "post",
-  path: "/stores/{store}",
-  description: "Set the store's contents",
-  request: {
-    params: getStoreParamsSchema,
-    body: {
-      content: {
-        "application/ld+json": {
-          schema: z.string(),
-        },
-        "application/n-quads": {
-          schema: z.string(),
-        },
-        "application/trig": {
-          schema: z.string(),
-        },
-      },
-    },
-  },
-  responses: {
-    201: {
-      description: "Post a store",
-      content: {
-        "application/json": {
-          schema: storeSchema,
-        },
-      },
-    },
-    404: {
-      description: "Store not found",
-    },
-  },
+  } catch (_e) {
+    return ctx.json({ error: "Encoding failed" }, 500);
+  }
 });
 
-app.openapi(postStoreRoute, async (ctx) => {
-  const encoding = ctx.req.header("Content-Type") ?? "application/json";
-  const store = await decodeStore(
-    ctx.req.raw.body!, // Pass the stream directly
-    encoding as DecodableEncoding,
-  );
-
+app.openapi(v1PutStoreRoute, async (ctx) => {
   const storeId = ctx.req.param("store");
-  await ctx.var.oxigraphService.setStore(storeId, store);
-  return ctx.json({ id: storeId }, 201);
+  const contentType = ctx.req.header("Content-Type");
+
+  if (!contentType) {
+    return ctx.json({ error: "Content-Type required" }, 400);
+  }
+
+  if (!(Object.values(decodableEncodings) as string[]).includes(contentType)) {
+    return ctx.json({ error: "Unsupported Content-Type" }, 400);
+  }
+
+  try {
+    const store = await decodeStore(
+      ctx.req.raw.body!,
+      contentType as DecodableEncoding,
+    );
+
+    await ctx.var.oxigraphService.setStore(storeId, store);
+    return ctx.body(null, 204);
+  } catch (_err) {
+    return ctx.json({ error: "Invalid RDF Syntax" }, 400);
+  }
 });
 
-// Define the schemas for DELETE /store/{store}.
-export const deleteStoreParamsSchema = z.object({
-  store: z.string(),
-}).openapi("DeleteStoreParams");
-
-// Define the route for DELETE /store/{store}.
-export const deleteStoreRoute = createRoute({
-  method: "delete",
-  path: "/stores/{store}",
-  description: "Delete the store",
-  request: {
-    params: deleteStoreParamsSchema,
-  },
-  responses: {
-    204: {
-      description: "Delete a store",
-    },
-    404: {
-      description: "Store not found",
-    },
-  },
-});
-
-app.openapi(deleteStoreRoute, async (ctx) => {
+app.openapi(v1DeleteStoreRoute, async (ctx) => {
   const storeId = ctx.req.param("store");
   await ctx.var.oxigraphService.removeStore(storeId);
   return ctx.body(null, 204);
