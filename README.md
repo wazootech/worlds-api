@@ -20,8 +20,8 @@ ways to work by delegating agents strategically and autonomously.
 
 Legacy data architectures, designed for human-driven lookups, often collapse
 under the demands of autonomous agents that must infer, plan, and act on
-millions of decisions daily. Worlds API addresses the "Agentic Gap" by
-introducing formal semantics to the edge.
+millions of decisions daily. Worlds API bridges the "Agentic Gap" by introducing
+formal semantics to the edge.
 
 - Reasoning over Retrieval: Agents do not just query data; they require
   explainable reasoning chains. By leveraging formal ontologies, Worlds API
