@@ -153,9 +153,13 @@ app.openapi(v1PutStoreRoute, async (ctx) => {
     return ctx.json({ error: "Unsupported Content-Type" }, 400);
   }
 
+  if (!ctx.req.raw.body) {
+    return ctx.json({ error: "Body is empty or null" }, 400);
+  }
+
   try {
     const store = await decodeStore(
-      ctx.req.raw.body!,
+      ctx.req.raw.body,
       contentType as DecodableEncoding,
     );
 
@@ -178,9 +182,13 @@ app.openapi(v1PostStoreRoute, async (ctx) => {
     return ctx.json({ error: "Unsupported Content-Type" }, 400);
   }
 
+  if (!ctx.req.raw.body) {
+    return ctx.json({ error: "Body is empty or null" }, 400);
+  }
+
   try {
     const store = await decodeStore(
-      ctx.req.raw.body!,
+      ctx.req.raw.body,
       contentType as DecodableEncoding,
     );
 

@@ -56,7 +56,7 @@ export const openapiConfig = {
     version: "0.0.1",
     title: "Worlds API",
     description:
-      "Worlds API is a REST API that can be used to manage, query, update, and reason over SPARQL 1.1-compatible stores at the edge.",
+      "Worlds API™ is a REST API that can be used to manage, query, update, and reason over SPARQL 1.1-compatible stores at the edge.",
     contact: {
       url: "https://github.com/FartLabs/worlds-api/issues",
     },

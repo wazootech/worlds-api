@@ -91,7 +91,14 @@ export async function decodeStore(
     reader.releaseLock();
   }
 
+  const fullText = chunks.join("");
   const store = new Store();
-  store.load(chunks.join(""), { format: encoding });
+  try {
+    store.load(fullText, { format: encoding });
+  } catch (err) {
+    console.error("Failed to parse RDF:");
+    console.error(fullText.slice(0, 100)); // Log first 100 chars
+    throw err;
+  }
   return store;
 }
