@@ -102,7 +102,6 @@ This work is inspired by some of the following research papers:
 - [An AI System to Help Scientists Write Expert-Level Empirical Software](https://arxiv.org/abs/2509.06503)
 - [NeSy is Alive and Well: A LLM-Driven Symbolic Approach for Better Code Comment Data Generation and Classification](https://arxiv.org/abs/2402.16910)
 - [Inverse Knowledge Search over Verifiable Reasoning: Synthesizing a Scientific Encyclopedia from a Long Chains-of-Thought Knowledge Base](https://arxiv.org/abs/2510.26854)
-- [What You See Is What It Does: A Structural Pattern for Legible Software](https://arxiv.org/abs/2508.14511)
 - [Graph-Constrained Reasoning: Faithful Reasoning on Knowledge Graphs with Large Language Models](https://arxiv.org/abs/2410.13080)
 
 ---
