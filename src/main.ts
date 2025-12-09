@@ -1,6 +1,4 @@
 import { Router } from "@fartlabs/rt";
-import { expandGlob } from "@std/fs";
-import { toFileUrl } from "@std/path";
 import { kvAppContext } from "#/app-context.ts";
 
 const kv = await Deno.openKv(Deno.env.get("DENO_KV_PATH"));
@@ -9,15 +7,20 @@ const appContext = kvAppContext(kv);
 
 const app = new Router();
 
-for await (
-  const entry of expandGlob("./src/v1/routes/**/route.ts")
-) {
-  const module = await import(toFileUrl(entry.path).href);
-  if (typeof module.default === "function") {
-    const subRouter = module.default(appContext);
+const routes = [
+  "v1/routes/api-keys/route.ts",
+  "v1/routes/stores/route.ts",
+  "v1/routes/stores/sparql/route.ts",
+];
 
-    app.use(subRouter);
+for (const specifier of routes) {
+  const module = await import(`./${specifier}`);
+  if (!(typeof module.default === "function")) {
+    throw new Error(`Route ${specifier} does not export a default function`);
   }
+
+  const subRouter = module.default(appContext);
+  app.use(subRouter);
 }
 
 export default {
