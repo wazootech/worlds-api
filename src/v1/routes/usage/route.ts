@@ -24,10 +24,8 @@ export default ({ accountsService }: AppContext) => {
 
         const usageSummary = await accountsService.getUsageSummary(accountId);
         if (!usageSummary) {
-          return Response.json(
-            { error: "No usage data found for this account" },
-            { status: 404 },
-          );
+          // Return empty usage summary if none exists yet
+          return Response.json({ stores: {} });
         }
 
         return Response.json(usageSummary);

@@ -1,11 +1,9 @@
-// TODO: Rename class to Worlds.
-
-// Permissions API has resources ApiKeys and Roles for access control and authorization.  This is separate from the usage api which tracks the events triggered by api key and meters usage based on the permissions associated with the api key.
+import type { AccountUsageSummary } from "#/accounts/accounts-service.ts";
 
 /**
- * WorldsApiSdk is a TypeScript SDK for the Worlds API.
+ * Worlds is a TypeScript SDK for the Worlds API.
  */
-export class WorldsApiSdk {
+export class Worlds {
   public constructor(
     public readonly options: {
       baseUrl: string;
@@ -144,5 +142,21 @@ export class WorldsApiSdk {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+  }
+
+  /**
+   * getUsage retrieves the usage summary for the authenticated account.
+   */
+  public async getUsage(): Promise<AccountUsageSummary> {
+    const response = await fetch(`${this.options.baseUrl}/usage`, {
+      headers: {
+        Authorization: `Bearer ${this.options.apiKey}`,
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   }
 }

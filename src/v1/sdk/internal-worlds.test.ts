@@ -1,14 +1,14 @@
 import { assertRejects } from "@std/assert/rejects";
-import { assertEquals, assertExists } from "@std/assert";
+import { assert, assertEquals, assertExists } from "@std/assert";
 import { kvAppContext } from "#/app-context.ts";
 import accountsApp from "#/v1/routes/accounts/route.ts";
-import { InternalWorldsApiSdk } from "./internal-worlds-api-sdk.ts";
 import type { Account } from "#/accounts/accounts-service.ts";
+import { InternalWorlds } from "./internal-worlds.ts";
 
 const kv = await Deno.openKv(":memory:");
 
-Deno.test("e2e InternalWorldsApiSdk", async (t) => {
-  const sdk = new InternalWorldsApiSdk({
+Deno.test("e2e InternalWorldsSdk", async (t) => {
+  const sdk = new InternalWorlds({
     baseUrl: "http://localhost/v1",
     apiKey: Deno.env.get("ADMIN_ACCOUNT_ID")!,
   });
@@ -62,7 +62,7 @@ Deno.test("e2e InternalWorldsApiSdk", async (t) => {
   });
 
   await t.step("deleteAccount removes an account", async () => {
-    await sdk.deleteAccount(testAccountId);
+    await sdk.removeAccount(testAccountId);
 
     await assertRejects(
       async () => await sdk.getAccount(testAccountId),
@@ -72,7 +72,7 @@ Deno.test("e2e InternalWorldsApiSdk", async (t) => {
   });
 
   await t.step("createAccount fails with invalid auth", async () => {
-    const invalidSdk = new InternalWorldsApiSdk({
+    const invalidSdk = new InternalWorlds({
       baseUrl: "http://localhost/v1",
       apiKey: "invalid-key",
     });
@@ -85,15 +85,57 @@ Deno.test("e2e InternalWorldsApiSdk", async (t) => {
   });
 
   await t.step("deleteAccount fails with invalid auth", async () => {
-    const invalidSdk = new InternalWorldsApiSdk({
+    const invalidSdk = new InternalWorlds({
       baseUrl: "http://localhost/v1",
       apiKey: "invalid-key",
     });
 
     await assertRejects(
-      async () => await invalidSdk.deleteAccount("some-account"),
+      async () => await invalidSdk.removeAccount("some-account"),
       Error,
       "401",
     );
+  });
+
+  // Import usage app for usage tests
+  const usageApp = (await import("#/v1/routes/usage/route.ts")).default;
+  globalThis.fetch = (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const request = new Request(input, init);
+    return usageApp(kvAppContext(kv)).fetch(request);
+  };
+
+  await t.step("getAccountUsage retrieves usage for an account", async () => {
+    // Create an account first
+    globalThis.fetch = (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      const request = new Request(input, init);
+      return accountsApp(kvAppContext(kv)).fetch(request);
+    };
+
+    const usageTestAccount: Account = {
+      id: "usage-test-account",
+      description: "Account for usage testing",
+      plan: "free_plan",
+      accessControl: { stores: [] },
+    };
+    await sdk.createAccount(usageTestAccount);
+
+    // Switch back to usage app
+    globalThis.fetch = (
+      input: RequestInfo | URL,
+      init?: RequestInit,
+    ): Promise<Response> => {
+      const request = new Request(input, init);
+      return usageApp(kvAppContext(kv)).fetch(request);
+    };
+
+    const usage = await sdk.getAccountUsage("usage-test-account");
+    assert(typeof usage === "object");
+    assert(usage.stores !== undefined);
   });
 });

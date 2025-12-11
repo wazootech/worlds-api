@@ -1,2 +1,2 @@
-export * from "./worlds-api-sdk.ts";
-export * from "./internal-worlds-api-sdk.ts";
+export * from "./worlds.ts";
+export * from "./internal-worlds.ts";

@@ -2,8 +2,8 @@ import { assert } from "@std/assert/assert";
 import { kvAppContext } from "#/app-context.ts";
 import storesApp from "#/v1/routes/stores/route.ts";
 import storesSparqlApp from "#/v1/routes/stores/sparql/route.ts";
-import { WorldsApiSdk } from "./worlds-api-sdk.ts";
 import type { Account } from "#/accounts/accounts-service.ts";
+import { Worlds } from "./worlds.ts";
 
 const kv = await Deno.openKv(":memory:");
 const appContext = kvAppContext(kv);
@@ -21,8 +21,8 @@ await appContext.accountsService.set(testAccount);
 
 const testApiKey = "test-account";
 
-Deno.test("e2e WorldsApiSdk", async (t) => {
-  const sdk = new WorldsApiSdk({
+Deno.test("e2e Worlds", async (t) => {
+  const sdk = new Worlds({
     baseUrl: "http://localhost/v1",
     apiKey: testApiKey,
   });
@@ -98,5 +98,21 @@ Deno.test("e2e WorldsApiSdk", async (t) => {
 
   await t.step("removeStore removes the store", async () => {
     await sdk.removeStore("test");
+  });
+
+  // Import usage app for usage tests
+  const usageApp = (await import("#/v1/routes/usage/route.ts")).default;
+  globalThis.fetch = (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> => {
+    const request = new Request(input, init);
+    return usageApp(appContext).fetch(request);
+  };
+
+  await t.step("getUsage returns usage summary", async () => {
+    const usage = await sdk.getUsage();
+    assert(typeof usage === "object");
+    assert(usage.stores !== undefined);
   });
 });

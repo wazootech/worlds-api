@@ -1,12 +1,15 @@
-import { WorldsApiSdk } from "./worlds-api-sdk.ts";
-import type { Account } from "#/accounts/accounts-service.ts";
+import type {
+  Account,
+  AccountUsageSummary,
+} from "#/accounts/accounts-service.ts";
+import { Worlds } from "./worlds.ts";
 
 /**
- * InternalWorldsApiSdk is a TypeScript SDK for internal/owner-only operations
+ * InternalWorlds is a TypeScript SDK for internal/owner-only operations
  * on the Worlds API.
  */
-export class InternalWorldsApiSdk extends WorldsApiSdk {
-  public constructor(options: WorldsApiSdk["options"]) {
+export class InternalWorlds extends Worlds {
+  public constructor(options: Worlds["options"]) {
     super(options);
   }
 
@@ -25,6 +28,7 @@ export class InternalWorldsApiSdk extends WorldsApiSdk {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+
     return await response.json();
   }
 
@@ -68,9 +72,9 @@ export class InternalWorldsApiSdk extends WorldsApiSdk {
   }
 
   /**
-   * deleteAccount removes an account from the Worlds API.
+   * removeAccount removes an account from the Worlds API.
    */
-  public async deleteAccount(accountId: string): Promise<void> {
+  public async removeAccount(accountId: string): Promise<void> {
     const response = await fetch(
       `${this.options.baseUrl}/accounts/${accountId}`,
       {
@@ -83,5 +87,27 @@ export class InternalWorldsApiSdk extends WorldsApiSdk {
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+  }
+
+  /**
+   * getAccountUsage retrieves the usage summary for a specific account.
+   * This is an admin-only operation.
+   */
+  public async getAccountUsage(
+    accountId: string,
+  ): Promise<AccountUsageSummary> {
+    const response = await fetch(
+      `${this.options.baseUrl}/usage?accountId=${accountId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.options.apiKey}`,
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
   }
 }
