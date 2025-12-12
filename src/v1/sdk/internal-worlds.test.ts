@@ -7,6 +7,7 @@ import type { Account } from "#/accounts/accounts-service.ts";
 import { InternalWorlds } from "./internal-worlds.ts";
 
 const kv = await Deno.openKv(":memory:");
+Deno.env.set("ADMIN_ACCOUNT_ID", "admin-secret-token");
 
 Deno.test("e2e InternalWorlds", async (t) => {
   const sdk = new InternalWorlds({
@@ -143,4 +144,54 @@ Deno.test("e2e InternalWorlds", async (t) => {
     assert(typeof usage === "object");
     assert(usage.worlds !== undefined);
   });
+
+  await t.step(
+    "getAccountWorlds retrieves account worlds metadata",
+    async () => {
+      // Setup - ensure we use the accounts app for creation
+      globalThis.fetch = (
+        input: RequestInfo | URL,
+        // deno-lint-ignore no-explicit-any
+        init?: any,
+      ) => {
+        const request = new Request(input, init);
+        return accountsApp(kvAppContext(kv)).fetch(request);
+      };
+
+      // Setup - create an account
+      const worldsTestAccount: Account = {
+        id: "worlds-test-account",
+        apiKey: "sk_test_789",
+        description: "Account for worlds testing",
+        plan: "free_plan",
+        accessControl: { worlds: ["world-A", "world-B"] },
+      };
+      await sdk.createAccount(worldsTestAccount);
+
+      // Mock the fetch response to simulate metadata return from the API
+      // This avoids needing to complexly inject metadata into Oxigraph via the service in this test
+      globalThis.fetch = (
+        input: RequestInfo | URL,
+        // deno-lint-ignore no-explicit-any
+        init?: any,
+      ) => {
+        if (
+          typeof input === "string" && input.includes("/worlds") &&
+          input.endsWith("/worlds")
+        ) {
+          return Promise.resolve(Response.json([
+            { id: "world-A", createdBy: "owner-1", size: 100 },
+            { id: "world-B", createdBy: "owner-1", size: 200 },
+          ]));
+        }
+        const request = new Request(input, init);
+        return accountsApp(kvAppContext(kv)).fetch(request);
+      };
+
+      const worlds = await sdk.getAccountWorlds("worlds-test-account");
+      assertEquals(worlds.length, 2);
+      assertEquals(worlds[0].id, "world-A");
+      assertEquals(worlds[1].id, "world-B");
+    },
+  );
 });

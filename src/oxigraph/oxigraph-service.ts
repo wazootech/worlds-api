@@ -7,6 +7,7 @@ export interface OxigraphService {
   listStores(): Promise<string[]>;
   getStore(id: string): Promise<Store | null>;
   getMetadata(id: string): Promise<StoreMetadata | null>;
+  getManyMetadata(ids: string[]): Promise<StoreMetadata[]>;
   setStore(id: string, owner: string, store: Store): Promise<void>;
   addQuads(id: string, owner: string, quads: Quad[]): Promise<void>;
   query(

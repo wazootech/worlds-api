@@ -1,3 +1,7 @@
+import type { StoreMetadata } from "#/oxigraph/oxigraph-service.ts";
+
+export type WorldMetadata = StoreMetadata;
+
 /**
  * AccountsService manages access control and authorization.
  */

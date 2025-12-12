@@ -4,7 +4,7 @@ import type { Account } from "#/accounts/accounts-service.ts";
 import { isAccount } from "#/accounts/accounts-service.ts";
 import { authorizeRequest } from "#/accounts/authorize.ts";
 
-export default ({ accountsService }: AppContext) => {
+export default ({ accountsService, oxigraphService }: AppContext) => {
   return new Router()
     .get(
       "/v1/accounts",
@@ -98,6 +98,35 @@ export default ({ accountsService }: AppContext) => {
         }
 
         return Response.json(account);
+      },
+    )
+    .get(
+      "/v1/accounts/:accountId/worlds",
+      async (ctx) => {
+        const authorized = await authorizeRequest(accountsService, ctx.request);
+        if (!authorized) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+        if (!authorized.admin) {
+          return new Response("Forbidden: Admin access required", {
+            status: 403,
+          });
+        }
+
+        const accountId = ctx.params?.pathname.groups.accountId;
+        if (!accountId) {
+          return new Response("Account ID required", { status: 400 });
+        }
+
+        const account = await accountsService.get(accountId);
+        if (!account) {
+          return new Response("Account not found", { status: 404 });
+        }
+
+        const metadata = await oxigraphService.getManyMetadata(
+          account.accessControl.worlds,
+        );
+        return Response.json(metadata);
       },
     )
     .put(

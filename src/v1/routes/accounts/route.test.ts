@@ -1,3 +1,5 @@
+import type { StoreMetadata } from "#/oxigraph/oxigraph-service.ts";
+import { Store } from "oxigraph";
 import { assertEquals } from "@std/assert";
 import { kvAppContext } from "#/app-context.ts";
 import createApp from "./route.ts";
@@ -254,4 +256,60 @@ Deno.test("POST /v1/accounts returns 409 if account already exists", async () =>
   });
   const res = await app.fetch(req);
   assertEquals(res.status, 409);
+});
+
+Deno.test("GET /v1/accounts/:accountId/worlds retrieves account worlds metadata", async () => {
+  // First create stores with metadata
+  const kv = await Deno.openKv(":memory:");
+  const testApp = await createApp(kvAppContext(kv));
+
+  // Initialize some stores directly using the service (since we don't have store routes here)
+  const { oxigraphService } = kvAppContext(kv);
+  await oxigraphService.setStore("store-A", "owner-1", new Store());
+  await oxigraphService.setStore("store-B", "owner-1", new Store());
+
+  // Create account with access to these stores
+  const accountId = "66666666-6666-6666-8666-666666666666";
+  const worlds = ["store-A", "store-B"];
+  await testApp.fetch(
+    new Request("http://localhost/v1/accounts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("ADMIN_ACCOUNT_ID")}`,
+      },
+      body: JSON.stringify({
+        id: accountId,
+        description: "Account with worlds",
+        plan: "free_plan",
+        accessControl: { worlds },
+      }),
+    }),
+  );
+
+  // Retrieve worlds
+  const req = new Request(
+    `http://localhost/v1/accounts/${accountId}/worlds`,
+    {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${Deno.env.get("ADMIN_ACCOUNT_ID")}`,
+      },
+    },
+  );
+  const res = await testApp.fetch(req);
+  assertEquals(res.status, 200);
+
+  const retrievedWorlds = await res.json();
+  assertEquals(retrievedWorlds.length, 2);
+
+  const storeA = retrievedWorlds.find((w: StoreMetadata) => w.id === "store-A");
+  assertEquals(storeA?.createdBy, "owner-1");
+  assertEquals(storeA?.tripleCount, 0);
+
+  const storeB = retrievedWorlds.find((w: StoreMetadata) => w.id === "store-B");
+  assertEquals(storeB?.createdBy, "owner-1");
+  assertEquals(storeB?.tripleCount, 0);
+
+  kv.close();
 });

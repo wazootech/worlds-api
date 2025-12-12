@@ -1,10 +1,11 @@
 import type {
   Account,
   AccountUsageSummary,
+  WorldMetadata,
 } from "#/accounts/accounts-service.ts";
 import { Worlds } from "./worlds.ts";
 
-export type { Account, AccountUsageSummary };
+export type { Account, AccountUsageSummary, WorldMetadata };
 
 export { Worlds };
 
@@ -102,6 +103,28 @@ export class InternalWorlds extends Worlds {
   ): Promise<AccountUsageSummary> {
     const response = await fetch(
       `${this.options.baseUrl}/usage?accountId=${accountId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${this.options.apiKey}`,
+        },
+      },
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * getAccountWorlds retrieves the worlds owned by a specific account.
+   * This is an admin-only operation.
+   */
+  public async getAccountWorlds(
+    accountId: string,
+  ): Promise<WorldMetadata[]> {
+    const response = await fetch(
+      `${this.options.baseUrl}/accounts/${accountId}/worlds`,
       {
         headers: {
           Authorization: `Bearer ${this.options.apiKey}`,
