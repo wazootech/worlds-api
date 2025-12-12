@@ -126,7 +126,13 @@ export default ({ accountsService, oxigraphService }: AppContext) => {
         const metadata = await oxigraphService.getManyMetadata(
           account.accessControl.worlds,
         );
-        return Response.json(metadata);
+
+        // Return list of most recent world metadata.
+        return Response.json(
+          metadata
+            .filter((world) => world !== null)
+            .toSorted((a, b) => b.updatedAt - a.updatedAt),
+        );
       },
     )
     .put(

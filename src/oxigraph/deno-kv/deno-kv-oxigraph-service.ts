@@ -76,16 +76,12 @@ export class DenoKvOxigraphService implements OxigraphService {
 
   public async getManyMetadata(
     ids: string[],
-  ): Promise<StoreMetadata[]> {
+  ): Promise<(StoreMetadata | null)[]> {
     const result = await this.kv.getMany<StoreMetadata[]>(
       ids.map((id) => this.storeMetadataKey(id)),
     );
 
-    return result
-      .filter((entry) => {
-        return entry.value !== null;
-      })
-      .map((entry) => entry.value);
+    return result.map((entry) => entry.value);
   }
 
   public async setStore(
