@@ -61,6 +61,7 @@ Deno.test("e2e InternalWorlds", async (t) => {
     await sdk.updateAccount(updatedAccount);
 
     const retrieved = await sdk.getAccount(testAccountId);
+    assertExists(retrieved);
     assertEquals(retrieved.description, "Updated description");
     assertEquals(retrieved.accessControl.worlds.length, 3);
   });
@@ -68,11 +69,8 @@ Deno.test("e2e InternalWorlds", async (t) => {
   await t.step("removeAccount removes an account", async () => {
     await sdk.removeAccount(testAccountId);
 
-    await assertRejects(
-      async () => await sdk.getAccount(testAccountId),
-      Error,
-      "404",
-    );
+    const retrieved = await sdk.getAccount(testAccountId);
+    assertEquals(retrieved, null);
   });
 
   await t.step("createAccount fails with invalid auth", async () => {
@@ -141,7 +139,7 @@ Deno.test("e2e InternalWorlds", async (t) => {
     };
 
     const usage = await sdk.getAccountUsage("usage-test-account");
-    assert(typeof usage === "object");
+    assert(typeof usage === "object" && usage !== null);
     assert(usage.worlds !== undefined);
   });
 

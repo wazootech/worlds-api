@@ -40,7 +40,7 @@ export class InternalWorlds extends Worlds {
   /**
    * getAccount retrieves an account from the Worlds API.
    */
-  public async getAccount(accountId: string): Promise<Account> {
+  public async getAccount(accountId: string): Promise<Account | null> {
     const response = await fetch(
       `${this.options.baseUrl}/accounts/${accountId}`,
       {
@@ -51,8 +51,14 @@ export class InternalWorlds extends Worlds {
       },
     );
     if (!response.ok) {
+      // Return null if the account does not exist.
+      if (response.status === 404) {
+        return null;
+      }
+
       throw new Error(`HTTP error! status: ${response.status}`);
     }
+
     return await response.json();
   }
 
@@ -100,7 +106,7 @@ export class InternalWorlds extends Worlds {
    */
   public async getAccountUsage(
     accountId: string,
-  ): Promise<AccountUsageSummary> {
+  ): Promise<AccountUsageSummary | null> {
     const response = await fetch(
       `${this.options.baseUrl}/usage?accountId=${accountId}`,
       {
@@ -110,6 +116,11 @@ export class InternalWorlds extends Worlds {
       },
     );
     if (!response.ok) {
+      // Return null if the account does not exist.
+      if (response.status === 404) {
+        return null;
+      }
+
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 

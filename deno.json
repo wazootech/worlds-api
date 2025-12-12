@@ -1,6 +1,6 @@
 {
   "name": "@fartlabs/worlds",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "exports": "./src/v1/sdk/mod.ts",
   "imports": {
     "#/": "./src/",
