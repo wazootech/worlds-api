@@ -16,6 +16,16 @@ export const decodableEncodings = {
 } as const;
 
 /**
+ * isDecodableEncoding checks if the value is a DecodableEncoding.
+ */
+export function isDecodableEncoding(
+  value: string,
+): value is DecodableEncoding {
+  return typeof value === "string" &&
+    Object.values(decodableEncodings).includes(value as DecodableEncoding);
+}
+
+/**
  * EncodableEncoding is the type of encoding format that can be encoded.
  */
 export type EncodableEncoding =
@@ -31,6 +41,16 @@ export const encodableEncodings = {
   n3: "text/n3",
   rdf: "application/rdf+xml",
 } as const;
+
+/**
+ * isEncodableEncoding checks if the value is an EncodableEncoding.
+ */
+export function isEncodableEncoding(
+  value: string,
+): value is EncodableEncoding {
+  return typeof value === "string" &&
+    Object.values(encodableEncodings).includes(value as EncodableEncoding);
+}
 
 /**
  * encodeStore encodes a store into a byte stream.
@@ -80,9 +100,9 @@ export async function decodeStore(
   // We accumulate the stream into a string because Oxigraph.load() is synchronous.
   const reader = textStream.getReader();
   const chunks: string[] = [];
+
   let totalSize = 0;
   const LIMIT = 10 * 1024 * 1024; // 10MB limit
-
   try {
     while (true) {
       const { done, value } = await reader.read();
@@ -92,6 +112,7 @@ export async function decodeStore(
         if (totalSize > LIMIT) {
           throw new Error("Payload too large");
         }
+
         chunks.push(value);
       }
     }

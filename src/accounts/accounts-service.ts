@@ -179,3 +179,46 @@ type AccountUsageEventEndpoint =
   | "DELETE /worlds/{worldId}"
   | "GET /worlds/{worldId}/sparql"
   | "POST /worlds/{worldId}/sparql";
+
+/**
+ * isAccount checks if the object is an Account.
+ */
+export function isAccount(obj: unknown): obj is Account {
+  if (typeof obj !== "object" || obj === null) {
+    return false;
+  }
+
+  const account = obj as Account;
+
+  if (typeof account.id !== "string") {
+    return false;
+  }
+
+  if (typeof account.apiKey !== "string") {
+    return false;
+  }
+
+  if (typeof account.description !== "string") {
+    return false;
+  }
+
+  if (account.plan !== "free_plan" && account.plan !== "pro_plan") {
+    return false;
+  }
+
+  if (
+    typeof account.accessControl !== "object" || account.accessControl === null
+  ) {
+    return false;
+  }
+
+  if (!Array.isArray(account.accessControl.worlds)) {
+    return false;
+  }
+
+  if (account.accessControl.worlds.some((w) => typeof w !== "string")) {
+    return false;
+  }
+
+  return true;
+}

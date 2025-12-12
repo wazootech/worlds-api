@@ -74,7 +74,7 @@ Deno.test("e2e Worlds", async (t) => {
     return worldsSparqlApp(appContext).fetch(request);
   }) as typeof fetch;
 
-  await t.step("query returns results for existing world", async () => {
+  await t.step("queryWorld returns results for existing world", async () => {
     const results = await sdk.queryWorld(
       "test",
       "SELECT ?s ?p ?o WHERE { ?s ?p ?o }",
@@ -83,7 +83,7 @@ Deno.test("e2e Worlds", async (t) => {
     assert(results.length > 0);
   });
 
-  await t.step("update updates the world", async () => {
+  await t.step("updateWorld updates the world", async () => {
     await sdk.updateWorld(
       "test",
       'INSERT DATA { <http://example.com/s3> <http://example.com/p> "o3" }',

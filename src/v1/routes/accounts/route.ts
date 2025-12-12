@@ -1,6 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import type { AppContext } from "#/app-context.ts";
 import type { Account } from "#/accounts/accounts-service.ts";
+import { isAccount } from "#/accounts/accounts-service.ts";
 import { authorizeRequest } from "#/accounts/authorize.ts";
 
 export default ({ accountsService }: AppContext) => {
@@ -43,24 +44,21 @@ export default ({ accountsService }: AppContext) => {
           return Response.json({ error: "Invalid JSON" }, { status: 400 });
         }
 
-        // Validate required fields
-        if (
-          !account.id || !account.description || !account.plan ||
-          !account.accessControl
-        ) {
-          return Response.json(
-            {
-              error:
-                "Missing required fields: id, description, plan, accessControl",
-            },
-            { status: 400 },
-          );
-        }
-
         // Generate a cryptographically secure API key
         // Prefix with 'sk_live_' for clear identification
         const apiKey = `sk_live_${crypto.randomUUID().replace(/-/g, "")}`;
         account.apiKey = apiKey;
+
+        // Validate account
+        if (!isAccount(account)) {
+          return Response.json(
+            {
+              error:
+                "Invalid account fields. Required: id, description, plan, accessControl",
+            },
+            { status: 400 },
+          );
+        }
 
         // Create account
         await accountsService.set(account);
@@ -123,6 +121,17 @@ export default ({ accountsService }: AppContext) => {
         if (account.id !== accountId) {
           return Response.json(
             { error: "Account ID mismatch" },
+            { status: 400 },
+          );
+        }
+
+        // Validate account
+        if (!isAccount(account)) {
+          return Response.json(
+            {
+              error:
+                "Invalid account fields. Required: id, description, plan, accessControl",
+            },
             { status: 400 },
           );
         }

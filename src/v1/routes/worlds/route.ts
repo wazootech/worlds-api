@@ -6,10 +6,11 @@ import type {
   EncodableEncoding,
 } from "#/oxigraph/oxigraph-encoding.ts";
 import {
-  decodableEncodings,
   decodeStore,
   encodableEncodings,
   encodeStore,
+  isDecodableEncoding,
+  isEncodableEncoding,
 } from "#/oxigraph/oxigraph-encoding.ts";
 import type { AppContext } from "#/app-context.ts";
 import { plans, reachedPlanLimit } from "#/accounts/plans.ts";
@@ -46,16 +47,14 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
         const supported = [
           "application/json",
           ...Object.values(encodableEncodings),
-        ];
+        ] as string[];
         const encoding = accepts(ctx.request, ...supported) ??
           "application/json";
         if (encoding === "application/json") {
           return Response.json(metadata);
         }
 
-        if (
-          !(Object.values(encodableEncodings) as string[]).includes(encoding)
-        ) {
+        if (!isEncodableEncoding(encoding)) {
           return new Response("Unsupported encoding", { status: 400 });
         }
 
@@ -183,11 +182,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           });
         }
 
-        if (
-          !(Object.values(decodableEncodings) as string[]).includes(
-            contentType,
-          )
-        ) {
+        if (!isDecodableEncoding(contentType)) {
           return Response.json({ error: "Unsupported Content-Type" }, {
             status: 400,
           });
@@ -291,11 +286,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           });
         }
 
-        if (
-          !(Object.values(decodableEncodings) as string[]).includes(
-            contentType,
-          )
-        ) {
+        if (!isDecodableEncoding(contentType)) {
           return Response.json({ error: "Unsupported Content-Type" }, {
             status: 400,
           });
