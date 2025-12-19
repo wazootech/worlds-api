@@ -11,7 +11,7 @@ const testAccount: Account = {
   id: "test-account",
   apiKey: "sk_test_route_test",
   description: "Test account for route tests",
-  plan: "free_plan",
+  plan: "free",
   accessControl: {
     worlds: [], // Worlds will be automatically added on creation
   },
@@ -180,9 +180,11 @@ Deno.test("GET /v1/worlds/{world}/usage returns usage for specific world", async
 
   assertEquals(resp.status, 200);
   const usage = await resp.json();
-  assert(typeof usage === "object");
-  assert(usage.reads !== undefined);
-  assert(usage.writes !== undefined);
+  assert(Array.isArray(usage));
+  // We can't guarantee exact request count due to test parallelism/setup, but we should find *some* usage
+  // The route returns filtered usage for this world.
+  assert(usage.length > 0);
+  assert(usage.some((u: { endpoint: string }) => u.endpoint.includes(worldId)));
 });
 
 Deno.test("PATCH /v1/worlds/{world} updates description", async () => {

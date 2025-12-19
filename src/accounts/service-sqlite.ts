@@ -1,16 +1,10 @@
-import type { Client } from "#/database/database.ts";
+import type { Client } from "#/core/database/database.ts";
 import type {
   Account,
   AccountPlan,
   AccountsService,
-  AccountUsageEvent,
-  AccountUsageSummary,
 } from "#/accounts/service.ts";
-import type {
-  AccountRow,
-  ApiKeyRow,
-  UsageBucketRow,
-} from "#/database/system.ts";
+import type { AccountRow, ApiKeyRow } from "#/core/database/system.ts";
 
 export class SqliteAccountsService implements AccountsService {
   constructor(private readonly db: Client) {}
@@ -106,72 +100,6 @@ export class SqliteAccountsService implements AccountsService {
       sql: "DELETE FROM kb_accounts WHERE account_id = ?",
       args: [id],
     });
-  }
-
-  async meter(event: AccountUsageEvent): Promise<void> {
-    const bucketStartTs = 0;
-    let formattedEndpoint = event.endpoint as string;
-    for (const [key, value] of Object.entries(event.params)) {
-      formattedEndpoint = formattedEndpoint.replace(`{${key}}`, value);
-    }
-
-    await this.db.execute({
-      sql: `
-        INSERT INTO kb_usage (bucket_start_ts, account_id, endpoint, request_count, token_in_count, token_out_count)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(bucket_start_ts, account_id, endpoint) DO UPDATE SET
-          request_count = request_count + 1,
-          token_in_count = token_in_count + excluded.token_in_count,
-          token_out_count = token_out_count + excluded.token_out_count
-      `,
-      args: [bucketStartTs, event.accountId, formattedEndpoint, 1, 0, 0],
-    });
-  }
-
-  async getUsageSummary(
-    accountId: string,
-  ): Promise<AccountUsageSummary | null> {
-    const result = await this.db.execute({
-      sql: "SELECT endpoint, request_count FROM kb_usage WHERE account_id = ?",
-      args: [accountId],
-    });
-    const rows = result.rows as unknown as UsageBucketRow[];
-
-    if (rows.length === 0) return null;
-
-    const summary: AccountUsageSummary = { worlds: {} };
-
-    for (const row of rows) {
-      const parts = row.endpoint.split("/");
-      const worldsIndex = parts.indexOf("worlds");
-      if (worldsIndex === -1 || worldsIndex + 1 >= parts.length) continue;
-
-      const worldId = parts[worldsIndex + 1];
-
-      if (!summary.worlds[worldId]) {
-        summary.worlds[worldId] = {
-          reads: 0,
-          writes: 0,
-          queries: 0,
-          updates: 0,
-          updatedAt: Date.now(),
-        };
-      }
-
-      const s = summary.worlds[worldId];
-      if (row.endpoint.includes("/sparql")) {
-        if (row.endpoint.startsWith("POST")) s.updates += row.request_count;
-        else s.queries += row.request_count;
-      } else {
-        if (row.endpoint.startsWith("GET")) s.reads += row.request_count;
-        else if (
-          row.endpoint.startsWith("POST") || row.endpoint.startsWith("PUT") ||
-          row.endpoint.startsWith("PATCH") || row.endpoint.startsWith("DELETE")
-        ) s.writes += row.request_count;
-      }
-    }
-
-    return summary;
   }
 
   async listAccounts(): Promise<Account[]> {

@@ -12,7 +12,7 @@ Deno.test("Security: world creation automatically grants access", async () => {
     id: "security-test-account-1",
     apiKey: "sk_test_123",
     description: "Test account for security",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -48,7 +48,7 @@ Deno.test("Security: Plan limit enforcement for free plan", async () => {
     id: "security-test-account-2",
     apiKey: "sk_test_456",
     description: "Test account for plan limits",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -94,7 +94,7 @@ Deno.test("Security: Only owner can delete world", async () => {
     id: "security-test-owner",
     apiKey: "sk_test_owner",
     description: "Owner account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -105,7 +105,7 @@ Deno.test("Security: Only owner can delete world", async () => {
     id: "security-test-other",
     apiKey: "sk_test_other",
     description: "Other account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -163,7 +163,7 @@ Deno.test("Security: Admin can delete any world", async () => {
     id: "security-test-owner-2",
     apiKey: "sk_test_owner_2",
     description: "Owner account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -202,7 +202,7 @@ Deno.test("Security: World update doesn't count against plan limit", async () =>
     id: "security-test-account-3",
     apiKey: "sk_test_209",
     description: "Test account for update",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -248,7 +248,7 @@ Deno.test("Security: POST creates new world with ownership tracking", async () =
     id: "security-test-account-4",
     apiKey: "sk_test_254",
     description: "Test account for POST",
-    plan: "free_plan",
+    plan: "free",
     accessControl: {
       worlds: [],
     },
@@ -284,7 +284,7 @@ Deno.test("Security: Non-owner gets 404 (Privacy)", async () => {
     id: "security-test-privacy-owner",
     apiKey: "sk_test_privacy_owner",
     description: "Owner account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: { worlds: [] },
   };
   await appContext.accountsService.set(ownerAccount);
@@ -293,7 +293,7 @@ Deno.test("Security: Non-owner gets 404 (Privacy)", async () => {
     id: "security-test-privacy-other",
     apiKey: "sk_test_privacy_other",
     description: "Other account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: { worlds: [] },
   };
   await appContext.accountsService.set(otherAccount);
@@ -340,7 +340,7 @@ Deno.test("Security: Writing to unknown ID claims it (Lazy Claiming)", async () 
     id: "security-test-lazy-claim",
     apiKey: "sk_test_lazy",
     description: "Lazy claim account",
-    plan: "free_plan",
+    plan: "free",
     accessControl: { worlds: [] },
   };
   await appContext.accountsService.set(testAccount);

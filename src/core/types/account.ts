@@ -1,7 +1,7 @@
 /**
- * WorldsAccount represents a service account.
+ * Account represents a service account.
  */
-export interface WorldsAccount {
+export interface Account {
   /**
    * id is the unique ID of the account.
    */
@@ -20,23 +20,23 @@ export interface WorldsAccount {
   /**
    * plan is the plan the account is on.
    */
-  plan: WorldsAccountPlan;
+  plan: AccountPlan;
 
   /**
    * accessControl is the access control list of resources for the account.
    */
-  accessControl: WorldsAccountAccessControl;
+  accessControl: AccountAccessControl;
 }
 
 /**
- * WorldsAccountPlan is the plan the account is on.
+ * AccountPlan is the plan the account is on.
  */
-export type WorldsAccountPlan = "free" | "pro";
+export type AccountPlan = "free" | "pro";
 
 /**
- * WorldsAccountAccessControl is the access control list of resources for an account.
+ * AccountAccessControl is the access control list of resources for an account.
  */
-export interface WorldsAccountAccessControl {
+export interface AccountAccessControl {
   /**
    * worlds is a list of world IDs this account has access to.
    */
@@ -44,14 +44,14 @@ export interface WorldsAccountAccessControl {
 }
 
 /**
- * isWorldsAccount checks if the object is a WorldsAccount.
+ * isAccount checks if the object is a Account.
  */
-export function isWorldsAccount(obj: unknown): obj is WorldsAccount {
+export function isAccount(obj: unknown): obj is Account {
   if (typeof obj !== "object" || obj === null) {
     return false;
   }
 
-  const account = obj as WorldsAccount;
+  const account = obj as Account;
   if (typeof account.id !== "string") {
     return false;
   }

@@ -1,5 +1,12 @@
 import type { Quad, Store, Term } from "oxigraph";
-import type { Chunk, RankedResult, Statement } from "#/sdk/types/mod.ts";
+import type {
+  Chunk,
+  RankedResult,
+  Statement,
+  WorldMetadata,
+} from "#/core/types/mod.ts";
+
+export type { WorldMetadata };
 
 /**
  * OxigraphService is the service for Oxigraph stores.
@@ -7,8 +14,8 @@ import type { Chunk, RankedResult, Statement } from "#/sdk/types/mod.ts";
 export interface OxigraphService {
   listStores(): Promise<string[]>;
   getStore(id: string): Promise<Store | null>;
-  getMetadata(id: string): Promise<StoreMetadata | null>;
-  getManyMetadata(ids: string[]): Promise<(StoreMetadata | null)[]>;
+  getMetadata(id: string): Promise<WorldMetadata | null>;
+  getManyMetadata(ids: string[]): Promise<(WorldMetadata | null)[]>;
   setStore(id: string, owner: string, store: Store): Promise<void>;
   addQuads(id: string, owner: string, quads: Quad[]): Promise<void>;
   query(
@@ -36,44 +43,4 @@ export interface OxigraphService {
     id: string,
     chunkId: number,
   ): Promise<Chunk | null>;
-}
-
-/**
- * StoreMetadata contains metadata about a store.
- */
-export interface StoreMetadata {
-  /**
-   * id is the store ID.
-   */
-  id: string;
-
-  /**
-   * description is the description of the store.
-   */
-  description: string;
-
-  /**
-   * size is the size of the store in bytes.
-   */
-  size: number;
-
-  /**
-   * tripleCount is the number of triples in the store.
-   */
-  tripleCount: number;
-
-  /**
-   * createdAt is the time the store was created.
-   */
-  createdAt: number;
-
-  /**
-   * createdBy is the account ID of the user who created the store.
-   */
-  createdBy: string;
-
-  /**
-   * updatedAt is the time the store was last updated.
-   */
-  updatedAt: number;
 }

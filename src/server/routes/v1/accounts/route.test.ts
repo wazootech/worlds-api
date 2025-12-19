@@ -1,6 +1,6 @@
-import type { StoreMetadata } from "#/worlds/service.ts";
+import type { WorldMetadata } from "#/worlds/service.ts";
 import { Store } from "oxigraph";
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { sqliteAppContext } from "#/server/app-context.ts";
 import createApp from "./route.ts";
 import type { Account } from "#/accounts/service.ts";
@@ -11,7 +11,7 @@ const app = await createApp(appContext);
 Deno.env.set("ADMIN_API_KEY", "admin-secret-token");
 // ...
 // ... around line 315
-Deno.test("GET /v1/accounts/:accountId/worlds returns 400 if accountId invalid", async () => {
+Deno.test("GET /v1/accounts/:account/worlds returns 400 if accountId invalid", async () => {
   // Only need app, no kv setup needed for this simple validation test
   const req = new Request(
     "http://localhost/v1/accounts/invalid-account-id/worlds",
@@ -28,7 +28,7 @@ const testAccount: Account = {
   id: "11111111-1111-4111-8111-111111111111",
   apiKey: "sk_test_account_1",
   description: "Test account",
-  plan: "free_plan",
+  plan: "free",
   accessControl: {
     worlds: ["store-1", "store-2"],
   },
@@ -49,11 +49,11 @@ Deno.test("POST /v1/accounts creates a new account", async () => {
   const created = await res.json();
   assertEquals(created.id, "11111111-1111-4111-8111-111111111111");
   assertEquals(created.description, "Test account");
-  assertEquals(created.plan, "free_plan");
+  assertEquals(created.plan, "free");
   assertEquals(created.apiKey.startsWith("sk_worlds_"), true);
 });
 
-Deno.test("GET /v1/accounts/:accountId retrieves an account", async () => {
+Deno.test("GET /v1/accounts/:account retrieves an account", async () => {
   // First create an account
   await app.fetch(
     new Request("http://localhost/v1/accounts", {
@@ -65,7 +65,7 @@ Deno.test("GET /v1/accounts/:accountId retrieves an account", async () => {
       body: JSON.stringify({
         id: "22222222-2222-4222-8222-222222222222",
         description: "Test account 2",
-        plan: "pro_plan",
+        plan: "pro",
         accessControl: { worlds: [] },
       }),
     }),
@@ -86,10 +86,10 @@ Deno.test("GET /v1/accounts/:accountId retrieves an account", async () => {
 
   const account = await res.json();
   assertEquals(account.id, "22222222-2222-4222-8222-222222222222");
-  assertEquals(account.plan, "pro_plan");
+  assertEquals(account.plan, "pro");
 });
 
-Deno.test("PUT /v1/accounts/:accountId updates an account", async () => {
+Deno.test("PUT /v1/accounts/:account updates an account", async () => {
   // First create an account
   await app.fetch(
     new Request("http://localhost/v1/accounts", {
@@ -101,7 +101,7 @@ Deno.test("PUT /v1/accounts/:accountId updates an account", async () => {
       body: JSON.stringify({
         id: "33333333-3333-4333-8333-333333333333",
         description: "Original description",
-        plan: "free_plan",
+        plan: "free",
         accessControl: { worlds: ["store-1"] },
       }),
     }),
@@ -112,7 +112,7 @@ Deno.test("PUT /v1/accounts/:accountId updates an account", async () => {
     id: "33333333-3333-4333-8333-333333333333",
     apiKey: "sk_test_account_3_updated",
     description: "Updated description",
-    plan: "pro_plan",
+    plan: "pro",
     accessControl: { worlds: ["store-1", "store-2", "store-3"] },
   };
 
@@ -144,7 +144,7 @@ Deno.test("PUT /v1/accounts/:accountId updates an account", async () => {
   );
   const account = await getRes.json();
   assertEquals(account.description, "Updated description");
-  assertEquals(account.plan, "pro_plan");
+  assertEquals(account.plan, "pro");
 });
 
 Deno.test("GET /v1/accounts/:account/usage returns usage", async () => {
@@ -158,7 +158,7 @@ Deno.test("GET /v1/accounts/:account/usage returns usage", async () => {
     params: { worldId: "store-1" },
     statusCode: 200,
   };
-  await appContext.accountsService.meter(event);
+  await appContext.usageService.meter(event);
 
   const req = new Request(
     "http://localhost/v1/accounts/11111111-1111-4111-8111-111111111111/usage",
@@ -172,10 +172,15 @@ Deno.test("GET /v1/accounts/:account/usage returns usage", async () => {
   const res = await app.fetch(req);
   assertEquals(res.status, 200);
   const body = await res.json();
-  assertEquals(body.worlds["store-1"].reads, 1);
+  assert(Array.isArray(body));
+  const bucket = body.find((b: { endpoint: string; requestCount: number }) =>
+    b.endpoint === "GET /worlds/store-1"
+  );
+  assert(bucket);
+  assertEquals(bucket.requestCount, 1);
 });
 
-Deno.test("DELETE /v1/accounts/:accountId removes an account", async () => {
+Deno.test("DELETE /v1/accounts/:account removes an account", async () => {
   // First create an account
   await app.fetch(
     new Request("http://localhost/v1/accounts", {
@@ -187,7 +192,7 @@ Deno.test("DELETE /v1/accounts/:accountId removes an account", async () => {
       body: JSON.stringify({
         id: "44444444-4444-4444-8444-444444444444",
         description: "To be deleted",
-        plan: "free_plan",
+        plan: "free",
         accessControl: { worlds: [] },
       }),
     }),
@@ -234,7 +239,7 @@ Deno.test("POST /v1/accounts returns 401 without valid auth", async () => {
   assertEquals(res.status, 401);
 });
 
-Deno.test("GET /v1/accounts/:accountId returns 404 for non-existent account", async () => {
+Deno.test("GET /v1/accounts/:account returns 404 for non-existent account", async () => {
   const req = new Request("http://localhost/v1/accounts/non-existent", {
     method: "GET",
     headers: {
@@ -245,7 +250,7 @@ Deno.test("GET /v1/accounts/:accountId returns 404 for non-existent account", as
   assertEquals(res.status, 404);
 });
 
-Deno.test("PUT /v1/accounts/:accountId returns 400 for ID mismatch", async () => {
+Deno.test("PUT /v1/accounts/:account returns 400 for ID mismatch", async () => {
   const req = new Request("http://localhost/v1/accounts/account-a", {
     method: "PUT",
     headers: {
@@ -255,7 +260,7 @@ Deno.test("PUT /v1/accounts/:accountId returns 400 for ID mismatch", async () =>
     body: JSON.stringify({
       id: "account-b",
       description: "Mismatched ID",
-      plan: "free_plan",
+      plan: "free",
       accessControl: { worlds: [] },
     }),
   });
@@ -276,7 +281,7 @@ Deno.test("POST /v1/accounts returns 409 if account already exists", async () =>
       body: JSON.stringify({
         id: accountId,
         description: "First account",
-        plan: "free_plan",
+        plan: "free",
         accessControl: { worlds: [] },
       }),
     }),
@@ -292,7 +297,7 @@ Deno.test("POST /v1/accounts returns 409 if account already exists", async () =>
     body: JSON.stringify({
       id: accountId,
       description: "Duplicate account",
-      plan: "free_plan",
+      plan: "free",
       accessControl: { worlds: [] },
     }),
   });
@@ -302,7 +307,7 @@ Deno.test("POST /v1/accounts returns 409 if account already exists", async () =>
 
 const adminKey = "admin-secret-token";
 
-Deno.test("GET /v1/accounts/:accountId/worlds", async (_t) => {
+Deno.test("GET /v1/accounts/:account/worlds", async (_t) => {
   const ctx = await sqliteAppContext(":memory:");
   const testApp = await createApp(ctx);
   Deno.env.set("ADMIN_API_KEY", adminKey);
@@ -316,7 +321,7 @@ Deno.test("GET /v1/accounts/:accountId/worlds", async (_t) => {
   await accountsService.set({
     id: accountId,
     description: "Owner of stores",
-    plan: "free_plan",
+    plan: "free",
     apiKey: "owner-api-key", // needed for creation
     accessControl: { worlds: [] },
   });
@@ -335,7 +340,7 @@ Deno.test("GET /v1/accounts/:accountId/worlds", async (_t) => {
       body: JSON.stringify({
         id: accountId,
         description: "Account with worlds",
-        plan: "free_plan",
+        plan: "free",
         accessControl: { worlds },
       }),
     }),
@@ -357,11 +362,11 @@ Deno.test("GET /v1/accounts/:accountId/worlds", async (_t) => {
   const retrievedWorlds = await res.json();
   assertEquals(retrievedWorlds.length, 2);
 
-  const storeA = retrievedWorlds.find((w: StoreMetadata) => w.id === "store-A");
+  const storeA = retrievedWorlds.find((w: WorldMetadata) => w.id === "store-A");
   assertEquals(storeA?.createdBy, accountId);
   assertEquals(storeA?.tripleCount, 0);
 
-  const storeB = retrievedWorlds.find((w: StoreMetadata) => w.id === "store-B");
+  const storeB = retrievedWorlds.find((w: WorldMetadata) => w.id === "store-B");
   assertEquals(storeB?.createdBy, accountId);
   assertEquals(storeB?.tripleCount, 0);
 

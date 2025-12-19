@@ -2,8 +2,9 @@ import type {
   Chunk,
   RankedResult,
   Statement,
+  UsageBucket,
   WorldMetadata,
-} from "./types/mod.ts";
+} from "../core/types/mod.ts";
 
 /**
  * WorldsOptions are the options for the Worlds API SDK.
@@ -333,25 +334,7 @@ export class Worlds {
    */
   public async getWorldUsage(
     worldId: string,
-  ): Promise<Record<string, { reads: number; writes: number }>> {
-    // Note: The usage endpoint is on the account, but we want world-specific usage.
-    // However, the API we implemented is GET /v1/accounts/:account/usage
-    // AND the user requested "The code implements GET /v1/worlds/:world/usage ... update README and expose it as a method".
-    // I missed re-implementing GET /v1/worlds/:world/usage in the routes refactor?
-    // Wait, the user said "The code implements GET /v1/worlds/:world/usage ... Expost it".
-    // I thought I was supposed to move usage to /accounts/:account/usage.
-    // User request:
-    // "> Usage (/v1/usage/:account) Move usage to /accounts/{account}/usage"
-    // AND
-    // "> Extra Endpoint: The code implements GET /v1/worlds/:world/usage ... Update docs/README.md accordingly and expose it as a method to the sdk."
-
-    // I implemented /accounts/:account/usage.
-    // Did I implement /worlds/:world/usage?
-    // I need to check src/server/routes/v1/worlds/route.ts.
-    // If not, I need to add it.
-    // The user claimed "The code implements..." so maybe it was already therein worlds/route.ts?
-    // Let's check worlds/route.ts.
-
+  ): Promise<UsageBucket[]> {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/usage`,
     );

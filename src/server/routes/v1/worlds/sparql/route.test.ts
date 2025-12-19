@@ -12,7 +12,7 @@ const testAccount: Account = {
   id: "test-account",
   apiKey: "sk_test_sparql_test",
   description: "Test account for SPARQL route tests",
-  plan: "free_plan",
+  plan: "free",
   accessControl: {
     worlds: [
       "test-world-sparql-get",

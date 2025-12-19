@@ -4,10 +4,10 @@ import type { Account, AccountPlan } from "./service.ts";
  * plans are the limits of resources an account can have access to.
  */
 export const plans: Record<AccountPlan, { worlds: number }> = {
-  free_plan: {
+  free: {
     worlds: 100,
   },
-  pro_plan: {
+  pro: {
     worlds: 1_000_000,
   },
 };

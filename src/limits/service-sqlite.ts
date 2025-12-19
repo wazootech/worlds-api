@@ -1,8 +1,8 @@
-import type { Client } from "#/database/database.ts";
-import type { LimitsService } from "#/accounts/limit-service.ts";
+import type { Client } from "#/core/database/database.ts";
+import type { LimitsService } from "./service.ts";
 
-import type { Limit } from "#/sdk/types/usage.ts";
-import type { LimitRow } from "#/database/system.ts";
+import type { Limit } from "#/core/types/usage.ts";
+import type { LimitRow } from "#/core/database/system.ts";
 
 export class SqliteLimitsService implements LimitsService {
   constructor(private readonly db: Client) {}

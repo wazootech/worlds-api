@@ -1,9 +1,9 @@
 import type {
+  Account,
   Limit,
   UsageBucket,
   WorldMetadata,
-  WorldsAccount,
-} from "./types/mod.ts";
+} from "../core/types/mod.ts";
 import { Worlds, type WorldsOptions } from "./worlds.ts";
 
 /**
@@ -18,7 +18,7 @@ export class InternalWorlds extends Worlds {
   /**
    * createAccount creates a new account in the Worlds API.
    */
-  public async createAccount(account: WorldsAccount): Promise<WorldsAccount> {
+  public async createAccount(account: Account): Promise<Account> {
     const url = new URL(`${this.options.baseUrl}/accounts`);
     const response = await fetch(url, {
       method: "POST",
@@ -38,7 +38,7 @@ export class InternalWorlds extends Worlds {
   /**
    * getAccount retrieves an account from the Worlds API.
    */
-  public async getAccount(accountId: string): Promise<WorldsAccount | null> {
+  public async getAccount(accountId: string): Promise<Account | null> {
     const url = new URL(`${this.options.baseUrl}/accounts/${accountId}`);
     const response = await fetch(
       url,
@@ -64,7 +64,7 @@ export class InternalWorlds extends Worlds {
   /**
    * updateAccount updates an existing account in the Worlds API.
    */
-  public async updateAccount(account: WorldsAccount): Promise<void> {
+  public async updateAccount(account: Account): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/accounts/${account.id}`);
     const response = await fetch(
       url,
@@ -130,7 +130,7 @@ export class InternalWorlds extends Worlds {
    * listAccounts retrieves all accounts from the Worlds API.
    * This is an admin-only operation.
    */
-  public async listAccounts(): Promise<WorldsAccount[]> {
+  public async listAccounts(): Promise<Account[]> {
     const url = new URL(`${this.options.baseUrl}/accounts`);
     const response = await fetch(url, {
       headers: {
@@ -146,7 +146,7 @@ export class InternalWorlds extends Worlds {
   /**
    * rotateAccountKey rotates the API key for an account.
    */
-  public async rotateAccountKey(accountId: string): Promise<WorldsAccount> {
+  public async rotateAccountKey(accountId: string): Promise<Account> {
     const url = new URL(
       `${this.options.baseUrl}/accounts/${accountId}/rotate`,
     );
@@ -169,7 +169,9 @@ export class InternalWorlds extends Worlds {
    * getUsage retrieves the usage buckets for an account.
    */
   public async getUsage(accountId: string): Promise<UsageBucket[]> {
-    const url = new URL(`${this.options.baseUrl}/usage/${accountId}`);
+    const url = new URL(
+      `${this.options.baseUrl}/accounts/${accountId}/usage`,
+    );
     const response = await fetch(
       url,
       {

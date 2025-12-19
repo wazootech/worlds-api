@@ -14,7 +14,9 @@ import type { AppContext } from "#/server/app-context.ts";
 import { plans, reachedPlanLimit } from "#/accounts/plans.ts";
 import { authorizeRequest } from "#/accounts/authorize.ts";
 
-export default ({ oxigraphService, accountsService }: AppContext) => {
+export default (
+  { oxigraphService, accountsService, usageService }: AppContext,
+) => {
   return new Router()
     .get(
       "/v1/worlds/:world",
@@ -66,7 +68,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           if (authorized.account) {
             const timestamp = Date.now();
             const id = ulid(timestamp);
-            await accountsService.meter({
+            await usageService.meter({
               id,
               timestamp,
               accountId: authorized.account.id,
@@ -113,10 +115,13 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const usageSummary = await accountsService.getUsageSummary(accountId);
+        const usage = await usageService.getUsage(accountId);
 
-        const worldUsage = usageSummary?.worlds[worldId] ||
-          { reads: 0, writes: 0 };
+        // Filter buckets for this world
+        const worldUsage = usage.filter((bucket) =>
+          bucket.endpoint.includes(`/worlds/${worldId}`)
+        );
+
         return Response.json(worldUsage);
       },
     )
@@ -214,7 +219,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           if (authorized.account) {
             const timestamp = Date.now();
             const id = ulid(timestamp);
-            await accountsService.meter({
+            await usageService.meter({
               id,
               timestamp,
               accountId: authorized.account.id,
@@ -318,7 +323,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           if (authorized.account) {
             const timestamp = Date.now();
             const id = ulid(timestamp);
-            await accountsService.meter({
+            await usageService.meter({
               id,
               timestamp,
               accountId: authorized.account.id,
@@ -384,7 +389,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
         if (authorized.account) {
           const timestamp = Date.now();
           const id = ulid(timestamp);
-          await accountsService.meter({
+          await usageService.meter({
             id,
             timestamp,
             accountId: authorized.account.id,
@@ -519,7 +524,7 @@ export default ({ oxigraphService, accountsService }: AppContext) => {
           if (authorized.account) {
             const timestamp = Date.now();
             const id = ulid(timestamp);
-            await accountsService.meter({
+            await usageService.meter({
               id,
               timestamp,
               accountId: authorized.account.id,

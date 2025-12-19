@@ -7,17 +7,62 @@ import {
   Store,
   type Term,
 } from "oxigraph";
-import type { Client } from "#/database/database.ts";
-import type { OxigraphService, StoreMetadata } from "./service.ts";
-import type { Chunk, RankedResult, Statement } from "#/sdk/types/mod.ts";
-import { openDatabase } from "#/database/database.ts";
-import type { StatementRow } from "#/database/statements.ts";
+import type { Client } from "#/core/database/database.ts";
+import type { OxigraphService, WorldMetadata } from "./service.ts";
+import type { Chunk, RankedResult, Statement } from "#/core/types/mod.ts";
+import { openDatabase } from "#/core/database/database.ts";
+import type { StatementRow } from "#/core/database/statements.ts";
 
 export class SqliteOxigraphService implements OxigraphService {
+  private readonly memoryCache = new Map<string, Client>();
+
   /**
    * db is the system database (sys.db).
    */
-  constructor(private readonly db: Client) {}
+  constructor(
+    private readonly db: Client,
+    private readonly mode: "file" | "memory" = "file",
+  ) {}
+
+  private async getWorldDb(id: string): Promise<Client> {
+    if (this.mode === "memory") {
+      let client = this.memoryCache.get(id);
+      if (!client) {
+        client = await openDatabase(":memory:");
+        await this.initWorldSchema(client);
+        this.memoryCache.set(id, client);
+      }
+      return client;
+    }
+    return openDatabase(`world_${id}.db`);
+  }
+
+  private closeWorldDb(client: Client, _id: string) {
+    if (this.mode === "memory") {
+      // Do not close in-memory DBs as data would be lost
+      return;
+    }
+    client.close();
+  }
+
+  // Helper to init schema, extracted from setStore/addQuads
+  private async initWorldSchema(client: Client) {
+    await client.execute(`
+        CREATE TABLE IF NOT EXISTS kb_statements (
+          statement_id INTEGER PRIMARY KEY AUTOINCREMENT,
+          subject TEXT NOT NULL,
+          predicate TEXT NOT NULL,
+          object TEXT NOT NULL,
+          graph TEXT NOT NULL,
+          term_type TEXT NOT NULL DEFAULT 'NamedNode',
+          object_language TEXT NOT NULL DEFAULT '',
+          object_datatype TEXT NOT NULL DEFAULT '',
+          CONSTRAINT kb_statement_unique UNIQUE (
+            subject, predicate, object, graph, term_type, object_language, object_datatype
+          )
+        );
+     `);
+  }
 
   async listStores(): Promise<string[]> {
     const result = await this.db.execute("SELECT world_id FROM kb_worlds");
@@ -27,8 +72,11 @@ export class SqliteOxigraphService implements OxigraphService {
 
   async getStore(id: string): Promise<Store | null> {
     const store = new Store();
-    const worldDb = await openDatabase(`world_${id}.db`);
+    const worldDb = await this.getWorldDb(id);
     try {
+      // For file-based, table might not exist if created manually or empty?
+      // Actually setStore creates it.
+      // We wrap in try-catch just in case accessing a non-existent file DB fails differently.
       const result = await worldDb.execute("SELECT * FROM kb_statements");
       const rows = result.rows as unknown as StatementRow[];
       for (const row of rows) {
@@ -47,7 +95,7 @@ export class SqliteOxigraphService implements OxigraphService {
     } catch (_) {
       // Ignore errors if table doesn't exist
     } finally {
-      worldDb.close();
+      await this.closeWorldDb(worldDb, id);
     }
 
     return store;
@@ -63,24 +111,10 @@ export class SqliteOxigraphService implements OxigraphService {
       args: [id, owner, `World ${id}`, Date.now(), Date.now()],
     });
 
-    const worldDb = await openDatabase(`world_${id}.db`);
+    const worldDb = await this.getWorldDb(id);
 
-    // Init schema
-    await worldDb.execute(`
-        CREATE TABLE IF NOT EXISTS kb_statements (
-          statement_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          subject TEXT NOT NULL,
-          predicate TEXT NOT NULL,
-          object TEXT NOT NULL,
-          graph TEXT NOT NULL,
-          term_type TEXT NOT NULL DEFAULT 'NamedNode',
-          object_language TEXT NOT NULL DEFAULT '',
-          object_datatype TEXT NOT NULL DEFAULT '',
-          CONSTRAINT kb_statement_unique UNIQUE (
-            subject, predicate, object, graph, term_type, object_language, object_datatype
-          )
-        );
-     `);
+    // Init schema (idempotent, but ensures existence)
+    await this.initWorldSchema(worldDb);
 
     // Delete all and insert new
     // We use a batch for atomicity and speed
@@ -90,6 +124,7 @@ export class SqliteOxigraphService implements OxigraphService {
     // We can't batch too many at once if the store is huge, but for now we assume it fits.
     // If huge, we'd chunk it.
     for (const quad of store.match()) {
+      // const statementRow: StatementRow = fromQuad(quad);
       stmts.push({
         sql: `
             INSERT INTO kb_statements (subject, predicate, object, graph, term_type, object_language, object_datatype)
@@ -112,7 +147,7 @@ export class SqliteOxigraphService implements OxigraphService {
       await worldDb.batch(stmts, "write");
     }
 
-    worldDb.close();
+    await this.closeWorldDb(worldDb, id);
     await this.updateMetadataTimestamp(id);
   }
 
@@ -135,7 +170,7 @@ export class SqliteOxigraphService implements OxigraphService {
     return namedNode(value);
   }
 
-  async getMetadata(id: string): Promise<StoreMetadata | null> {
+  async getMetadata(id: string): Promise<WorldMetadata | null> {
     const result = await this.db.execute({
       sql: "SELECT * FROM kb_worlds WHERE world_id = ?",
       args: [id],
@@ -163,11 +198,11 @@ export class SqliteOxigraphService implements OxigraphService {
 
   private async countTriples(id: string): Promise<number> {
     try {
-      const worldDb = await openDatabase(`world_${id}.db`);
+      const worldDb = await this.getWorldDb(id);
       const result = await worldDb.execute(
         "SELECT COUNT(*) as count FROM kb_statements",
       );
-      worldDb.close();
+      await this.closeWorldDb(worldDb, id);
       const row = result.rows[0] as unknown as { count: number };
       return row.count;
     } catch (_) {
@@ -175,7 +210,7 @@ export class SqliteOxigraphService implements OxigraphService {
     }
   }
 
-  getManyMetadata(ids: string[]): Promise<(StoreMetadata | null)[]> {
+  getManyMetadata(ids: string[]): Promise<(WorldMetadata | null)[]> {
     return Promise.all(ids.map((id) => this.getMetadata(id)));
   }
 
@@ -192,11 +227,6 @@ export class SqliteOxigraphService implements OxigraphService {
     // If we just add quads to a non-existent world, we might want to create it.
     // For now, let's just insert.
 
-    // We also need to ensure the table schema exists.
-    // Opening the DB creates it if using file:, but tables need creation.
-    // We can reuse setStore logic effectively or duplicate the init calls.
-    // For efficiency, we just open and append.
-
     // If the world doesn't exist in kb_worlds, we should probably add it.
     await this.db.execute({
       sql: `
@@ -206,22 +236,8 @@ export class SqliteOxigraphService implements OxigraphService {
       args: [id, owner, `World ${id}`, Date.now(), Date.now()],
     });
 
-    const worldDb = await openDatabase(`world_${id}.db`);
-    await worldDb.execute(`
-        CREATE TABLE IF NOT EXISTS kb_statements (
-          statement_id INTEGER PRIMARY KEY AUTOINCREMENT,
-          subject TEXT NOT NULL,
-          predicate TEXT NOT NULL,
-          object TEXT NOT NULL,
-          graph TEXT NOT NULL,
-          term_type TEXT NOT NULL DEFAULT 'NamedNode',
-          object_language TEXT NOT NULL DEFAULT '',
-          object_datatype TEXT NOT NULL DEFAULT '',
-          CONSTRAINT kb_statement_unique UNIQUE (
-            subject, predicate, object, graph, term_type, object_language, object_datatype
-          )
-        );
-     `);
+    const worldDb = await this.getWorldDb(id);
+    await this.initWorldSchema(worldDb);
 
     const stmts = [];
     for (const quad of quads) {
@@ -247,7 +263,7 @@ export class SqliteOxigraphService implements OxigraphService {
       await worldDb.batch(stmts, "write");
     }
 
-    worldDb.close();
+    await this.closeWorldDb(worldDb, id);
     await this.updateMetadataTimestamp(id);
   }
 
@@ -282,10 +298,14 @@ export class SqliteOxigraphService implements OxigraphService {
       sql: "DELETE FROM kb_worlds WHERE world_id = ?",
       args: [id],
     });
-    try {
-      Deno.removeSync(`world_${id}.db`);
-    } catch (_) {
-      // Ignore
+    if (this.mode === "memory") {
+      this.memoryCache.delete(id);
+    } else {
+      try {
+        Deno.removeSync(`world_${id}.db`);
+      } catch (_) {
+        // Ignore
+      }
     }
   }
 
@@ -293,7 +313,7 @@ export class SqliteOxigraphService implements OxigraphService {
     id: string,
     query: string,
   ): Promise<RankedResult<Statement>[]> {
-    const worldDb = await openDatabase(`world_${id}.db`);
+    const worldDb = await this.getWorldDb(id);
     const result = await worldDb.execute({
       sql: `
         SELECT * FROM kb_statements 
@@ -304,7 +324,7 @@ export class SqliteOxigraphService implements OxigraphService {
     });
     const rows = result.rows as unknown as StatementRow[];
 
-    worldDb.close();
+    await this.closeWorldDb(worldDb, id);
 
     return rows.map((row) => ({
       item: {
@@ -326,12 +346,12 @@ export class SqliteOxigraphService implements OxigraphService {
     id: string,
     statementId: number,
   ): Promise<Statement | null> {
-    const worldDb = await openDatabase(`world_${id}.db`);
+    const worldDb = await this.getWorldDb(id);
     const result = await worldDb.execute({
       sql: "SELECT * FROM kb_statements WHERE statement_id = ?",
       args: [statementId],
     });
-    worldDb.close();
+    await this.closeWorldDb(worldDb, id);
 
     const row = result.rows[0] as unknown as StatementRow | undefined;
     if (!row) return null;

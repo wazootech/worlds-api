@@ -4,7 +4,9 @@ import type { Account } from "#/accounts/service.ts";
 import { isAccount } from "#/accounts/service.ts";
 import { apiKeyPrefix, authorizeRequest } from "#/accounts/authorize.ts";
 
-export default ({ accountsService, oxigraphService }: AppContext) => {
+export default (
+  { accountsService, oxigraphService, usageService }: AppContext,
+) => {
   return new Router()
     .get(
       "/v1/accounts",
@@ -274,12 +276,9 @@ export default ({ accountsService, oxigraphService }: AppContext) => {
           return new Response("Forbidden", { status: 403 });
         }
 
-        const usageSummary = await accountsService.getUsageSummary(accountId);
-        if (!usageSummary) {
-          return Response.json({ worlds: {} });
-        }
+        const usage = await usageService.getUsage(accountId);
 
-        return Response.json(usageSummary);
+        return Response.json(usage);
       },
     );
 };

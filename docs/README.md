@@ -163,16 +163,21 @@ and Server to evolve together while sharing Types.
 /
 ├── deno.json             # Workspace configuration
 ├── src/
+│   ├── accounts/         # Accounts & Billing Logic
+│   ├── worlds/           # Worlds Logic
 │   ├── sdk/              # Public client library (@fartlabs/worlds)
 │   │   ├── mod.ts        # Entry point
-│   │   ├── client.ts     # HTTP methods
+│   │   ├── worlds.ts     # Main Client
+│   │   ├── internal.ts   # Internal Client
 │   │   └── tools/        # Drop-in AISDK Tools
 │   ├── server/           # API Implementation
 │   │   ├── main.ts       # Entry point
 │   │   └── routes/       # Route handlers (v1/)
-│   ├── core/             # Shared logic (Validation, Types)
-│   └── store/            # Storage Engines
-│       └── sqlite/       # SQLite Schemas (sys.sql, statements.sql)
+│   ├── core/             # Shared logic
+│   │   ├── types/        # Shared Type definitions
+│   │   └── database/     # Database Logic & Schemas
+│   │       ├── system.sql     # System DB Schema
+│   │       └── statements.sql # World DB Schema
 └── tests/                # Integration tests
 ```
 
@@ -394,7 +399,7 @@ admin or service-owner contexts.
 - `POST /v1/worlds/:world` - Ingest knowledge to a World.
 - `POST /v1/worlds/:world/sparql` - SPARQL Query (Read) & Update (Write).
 - `DELETE /v1/worlds/:world` - Wipe memory.
-- `GET /v1/worlds/:world/usage` - Get usage summary for a specific World.
+- `GET /v1/worlds/:world/usage` - Get usage buckets for a specific World.
 - `GET /v1/worlds/:world/statements` - Search statements via `?query=...` param.
 - `GET /v1/worlds/:world/chunks` - Search chunks via `?query=...` param.
 - `GET /v1/worlds/:world/statements/:statement` - Get a specific statement.

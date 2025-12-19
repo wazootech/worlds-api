@@ -1,4 +1,4 @@
-import type { Limit } from "#/sdk/types/usage.ts";
+import type { Limit } from "#/core/types/usage.ts";
 
 /**
  * LimitsService manages plan limits.
