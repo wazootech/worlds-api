@@ -1,4 +1,4 @@
-import type { Account, AccountPlan } from "./accounts-service.ts";
+import type { Account, AccountPlan } from "./service.ts";
 
 /**
  * plans are the limits of resources an account can have access to.

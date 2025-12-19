@@ -2,7 +2,7 @@ import type {
   AccountUsageEvent,
   AccountUsageSummary,
   WorldUsageSummary,
-} from "#/accounts/accounts-service.ts";
+} from "./service.ts";
 
 /**
  * updateUsageSummary updates the usage summary for an account.

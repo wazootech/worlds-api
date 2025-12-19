@@ -1,4 +1,4 @@
-import type { Account, AccountsService } from "./accounts-service.ts";
+import type { Account, AccountsService } from "./service.ts";
 
 // Prefix with 'sk_worlds_' for clear identification.
 export const apiKeyPrefix = "sk_worlds_";

@@ -1,8 +1,5 @@
 import { assertEquals } from "@std/assert";
-import type {
-  AccountUsageEvent,
-  AccountUsageSummary,
-} from "#/accounts/accounts-service.ts";
+import type { AccountUsageEvent, AccountUsageSummary } from "./service.ts";
 import { updateUsageSummary } from "./usage.ts";
 
 Deno.test("updateUsageSummary - initializes new store usage", () => {
