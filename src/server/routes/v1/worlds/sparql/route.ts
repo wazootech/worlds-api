@@ -1,11 +1,11 @@
 import { Router } from "@fartlabs/rt";
 import type { AppContext } from "#/server/app-context.ts";
 import { Store } from "oxigraph";
-import { plans, reachedPlanLimit } from "#/accounts/plans.ts";
+import { plans, reachedPlanLimit } from "#/core/accounts/plans.ts";
 import { parseSparqlRequest } from "./sparql-request-parser.ts";
 import { serializeSparqlResult } from "./sparql-result-serializer.ts";
 
-import { authorizeRequest } from "#/accounts/authorize.ts";
+import { authorizeRequest } from "#/core/accounts/authorize.ts";
 
 export default ({ oxigraphService, accountsService }: AppContext) => {
   return new Router()

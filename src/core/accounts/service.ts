@@ -1,13 +1,5 @@
-import type {
-  Account,
-  AccountAccessControl,
-  AccountPlan,
-} from "#/core/types/account.ts";
-import { isAccount } from "#/core/types/account.ts";
-import type { WorldMetadata } from "#/core/types/mod.ts";
-
-export type { Account, AccountAccessControl, AccountPlan, WorldMetadata };
-export { isAccount };
+import type { Account } from "#/core/types/mod.ts";
+export * from "#/core/types/mod.ts";
 
 /**
  * AccountsService manages access control and authorization.

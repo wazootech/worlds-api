@@ -9,10 +9,10 @@ import {
   encodeStore,
   isDecodableEncoding,
   isEncodableEncoding,
-} from "#/worlds/encoding.ts";
+} from "#/core/worlds/encoding.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { plans, reachedPlanLimit } from "#/accounts/plans.ts";
-import { authorizeRequest } from "#/accounts/authorize.ts";
+import { plans, reachedPlanLimit } from "#/core/accounts/plans.ts";
+import { authorizeRequest } from "#/core/accounts/authorize.ts";
 
 export default (
   { oxigraphService, accountsService, usageService }: AppContext,

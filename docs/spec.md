@@ -13,11 +13,6 @@
 
 ## Executive Summary
 
-> [!IMPORTANT]
-> **Status: Alpha.** The current implementation provides a robust "Hybrid
-> Statements Store" using SQLite and Oxigraph. Some features described below
-> (Vector Search, AISDK Tools) are currently in active development.
-
 **Worlds API™** is an edge-compatible infrastructure layer designed to provide
 AI agents with "long-term memory" and reasoning capabilities. Unlike vector-only
 RAG systems, Worlds API utilizes **RDF (Resource Description Framework)** and
@@ -184,6 +179,7 @@ and Server to evolve together while sharing Types.
 │   │   └── database/     # Database Logic & Schemas
 │   │       ├── system.sql     # System DB Schema
 │   │       └── statements.sql # World DB Schema
+|  
 └── tests/                # Integration tests
 ```
 

@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { sqliteAppContext } from "#/server/app-context.ts";
 import createApp from "./route.ts";
-import type { Account } from "#/accounts/service.ts";
+import type { Account } from "#/core/accounts/service.ts";
 
 const appContext = await sqliteAppContext(":memory:");
 const app = await createApp(appContext);

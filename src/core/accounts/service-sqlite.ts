@@ -3,7 +3,7 @@ import type {
   Account,
   AccountPlan,
   AccountsService,
-} from "#/accounts/service.ts";
+} from "#/core/accounts/service.ts";
 import type { AccountRow, ApiKeyRow } from "#/core/database/system.ts";
 
 export class SqliteAccountsService implements AccountsService {

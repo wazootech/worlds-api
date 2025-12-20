@@ -1,11 +1,11 @@
-import type { OxigraphService } from "#/worlds/service.ts";
-import type { AccountsService } from "#/accounts/service.ts";
-import type { LimitsService } from "#/limits/service.ts";
-import type { UsageService } from "#/usage/service.ts";
-import { SqliteOxigraphService } from "#/worlds/service-sqlite.ts";
-import { SqliteAccountsService } from "#/accounts/service-sqlite.ts";
-import { SqliteLimitsService } from "#/limits/service-sqlite.ts";
-import { SqliteUsageService } from "#/usage/service-sqlite.ts";
+import type { OxigraphService } from "#/core/worlds/service.ts";
+import type { AccountsService } from "#/core/accounts/service.ts";
+import type { LimitsService } from "#/core/limits/service.ts";
+import type { UsageService } from "#/core/usage/service.ts";
+import { SqliteOxigraphService } from "#/core/worlds/service-sqlite.ts";
+import { SqliteAccountsService } from "#/core/accounts/service-sqlite.ts";
+import { SqliteLimitsService } from "#/core/limits/service-sqlite.ts";
+import { SqliteUsageService } from "#/core/usage/service-sqlite.ts";
 import { openDatabase } from "#/core/database/database.ts";
 import { systemSchema } from "#/core/database/system.ts";
 
@@ -28,7 +28,7 @@ export async function sqliteAppContext(dbPath: string): Promise<AppContext> {
           return openDatabase(":memory:");
         }
 
-        return openDatabase(`world_${id}.db`);
+        return openDatabase(`file:world_${id}.db`);
       },
     ),
     accountsService: new SqliteAccountsService(db),

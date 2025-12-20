@@ -1,8 +1,8 @@
 import { Router } from "@fartlabs/rt";
 import type { AppContext } from "#/server/app-context.ts";
-import type { Account } from "#/accounts/service.ts";
-import { isAccount } from "#/accounts/service.ts";
-import { apiKeyPrefix, authorizeRequest } from "#/accounts/authorize.ts";
+import type { Account } from "#/core/accounts/service.ts";
+import { isAccount } from "#/core/accounts/service.ts";
+import { apiKeyPrefix, authorizeRequest } from "#/core/accounts/authorize.ts";
 
 export default (
   { accountsService, oxigraphService, usageService }: AppContext,

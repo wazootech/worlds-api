@@ -11,7 +11,7 @@ import type { Client } from "#/core/database/database.ts";
 import type { Chunk, RankedResult, Statement } from "#/core/types/mod.ts";
 import type { StatementRow } from "#/core/database/statements.ts";
 import type { OxigraphService, WorldMetadata } from "./service.ts";
-import { statementsSql } from "../core/database/statements.ts";
+import { statementsSql } from "#/core/database/statements.ts";
 
 export class SqliteOxigraphService implements OxigraphService {
   private readonly worldsDb = new Map<string, Client>();

@@ -3,9 +3,9 @@ import { type AppContext, sqliteAppContext } from "#/server/app-context.ts";
 import type {
   AccountUsageEvent,
   AccountUsageEventEndpoint,
-} from "#/usage/service.ts";
+} from "#/core/usage/service.ts";
 import { ulid } from "@std/ulid";
-import type { Account } from "#/accounts/service.ts";
+import type { Account } from "#/core/accounts/service.ts";
 
 async function setup(context: AppContext, accountId: string) {
   await context.accountsService.set({

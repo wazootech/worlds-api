@@ -7,11 +7,6 @@ export type { Client };
  * openDatabase opens a SQLite database using LibSQL client.
  */
 export async function openDatabase(url: string): Promise<Client> {
-  if (
-    url !== ":memory:" && !url.includes("://") && !url.startsWith("libsql:")
-  ) {
-    url = "file:" + url;
-  }
   const client = createClient({ url });
 
   // Enable foreign keys

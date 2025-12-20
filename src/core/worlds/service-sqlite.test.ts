@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { type AppContext, sqliteAppContext } from "#/server/app-context.ts";
 import { defaultGraph, namedNode, type Quad, Store } from "oxigraph";
-import type { Account } from "#/accounts/service.ts";
+import type { Account } from "#/core/accounts/service.ts";
 
 async function setup(context: AppContext, accountId: string) {
   await context.accountsService.set({

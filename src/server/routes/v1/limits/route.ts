@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import type { AppContext } from "#/server/app-context.ts";
-import { authorizeRequest } from "#/accounts/authorize.ts";
-import { plans } from "#/accounts/plans.ts";
+import { authorizeRequest } from "#/core/accounts/authorize.ts";
+import { plans } from "#/core/accounts/plans.ts";
 import type { Limit } from "#/core/types/usage.ts";
 
 export default ({ limitsService, accountsService }: AppContext) => {

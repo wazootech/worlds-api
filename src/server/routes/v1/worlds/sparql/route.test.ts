@@ -2,7 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import { Store } from "oxigraph";
 import { sqliteAppContext } from "#/server/app-context.ts";
 import createApp from "./route.ts";
-import type { Account } from "#/accounts/service.ts";
+import type { Account } from "#/core/accounts/service.ts";
 
 const ctx = await sqliteAppContext(":memory:");
 const app = await createApp(ctx);

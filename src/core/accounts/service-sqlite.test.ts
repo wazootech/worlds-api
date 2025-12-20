@@ -1,6 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import { sqliteAppContext } from "#/server/app-context.ts";
-import type { Account } from "#/accounts/service.ts";
+import type { Account } from "#/core/accounts/service.ts";
 
 Deno.test("SqliteAccountsService: Set and Get Account", async () => {
   const context = await sqliteAppContext(":memory:");
