@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import { type AppContext, sqliteAppContext } from "#/server/app-context.ts";
 import type {
   AccountUsageEvent,

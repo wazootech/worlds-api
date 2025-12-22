@@ -209,38 +209,116 @@ a **Pluggable Storage Architecture** to accommodate our research findings.
 - **Cons:** Purely symbolic (exact match only); requires re-hydration on cold
   starts.
 
-#### Integrated Engine: Per-World Hybrid SQLite
+#### Integrated Engine: The Normalized Statement Store
 
-We utilize a **Per-World Database Strategy** to maximize isolation and
-performance.
+To avoid the overhead of a general-purpose SPARQL engine while maintaining
+semantic integrity, we utilize a **Normalized Schema** for the Per-World SQLite
+databases. This separates the lexical value of a term from its graph topology.
 
-- **Architecture:**
-  - **Control Plane DB (`sys.db`):** Manage accounts, billing, limits, and maps
-    `world_id` -> Database URI.
-  - **Data Plane DBs (`world_*.db`):** Each "World" is an isolated SQLite file
-    containing its own `kb_statements` and `kb_chunks` tables.
-- **Value Proposition:**
-  - **Detachable:** "Detaching" a hippocampus is as simple as copying the
-    `world_123.sqlite` file.
-  - **Performance:** Bulk write operations (ingestion) lock only the specific
-    world's file, preventing platform-wide contention.
-  - **Search:** FTS indices are kept small and relevant to the specific agent
-    context.
+**Core Schema:**
 
-#### Blank Node Strategy
+- **`terms` Table:** Deduplicates IRIs, Literals, and Blank Nodes. Stores `id`
+  (INTEGER), `value` (TEXT), and `term_type` (TEXT).
+- **`statements` Table:** Stores the relationship as integer triples referencing
+  the `terms` table.
+- **`chunks` Table:** The source of truth for text segments. Stores `id`,
+  `term_id`, and `text_content`.
 
-To address the ambiguity of Blank Node representation and lifecycle, we utilize
-a **Skolemization** strategy paired with **Recursive Cascading Deletes**.
+**Search Indices:**
 
-- **Representation (Skolemization):**
-  - Blank Nodes are not stored as ephemeral `_:` identifiers. Instead, they are
-    **Skolemized** into globally unique, stable URIs (e.g., `urn:uuid:<uuid>` or
-    `genid:<hash>`) at the point of ingestion.
-- **Lifecycle (Cascading Deletes):**
-  - Blank Nodes are treated as **dependent substructures** of the Named Node
-    they describe.
-  - **Recursive Delete:** When a parent Named Node is deleted, the system must
-    identify all linked Blank Nodes and recursively delete them.
+- **`chunks_fts` (Virtual FTS5):** Full-Text Search index on
+  `chunks.text_content`.
+- **`chunks_vec` (Virtual Vector):** Vector index storing 512-dim embeddings for
+  `chunks`.
+
+#### The Hexastore Indexing Strategy (Graph Topology)
+
+To ensure O(log N) performance for any RDF triple pattern, we implement a
+**Hexastore** using SQLite's `WITHOUT ROWID` feature for "covered indices".
+
+```sql
+-- Main statement table (SPO pattern)
+CREATE TABLE statements_spo (
+    subject_id INTEGER, predicate_id INTEGER, object_id INTEGER,
+    PRIMARY KEY (subject_id, predicate_id, object_id)
+) WITHOUT ROWID;
+
+-- Permutation for (POS pattern) - optimized for property lookups
+CREATE TABLE statements_pos (
+    predicate_id INTEGER, object_id INTEGER, subject_id INTEGER,
+    PRIMARY KEY (predicate_id, object_id, subject_id)
+) WITHOUT ROWID;
+
+-- Permutation for (OSP pattern) - optimized for reverse-lookup/in-bound links
+CREATE TABLE statements_osp (
+    object_id INTEGER, subject_id INTEGER, predicate_id INTEGER,
+    PRIMARY KEY (object_id, subject_id, predicate_id)
+) WITHOUT ROWID;
+```
+
+#### Hybrid Search Strategy (RRF)
+
+To implement the "Reciprocal Rank Fusion" strategy recommended for local-first
+environments, we fuse results from `chunks_fts` (BM25) and `chunks_vec` (Cosine
+Similarity) utilizing a unified SQL query.
+
+```sql
+WITH fts_results AS (
+  SELECT rowid, rank FROM chunks_fts WHERE match(:query)
+),
+vec_results AS (
+  SELECT rowid, distance FROM chunks_vec WHERE embedding MATCH :vector
+)
+SELECT 
+  c.rowid, 
+  c.text_content,
+  (1.0 / (60 + fts.rank)) + (1.0 / (60 + vec.rank)) AS rrf_score
+FROM chunks c
+JOIN fts_results fts ON c.rowid = fts.rowid
+JOIN vec_results vec ON c.rowid = vec.rowid
+ORDER BY rrf_score DESC;
+```
+
+**Engineering Requirements:**
+
+- **Concurrency:** `PRAGMA journal_mode = WAL;`
+- **Memory Mapping:** `PRAGMA mmap_size = 30000000000;` (30GB)
+- **Atomicity:** All statement updates must occur within a single transaction
+  across all three tables.
+
+#### Blank Node Strategy (Persistent Skolemization)
+
+To handle nested blank nodes losslessly, we use **Persistent Skolemization**
+rather than ephemeral identifiers.
+
+1. **Ingestion:** Incoming blank nodes (`_:b1`) are mapped to a stable Skolem
+   IRI: `http://local/.well-known/genid/[UUID]`.
+2. **Storage:** The `term_type` is explicitly stored as `'BlankNode'` in the
+   `terms` table.
+3. **Reconstruction:** Upon export, terms flagged as `BlankNode` are rendered
+   back as anonymous square brackets `[]` or blank node labels, ensuring the
+   internal storage remains transparent to the user.
+
+#### Recursive Hydration
+
+For bulk reading and object reconstruction, we avoid "N+1" query patterns by
+using a **Recursive Common Table Expression (CTE)**. This allows the engine to
+traverse the graph starting at a root node and collect all nested blank node
+branches in a single pass.
+
+```sql
+WITH RECURSIVE graph_hydration(s_id, p_id, o_id) AS (
+    SELECT s, p, o FROM statements_spo 
+    WHERE s = (SELECT id FROM terms WHERE value = 'root_uri')
+    UNION ALL
+    SELECT t.s, t.p, t.o
+    FROM statements_spo t
+    JOIN graph_hydration h ON t.s = h.o_id
+    JOIN terms r ON h.o_id = r.id
+    WHERE r.term_type = 'BlankNode'
+)
+SELECT * FROM graph_hydration;
+```
 
 ### Dynamic Access Control
 
@@ -461,7 +539,7 @@ Runtime, Deployment, Authentication), please see [ADR.md](./ADR.md).
 ### Separated Vector Store
 
 As the Knowledge Graph grows, the presence of 512-dimension float vectors in the
-primary SQLite file (`kb_chunks`) may impact maintenance operations. A future
+primary SQLite file (`chunks`) may impact maintenance operations. A future
 iteration will explore splitting the Vector Index into a dedicated specialized
 store.
 

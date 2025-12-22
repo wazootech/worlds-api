@@ -1,13 +1,13 @@
 import type { Term } from "@rdfjs/types";
 import { blankNode, defaultGraph, literal, namedNode } from "oxigraph";
-import type { StatementRow } from "#/core/database/statements.ts";
+import type { HydratedStatement } from "#/core/database/statements.ts";
 
 /**
- * toTerm converts a StatementRow to a Term.
+ * toTerm converts a HydratedStatement to a Term.
  */
 export function toTerm(
-  statement: StatementRow,
-  skolemizedStatements: StatementRow[],
+  statement: HydratedStatement,
+  _skolemizedStatements: HydratedStatement[],
 ): Term {
   switch (statement.term_type) {
     case "NamedNode": {
