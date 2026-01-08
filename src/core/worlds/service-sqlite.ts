@@ -13,9 +13,32 @@ import type { StatementRow } from "#/core/database/statements.ts";
 import type { OxigraphService, WorldMetadata } from "./service.ts";
 import { statementsSql } from "#/core/database/statements.ts";
 
+/**
+ * SqliteOxigraphService is the SQLite implementation of OxigraphService.
+ * 
+ * This implementation uses a hybrid storage strategy:
+ * - **Oxigraph (Wasm)**: In-memory RDF store for fast SPARQL queries
+ * - **SQLite**: Persistent storage for graph data and metadata
+ * 
+ * The service maintains a cache of world database connections and hydrates
+ * Oxigraph stores from SQLite on cold starts. Writes are persisted to SQLite
+ * immediately, with cache invalidation to ensure consistency.
+ * 
+ * Each world has its own isolated SQLite database file, ensuring data isolation
+ * and enabling per-world optimizations.
+ */
 export class SqliteOxigraphService implements OxigraphService {
+  /**
+   * Cache of world database connections to avoid repeated lookups.
+   */
   private readonly worldsDb = new Map<string, Client>();
 
+  /**
+   * Creates a new SqliteOxigraphService instance.
+   * 
+   * @param db - The system database client (contains world metadata)
+   * @param getWorldDb - A function that retrieves the database client for a specific world
+   */
   public constructor(
     /**
      * db is the system database (system.db).

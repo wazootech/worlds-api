@@ -42,6 +42,21 @@ export interface RankedResult<T> {
   rank: Record<string, number>;
 }
 
+/**
+ * HydratedStatement represents a statement with fully resolved term values
+ * (as strings) rather than term IDs. This is used for conversion between
+ * RDF/JS types and the internal database representation.
+ */
+export interface HydratedStatement {
+  subject: string;
+  predicate: string;
+  object: string;
+  graph: string;
+  term_type: "NamedNode" | "BlankNode" | "Literal" | "DefaultGraph";
+  object_language?: string;
+  object_datatype?: string;
+}
+
 export interface StatementsStore {
   // GRAPHS.
 

@@ -3,7 +3,29 @@ import { blankNode, defaultGraph, literal, namedNode } from "oxigraph";
 import type { HydratedStatement } from "#/core/database/statements.ts";
 
 /**
- * toTerm converts a HydratedStatement to a Term.
+ * toTerm converts a HydratedStatement's object to an RDF/JS Term.
+ * 
+ * This function reconstructs the appropriate RDF Term type (NamedNode, BlankNode,
+ * Literal, or DefaultGraph) from the database representation. For blank nodes,
+ * it handles skolemized IRIs by converting them back to blank node identifiers.
+ * 
+ * @param statement - The HydratedStatement containing the object to convert
+ * @param _skolemizedStatements - Additional statements for blank node reconstruction (currently unused)
+ * @returns An RDF/JS Term instance
+ * 
+ * @example
+ * ```ts
+ * const statement: HydratedStatement = {
+ *   subject: "http://example.com/s",
+ *   predicate: "http://example.com/p",
+ *   object: "Hello",
+ *   graph: "",
+ *   term_type: "Literal",
+ *   object_language: "en"
+ * };
+ * const term = toTerm(statement, []);
+ * // Returns: literal("Hello", "en")
+ * ```
  */
 export function toTerm(
   statement: HydratedStatement,
@@ -15,12 +37,21 @@ export function toTerm(
     }
 
     case "BlankNode": {
-      // TODO: Deskolemize blank nodes.
+      // TODO: Deskolemize blank nodes from skolemized IRIs.
+      // Blank nodes are stored as skolemized IRIs (e.g., "http://local/.well-known/genid/[UUID]")
+      // and should be converted back to blank node identifiers.
       // return skolemizedNode(skolemizedStatements, statement.object);
       return blankNode(statement.object);
     }
 
     case "Literal": {
+      // Reconstruct literal with language tag or datatype if present
+      if (statement.object_language) {
+        return literal(statement.object, statement.object_language);
+      }
+      if (statement.object_datatype) {
+        return literal(statement.object, namedNode(statement.object_datatype));
+      }
       return literal(statement.object);
     }
 

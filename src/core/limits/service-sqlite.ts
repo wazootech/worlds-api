@@ -4,7 +4,24 @@ import type { LimitsService } from "./service.ts";
 import type { Limit } from "#/core/types/usage.ts";
 import type { LimitRow } from "#/core/database/system.ts";
 
+/**
+ * SqliteLimitsService is the SQLite implementation of LimitsService.
+ * 
+ * This implementation stores plan limits in the system database (`kb_limits` table).
+ * Limits include:
+ * - Request rate quotas (requests per minute)
+ * - Storage quotas (bytes)
+ * - Feature flags (e.g., allow_reasoning)
+ * 
+ * Changes to limits take effect immediately for all accounts on that plan tier,
+ * enabling dynamic plan upgrades without code deployment.
+ */
 export class SqliteLimitsService implements LimitsService {
+  /**
+   * Creates a new SqliteLimitsService instance.
+   * 
+   * @param db - The SQLite database client (system database)
+   */
   constructor(private readonly db: Client) {}
 
   async getLimits(plan: string): Promise<Limit | null> {
