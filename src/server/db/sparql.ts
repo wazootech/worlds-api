@@ -1,4 +1,6 @@
 import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
+import type { PatchHandler } from "@fartlabs/search-store";
+import { connectSearchStoreToN3Store } from "@fartlabs/search-store/n3";
 import { getWorldAsN3Store, setWorldAsN3Store } from "./n3.ts";
 
 /**
@@ -16,23 +18,29 @@ export async function sparql(
   kv: Deno.Kv,
   worldId: string,
   query: string,
+  searchStore: PatchHandler = { patch: async () => {} },
 ): Promise<Response> {
   const store = await getWorldAsN3Store(kv, worldId);
+  const { store: proxiedStore, sync } = connectSearchStoreToN3Store(
+    searchStore,
+    store,
+  );
 
   const queryEngine = new QueryEngine();
-  const queryType = await queryEngine.query(query, { sources: [store] });
-
-  if (queryType.resultType === "void") {
-    await queryType.execute();
-    await setWorldAsN3Store(kv, worldId, store);
-    // TODO: Forward changes to search index.
-    return new Response(null, { status: 204 });
-  }
+  const queryType = await queryEngine.query(query, { sources: [proxiedStore] });
 
   // TODO: Leverage existing, battle-tested SPARQL JSON serializer.
   // https://comunica.dev/docs/query/advanced/result_formats/
   // https://comunica.dev/docs/query/getting_started/query_app/#8--serializing-to-a-specific-result-format
   //
+
+  // If the query is an update, we need to execute it and then sync the search store.
+  if (queryType.resultType === "void") {
+    await queryType.execute();
+    await sync();
+    await setWorldAsN3Store(kv, worldId, store);
+    return new Response(null, { status: 204 });
+  }
 
   if (queryType.resultType === "bindings") {
     return await handleBindings(queryType);

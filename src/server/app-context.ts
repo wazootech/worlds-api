@@ -1,3 +1,5 @@
+import type { Client } from "@libsql/client";
+import type { Embeddings } from "./embeddings/embeddings.ts";
 import type { WorldsKvdex } from "./db/kvdex.ts";
 
 /**
@@ -6,6 +8,8 @@ import type { WorldsKvdex } from "./db/kvdex.ts";
 export interface AppContext {
   db: WorldsKvdex;
   kv: Deno.Kv;
+  libsqlClient: Client;
+  embeddings: Embeddings;
   admin?: {
     apiKey: string;
   };

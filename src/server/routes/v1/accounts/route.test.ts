@@ -1,4 +1,5 @@
 import { assert, assertEquals } from "@std/assert";
+import { ulid } from "@std/ulid";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
 
@@ -13,7 +14,7 @@ Deno.test("Accounts API routes", async (t) => {
         id: "acc_1",
         description: "Test account 1",
         planType: "free",
-        apiKey: crypto.randomUUID(),
+        apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
         deletedAt: null,
@@ -23,7 +24,7 @@ Deno.test("Accounts API routes", async (t) => {
         id: "acc_2",
         description: "Test account 2",
         planType: "pro",
-        apiKey: crypto.randomUUID(),
+        apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
         deletedAt: null,
@@ -84,7 +85,7 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       id: "acc_get",
       description: "Test account 2",
       planType: "pro",
-      apiKey: crypto.randomUUID(),
+      apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       deletedAt: null,
@@ -123,7 +124,7 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       id: "acc_put",
       description: "Original description",
       planType: "free",
-      apiKey: crypto.randomUUID(),
+      apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       deletedAt: null,
@@ -176,7 +177,7 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       id: "acc_del",
       description: "To be deleted",
       planType: "free",
-      apiKey: crypto.randomUUID(),
+      apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
       deletedAt: null,
@@ -224,7 +225,7 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
         id: "acc_rot",
         description: "Account to rotate",
         planType: "free",
-        apiKey: crypto.randomUUID(),
+        apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
         deletedAt: null,

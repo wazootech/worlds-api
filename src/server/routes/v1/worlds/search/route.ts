@@ -22,11 +22,26 @@ export default (appContext: AppContext) => {
         return new Response("Query required", { status: 400 });
       }
 
-      // TODO: Implement actual search logic
-      return Response.json({
-        results: [],
-        query,
+      const { LibsqlSearchStore } = await import(
+        "../../../../search/libsql.ts"
+      );
+      const store = new LibsqlSearchStore({
+        client: appContext.libsqlClient,
+        embeddings: appContext.embeddings,
+        tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
       });
+      await store.createTablesIfNotExists();
+
+      try {
+        const results = await store.search(query);
+        return Response.json({
+          results,
+          query,
+        });
+      } catch (error) {
+        console.error("Search error:", error);
+        return new Response("Search failed", { status: 500 });
+      }
     },
   );
 };

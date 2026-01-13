@@ -147,7 +147,7 @@ function generateServiceDescription(endpointUrl: string): Promise<string> {
  * Shared handler for executing SPARQL queries and updates
  */
 async function executeSparqlRequest(
-  kv: Deno.Kv,
+  appContext: AppContext,
   request: Request,
   worldId: string,
 ): Promise<Response> {
@@ -184,10 +184,19 @@ async function executeSparqlRequest(
   }
 
   // Execute query or update using centralized function
+  const { LibsqlSearchStore } = await import("../../../../search/libsql.ts");
+  const searchStore = new LibsqlSearchStore({
+    client: appContext.libsqlClient,
+    embeddings: appContext.embeddings,
+    tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
+  });
+  await searchStore.createTablesIfNotExists();
+
   const response = await sparql(
-    kv,
+    appContext.kv,
     worldId,
     query,
+    searchStore,
   );
 
   // For updates, return 204 instead of the stream response
@@ -200,7 +209,7 @@ async function executeSparqlRequest(
 }
 
 export default (appContext: AppContext) => {
-  const { db, kv } = appContext;
+  const { db } = appContext;
   return new Router()
     .get(
       "/v1/worlds/:world/sparql",
@@ -225,7 +234,7 @@ export default (appContext: AppContext) => {
         }
 
         try {
-          return await executeSparqlRequest(kv, ctx.request, worldId);
+          return await executeSparqlRequest(appContext, ctx.request, worldId);
         } catch (error) {
           console.error("SPARQL query error:", error);
           return Response.json(
@@ -272,7 +281,7 @@ export default (appContext: AppContext) => {
         }
 
         try {
-          return await executeSparqlRequest(kv, ctx.request, worldId);
+          return await executeSparqlRequest(appContext, ctx.request, worldId);
         } catch (error) {
           console.error("SPARQL query/update error:", error);
           return Response.json(

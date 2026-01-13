@@ -1,9 +1,31 @@
 import { Router } from "@fartlabs/rt";
 import type { AppContext } from "./app-context.ts";
+import { createClient } from "@libsql/client";
+import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAIEmbeddings } from "./embeddings/google-genai.ts";
 import { worldsKvdex } from "./db/kvdex.ts";
 
 const kv = await Deno.openKv(Deno.env.get("DENO_KV_PATH"));
 const db = worldsKvdex(kv);
+
+const url = Deno.env.get("LIBSQL_URL");
+const authToken = Deno.env.get("LIBSQL_AUTH_TOKEN");
+const googleApiKey = Deno.env.get("GOOGLE_API_KEY");
+
+const client = url
+  ? createClient({ url, authToken })
+  : createClient({ url: ":memory:" });
+
+const embedder = googleApiKey
+  ? new GoogleGenAIEmbeddings({
+    client: new GoogleGenAI({ apiKey: googleApiKey }),
+    model: "models/gemini-embedding-001",
+    dimensions: 768,
+  })
+  : {
+    embed: (_: string) => Promise.resolve(new Array(768).fill(0)),
+    dimensions: 768,
+  };
 
 const apiKey = Deno.env.get("ADMIN_API_KEY");
 if (!apiKey) {
@@ -14,6 +36,8 @@ const appContext: AppContext = {
   db,
   kv,
   admin: { apiKey },
+  libsqlClient: client,
+  embeddings: embedder,
 };
 
 const routes = [

@@ -10,10 +10,11 @@ Deno.test("LibsqlSearchStore e2e", async (t) => {
   const searchStore = new LibsqlSearchStore({
     client,
     embeddings: { embed: (_text) => Promise.resolve([0]), dimensions: 1 },
+    tablePrefix: "test_",
   });
 
   await t.step("Create tables", async () => {
-    await searchStore.createTables();
+    await searchStore.createTablesIfNotExists();
   });
 
   await t.step("Insert documents", async () => {

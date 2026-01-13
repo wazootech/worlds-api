@@ -1,4 +1,5 @@
 import { Router } from "@fartlabs/rt";
+import { ulid } from "@std/ulid";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 
@@ -47,7 +48,7 @@ export default (appContext: AppContext) =>
         }
 
         const body = await ctx.request.json();
-        const apiKey = crypto.randomUUID();
+        const apiKey = ulid();
         const timestamp = Date.now();
         const result = await appContext.db.accounts.add({
           id: body.id,
@@ -160,7 +161,7 @@ export default (appContext: AppContext) =>
           return new Response("Account ID required", { status: 400 });
         }
 
-        const apiKey = crypto.randomUUID();
+        const apiKey = ulid();
         const result = await appContext.db.accounts.update(accountId, {
           apiKey,
           updatedAt: Date.now(),
