@@ -12,6 +12,9 @@ edge. It places malleable knowledge within arm's reach of your AI agent.
 
 **Bring your own brain (BYOB).** Worlds API™ is agnostic to the agent using it.
 
+**Powered by N3.** Worlds API™ leverages N3 for high-performance store
+operations.
+
 ## Usage
 
 You can use the Worlds API SDK to interact with your knowledge bases
@@ -28,16 +31,15 @@ const world = new World({
 });
 
 // Add some knowledge (triples) to your world.
-await world.addQuads(
-  `
-  <http://example.com/alice> <http://schema.org/knows> <http://example.com/bob> .
-  <http://example.com/bob> <http://schema.org/name> "Bob" .
-`,
-  "application/n-quads",
-);
+await world.sparqlUpdate(`
+  INSERT DATA {
+    <http://example.com/alice> <http://schema.org/knows> <http://example.com/bob> .
+    <http://example.com/bob> <http://schema.org/name> "Bob" .
+  }
+`);
 
 // Reason over your world using SPARQL.
-const result = await world.query(`
+const result = await world.sparqlQuery(`
   SELECT ?name WHERE {
     <http://example.com/alice> <http://schema.org/knows> ?person .
     ?person <http://schema.org/name> ?name .
@@ -45,19 +47,13 @@ const result = await world.query(`
 `);
 
 console.log(result); // [{ name: "Bob" }]
+
+// Search your world.
+const searchResult = await world.search("Bob");
+console.log(searchResult);
 ```
 
-## Benchmarks
-
-Worlds API™ leverages Oxigraph for high-performance store operations.
-
-| Benchmark                | Time/Iter (Avg) | Iter/s      |
-| :----------------------- | :-------------- | :---------- |
-| **encodeStore (nq)**     | **2.9 µs**      | **345,100** |
-| **encodeStore (trig)**   | **3.1 µs**      | **318,700** |
-| **encodeStore (jsonld)** | **4.6 µs**      | **219,400** |
-
-_(Benchmarks run on Deno 2.5.6, Intel i7-1280P)_
+<!-- TODO: Show the methods' result values. -->
 
 ## Development
 
@@ -92,6 +88,8 @@ Graphs:
 - [Thinking with Knowledge Graphs (Arxiv)](https://arxiv.org/abs/2412.10654)
 - [Jelly: RDF Serialization Format (Arxiv)](https://arxiv.org/abs/2506.11298)
 - [MemGPT: Towards LLMs as Operating Systems (Arxiv)](https://arxiv.org/abs/2310.08560)
+
+For further information, please refer to our [whitepaper](docs/paper.md).
 
 ## Glossary
 

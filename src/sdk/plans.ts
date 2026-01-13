@@ -1,10 +1,10 @@
 import type { WorldsOptions } from "./worlds.ts";
-import type { Plan } from "./types.ts";
+import type { PlanRecord } from "./types.ts";
 
 /**
- * PlansAPI is a TypeScript SDK for the Plans API.
+ * Plans is a TypeScript SDK for the Plans API.
  */
-export class PlansAPI {
+export class Plans {
   public constructor(
     public readonly options: WorldsOptions,
   ) {}
@@ -12,7 +12,7 @@ export class PlansAPI {
   /**
    * getPlans gets all plans from the Worlds API.
    */
-  public async getPlans(): Promise<Plan[]> {
+  public async getPlans(): Promise<PlanRecord[]> {
     const url = new URL(`${this.options.baseUrl}/v1/plans`);
     const response = await fetch(url, {
       headers: {
@@ -30,7 +30,7 @@ export class PlansAPI {
    * createPlan creates a plan in the Worlds API.
    */
   public async createPlan(
-    data: Plan,
+    data: PlanRecord,
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/v1/plans`);
     const response = await fetch(
@@ -54,7 +54,7 @@ export class PlansAPI {
    */
   public async getPlan(
     planType: string,
-  ): Promise<Plan | null> {
+  ): Promise<PlanRecord | null> {
     if (!planType) {
       return null;
     }
@@ -83,7 +83,7 @@ export class PlansAPI {
    */
   public async updatePlan(
     planType: string,
-    data: Plan,
+    data: PlanRecord,
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/v1/plans/${planType}`);
     const response = await fetch(

@@ -1,4 +1,4 @@
-import type { UsageBucket, World } from "./types.ts";
+import type { UsageBucketRecord, WorldRecord } from "./types.ts";
 
 /**
  * WorldsOptions are the options for the Worlds API SDK.
@@ -9,9 +9,9 @@ export interface WorldsOptions {
 }
 
 /**
- * WorldsAPI is a TypeScript SDK for the Worlds API.
+ * Worlds is a TypeScript SDK for the Worlds API.
  */
-export class WorldsAPI {
+export class Worlds {
   public constructor(
     public readonly options: WorldsOptions,
   ) {}
@@ -19,7 +19,7 @@ export class WorldsAPI {
   /**
    * getWorlds gets all worlds from the Worlds API.
    */
-  public async getWorlds(page = 1, pageSize = 20): Promise<World[]> {
+  public async getWorlds(page = 1, pageSize = 20): Promise<WorldRecord[]> {
     const url = new URL(`${this.options.baseUrl}/worlds`);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("pageSize", pageSize.toString());
@@ -40,7 +40,7 @@ export class WorldsAPI {
    */
   public async getWorld(
     worldId: string,
-  ): Promise<World | null> {
+  ): Promise<WorldRecord | null> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}`);
     const response = await fetch(
       url,
@@ -61,7 +61,7 @@ export class WorldsAPI {
     return await response.json();
   }
 
-  public async createWorld(data: World): Promise<void> {
+  public async createWorld(data: WorldRecord): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/worlds`);
     const response = await fetch(
       url,
@@ -79,7 +79,7 @@ export class WorldsAPI {
     }
   }
 
-  public async updateWorld(worldId: string, data: World): Promise<void> {
+  public async updateWorld(worldId: string, data: WorldRecord): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}`);
     const response = await fetch(
       url,
@@ -179,7 +179,7 @@ export class WorldsAPI {
    */
   public async getWorldUsage(
     worldId: string,
-  ): Promise<UsageBucket[]> {
+  ): Promise<UsageBucketRecord[]> {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/usage`,
     );
@@ -231,21 +231,21 @@ export class WorldsAPI {
 }
 
 /**
- * WorldAPI is a TypeScript SDK for a World in the Worlds API.
+ * World is a TypeScript SDK for a World in the Worlds API.
  */
-export class WorldAPI {
-  private readonly worlds: WorldsAPI;
+export class World {
+  private readonly worlds: Worlds;
 
   public constructor(
     public readonly options: WorldsOptions & { worldId: string },
   ) {
-    this.worlds = new WorldsAPI(options);
+    this.worlds = new Worlds(options);
   }
 
   /**
    * get gets the world.
    */
-  public get(): Promise<World | null> {
+  public get(): Promise<WorldRecord | null> {
     return this.worlds.getWorld(this.options.worldId);
   }
 
@@ -259,7 +259,7 @@ export class WorldAPI {
   /**
    * update updates the world.
    */
-  public update(data: World): Promise<void> {
+  public update(data: WorldRecord): Promise<void> {
     return this.worlds.updateWorld(this.options.worldId, data);
   }
 
@@ -286,6 +286,7 @@ export class WorldAPI {
       limit?: number;
       offset?: number;
     },
+    // TODO: Set up return type.
   ): Promise<unknown> {
     return this.worlds.searchWorld(this.options.worldId, query, options);
   }

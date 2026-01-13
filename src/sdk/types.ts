@@ -1,7 +1,7 @@
 /**
- * Account represents an account in the Worlds API.
+ * AccountRecord represents an account in the Worlds API.
  */
-export interface Account {
+export interface AccountRecord {
   id: string;
   description: string | null;
   planType: string;
@@ -12,23 +12,23 @@ export interface Account {
 }
 
 export type CreateAccountParams = Omit<
-  Account,
+  AccountRecord,
   "id" | "apiKey" | "createdAt" | "updatedAt" | "deletedAt"
 >;
 
 /**
- * Plan represents a subscription plan.
+ * PlanRecord represents a subscription plan.
  */
-export interface Plan {
+export interface PlanRecord {
   planType: string;
   quotaRequestsPerMin: number;
   quotaStorageBytes: number;
 }
 
 /**
- * World represents a world in the Worlds API.
+ * WorldRecord represents a world in the Worlds API.
  */
-export interface World {
+export interface WorldRecord {
   id: string;
   accountId: string;
   name: string;
@@ -40,9 +40,9 @@ export interface World {
 }
 
 /**
- * UsageBucket represents usage statistics.
+ * UsageBucketRecord represents usage statistics.
  */
-export interface UsageBucket {
+export interface UsageBucketRecord {
   id: string;
   accountId: string;
   worldId: string;

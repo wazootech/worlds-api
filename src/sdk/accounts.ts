@@ -1,10 +1,10 @@
 import type { WorldsOptions } from "./worlds.ts";
-import type { Account, CreateAccountParams } from "./types.ts";
+import type { AccountRecord, CreateAccountParams } from "./types.ts";
 
 /**
- * AccountsAPI is a TypeScript SDK for the Accounts API.
+ * Accounts is a TypeScript SDK for the Accounts API.
  */
-export class AccountsAPI {
+export class Accounts {
   public constructor(
     public readonly options: WorldsOptions,
   ) {}
@@ -15,7 +15,7 @@ export class AccountsAPI {
   public async getAccounts(
     page = 1,
     pageSize = 20,
-  ): Promise<Account[]> {
+  ): Promise<AccountRecord[]> {
     const url = new URL(`${this.options.baseUrl}/v1/accounts`);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("pageSize", pageSize.toString());
@@ -57,7 +57,7 @@ export class AccountsAPI {
    */
   public async getAccount(
     accountId: string,
-  ): Promise<Account | null> {
+  ): Promise<AccountRecord | null> {
     const url = new URL(`${this.options.baseUrl}/v1/accounts/${accountId}`);
     const response = await fetch(
       url,
@@ -83,7 +83,7 @@ export class AccountsAPI {
    */
   public async updateAccount(
     accountId: string,
-    data: Partial<Account>,
+    data: Partial<AccountRecord>,
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/v1/accounts/${accountId}`);
     const response = await fetch(
