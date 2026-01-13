@@ -197,20 +197,22 @@ export class WorldsAPI {
     return await response.json();
   }
   /**
-   * search searches across all worlds.
+   * searchWorld searches a world.
    */
-  public async search(
+  public async searchWorld(
+    worldId: string,
     query: string,
     options?: {
       limit?: number;
       offset?: number;
     },
   ): Promise<unknown> {
-    const url = new URL(`${this.options.baseUrl}/v1/worlds/search`);
+    const url = new URL(`${this.options.baseUrl}/worlds/${worldId}/search`);
     url.searchParams.set("q", query);
     if (options?.limit) {
       url.searchParams.set("limit", options.limit.toString());
     }
+
     if (options?.offset) {
       url.searchParams.set("offset", options.offset.toString());
     }
@@ -220,7 +222,6 @@ export class WorldsAPI {
         Authorization: `Bearer ${this.options.apiKey}`,
       },
     });
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -286,9 +287,6 @@ export class WorldAPI {
       offset?: number;
     },
   ): Promise<unknown> {
-    // For now we just use the global search but scoped to this world
-    // In the future this might be a specific endpoint
-    // This is just a placeholder implementation as requested
-    return this.worlds.search(query, options);
+    return this.worlds.searchWorld(this.options.worldId, query, options);
   }
 }

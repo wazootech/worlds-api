@@ -4,8 +4,13 @@ import type { AppContext } from "#/server/app-context.ts";
 
 export default (appContext: AppContext) => {
   return new Router().get(
-    "/v1/worlds/search",
+    "/v1/worlds/:world/search",
     async (ctx) => {
+      const worldId = ctx.params?.pathname.groups.world;
+      if (!worldId) {
+        return new Response("World ID required", { status: 400 });
+      }
+
       const authorized = await authorizeRequest(appContext, ctx.request);
       if (!authorized.account && !authorized.admin) {
         return new Response("Unauthorized", { status: 401 });

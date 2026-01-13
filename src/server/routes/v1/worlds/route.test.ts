@@ -93,13 +93,13 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
   testContext.kv.close();
 });
 
-Deno.test("Worlds API routes - POST operations", async (t) => {
+Deno.test("Worlds API routes - PUT operations", async (t) => {
   const testContext = await createTestContext();
   const { db } = testContext;
   const app = createRoute(testContext);
 
   await t.step(
-    "POST /v1/worlds/:world updates world description",
+    "PUT /v1/worlds/:world updates world description",
     async () => {
       const { id: accountId, apiKey } = await createTestAccount(db);
       const result = await db.worlds.add({
@@ -116,7 +116,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
       // Update description
       const updateResp = await app.fetch(
         new Request(`http://localhost/v1/worlds/${worldId}`, {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,
@@ -142,7 +142,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
   );
 
   await t.step(
-    "POST /v1/worlds/:world returns 400 for invalid JSON",
+    "PUT /v1/worlds/:world returns 400 for invalid JSON",
     async () => {
       const { id: accountId, apiKey } = await createTestAccount(db);
       const result = await db.worlds.add({
@@ -158,7 +158,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
 
       const invalidJsonResp = await app.fetch(
         new Request(`http://localhost/v1/worlds/${worldId}`, {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,
@@ -171,13 +171,13 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
   );
 
   await t.step(
-    "POST /v1/worlds/:world returns 404 for non-existent world",
+    "PUT /v1/worlds/:world returns 404 for non-existent world",
     async () => {
       const { apiKey } = await createTestAccount(db);
 
       const updateResp = await app.fetch(
         new Request("http://localhost/v1/worlds/non-existent-world", {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${apiKey}`,

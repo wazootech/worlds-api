@@ -32,7 +32,7 @@ export default (appContext: AppContext) => {
         return Response.json(result.value);
       },
     )
-    .post(
+    .put(
       "/v1/worlds/:world",
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
@@ -114,6 +114,40 @@ export default (appContext: AppContext) => {
         );
 
         return Response.json(result.map(({ value }) => value));
+      },
+    )
+    .post(
+      "/v1/worlds",
+      async (ctx) => {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.account) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
+        let body;
+        try {
+          body = await ctx.request.json();
+        } catch {
+          return new Response("Invalid JSON", { status: 400 });
+        }
+
+        const now = Date.now();
+        const result = await db.worlds.add({
+          accountId: authorized.account.id,
+          name: body.name,
+          description: body.description,
+          createdAt: now,
+          updatedAt: now,
+          deletedAt: null,
+        });
+
+        if (!result.ok) {
+          return Response.json({ error: "Failed to create world" }, {
+            status: 500,
+          });
+        }
+
+        return Response.json(null, { status: 201 });
       },
     );
 };
