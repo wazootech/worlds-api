@@ -1,5 +1,7 @@
 import type { SearchResult as _SearchResult } from "@fartlabs/search-store";
 
+// TODO: Expose an offline, local Worlds API SDK implementation.
+
 /**
  * WorldsOptions are the options for the Worlds API SDK.
  */
