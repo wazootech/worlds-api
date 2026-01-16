@@ -5,6 +5,7 @@ import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import type { DatasetParams } from "#/server/db/sparql.ts";
 import { sparql } from "#/server/db/sparql.ts";
+import { LibsqlSearchStore } from "#/server/search/libsql.ts";
 
 const { namedNode, quad } = DataFactory;
 
@@ -184,8 +185,6 @@ async function executeSparqlRequest(
   }
 
   // Execute query or update using centralized function
-  // Execute query or update using centralized function
-  const { LibsqlSearchStore } = await import("../../../../search/libsql.ts");
   const searchStore = new LibsqlSearchStore({
     client: appContext.libsqlClient,
     embeddings: appContext.embeddings,
@@ -203,6 +202,15 @@ async function executeSparqlRequest(
     query,
     searchStore,
   );
+
+  // Track usage
+  const authorized = await authorizeRequest(appContext, request);
+  // We already authorized before calling this function, but we need the account ID if available.
+  // Actually, the route handler checks authorization.
+  // We can pass the accountId to executeSparqlRequest to avoid re-authorizing or just look it up.
+  // But wait, executeSparqlRequest is called *after* authorization in the route handlers.
+  // The route handler has the `authorized` object which contains the account.
+  // Let's modify executeSparqlRequest signature to accept accountId.
 
   // For updates, return 204 instead of the stream response
   if (isUpdate) {

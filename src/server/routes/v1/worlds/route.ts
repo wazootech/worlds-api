@@ -1,6 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
+import { LibsqlSearchStore } from "#/server/search/libsql.ts";
 
 export default (appContext: AppContext) => {
   return new Router()
@@ -89,7 +90,6 @@ export default (appContext: AppContext) => {
         }
 
         // Initialize search store to drop tables
-        const { LibsqlSearchStore } = await import("../../../search/libsql.ts");
         const searchStore = new LibsqlSearchStore({
           client: appContext.libsqlClient,
           embeddings: appContext.embeddings,

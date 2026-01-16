@@ -42,7 +42,7 @@ export default (appContext: AppContext) => {
             },
           );
 
-        return Response.json(result.map(({ value }) => value));
+        return Response.json(result.map(({ id, value }) => ({ id, ...value })));
       },
     );
 };

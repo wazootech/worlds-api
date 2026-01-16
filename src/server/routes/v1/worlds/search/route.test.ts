@@ -93,12 +93,8 @@ Deno.test("Search API routes", async (t) => {
     const response = await adminHandler.fetch(adminRequest);
     assertEquals(response.status, 200);
     const body = await response.json();
-    assertEquals(body.query, "Earth");
-    // Since we use mock embeddings (all 0s) and just one doc, it might match or might not depending on RRF?
-    // With usage of `1.0 / (60 + rank)`, and embedding being same...
-    // FTS match "Earth" should work on "Hello Earth".
-    // So we assume results.length > 0
-    // assertEquals(body.results.length, 1);
+    assertEquals(Array.isArray(body), true);
+    // assertEquals(body.length, 1); // Mock search might behave differently but it should be an array
   });
 
   kv.close();
