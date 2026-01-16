@@ -1,6 +1,6 @@
+import { z } from "zod";
 import { collection, kvdex } from "@olli/kvdex";
 import { jsonEncoder } from "@olli/kvdex/encoding/json";
-import { z } from "zod";
 
 /**
  * WorldsKvdex is the type of the kvdex for the Worlds API.
@@ -45,6 +45,11 @@ export function createWorldsKvdex(kv: Deno.Kv) {
 
 export type Plan = z.infer<typeof planSchema>;
 
+/**
+ * planSchema is the schema for a plan.
+ *
+ * A plan defines the quota for a given account.
+ */
 export const planSchema = z.object({
   name: z.string(),
   quotaRequestsPerMin: z.number().default(60),
@@ -53,6 +58,11 @@ export const planSchema = z.object({
 
 export type Account = z.infer<typeof accountSchema>;
 
+/**
+ * accountSchema is the schema for an account.
+ *
+ * An account owns 0 or more worlds.
+ */
 export const accountSchema = z.object({
   id: z.string(),
   description: z.string().nullable(),
@@ -65,6 +75,11 @@ export const accountSchema = z.object({
 
 export type World = z.infer<typeof worldSchema>;
 
+/**
+ * worldSchema is the schema for a world.
+ *
+ * A world is owned by an account.
+ */
 export const worldSchema = z.object({
   accountId: z.string(),
   name: z.string(),
@@ -77,6 +92,11 @@ export const worldSchema = z.object({
 
 export type UsageBucket = z.infer<typeof usageBucketSchema>;
 
+/**
+ * usageBucketSchema is the schema for a usage bucket.
+ *
+ * A usage bucket tracks the number of requests made to a world in a given time window.
+ */
 export const usageBucketSchema = z.object({
   accountId: z.string(),
   worldId: z.string(),
@@ -86,4 +106,10 @@ export const usageBucketSchema = z.object({
 
 export type WorldBlob = z.infer<typeof worldBlobSchema>;
 
+/**
+ * worldBlobSchema is the schema for a world blob.
+ *
+ * A world blob is an RDF dataset encoded as a binary blob of data
+ * associated with a world.
+ */
 export const worldBlobSchema = z.instanceof(Uint8Array);

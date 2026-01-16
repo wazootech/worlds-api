@@ -6,6 +6,7 @@ import type { SearchResult as _SearchResult } from "@fartlabs/search-store";
 export interface WorldsOptions {
   baseUrl: string;
   apiKey: string;
+  account?: string;
 
   /**
    * fetch fetches a resource from the network. It returns a `Promise` that

@@ -24,6 +24,10 @@ export class Worlds {
    */
   public async list(page = 1, pageSize = 20): Promise<WorldRecord[]> {
     const url = new URL(`${this.options.baseUrl}/worlds`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     url.searchParams.set("page", page.toString());
     url.searchParams.set("pageSize", pageSize.toString());
     const response = await this.fetch(url, {
@@ -45,6 +49,10 @@ export class Worlds {
    */
   public async get(worldId: string): Promise<WorldRecord | null> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -71,6 +79,10 @@ export class Worlds {
    */
   public async create(data: CreateWorldParams): Promise<WorldRecord> {
     const url = new URL(`${this.options.baseUrl}/worlds`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -96,6 +108,10 @@ export class Worlds {
    */
   public async update(worldId: string, data: UpdateWorldParams): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -119,6 +135,10 @@ export class Worlds {
    */
   public async remove(worldId: string): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -148,6 +168,10 @@ export class Worlds {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/sparql`,
     );
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -183,6 +207,10 @@ export class Worlds {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/sparql`,
     );
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -208,6 +236,10 @@ export class Worlds {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/usage`,
     );
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     const response = await this.fetch(
       url,
       {
@@ -236,6 +268,10 @@ export class Worlds {
     },
   ): Promise<SearchResult> {
     const url = new URL(`${this.options.baseUrl}/worlds/${worldId}/search`);
+    if (this.options.account) {
+      url.searchParams.set("account", this.options.account);
+    }
+
     url.searchParams.set("q", query);
     if (options?.limit) {
       url.searchParams.set("limit", options.limit.toString());

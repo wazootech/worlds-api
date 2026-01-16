@@ -26,7 +26,27 @@ export async function authorizeRequest(
   }
 
   const apiKey = authHeader.slice("Bearer ".length).trim();
-  return await authorize(appContext, apiKey);
+  const authorized = await authorize(appContext, apiKey);
+  if (!authorized.admin) {
+    return authorized;
+  }
+
+  // Get the account desired by the admin.
+  const url = new URL(request.url);
+  const accountId = url.searchParams.get("account");
+  if (!accountId) {
+    return authorized;
+  }
+
+  const result = await appContext.db.accounts.find(accountId);
+  if (!result || result.value.deletedAt !== null) {
+    return authorized;
+  }
+
+  return {
+    admin: true,
+    account: { id: result.id, value: result.value },
+  };
 }
 
 /**

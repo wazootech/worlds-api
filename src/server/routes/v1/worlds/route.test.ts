@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { createTestAccount, createTestContext } from "#/server/testing.ts";
 import createRoute from "./route.ts";
+import { createServer } from "#/server/server.ts";
 
 Deno.test("Worlds API routes - GET operations", async (t) => {
   const testContext = await createTestContext();
@@ -364,5 +365,173 @@ Deno.test("Worlds API routes - List operations", async (t) => {
     },
   );
 
+  testContext.kv.close();
+});
+
+Deno.test("Admin Account Override", async (t) => {
+  const testContext = await createTestContext();
+  const { db, admin } = testContext;
+  const app = await createServer(testContext);
+  const adminApiKey = admin!.apiKey;
+
+  await t.step("Admin can list worlds for a specific account", async () => {
+    const accountA = await createTestAccount(db);
+    const accountB = await createTestAccount(db);
+
+    // Create world for Account A
+    await db.worlds.add({
+      accountId: accountA.id,
+      name: "World A",
+      description: "Description A",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      isPublic: false,
+    });
+
+    // Create world for Account B
+    await db.worlds.add({
+      accountId: accountB.id,
+      name: "World B",
+      description: "Description B",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      isPublic: false,
+    });
+
+    // Admin list for Account A
+    const respA = await app.fetch(
+      new Request(`http://localhost/v1/worlds?account=${accountA.id}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${adminApiKey}`,
+        },
+      }),
+    );
+    assertEquals(respA.status, 200);
+    const bodyA = await respA.json();
+    assertEquals(bodyA.length, 1);
+    assertEquals(bodyA[0].name, "World A");
+
+    // Admin list for Account B
+    const respB = await app.fetch(
+      new Request(`http://localhost/v1/worlds?account=${accountB.id}`, {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${adminApiKey}`,
+        },
+      }),
+    );
+    assertEquals(respB.status, 200);
+    const bodyB = await respB.json();
+    assertEquals(bodyB.length, 1);
+    assertEquals(bodyB[0].name, "World B");
+  });
+
+  await t.step("Admin can create world for a specific account", async () => {
+    const accountC = await createTestAccount(db);
+
+    const resp = await app.fetch(
+      new Request(`http://localhost/v1/worlds?account=${accountC.id}`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${adminApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: "World C",
+          description: "Created by Admin",
+        }),
+      }),
+    );
+    assertEquals(resp.status, 201);
+    const world = await resp.json();
+    assertEquals(world.accountId, accountC.id);
+    assertEquals(world.name, "World C");
+
+    // Verify in DB
+    const dbWorld = await db.worlds.find(world.id);
+    assert(dbWorld);
+    assertEquals(dbWorld.value.accountId, accountC.id);
+  });
+
+  await t.step("Admin can delete world for a specific account", async () => {
+    const accountD = await createTestAccount(db);
+    const result = await db.worlds.add({
+      accountId: accountD.id,
+      name: "World D",
+      description: "to be deleted",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      deletedAt: null,
+      isPublic: false,
+    });
+    assert(result.ok);
+    const worldId = result.id;
+
+    const resp = await app.fetch(
+      new Request(
+        `http://localhost/v1/worlds/${worldId}?account=${accountD.id}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${adminApiKey}`,
+          },
+        },
+      ),
+    );
+    assertEquals(resp.status, 204);
+
+    const dbWorld = await db.worlds.find(worldId);
+    assertEquals(dbWorld, null);
+  });
+
+  await t.step(
+    "Admin SPARQL query claims usage for specific account",
+    async () => {
+      const accountE = await createTestAccount(db);
+      const result = await db.worlds.add({
+        accountId: accountE.id,
+        name: "World E",
+        description: "Sparql usage test",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        deletedAt: null,
+        isPublic: false,
+      });
+      assert(result.ok);
+      const worldId = result.id;
+
+      // Perform SPARQL query as admin impersonating accountE
+      const query = "SELECT * WHERE { ?s ?p ?o } LIMIT 1";
+      const resp = await app.fetch(
+        new Request(
+          `http://localhost/v1/worlds/${worldId}/sparql?account=${accountE.id}`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${adminApiKey}`,
+              "Content-Type": "application/sparql-query",
+            },
+            body: query,
+          },
+        ),
+      );
+      assertEquals(resp.status, 200);
+      await resp.text(); // Consume body
+
+      // Verify usage bucket created/incremented for accountE
+      const { result: buckets } = await db.usageBuckets.findBySecondaryIndex(
+        "worldId",
+        worldId,
+      );
+      assertEquals(buckets.length, 1);
+      assertEquals(buckets[0].value.accountId, accountE.id);
+      assert(buckets[0].value.requestCount >= 1);
+    },
+  );
+
+  // Cleanup
   testContext.kv.close();
 });
