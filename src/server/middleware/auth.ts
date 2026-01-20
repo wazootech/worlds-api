@@ -40,7 +40,7 @@ export async function authorizeRequest(
   }
 
   const result = await appContext.db.accounts.find(accountId);
-  if (!result || result.value.deletedAt !== null) {
+  if (!result || result.value.deletedAt != null) {
     return authorized;
   }
 

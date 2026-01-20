@@ -246,7 +246,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -286,7 +286,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {

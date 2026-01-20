@@ -17,7 +17,6 @@ Deno.test("Accounts API routes", async (t) => {
         apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
 
       const account2 = await testContext.db.accounts.add({
@@ -27,7 +26,6 @@ Deno.test("Accounts API routes", async (t) => {
         apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
 
       if (!account1.ok || !account2.ok) {
@@ -101,7 +99,7 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
 
       const body = await res.json();
       assertEquals(body.id, "acc_partial");
-      assertEquals(body.description, null);
+      assertEquals(body.description, undefined);
       assertEquals(body.plan, undefined);
     },
   );
@@ -115,7 +113,6 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
     });
 
     if (!result.ok) {
@@ -154,7 +151,6 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
     });
 
     if (!createResult.ok) {
@@ -207,7 +203,6 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
       apiKey: ulid(),
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
     });
 
     if (!createResult.ok) {
@@ -255,7 +250,6 @@ Deno.test("Accounts API routes - CRUD operations", async (t) => {
         apiKey: ulid(),
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
 
       if (!createResult.ok) {
@@ -343,7 +337,6 @@ Deno.test("Accounts API routes - Error handling", async (t) => {
         apiKey: "test-api-key-123",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
 
       if (!createResult.ok) {

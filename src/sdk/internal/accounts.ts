@@ -1,5 +1,9 @@
 import type { WorldsOptions } from "#/sdk/types.ts";
-import type { AccountRecord, CreateAccountParams } from "./types.ts";
+import type {
+  AccountRecord,
+  CreateAccountParams,
+  UpdateAccountParams,
+} from "#/sdk/internal/types.ts";
 
 /**
  * Accounts is a TypeScript SDK for the Accounts API.
@@ -95,7 +99,7 @@ export class Accounts {
    */
   public async update(
     accountId: string,
-    data: Partial<AccountRecord>,
+    data: UpdateAccountParams,
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/accounts/${accountId}`);
     const response = await this.fetch(

@@ -28,7 +28,6 @@ Deno.test("Search API routes", async (t) => {
     description: "A world for testing search",
     createdAt: Date.now(),
     updatedAt: Date.now(),
-    deletedAt: null,
   });
 
   // Populate search store via N3

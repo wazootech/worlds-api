@@ -41,9 +41,8 @@ export async function createTestAccount(
     description: "Test account",
     plan: "free",
     apiKey,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    deletedAt: null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   });
   if (!result.ok) {
     throw new Error("Failed to create test account");

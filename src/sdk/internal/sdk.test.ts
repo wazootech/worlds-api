@@ -69,7 +69,7 @@ Deno.test("InternalWorldsSdk - Worlds", async (t) => {
 
   // We need a test account to create worlds
   // We need a test account to create worlds
-  const { id: accountId, apiKey } = await createTestAccount(appContext.db);
+  const { apiKey } = await createTestAccount(appContext.db);
 
   // Use the account's API key for world operations
   const sdk = new InternalWorldsSdk({
@@ -82,7 +82,6 @@ Deno.test("InternalWorldsSdk - Worlds", async (t) => {
 
   await t.step("create world", async () => {
     const world = await sdk.worlds.create({
-      accountId,
       label: "SDK World",
       description: "Test World",
       isPublic: false,
@@ -179,7 +178,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Test",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
 
@@ -189,7 +188,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Test",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
 
@@ -212,7 +211,6 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
 
   await t.step("admin can create world for specific account", async () => {
     const world = await adminSdk.worlds.create({
-      accountId: accountA.id, // This will be ignored
       label: "Admin Created World",
       description: "Created via admin override",
       isPublic: false,
@@ -235,7 +233,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Test",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
     assert(result.ok);
@@ -256,7 +254,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Original",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
     assert(result.ok);
@@ -282,7 +280,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Test",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
     assert(result.ok);
@@ -305,7 +303,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
         description: "Test",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
+
         isPublic: false,
       });
       assert(result.ok);
@@ -342,7 +340,7 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
       description: "Test",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
     assert(result.ok);
@@ -363,7 +361,7 @@ Deno.test("InternalWorldsSdk - Conversations & Messages", async (t) => {
   const appContext = await createTestContext();
   const server = await createServer(appContext);
 
-  const { id: accountId, apiKey } = await createTestAccount(appContext.db);
+  const { apiKey } = await createTestAccount(appContext.db);
 
   const sdk = new InternalWorldsSdk({
     baseUrl: "http://localhost/v1",
@@ -373,7 +371,6 @@ Deno.test("InternalWorldsSdk - Conversations & Messages", async (t) => {
 
   // Setup: Create a world
   const world = await sdk.worlds.create({
-    accountId,
     label: "Msg Test World",
     description: "For messages",
     isPublic: false,
@@ -384,7 +381,6 @@ Deno.test("InternalWorldsSdk - Conversations & Messages", async (t) => {
 
   await t.step("create conversation", async () => {
     const conv = await sdk.conversations.create(worldId, {
-      worldId,
       metadata: { topic: "testing" },
     });
     assert(conv.id !== undefined);
@@ -417,8 +413,6 @@ Deno.test("InternalWorldsSdk - Conversations & Messages", async (t) => {
 
   await t.step("create message", async () => {
     const msg = await sdk.messages.create(worldId, conversationId, {
-      worldId,
-      conversationId,
       content: { role: "user", content: "Hello world" },
     });
     assert(msg.id !== undefined);

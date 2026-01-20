@@ -32,7 +32,7 @@ export type SearchResult = _SearchResult<{
  */
 export type CreateWorldParams = Omit<
   WorldRecord,
-  "id" | "createdAt" | "updatedAt" | "deletedAt"
+  "id" | "accountId" | "createdAt" | "updatedAt" | "deletedAt"
 >;
 
 /**
@@ -47,11 +47,11 @@ export interface WorldRecord {
   id: string;
   accountId: string;
   label: string;
-  description: string | null;
+  description?: string;
   createdAt: number;
   updatedAt: number;
-  deletedAt: number | null;
-  isPublic: boolean | null;
+  deletedAt?: number;
+  isPublic?: boolean;
 }
 
 /**
@@ -121,7 +121,7 @@ export interface MessageRecord {
  */
 export type CreateConversationParams = Omit<
   ConversationRecord,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "worldId" | "createdAt" | "updatedAt"
 >;
 
 /**
@@ -134,7 +134,7 @@ export type UpdateConversationParams = Partial<CreateConversationParams>;
  */
 export type CreateMessageParams = Omit<
   MessageRecord,
-  "id" | "createdAt"
+  "id" | "worldId" | "conversationId" | "createdAt"
 >;
 
 /**

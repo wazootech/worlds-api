@@ -2,6 +2,11 @@ import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import type { Conversation, Message } from "#/server/db/kvdex.ts";
+import {
+  createConversationParamsSchema,
+  createMessageParamsSchema,
+  updateConversationParamsSchema,
+} from "#/server/schemas.ts";
 
 export default (appContext: AppContext) => {
   return new Router()
@@ -20,7 +25,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin && !worldResult.value.isPublic)
         ) {
@@ -68,7 +73,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -81,13 +86,20 @@ export default (appContext: AppContext) => {
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
+
+        const parseResult = createConversationParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const now = Date.now();
         const conversation: Conversation = {
           id: crypto.randomUUID(),
           worldId,
           createdAt: now,
           updatedAt: now,
-          metadata: body.metadata,
+          metadata: data.metadata,
         };
 
         const result = await appContext.db.conversations.add(conversation);
@@ -118,7 +130,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin && !worldResult.value.isPublic)
         ) {
@@ -158,7 +170,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -180,10 +192,17 @@ export default (appContext: AppContext) => {
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
+
+        const parseResult = updateConversationParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const result = await appContext.db.conversations.update(
           conversationId,
           {
-            metadata: body.metadata ?? conversationResult.value.metadata,
+            metadata: data.metadata ?? conversationResult.value.metadata,
             updatedAt: Date.now(),
           },
         );
@@ -219,7 +238,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -264,7 +283,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin && !worldResult.value.isPublic)
         ) {
@@ -321,7 +340,7 @@ export default (appContext: AppContext) => {
 
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -343,12 +362,19 @@ export default (appContext: AppContext) => {
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
+
+        const parseResult = createMessageParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const now = Date.now();
         const message: Message = {
           id: crypto.randomUUID(),
           worldId,
           conversationId,
-          content: body.content,
+          content: data.content,
           createdAt: now,
         };
 

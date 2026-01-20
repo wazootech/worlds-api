@@ -2,6 +2,10 @@ import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { LibsqlSearchStore } from "#/server/search/libsql.ts";
+import {
+  createWorldParamsSchema,
+  updateWorldParamsSchema,
+} from "#/server/schemas.ts";
 
 export default (appContext: AppContext) => {
   return new Router()
@@ -19,8 +23,9 @@ export default (appContext: AppContext) => {
         }
 
         const result = await appContext.db.worlds.find(worldId);
+
         if (
-          !result || result.value.deletedAt !== null ||
+          !result || result.value.deletedAt != null ||
           (result.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -43,7 +48,7 @@ export default (appContext: AppContext) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -57,11 +62,17 @@ export default (appContext: AppContext) => {
           return new Response("Invalid JSON", { status: 400 });
         }
 
+        const parseResult = updateWorldParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const updatedAt = Date.now();
         const result = await appContext.db.worlds.update(worldId, {
-          label: body.label ?? worldResult.value.label,
-          description: body.description ?? worldResult.value.description,
-          isPublic: body.isPublic ?? worldResult.value.isPublic,
+          label: data.label ?? worldResult.value.label,
+          description: data.description ?? worldResult.value.description,
+          isPublic: data.isPublic ?? worldResult.value.isPublic,
           updatedAt,
         });
         if (!result.ok) {
@@ -84,7 +95,7 @@ export default (appContext: AppContext) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         const worldResult = await appContext.db.worlds.find(worldId);
         if (
-          !worldResult || worldResult.value.deletedAt !== null ||
+          !worldResult || worldResult.value.deletedAt != null ||
           (worldResult.value.accountId !== authorized.account?.id &&
             !authorized.admin)
         ) {
@@ -149,15 +160,21 @@ export default (appContext: AppContext) => {
           return new Response("Invalid JSON", { status: 400 });
         }
 
+        const parseResult = createWorldParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const now = Date.now();
         const world = {
-          accountId: authorized.account.id,
-          label: body.label,
-          description: body.description,
+          accountId: authorized.account!.id,
+          label: data.label,
+          description: data.description,
           createdAt: now,
           updatedAt: now,
-          deletedAt: null,
-          isPublic: body.isPublic ?? false,
+          deletedAt: undefined,
+          isPublic: data.isPublic,
         };
         const result = await appContext.db.worlds.add(world);
 

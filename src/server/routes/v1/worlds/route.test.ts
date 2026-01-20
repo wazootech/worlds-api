@@ -16,7 +16,6 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
       description: "Test Description",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
     });
     assert(result.ok);
     const worldId = result.id;
@@ -38,7 +37,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
     assertEquals(world.label, "Test World");
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
-    assertEquals(world.deletedAt, null);
+    assertEquals(world.deletedAt, undefined);
     assertEquals(world.isPublic, false);
   });
 
@@ -70,7 +69,6 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -124,7 +122,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
     assert(typeof world.id === "string");
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
-    assertEquals(world.deletedAt, null);
+    assertEquals(world.deletedAt, undefined);
   });
 
   testContext.kv.close();
@@ -145,7 +143,6 @@ Deno.test("Worlds API routes - PUT operations", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -188,7 +185,6 @@ Deno.test("Worlds API routes - PUT operations", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -242,7 +238,6 @@ Deno.test("Worlds API routes - DELETE operations", async (t) => {
       description: "Test Description",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
     });
     assert(result.ok);
     const worldId = result.id;
@@ -258,9 +253,6 @@ Deno.test("Worlds API routes - DELETE operations", async (t) => {
         },
       }),
     );
-    if (deleteResp.status !== 204) {
-      console.log(await deleteResp.text());
-    }
     assertEquals(deleteResp.status, 204);
 
     // Verify deletion - should return 404
@@ -315,7 +307,6 @@ Deno.test("Worlds API routes - List operations", async (t) => {
         description: "Test Description 1",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result1.ok);
 
@@ -325,7 +316,6 @@ Deno.test("Worlds API routes - List operations", async (t) => {
         description: "Test Description 2",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result2.ok);
 
@@ -385,7 +375,7 @@ Deno.test("Admin Account Override", async (t) => {
       description: "Description A",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
 
@@ -396,7 +386,7 @@ Deno.test("Admin Account Override", async (t) => {
       description: "Description B",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
 
@@ -464,7 +454,7 @@ Deno.test("Admin Account Override", async (t) => {
       description: "to be deleted",
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      deletedAt: null,
+
       isPublic: false,
     });
     assert(result.ok);
@@ -497,7 +487,7 @@ Deno.test("Admin Account Override", async (t) => {
         description: "Sparql usage test",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
+
         isPublic: false,
       });
       assert(result.ok);

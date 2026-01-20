@@ -22,7 +22,6 @@ if (import.meta.main) {
 
   const testAccount = await createTestAccount(appContext.db);
   const worldRecord = await sdk.worlds.create({
-    accountId: testAccount.id,
     label: "Test World",
     description: "Test World",
     isPublic: false,

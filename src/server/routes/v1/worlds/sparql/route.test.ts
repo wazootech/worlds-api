@@ -37,7 +37,6 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -79,7 +78,6 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -138,7 +136,6 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -191,7 +188,6 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -253,7 +249,6 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -345,7 +340,6 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -373,7 +367,6 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -405,7 +398,6 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -441,7 +433,6 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -485,7 +476,6 @@ Deno.test("SPARQL API routes - Method validation", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;
@@ -516,7 +506,6 @@ Deno.test("SPARQL API routes - Method validation", async (t) => {
         description: "Test Description",
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        deletedAt: null,
       });
       assert(result.ok);
       const worldId = result.id;

@@ -2,6 +2,10 @@ import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
+import {
+  createAccountParamsSchema,
+  updateAccountParamsSchema,
+} from "#/server/schemas.ts";
 
 export default (appContext: AppContext) =>
   new Router()
@@ -55,16 +59,23 @@ export default (appContext: AppContext) =>
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
+
+        const parseResult = createAccountParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const { id, ...data } = parseResult.data;
+
         const apiKey = ulid();
-        const timestamp = Date.now();
+
+        const now = Date.now();
         const account = {
-          id: body.id,
-          description: body.description ?? null,
-          plan: body.plan,
+          id: id,
+          description: data.description,
+          plan: data.plan,
           apiKey: apiKey,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-          deletedAt: null,
+          createdAt: now,
+          updatedAt: now,
         };
         try {
           const result = await appContext.db.accounts.add(account);
@@ -135,9 +146,16 @@ export default (appContext: AppContext) =>
         } catch {
           return new Response("Invalid JSON", { status: 400 });
         }
+
+        const parseResult = updateAccountParamsSchema.safeParse(body);
+        if (!parseResult.success) {
+          return Response.json(parseResult.error, { status: 400 });
+        }
+        const data = parseResult.data;
+
         const result = await appContext.db.accounts.update(accountId, {
-          description: body.description ?? null,
-          plan: body.plan,
+          description: data.description,
+          plan: data.plan,
           updatedAt: Date.now(),
         });
         if (!result.ok) {

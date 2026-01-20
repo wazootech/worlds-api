@@ -3,12 +3,12 @@
  */
 export interface AccountRecord {
   id: string;
-  description: string | null;
-  plan: string | null;
+  description?: string;
+  plan?: string;
   apiKey: string;
   createdAt: number;
   updatedAt: number;
-  deletedAt: number | null;
+  deletedAt?: number;
 }
 
 /**
@@ -18,3 +18,8 @@ export type CreateAccountParams = Omit<
   AccountRecord,
   "apiKey" | "createdAt" | "updatedAt" | "deletedAt"
 >;
+
+/**
+ * UpdateAccountParams represents the parameters for updating an account.
+ */
+export type UpdateAccountParams = Partial<CreateAccountParams>;
