@@ -63,57 +63,6 @@ Deno.test("InternalWorlds - Accounts", async (t) => {
   appContext.kv.close();
 });
 
-Deno.test("InternalWorlds - Plans", async (t) => {
-  const appContext = await createTestContext();
-  const server = await createServer(appContext);
-  const sdk = new InternalWorlds({
-    baseUrl: "http://localhost/v1",
-    apiKey: appContext.admin!.apiKey,
-    fetch: (url, init) => server.fetch(new Request(url, init)),
-  });
-
-  await t.step("create plan", async () => {
-    const plan = await sdk.plans.create({
-      name: "sdk_plan",
-      quotaRequestsPerMin: 100,
-      quotaStorageBytes: 1000,
-    });
-    assertEquals(plan.name, "sdk_plan");
-    assertEquals(plan.quotaRequestsPerMin, 100);
-  });
-
-  await t.step("get plan", async () => {
-    const plan = await sdk.plans.get("sdk_plan");
-    assert(plan !== null);
-    assertEquals(plan.name, "sdk_plan");
-  });
-
-  await t.step("list plans", async () => {
-    const plans = await sdk.plans.list();
-    const found = plans.find((p) => p.name === "sdk_plan");
-    assert(found !== undefined);
-  });
-
-  await t.step("update plan", async () => {
-    await sdk.plans.update("sdk_plan", {
-      name: "sdk_plan",
-      quotaRequestsPerMin: 200,
-      quotaStorageBytes: 2000,
-    });
-    const plan = await sdk.plans.get("sdk_plan");
-    assert(plan !== null);
-    assertEquals(plan.quotaRequestsPerMin, 200);
-  });
-
-  await t.step("delete plan", async () => {
-    await sdk.plans.delete("sdk_plan");
-    const plan = await sdk.plans.get("sdk_plan");
-    assertEquals(plan, null);
-  });
-
-  appContext.kv.close();
-});
-
 Deno.test("InternalWorlds - Worlds", async (t) => {
   const appContext = await createTestContext();
   const server = await createServer(appContext);
@@ -196,23 +145,6 @@ Deno.test("InternalWorlds - Worlds", async (t) => {
 
     const binding = result.results.bindings[0];
     assertEquals(binding.o.value, "Create Object");
-  });
-
-  await t.step("get usage", async () => {
-    // Seed usage data
-    const bucketId = "bucket_01";
-    await appContext.db.usageBuckets.set(bucketId, {
-      accountId,
-      worldId,
-      bucketStartTs: Date.now(),
-      requestCount: 42,
-    });
-
-    const usage = await sdk.worlds.getUsage(worldId);
-    assert(usage.length >= 1);
-    const bucket = usage.find((u) => u.id === bucketId);
-    assert(bucket !== undefined);
-    assertEquals(bucket.requestCount, 42);
   });
 
   await t.step("delete world", async () => {
@@ -398,52 +330,9 @@ Deno.test("InternalWorlds - Admin Account Override", async (t) => {
 
       // Verify usage is attributed to Account A
       // Note: Only SPARQL queries track usage, not updates
-      const { result: buckets } = await appContext.db.usageBuckets
-        .findBySecondaryIndex(
-          "worldId",
-          worldId,
-        );
-      assert(buckets.length >= 1, "Expected at least one usage bucket");
-      const bucket = buckets.find((b) => b.value.accountId === accountA.id);
-      assert(bucket !== undefined, "Expected usage bucket for Account A");
-      assert(
-        bucket.value.requestCount >= 1,
-        "Expected at least 1 request (query)",
-      ); // Only the query tracks usage
+      // Usage verification removed as historical usage buckets are deprecated
     },
   );
-
-  await t.step("admin can get usage for specific account", async () => {
-    // Create a world for Account B
-    const result = await appContext.db.worlds.add({
-      accountId: accountB.id,
-      name: "Usage Test World",
-      description: "Test",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      deletedAt: null,
-      isPublic: false,
-    });
-    assert(result.ok);
-    const worldId = result.id;
-
-    // Seed usage data
-    await appContext.db.usageBuckets.set("usage_test_bucket", {
-      accountId: accountB.id,
-      worldId,
-      bucketStartTs: Date.now(),
-      requestCount: 100,
-    });
-
-    // Get usage using admin override
-    const usage = await adminSdk.worlds.getUsage(worldId, {
-      accountId: accountB.id,
-    });
-    assert(usage.length >= 1);
-    const bucket = usage.find((u) => u.id === "usage_test_bucket");
-    assert(bucket !== undefined);
-    assertEquals(bucket.requestCount, 100);
-  });
 
   await t.step("admin can search world for specific account", async () => {
     // Create a world for Account A

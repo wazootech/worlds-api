@@ -24,15 +24,8 @@ export function createWorldsKvdex(kv: Deno.Kv) {
           apiKey: "secondary",
         },
       }),
-      usageBuckets: collection(usageBucketSchema, {
-        indices: {
-          accountId: "secondary",
-          worldId: "secondary",
-        },
-      }),
-      plans: collection(planSchema, {
-        idGenerator: (plan) => plan.name,
-      }),
+      usageBuckets: collection(usageBucketSchema),
+
       worlds: collection(worldSchema, {
         indices: {
           accountId: "secondary",
@@ -44,19 +37,6 @@ export function createWorldsKvdex(kv: Deno.Kv) {
     },
   });
 }
-
-export type Plan = z.infer<typeof planSchema>;
-
-/**
- * planSchema is the schema for a plan.
- *
- * A plan defines the quota for a given account.
- */
-export const planSchema = z.object({
-  name: z.string(),
-  quotaRequestsPerMin: z.number().default(60),
-  quotaStorageBytes: z.number().default(104857600),
-});
 
 export type Account = z.infer<typeof accountSchema>;
 
@@ -100,13 +80,14 @@ export type UsageBucket = z.infer<typeof usageBucketSchema>;
 /**
  * usageBucketSchema is the schema for a usage bucket.
  *
- * A usage bucket tracks the number of requests made to a world in a given time window.
+ * A usage bucket implements the [Token Bucket](https://en.wikipedia.org/wiki/Token_bucket)
+ * algorithm for rate limiting.
  */
 export const usageBucketSchema = z.object({
   accountId: z.string(),
-  worldId: z.string(),
-  bucketStartTs: z.number(),
-  requestCount: z.number().default(0),
+  key: z.string(), // Composite key: worldId:resourceType
+  tokens: z.number(),
+  lastRefillAt: z.number(),
 });
 
 export type WorldBlob = z.infer<typeof worldBlobSchema>;

@@ -7,7 +7,7 @@ import type { DatasetParams } from "#/server/db/sparql.ts";
 import { sparql } from "#/server/db/sparql.ts";
 import { isUpdateQuery } from "#/server/sparql/tree-sitter.ts";
 import { LibsqlSearchStore } from "#/server/search/libsql.ts";
-import { incrementRequestCount } from "#/server/usage.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 
 const { namedNode, quad } = DataFactory;
 
@@ -145,6 +145,9 @@ async function executeSparqlRequest(
 ): Promise<Response> {
   const { query } = await parseQuery(request);
 
+  // Rate limit headers to include in response
+  let rateLimitHeaders: Record<string, string> = {};
+
   // If no query, this should only happen for GET - return service description
   if (!query) {
     if (request.method === "GET") {
@@ -173,6 +176,13 @@ async function executeSparqlRequest(
   // Updates are only allowed via POST
   if (isUpdate && request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
+  }
+
+  // Apply rate limiting if accountId is present
+  if (accountId) {
+    rateLimitHeaders = await checkRateLimit(appContext, accountId, worldId, {
+      resourceType: isUpdate ? "sparql_update" : "sparql_query",
+    });
   }
 
   // Execute query or update using centralized function
@@ -204,16 +214,18 @@ async function executeSparqlRequest(
       await appContext.db.worldBlobs.set(worldId, newData);
     }
 
-    return new Response(null, { status: 204 });
-  }
-
-  if (accountId) {
-    await incrementRequestCount(appContext, accountId, worldId);
+    return new Response(null, {
+      status: 204,
+      headers: rateLimitHeaders,
+    });
   }
 
   // For queries, return the stream response
   return new Response(JSON.stringify(result), {
-    headers: { "Content-Type": "application/sparql-results+json" },
+    headers: {
+      "Content-Type": "application/sparql-results+json",
+      ...rateLimitHeaders,
+    },
   });
 }
 

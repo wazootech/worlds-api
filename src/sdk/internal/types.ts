@@ -18,12 +18,3 @@ export type CreateAccountParams = Omit<
   AccountRecord,
   "apiKey" | "createdAt" | "updatedAt" | "deletedAt"
 >;
-
-/**
- * PlanRecord represents a subscription plan.
- */
-export interface PlanRecord {
-  name: string;
-  quotaRequestsPerMin: number;
-  quotaStorageBytes: number;
-}

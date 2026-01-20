@@ -32,7 +32,7 @@ const world = new World({
 });
 
 // Add some knowledge (triples) to your world.
-await world.sparqlUpdate(`
+await world.sparql(`
   INSERT DATA {
     <http://example.com/ethan> <http://schema.org/relatedTo> <http://example.com/gregory> .
     <http://example.com/gregory> <http://schema.org/givenName> "Gregory" .
@@ -55,7 +55,7 @@ console.log(searchResult);
 // ]
 
 // Reason over your world using SPARQL.
-const result = await world.sparqlQuery(`
+const result = await world.sparql(`
   SELECT ?name WHERE {
     <http://example.com/ethan> <http://schema.org/relatedTo> ?person .
     ?person <http://schema.org/givenName> ?name .

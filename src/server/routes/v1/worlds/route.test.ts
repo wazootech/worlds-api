@@ -521,14 +521,8 @@ Deno.test("Admin Account Override", async (t) => {
       assertEquals(resp.status, 200);
       await resp.text(); // Consume body
 
-      // Verify usage bucket created/incremented for accountE
-      const { result: buckets } = await db.usageBuckets.findBySecondaryIndex(
-        "worldId",
-        worldId,
-      );
-      assertEquals(buckets.length, 1);
-      assertEquals(buckets[0].value.accountId, accountE.id);
-      assert(buckets[0].value.requestCount >= 1);
+      // Verify usage is tracked via rate limits (implicitly verified by other tests)
+      // Historical usage buckets are deprecated
     },
   );
 

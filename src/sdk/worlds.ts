@@ -3,7 +3,6 @@ import type {
   SearchResult,
   SparqlResults,
   UpdateWorldParams,
-  UsageBucketRecord,
   WorldRecord,
   WorldsOptions,
 } from "./types.ts";
@@ -213,36 +212,6 @@ export class Worlds {
       return null;
     }
 
-    return await response.json();
-  }
-
-  /**
-   * getUsage gets the usage for a specific world.
-   */
-  public async getUsage(
-    worldId: string,
-    options?: { accountId?: string },
-  ): Promise<UsageBucketRecord[]> {
-    const url = new URL(
-      `${this.options.baseUrl}/worlds/${worldId}/usage`,
-    );
-    if (options?.accountId) {
-      url.searchParams.set("account", options.accountId);
-    }
-
-    const response = await this.fetch(
-      url,
-      {
-        headers: {
-          Authorization: `Bearer ${this.options.apiKey}`,
-        },
-      },
-    );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to get usage: ${response.status} ${response.statusText}`,
-      );
-    }
     return await response.json();
   }
 

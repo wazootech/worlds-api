@@ -54,17 +54,6 @@ export interface WorldRecord {
 }
 
 /**
- * UsageBucketRecord represents usage statistics.
- */
-export interface UsageBucketRecord {
-  id: string;
-  accountId: string;
-  worldId: string;
-  bucketStartTs: number;
-  requestCount: number;
-}
-
-/**
  * SparqlValue represents a value in a SPARQL result.
  */
 export interface SparqlValue {
