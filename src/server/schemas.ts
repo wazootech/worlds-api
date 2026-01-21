@@ -134,7 +134,7 @@ export const sparqlSelectResultsSchema = z.object({
   results: z.object({
     bindings: z.array(z.record(z.string(), sparqlValueSchema)),
   }),
-  boolean: z.undefined(),
+  boolean: z.undefined().optional(),
 });
 
 /**
@@ -145,13 +145,46 @@ export const sparqlAskResultsSchema = z.object({
     link: z.array(z.string()).optional(),
   }),
   boolean: z.boolean(),
-  results: z.undefined(),
+  results: z.undefined().optional(),
 });
 
 /**
- * SparqlResults represents the results of a SPARQL query.
+ * SparqlQuad represents a single quad result (for CONSTRUCT/DESCRIBE).
  */
-export const sparqlResultsSchema = z.union([
+export const sparqlQuadSchema = z.object({
+  subject: z.object({
+    type: z.enum(["uri", "bnode"]),
+    value: z.string(),
+  }),
+  predicate: z.object({
+    type: z.literal("uri"),
+    value: z.string(),
+  }),
+  object: sparqlValueSchema,
+  graph: z.object({
+    type: z.enum(["default", "uri"]),
+    value: z.string(),
+  }),
+});
+
+/**
+ * SparqlQuadsResults represents the results of a SPARQL CONSTRUCT/DESCRIBE query.
+ */
+export const sparqlQuadsResultsSchema = z.object({
+  head: z.object({
+    link: z.array(z.string()).optional(),
+  }),
+  results: z.object({
+    quads: z.array(sparqlQuadSchema),
+  }),
+  boolean: z.undefined().optional(),
+});
+
+/**
+ * SparqlResult represents the result of a SPARQL query.
+ */
+export const sparqlResultSchema = z.union([
   sparqlSelectResultsSchema,
   sparqlAskResultsSchema,
+  sparqlQuadsResultsSchema,
 ]);

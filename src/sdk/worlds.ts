@@ -1,7 +1,7 @@
 import type {
   CreateWorldParams,
   SearchResult,
-  SparqlResults,
+  SparqlResult,
   UpdateWorldParams,
   WorldRecord,
   WorldsOptions,
@@ -182,7 +182,7 @@ export class Worlds {
     worldId: string,
     query: string,
     options?: { accountId?: string },
-  ): Promise<SparqlResults | null> {
+  ): Promise<SparqlResult | null> {
     const url = new URL(
       `${this.options.baseUrl}/worlds/${worldId}/sparql`,
     );

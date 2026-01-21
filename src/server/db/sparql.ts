@@ -2,6 +2,7 @@ import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import type { PatchHandler } from "@fartlabs/search-store";
 import { connectSearchStoreToN3Store } from "@fartlabs/search-store/n3";
 import { generateBlobFromN3Store, generateN3StoreFromBlob } from "./n3.ts";
+import type { SparqlBinding, SparqlQuad, SparqlResult } from "#/sdk/types.ts";
 
 /**
  * DatasetParams are the parameters for a SPARQL query.
@@ -12,21 +13,13 @@ export interface DatasetParams {
 }
 
 /**
- * SparqlResult represents the result of a SPARQL query.
- *
- * It is a JSON object conforming to the SPARQL 1.1 Query Results JSON Format.
- */
-// deno-lint-ignore no-explicit-any
-export type SparqlResult = any;
-
-/**
  * sparql executes a SPARQL query and returns the result.
  */
 export async function sparql(
   blob: Blob,
   query: string,
   searchStore: PatchHandler = { patch: async () => {} },
-): Promise<{ blob: Blob; result: SparqlResult }> {
+): Promise<{ blob: Blob; result: SparqlResult | null }> {
   const store = await generateN3StoreFromBlob(blob);
   const { store: proxiedStore, sync } = connectSearchStoreToN3Store(
     searchStore,
@@ -67,12 +60,12 @@ async function handleBindings(queryType: any): Promise<SparqlResult> {
   const bindingsStream = await queryType.execute();
   // deno-lint-ignore no-explicit-any
   const vars = (await queryType.metadata()).variables.map((v: any) => v.value);
-  const bindings = await new Promise<Record<string, unknown>[]>(
+  const bindings = await new Promise<SparqlBinding[]>(
     (resolve, reject) => {
-      const b: Record<string, unknown>[] = [];
+      const b: SparqlBinding[] = [];
       // deno-lint-ignore no-explicit-any
       bindingsStream.on("data", (binding: any) => {
-        const bindingObj: Record<string, unknown> = {};
+        const bindingObj: SparqlBinding = {};
         for (const v of vars) {
           const term = binding.get(v);
           if (term) {
@@ -81,26 +74,20 @@ async function handleBindings(queryType: any): Promise<SparqlResult> {
             else if (term.termType === "BlankNode") type = "bnode";
 
             bindingObj[v] = {
-              type,
+              type: type as "uri" | "literal" | "bnode",
               value: term.value,
             };
 
             if (term.termType === "Literal") {
               if (term.language) {
-                bindingObj[v] = {
-                  ...bindingObj[v] as Record<string, unknown>,
-                  "xml:lang": term.language,
-                };
+                bindingObj[v]["xml:lang"] = term.language;
               }
               if (
                 term.datatype &&
                 term.datatype.value !==
                   "http://www.w3.org/2001/XMLSchema#string"
               ) {
-                bindingObj[v] = {
-                  ...bindingObj[v] as Record<string, unknown>,
-                  datatype: term.datatype.value,
-                };
+                bindingObj[v].datatype = term.datatype.value;
               }
             }
           }
@@ -130,10 +117,8 @@ async function handleBoolean(queryType: any): Promise<SparqlResult> {
 // deno-lint-ignore no-explicit-any
 async function handleQuads(queryType: any): Promise<SparqlResult> {
   const quadsStream = await queryType.execute();
-  // deno-lint-ignore no-explicit-any
-  const quads = await new Promise<any[]>((resolve, reject) => {
-    // deno-lint-ignore no-explicit-any
-    const q: any[] = [];
+  const quads = await new Promise<SparqlQuad[]>((resolve, reject) => {
+    const q: SparqlQuad[] = [];
     // deno-lint-ignore no-explicit-any
     quadsStream.on("data", (quad: any) => {
       q.push({

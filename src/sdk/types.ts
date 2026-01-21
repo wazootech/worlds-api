@@ -65,9 +65,19 @@ export interface SparqlValue {
 }
 
 /**
- * SparqlResults represents the results of a SPARQL query.
+ * SparqlBinding represents a single result binding.
  */
-export type SparqlResults = SparqlSelectResults | SparqlAskResults;
+export type SparqlBinding = Record<string, SparqlValue>;
+
+/**
+ * SparqlResult represents the result of a SPARQL query.
+ *
+ * @see https://www.w3.org/TR/sparql11-results-json/
+ */
+export type SparqlResult =
+  | SparqlSelectResults
+  | SparqlAskResults
+  | SparqlQuadsResults;
 
 /**
  * SparqlSelectResults represents the results of a SPARQL SELECT query.
@@ -78,7 +88,7 @@ export interface SparqlSelectResults {
     link?: string[];
   };
   results: {
-    bindings: Record<string, SparqlValue>[];
+    bindings: SparqlBinding[];
   };
   boolean?: undefined;
 }
@@ -92,6 +102,29 @@ export interface SparqlAskResults {
   };
   boolean: boolean;
   results?: undefined;
+}
+
+/**
+ * SparqlQuad represents a single quad result (for CONSTRUCT/DESCRIBE).
+ */
+export interface SparqlQuad {
+  subject: { type: "uri" | "bnode"; value: string };
+  predicate: { type: "uri"; value: string };
+  object: SparqlValue;
+  graph: { type: "default" | "uri"; value: string };
+}
+
+/**
+ * SparqlQuadsResults represents the results of a SPARQL CONSTRUCT/DESCRIBE query.
+ */
+export interface SparqlQuadsResults {
+  head: {
+    link?: string[];
+  };
+  results: {
+    quads: SparqlQuad[];
+  };
+  boolean?: undefined;
 }
 
 /**

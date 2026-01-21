@@ -13,7 +13,8 @@ Deno.test("SPARQL Layer", async (t) => {
     const query = "SELECT * WHERE { ?s ?p ?o }";
     const { result } = await sparql(blob, query);
 
-    assertEquals(result.results.bindings.length, 0);
+    // deno-lint-ignore no-explicit-any
+    assertEquals((result as any).results.bindings.length, 0);
   });
 
   await t.step("INSERT DATA updates the world", async () => {
@@ -35,8 +36,10 @@ Deno.test("SPARQL Layer", async (t) => {
       "SELECT ?o WHERE { <http://example.org/s> <http://example.org/p> ?o }";
     const { result: selectResult } = await sparql(updatedBlob, selectQuery);
 
-    assertEquals(selectResult.results.bindings.length, 1);
-    assertEquals(selectResult.results.bindings[0].o.value, "object");
+    // deno-lint-ignore no-explicit-any
+    assertEquals((selectResult as any).results.bindings.length, 1);
+    // deno-lint-ignore no-explicit-any
+    assertEquals((selectResult as any).results.bindings[0].o.value, "object");
   });
 
   await t.step("SELECT queries existing data", async () => {
@@ -52,8 +55,10 @@ Deno.test("SPARQL Layer", async (t) => {
     const query = "SELECT ?s WHERE { ?s <http://b> 'c' }";
     const { result } = await sparql(blob, query);
 
-    assertEquals(result.results.bindings.length, 1);
-    assertEquals(result.results.bindings[0].s.value, "http://a");
+    // deno-lint-ignore no-explicit-any
+    assertEquals((result as any).results.bindings.length, 1);
+    // deno-lint-ignore no-explicit-any
+    assertEquals((result as any).results.bindings[0].s.value, "http://a");
   });
 
   kv.close();
