@@ -1,3 +1,4 @@
+import figlet from "figlet";
 import type { ModelMessage } from "ai";
 import { generateText, stepCountIs } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -39,11 +40,39 @@ if (import.meta.main) {
     apiKey: Deno.env.get("GOOGLE_API_KEY")!,
   });
 
-  console.log("Welcome to the Worlds API example. Type 'exit' to quit.");
+  console.log(
+    `%c${figlet.textSync("Worlds CLI")}`,
+    "color: #3b82f6; font-weight: bold",
+  );
+  console.log(
+    "%cVisit our company page at %chttps://wazoo.tech/",
+    "color: #6b7280",
+    "color: #3b82f6; text-decoration: underline",
+  );
+  console.log(
+    "%cRead the documentation at %chttps://docs.wazoo.tech/",
+    "color: #6b7280",
+    "color: #3b82f6; text-decoration: underline",
+  );
+  console.log(
+    "%cOpen the web console at %chttps://console.wazoo.tech/",
+    "color: #6b7280",
+    "color: #3b82f6; text-decoration: underline",
+  );
+  console.log(
+    "%cCheck out our GitHub at %chttps://github.com/wazootech/",
+    "color: #6b7280",
+    "color: #3b82f6; text-decoration: underline",
+  );
+  console.log(
+    "%cWelcome to the Worlds CLI example.%c Type 'exit' to quit.",
+    "color: #3b82f6; font-weight: bold",
+    "color: #6b7280",
+  );
 
   // Run REPL.
   while (true) {
-    const userInput = prompt("> ");
+    const userInput = prompt(">");
     if (!userInput) {
       continue;
     }
@@ -72,13 +101,6 @@ if (import.meta.main) {
       messages,
     });
 
-    messages.push({
-      role: "assistant",
-      content: result.text,
-    });
-
-    console.log(`${result.text}`);
-
     for (const step of result.steps) {
       for (const call of step.toolCalls) {
         const toolResult = step.toolResults
@@ -87,31 +109,51 @@ if (import.meta.main) {
         switch (call.toolName) {
           case "generateIri": {
             console.log(
-              `generateIri(${call.input.entityText})${
-                toolResult?.output.iri ? ` => ${toolResult?.output.iri}` : ""
+              `%c  generateIri(%c${
+                (call.input as { entityText?: string | undefined }).entityText
+              }%c)${
+                (toolResult?.output as { iri?: string | undefined }).iri
+                  ? ` => %c${
+                    (toolResult?.output as { iri?: string | undefined }).iri
+                  }`
+                  : ""
               }`,
+              "color: #94a3b8",
+              "color: #cbd5e1",
+              "color: #94a3b8",
+              "color: #10b981",
             );
             break;
           }
 
           case "executeSparql": {
             console.log(
-              `executeSparql(${call.input.sparql})${
+              `%c  executeSparql(%c${
+                (call.input as { sparql: string }).sparql.trim()
+              }%c)${
                 toolResult?.output
-                  ? ` => ${JSON.stringify(toolResult?.output, null, 2)}`
+                  ? ` => %c${JSON.stringify(toolResult?.output)}`
                   : ""
               }`,
+              "color: #94a3b8",
+              "color: #cbd5e1",
+              "color: #94a3b8",
+              "color: #10b981",
             );
             break;
           }
 
           case "searchFacts": {
             console.log(
-              `searchFacts(${call.input.query})${
+              `%c  searchFacts(%c${(call.input as { query: string }).query}%c)${
                 toolResult?.output
-                  ? ` => ${JSON.stringify(toolResult?.output, null, 2)}`
+                  ? ` => %c${JSON.stringify(toolResult?.output)}`
                   : ""
               }`,
+              "color: #94a3b8",
+              "color: #cbd5e1",
+              "color: #94a3b8",
+              "color: #10b981",
             );
             break;
           }
@@ -119,10 +161,15 @@ if (import.meta.main) {
       }
     }
 
+    messages.push({
+      role: "assistant",
+      content: result.text,
+    });
+
+    console.log(`\n%c${result.text}`, "color: #10b981");
+
     messages.push(
       { role: "assistant", content: result.content } as ModelMessage,
     );
-
-    console.log("");
   }
 }

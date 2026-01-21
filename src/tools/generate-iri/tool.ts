@@ -6,7 +6,9 @@ import { z } from "zod";
  * createGenerateIriTool creates a tool that generates a unique IRI
  * (Internationalized Resource Identifier) for a new entity.
  */
-export function createGenerateIriTool(generateIri: () => string): Tool {
+export function createGenerateIriTool(
+  generateIri: () => string,
+): Tool<{ entityText?: string | undefined }, { iri: string }> {
   return tool({
     description:
       "Generate a unique IRI for a new entity. Use this when you need to insert a new node into the graph.",

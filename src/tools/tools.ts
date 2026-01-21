@@ -1,7 +1,5 @@
-import type { Tool } from "ai";
 import { ulid } from "@std/ulid/ulid";
-import type { WorldsOptions } from "#/sdk/mod.ts";
-import { Worlds } from "#/sdk/worlds.ts";
+import type { CreateToolsOptions } from "./types.ts";
 import { createExecuteSparqlTool } from "./execute-sparql/tool.ts";
 import { createSearchFactsTool } from "./search-facts/tool.ts";
 import { createGenerateIriTool } from "./generate-iri/tool.ts";
@@ -14,35 +12,19 @@ export function generateIri(): string {
   return `https://wazoo.tech/.well-known/genid/${ulid()}`;
 }
 
-/**
- * CreateToolsOptions are the options for creating tools.
- */
-export interface CreateToolsOptions extends WorldsOptions {
-  /**
-   * worldId is the ID of the world.
-   */
-  worldId: string;
-
-  /**
-   * generateIri is a function that generates an IRI for new entities.
-   */
-  generateIri?: () => string;
-}
-
 // TODO: Improve accuracy of ReturnType<typeof createTools>.
 
 /**
  * createTools creates a set of tools for a world.
  */
 export function createTools(options: CreateToolsOptions): {
-  executeSparql: Tool;
-  searchFacts: Tool;
-  generateIri: Tool;
+  executeSparql: ReturnType<typeof createExecuteSparqlTool>;
+  searchFacts: ReturnType<typeof createSearchFactsTool>;
+  generateIri: ReturnType<typeof createGenerateIriTool>;
 } {
-  const worlds = new Worlds(options);
   return {
-    executeSparql: createExecuteSparqlTool(worlds, options.worldId),
-    searchFacts: createSearchFactsTool(worlds, options.worldId),
+    executeSparql: createExecuteSparqlTool(options),
+    searchFacts: createSearchFactsTool(options),
     generateIri: createGenerateIriTool(options.generateIri ?? generateIri),
   };
 }

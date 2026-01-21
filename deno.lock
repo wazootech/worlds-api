@@ -29,6 +29,8 @@
     "npm:@types/n3@*": "1.26.1",
     "npm:@types/n3@^1.26.1": "1.26.1",
     "npm:ai@^6.0.42": "6.0.42_zod@3.25.76",
+    "npm:figlet@*": "1.9.4",
+    "npm:figlet@^1.9.4": "1.9.4",
     "npm:n3@^2.0.1": "2.0.1",
     "npm:rdf-canonize@5": "5.0.0",
     "npm:zod@^3.24.0": "3.25.76",
@@ -3209,6 +3211,9 @@
         "color-string"
       ]
     },
+    "commander@14.0.2": {
+      "integrity": "sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ=="
+    },
     "componentsjs@6.4.0": {
       "integrity": "sha512-H3AmzWARyQB5V/XJ7brjnFVfqywedjVFX3n528GKjEpQvNY4HXu5CBOAWDADjeSC42cufVc7C+J+cGTsgeKRzg==",
       "dependencies": [
@@ -3340,6 +3345,13 @@
         "node-domexception",
         "web-streams-polyfill"
       ]
+    },
+    "figlet@1.9.4": {
+      "integrity": "sha512-uN6QE+TrzTAHC1IWTyrc4FfGo2KH/82J8Jl1tyKB7+z5DBit/m3D++Iu5lg91qJMnQQ3vpJrj5gxcK/pk4R9tQ==",
+      "dependencies": [
+        "commander"
+      ],
+      "bin": true
     },
     "fn.name@1.1.0": {
       "integrity": "sha512-GRnmB5gPyJpAhTQdSZTSp9uaPSvl09KoYcMQtsB9rQoOmzs9dH6ffeccH+Z+cv6P68Hu5bC6JjRh4Ah/mHSNRw=="
@@ -4114,6 +4126,7 @@
       "npm:@libsql/client@0.17",
       "npm:@types/n3@^1.26.1",
       "npm:ai@^6.0.42",
+      "npm:figlet@^1.9.4",
       "npm:n3@^2.0.1",
       "npm:zod@^4.3.5"
     ]
