@@ -1,8 +1,8 @@
 import { ulid } from "@std/ulid/ulid";
-import type { CreateToolsOptions } from "./types.ts";
 import { createExecuteSparqlTool } from "./execute-sparql/tool.ts";
 import { createSearchFactsTool } from "./search-facts/tool.ts";
 import { createGenerateIriTool } from "./generate-iri/tool.ts";
+import type { CreateToolsOptions } from "./types.ts";
 
 /**
  * generateIri generates a random IRI using the ulid library

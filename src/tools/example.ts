@@ -21,15 +21,14 @@ async function createExampleContext(): Promise<AppContext> {
   const db = createWorldsKvdex(kv);
   const apiKey = "admin-api-key";
 
-  const client = createClient({ url: ":memory:" });
+  const libsqlClient = createClient({ url: ":memory:" });
   const embeddings = new UniversalSentenceEncoderEmbeddings();
-
   return {
     db,
     kv,
-    admin: { apiKey },
-    libsqlClient: client,
+    libsqlClient,
     embeddings,
+    admin: { apiKey },
   };
 }
 
@@ -117,8 +116,10 @@ if (import.meta.main) {
       }],
     });
 
+    // Pretrained to create sparql queries
+    // Latent demand channel?
     const result = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: google("gemini-2.5-flash"),
       tools,
       system: systemPrompt,
       stopWhen: stepCountIs(100),
