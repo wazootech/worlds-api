@@ -23,7 +23,7 @@
     "@tensorflow/tfjs-backend-wasm": "npm:@tensorflow/tfjs-backend-wasm@^4.22.0",
     "@types/n3": "npm:@types/n3@^1.26.1",
     "ai": "npm:ai@^6.0.45",
-    "figlet": "npm:figlet@^1.9.4",
+    "cfonts": "npm:cfonts@^3.3.1",
     "n3": "npm:n3@^2.0.1",
     "zod": "npm:zod@^4.3.5",
     "deno_tree_sitter": "https://deno.land/x/deno_tree_sitter@1.0.1.2/main/main.js",

@@ -1,4 +1,4 @@
-import figlet from "figlet";
+import { render } from "cfonts";
 import type { ModelMessage } from "ai";
 import { generateText, stepCountIs } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -63,33 +63,25 @@ if (import.meta.main) {
     apiKey: Deno.env.get("GOOGLE_API_KEY")!,
   });
 
+  const renderResult = render("Worlds CLI", {
+    font: "block",
+    align: "left",
+    colors: ["#d97706"],
+    background: "transparent",
+    letterSpacing: 1,
+    lineHeight: 1,
+    space: true,
+    maxLength: "0",
+    gradient: ["#d97706", "#f59e0b"],
+    independentGradient: true,
+    transitionGradient: true,
+    env: "node",
+  });
+  const banner = renderResult ? renderResult.string : "Worlds CLI";
+  console.log(banner);
   console.log(
-    `%c${figlet.textSync("Worlds CLI")}`,
-    "color: #3b82f6; font-weight: bold",
-  );
-  console.log(
-    "%cVisit our company page at %chttps://wazoo.tech/",
-    "color: #6b7280",
-    "color: #3b82f6; text-decoration: underline",
-  );
-  console.log(
-    "%cRead the documentation at %chttps://docs.wazoo.tech/",
-    "color: #6b7280",
-    "color: #3b82f6; text-decoration: underline",
-  );
-  console.log(
-    "%cOpen the web console at %chttps://console.wazoo.tech/",
-    "color: #6b7280",
-    "color: #3b82f6; text-decoration: underline",
-  );
-  console.log(
-    "%cCheck out our GitHub at %chttps://github.com/wazootech/",
-    "color: #6b7280",
-    "color: #3b82f6; text-decoration: underline",
-  );
-  console.log(
-    "%cWelcome to the Worlds CLI example.%c Type 'exit' to quit.",
-    "color: #3b82f6; font-weight: bold",
+    "%cWelcome to Worlds CLI.%c Type 'exit' to quit.",
+    "color: #78350f; font-weight: bold",
     "color: #6b7280",
   );
 
@@ -119,7 +111,7 @@ if (import.meta.main) {
     // Pretrained to create sparql queries
     // Latent demand channel?
     const result = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       tools,
       system: systemPrompt,
       stopWhen: stepCountIs(100),
