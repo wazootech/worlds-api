@@ -1,5 +1,4 @@
 import type { SearchResult as _SearchResult } from "@fartlabs/search-store";
-import type { ModelMessage } from "ai";
 
 /**
  * WorldsOptions are the options for the Worlds API SDK.
@@ -126,52 +125,3 @@ export interface SparqlQuadsResults {
   };
   boolean?: undefined;
 }
-
-/**
- * ConversationRecord represents a conversation in a world.
- */
-export interface ConversationRecord {
-  id: string;
-  worldId: string;
-  label?: string | null;
-  createdAt: number;
-  updatedAt: number;
-  metadata?: Record<string, unknown>;
-}
-
-/**
- * MessageRecord represents a message in a conversation.
- */
-export interface MessageRecord {
-  id: string;
-  worldId: string;
-  conversationId: string;
-  content: ModelMessage;
-  createdAt: number;
-}
-
-/**
- * CreateConversationParams represents the parameters for creating a conversation.
- */
-export type CreateConversationParams = Omit<
-  ConversationRecord,
-  "id" | "worldId" | "createdAt" | "updatedAt"
->;
-
-/**
- * UpdateConversationParams represents the parameters for updating a conversation.
- */
-export type UpdateConversationParams = Partial<CreateConversationParams>;
-
-/**
- * CreateMessageParams represents the parameters for creating a message.
- */
-export type CreateMessageParams = Omit<
-  MessageRecord,
-  "id" | "worldId" | "conversationId" | "createdAt"
->;
-
-/**
- * UpdateMessageParams represents the parameters for updating a message.
- */
-export type UpdateMessageParams = Partial<CreateMessageParams>;

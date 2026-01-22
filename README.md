@@ -82,32 +82,6 @@ console.log(result);
 // }
 ```
 
-### Conversations & Messages
-
-```typescript
-import { WorldsSdk } from "@fartlabs/worlds";
-
-const sdk = new WorldsSdk({
-  baseUrl: "http://localhost:8000/v1",
-  apiKey: "your-api-key",
-});
-
-// Create a new conversation in a world.
-const conversation = await sdk.conversations.create("my-world-id", {
-  metadata: { topic: "Greetings" },
-});
-
-// Add a message to the conversation.
-await sdk.messages.create("my-world-id", conversation.id, {
-  role: "user",
-  content: "Hello, world!",
-});
-
-// List messages.
-const messages = await sdk.messages.list("my-world-id", conversation.id);
-console.log(messages);
-```
-
 ## Development
 
 Contributions are welcome! Please open an issue or submit a pull request.

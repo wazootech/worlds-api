@@ -61,59 +61,6 @@ export const createWorldParamsSchema = worldRecordSchema.omit({
 export const updateWorldParamsSchema = createWorldParamsSchema.partial();
 
 /**
- * conversationRecordSchema is the Zod schema for ConversationRecord.
- */
-export const conversationRecordSchema = z.object({
-  id: z.string(),
-  worldId: z.string(),
-  createdAt: z.number(),
-  updatedAt: z.number(),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-/**
- * createConversationParamsSchema is the Zod schema for CreateConversationParams.
- */
-export const createConversationParamsSchema = conversationRecordSchema.omit({
-  id: true,
-  worldId: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-/**
- * updateConversationParamsSchema is the Zod schema for UpdateConversationParams.
- */
-export const updateConversationParamsSchema = createConversationParamsSchema
-  .partial();
-
-/**
- * messageRecordSchema is the Zod schema for MessageRecord.
- */
-export const messageRecordSchema = z.object({
-  id: z.string(),
-  worldId: z.string(),
-  conversationId: z.string(),
-  content: z.any(), // TODO: Type this properly with ModelMessage schema if available
-  createdAt: z.number(),
-});
-
-/**
- * createMessageParamsSchema is the Zod schema for CreateMessageParams.
- */
-export const createMessageParamsSchema = messageRecordSchema.omit({
-  id: true,
-  worldId: true,
-  conversationId: true,
-  createdAt: true,
-});
-
-/**
- * updateMessageParamsSchema is the Zod schema for UpdateMessageParams.
- */
-export const updateMessageParamsSchema = createMessageParamsSchema.partial();
-
-/**
  * SparqlValue represents a value in a SPARQL result.
  */
 export const sparqlValueSchema = z.object({

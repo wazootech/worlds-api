@@ -10,7 +10,6 @@ const routes = [
   "routes/v1/worlds/route.ts",
   "routes/v1/worlds/sparql/route.ts",
   "routes/v1/worlds/search/route.ts",
-  "routes/v1/worlds/conversations/route.ts",
 ];
 
 /**
