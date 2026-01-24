@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { LibsqlSearchStore } from "#/server/search/libsql.ts";
+import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 
 export default (appContext: AppContext) => {
@@ -24,6 +24,15 @@ export default (appContext: AppContext) => {
         return new Response("Query required", { status: 400 });
       }
 
+      const worldResult = await appContext.db.worlds.find(worldId);
+      if (
+        !worldResult || worldResult.value.deletedAt != null ||
+        (worldResult.value.accountId !== authorized.account?.id &&
+          !authorized.admin)
+      ) {
+        return new Response("World not found", { status: 404 });
+      }
+
       // Apply rate limiting if account is present
       let rateLimitHeaders: Record<string, string> = {};
       if (authorized.account) {
@@ -40,15 +49,17 @@ export default (appContext: AppContext) => {
         }
       }
 
-      const store = new LibsqlSearchStore({
+      const store = new LibsqlSearchStoreManager({
         client: appContext.libsqlClient,
         embeddings: appContext.embeddings,
-        tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
       });
       await store.createTablesIfNotExists();
 
       try {
-        const results = await store.search(query);
+        const results = await store.search(query, {
+          accountId: worldResult.value.accountId,
+          worldIds: [worldId],
+        });
         return new Response(JSON.stringify(results), {
           headers: {
             "Content-Type": "application/json",

@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { LibsqlSearchStore } from "#/server/search/libsql.ts";
+import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
   createWorldParamsSchema,
   updateWorldParamsSchema,
@@ -102,13 +102,13 @@ export default (appContext: AppContext) => {
           return new Response("World not found", { status: 404 });
         }
 
-        // Initialize search store to drop tables
-        const searchStore = new LibsqlSearchStore({
+        // Initialize search store to delete world's search data
+        const searchStore = new LibsqlSearchStoreManager({
           client: appContext.libsqlClient,
           embeddings: appContext.embeddings,
-          tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
         });
-        await searchStore.drop();
+        await searchStore.createTablesIfNotExists();
+        await searchStore.deleteWorld(worldResult.value.accountId, worldId);
 
         // Delete world blob and metadata sequentially (kvdex atomic limitation with serialized collections)
         await appContext.db.worldBlobs.delete(worldId);

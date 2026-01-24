@@ -4,7 +4,7 @@ import { generateBlobFromN3Store } from "#/server/db/n3.ts";
 import { DataFactory, Store } from "n3";
 import route from "./route.ts";
 import { createClient } from "@libsql/client";
-import { LibsqlSearchStore } from "#/server/search/libsql.ts";
+import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 
 Deno.test("Search API routes", async (t) => {
   const kv = await Deno.openKv(":memory:");
@@ -19,16 +19,19 @@ Deno.test("Search API routes", async (t) => {
   const _handler = route(appContext);
 
   const accountId = "test-account";
-  const worldId = "test-world";
 
   // Create world in DB
-  await db.worlds.add({
+  const worldAddResult = await db.worlds.add({
     accountId,
     label: "Test World",
     description: "A world for testing search",
     createdAt: Date.now(),
     updatedAt: Date.now(),
   });
+  if (!worldAddResult.ok) {
+    throw new Error("Failed to add world");
+  }
+  const worldId = worldAddResult.id;
 
   // Populate search store via N3
   const store = new Store();
@@ -43,14 +46,16 @@ Deno.test("Search API routes", async (t) => {
     batched: true,
   });
 
-  // Sync to search store
-  const searchStore = new LibsqlSearchStore({
+  // Sync to search store using LibsqlSearchStore
+  const searchStore = new LibsqlSearchStoreManager({
     client,
     embeddings: embedder,
-    tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
   });
   await searchStore.createTablesIfNotExists();
-  await searchStore.patch([{ deletions: [], insertions: [testQuad] }]);
+  await searchStore.patch(accountId, worldId, [{
+    deletions: [],
+    insertions: [testQuad],
+  }]);
 
   await t.step("GET /v1/worlds/:world/search returns results", async () => {
     // Mock authorized request

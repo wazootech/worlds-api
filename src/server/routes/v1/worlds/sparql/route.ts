@@ -6,7 +6,10 @@ import type { AppContext } from "#/server/app-context.ts";
 import type { DatasetParams } from "#/server/db/sparql.ts";
 import { sparql } from "#/server/db/sparql.ts";
 import { isUpdateQuery } from "#/server/sparql/tree-sitter.ts";
-import { LibsqlSearchStore } from "#/server/search/libsql.ts";
+import {
+  LibsqlPatchHandler,
+  LibsqlSearchStoreManager,
+} from "#/server/search/libsql.ts";
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 
 const { namedNode, quad } = DataFactory;
@@ -186,12 +189,28 @@ async function executeSparqlRequest(
   }
 
   // Execute query or update using centralized function
-  const searchStore = new LibsqlSearchStore({
-    client: appContext.libsqlClient,
-    embeddings: appContext.embeddings,
-    tablePrefix: `world_${worldId.replace(/[^a-zA-Z0-9_]/g, "_")}_`,
-  });
-  await searchStore.createTablesIfNotExists();
+  // Resolve accountId for the search store (always use the world's owner)
+  let searchAccountId = accountId;
+  if (!searchAccountId) {
+    const world = await appContext.db.worlds.find(worldId);
+    searchAccountId = world?.value.accountId;
+  }
+
+  const patchHandler = searchAccountId
+    ? (() => {
+      const searchStore = new LibsqlSearchStoreManager({
+        client: appContext.libsqlClient,
+        embeddings: appContext.embeddings,
+      });
+      // Create tables asynchronously - don't block on it
+      searchStore.createTablesIfNotExists();
+      return new LibsqlPatchHandler({
+        manager: searchStore,
+        accountId: searchAccountId!,
+        worldId,
+      });
+    })()
+    : { patch: async () => {} };
 
   const worldBlobEntry = await appContext.db.worldBlobs.find(worldId);
   const blob = worldBlobEntry?.value
@@ -201,7 +220,7 @@ async function executeSparqlRequest(
   const { blob: newBlob, result } = await sparql(
     blob,
     query,
-    searchStore,
+    patchHandler,
   );
 
   // For updates, return 204 instead of the stream response
