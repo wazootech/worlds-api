@@ -7,6 +7,7 @@ import { GeminiEmbeddings } from "./embeddings/gemini.ts";
 
 const routes = [
   "routes/v1/accounts/route.ts",
+  "routes/v1/invites/route.ts",
   "routes/v1/worlds/route.ts",
   "routes/v1/worlds/sparql/route.ts",
   "routes/v1/worlds/search/route.ts",

@@ -31,6 +31,23 @@ export const updateAccountParamsSchema = createAccountParamsSchema
   .omit({ id: true });
 
 /**
+ * inviteRecordSchema is the Zod schema for InviteRecord.
+ */
+export const inviteRecordSchema = z.object({
+  code: z.string(),
+  createdAt: z.number(),
+  redeemedBy: z.string().optional(),
+  redeemedAt: z.number().optional(),
+});
+
+/**
+ * createInviteParamsSchema is the Zod schema for CreateInviteParams.
+ */
+export const createInviteParamsSchema = z.object({
+  code: z.string().optional(),
+});
+
+/**
  * worldRecordSchema is the Zod schema for WorldRecord.
  */
 export const worldRecordSchema = z.object({

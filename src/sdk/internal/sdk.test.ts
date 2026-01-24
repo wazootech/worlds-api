@@ -356,3 +356,82 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
 
   appContext.kv.close();
 });
+
+Deno.test("InternalWorldsSdk - Invites", async (t) => {
+  const appContext = await createTestContext();
+  const server = await createServer(appContext);
+  const sdk = new InternalWorldsSdk({
+    baseUrl: "http://localhost/v1",
+    apiKey: appContext.admin!.apiKey, // Use admin API key for SDK
+    fetch: (url, init) => server.fetch(new Request(url, init)),
+  });
+
+  await t.step("create invite", async () => {
+    const invite = await sdk.invites.create({ code: "sdk_invite_test" });
+    assertEquals(invite.code, "sdk_invite_test");
+    assertEquals(invite.redeemedBy, null);
+    assertEquals(invite.redeemedAt, null);
+  });
+
+  await t.step("create invite with auto-generated code", async () => {
+    const invite = await sdk.invites.create();
+    assert(invite.code !== undefined);
+    assert(invite.code.length > 0);
+  });
+
+  await t.step("get invite", async () => {
+    const invite = await sdk.invites.get("sdk_invite_test");
+    assert(invite !== null);
+    assertEquals(invite.code, "sdk_invite_test");
+  });
+
+  await t.step("list invites", async () => {
+    const invites = await sdk.invites.list();
+    assert(invites.length >= 1);
+    const found = invites.find((i) => i.code === "sdk_invite_test");
+    assert(found !== undefined);
+  });
+
+  await t.step("redeem invite", async () => {
+    // Create an account without a plan
+    const account = await sdk.accounts.create({
+      id: "acc_sdk_no_plan",
+      description: "Account without plan",
+    });
+    assertEquals(account.plan, undefined);
+
+    // Create user SDK with account's API key
+    const userSdk = new InternalWorldsSdk({
+      baseUrl: "http://localhost/v1",
+      apiKey: account.apiKey,
+      fetch: (url, init) => server.fetch(new Request(url, init)),
+    });
+
+    // Create a fresh invite for redemption
+    const invite = await sdk.invites.create({ code: "redeem_sdk_test" });
+    assertEquals(invite.code, "redeem_sdk_test");
+
+    // Redeem the invite
+    const result = await userSdk.invites.redeem("redeem_sdk_test");
+    assertEquals(result.plan, "free");
+
+    // Verify account now has a plan
+    const updatedAccount = await sdk.accounts.get("acc_sdk_no_plan");
+    assert(updatedAccount !== null);
+    assertEquals(updatedAccount.plan, "free");
+
+    // Verify invite is marked as redeemed
+    const redeemedInvite = await sdk.invites.get("redeem_sdk_test");
+    assert(redeemedInvite !== null);
+    assertEquals(redeemedInvite.redeemedBy, "acc_sdk_no_plan");
+    assert(redeemedInvite.redeemedAt !== null);
+  });
+
+  await t.step("delete invite", async () => {
+    await sdk.invites.delete("sdk_invite_test");
+    const invite = await sdk.invites.get("sdk_invite_test");
+    assertEquals(invite, null);
+  });
+
+  appContext.kv.close();
+});

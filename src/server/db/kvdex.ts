@@ -33,6 +33,12 @@ export function createWorldsKvdex(kv: Deno.Kv) {
       worldBlobs: collection(worldBlobSchema, {
         encoder: jsonEncoder(),
       }),
+      invites: collection(inviteSchema, {
+        idGenerator: (invite) => invite.code,
+        indices: {
+          redeemedBy: "secondary",
+        },
+      }),
     },
   });
 }
@@ -98,3 +104,18 @@ export type WorldBlob = z.infer<typeof worldBlobSchema>;
  * associated with a world.
  */
 export const worldBlobSchema = z.instanceof(Uint8Array);
+
+export type Invite = z.infer<typeof inviteSchema>;
+
+/**
+ * inviteSchema is the schema for an invite.
+ *
+ * An invite allows a user with a nullish plan to be promoted to the free plan
+ * upon redemption. Once redeemed, the invite cannot be used again.
+ */
+export const inviteSchema = z.object({
+  code: z.string(),
+  createdAt: z.number(),
+  redeemedBy: z.string().nullish(),
+  redeemedAt: z.number().nullish(),
+});

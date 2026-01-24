@@ -36,7 +36,7 @@
     "npm:@tensorflow/tfjs@^4.22.0": "4.22.0_@tensorflow+tfjs-core@4.22.0",
     "npm:@types/n3@*": "1.26.1",
     "npm:@types/n3@^1.26.1": "1.26.1",
-    "npm:ai@^6.0.48": "6.0.48_zod@3.25.76",
+    "npm:ai@^6.0.49": "6.0.49_zod@3.25.76",
     "npm:cfonts@^3.3.1": "3.3.1",
     "npm:n3@^2.0.1": "2.0.1",
     "npm:rdf-canonize@5": "5.0.0",
@@ -3248,8 +3248,8 @@
     "agent-base@7.1.4": {
       "integrity": "sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ=="
     },
-    "ai@6.0.48_zod@3.25.76": {
-      "integrity": "sha512-nON0rHNTEQgzT1HahGl7AeszJh7es5ibZ6LWqm3IiN+bUAQtXkdArXD9vDlVAPBiCd7ERclZ6lUpOE6ltgJb3w==",
+    "ai@6.0.49_zod@3.25.76": {
+      "integrity": "sha512-LABniBX/0R6Tv+iUK5keUZhZLaZUe4YjP5M2rZ4wAdZ8iKV3EfTAoJxuL1aaWTSJKIilKa9QUEkCgnp89/32bw==",
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
@@ -4517,7 +4517,7 @@
       "npm:@tensorflow/tfjs-backend-wasm@^4.22.0",
       "npm:@tensorflow/tfjs@^4.22.0",
       "npm:@types/n3@^1.26.1",
-      "npm:ai@^6.0.48",
+      "npm:ai@^6.0.49",
       "npm:cfonts@^3.3.1",
       "npm:n3@^2.0.1",
       "npm:zod@^4.3.6"

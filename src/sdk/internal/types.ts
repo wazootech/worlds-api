@@ -23,3 +23,20 @@ export type CreateAccountParams = Omit<
  * UpdateAccountParams represents the parameters for updating an account.
  */
 export type UpdateAccountParams = Partial<CreateAccountParams>;
+
+/**
+ * InviteRecord represents an invite in the Worlds API.
+ */
+export interface InviteRecord {
+  code: string;
+  createdAt: number;
+  redeemedBy?: string;
+  redeemedAt?: number;
+}
+
+/**
+ * CreateInviteParams represents the parameters for creating an invite.
+ */
+export interface CreateInviteParams {
+  code?: string;
+}
