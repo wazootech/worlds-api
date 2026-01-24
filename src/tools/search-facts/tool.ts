@@ -15,7 +15,9 @@ export function createSearchFactsTool(options: CreateToolsOptions): Tool<{
   const worlds = new Worlds(options);
   return tool({
     description:
-      "Search for facts in the knowledge base using full-text and vector search. Use this to find entities when you don't know their exact IRI or to explore broad topics.",
+      `Search for facts across knowledge bases using full-text and semantic vector search. This tool is ideal for discovering entities, relationships, and information when you don't know exact IRIs or want to explore topics broadly.
+
+Each result includes the fact (subject, predicate, object), a relevance score, and a 'worldId' field identifying which world contains that fact. Use the worldId values from search results to determine which specific world to query with executeSparql when you need to perform targeted SPARQL queries or updates.`,
     inputSchema: z.object({
       query: z.string().describe(
         "A text query to search for facts. Can be an entity name, description, or any text that might match facts in the knowledge base. Examples: 'Ethan', 'Nancy', 'meeting at cafe', 'person named John'.",
@@ -25,7 +27,8 @@ export function createSearchFactsTool(options: CreateToolsOptions): Tool<{
       ),
     }),
     execute: async ({ query, limit }) => {
-      return await worlds.search(options.worldIds, query, {
+      return await worlds.search(query, {
+        worldIds: options.worldIds,
         limit: limit ?? 10,
       });
     },

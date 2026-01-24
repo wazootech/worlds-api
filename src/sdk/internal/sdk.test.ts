@@ -1,8 +1,8 @@
 import { assert, assertEquals } from "@std/assert";
-import { InternalWorldsSdk } from "./sdk.ts";
 import { createServer } from "#/server/server.ts";
 import { createTestAccount, createTestContext } from "#/server/testing.ts";
 import type { SparqlSelectResults } from "#/sdk/types.ts";
+import { InternalWorldsSdk } from "./sdk.ts";
 
 Deno.test("InternalWorldsSdk - Accounts", async (t) => {
   const appContext = await createTestContext();
@@ -151,7 +151,10 @@ Deno.test("InternalWorldsSdk - Worlds", async (t) => {
     );
 
     // 2. Search with limit 1
-    const results = await sdk.worlds.search(worldId, "fruit", { limit: 1 });
+    const results = await sdk.worlds.search("fruit", {
+      worldIds: [worldId],
+      limit: 1,
+    });
     assert(Array.isArray(results));
     // Note: In tests, the mock search might return all results if not fully implemented,
     // but the server route should enforce the limit from store.search.
@@ -396,11 +399,10 @@ Deno.test("InternalWorldsSdk - Admin Account Override", async (t) => {
     assert(result.ok);
 
     // Search using admin override (won't return meaningful results without embeddings, but verifies no crash)
-    const searchResults = await adminSdk.worlds.search(
-      result.id,
-      "test query",
-      { accountId: accountA.id },
-    );
+    const searchResults = await adminSdk.worlds.search("test query", {
+      worldIds: [result.id],
+      accountId: accountA.id,
+    });
     assert(Array.isArray(searchResults));
   });
 

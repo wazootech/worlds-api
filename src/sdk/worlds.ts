@@ -220,9 +220,9 @@ export class Worlds {
    * search searches a world.
    */
   public async search(
-    worldIds: string | string[] | undefined,
     query: string,
     options?: {
+      worldIds?: string[];
       limit?: number;
       accountId?: string;
     },
@@ -233,11 +233,8 @@ export class Worlds {
     }
 
     url.searchParams.set("q", query);
-    if (worldIds) {
-      const worldIdsParam = Array.isArray(worldIds)
-        ? worldIds.join(",")
-        : worldIds;
-      url.searchParams.set("worlds", worldIdsParam);
+    if (options?.worldIds && options?.worldIds.length > 0) {
+      url.searchParams.set("worlds", options.worldIds.join(","));
     }
 
     if (options?.limit) {

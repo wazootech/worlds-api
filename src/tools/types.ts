@@ -7,7 +7,7 @@ export interface CreateToolsOptions extends WorldsOptions {
   /**
    * worldIds are the IDs of the worlds.
    */
-  worldIds: string[];
+  worldIds?: string[];
 
   /**
    * generateIri is a function that generates an IRI for new entities.
