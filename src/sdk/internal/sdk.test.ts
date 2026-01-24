@@ -411,8 +411,11 @@ Deno.test("InternalWorldsSdk - Invites", async (t) => {
     const invite = await sdk.invites.create({ code: "redeem_sdk_test" });
     assertEquals(invite.code, "redeem_sdk_test");
 
-    // Redeem the invite
-    const result = await userSdk.invites.redeem("redeem_sdk_test");
+    // Redeem the invite (user must pass their own ID even with their API key)
+    const result = await userSdk.invites.redeem(
+      "redeem_sdk_test",
+      "acc_sdk_no_plan",
+    );
     assertEquals(result.plan, "free");
 
     // Verify account now has a plan
