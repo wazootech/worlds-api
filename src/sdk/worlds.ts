@@ -204,8 +204,28 @@ export class Worlds {
       },
     );
     if (!response.ok) {
+      // Try to extract error message from response body
+      let errorMessage = `${response.status} ${response.statusText}`;
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType?.includes("application/json")) {
+          const errorBody = await response.json();
+          if (errorBody.error) {
+            errorMessage = errorBody.error;
+          } else if (errorBody.message) {
+            errorMessage = errorBody.message;
+          }
+        } else {
+          const text = await response.text();
+          if (text) {
+            errorMessage = text;
+          }
+        }
+      } catch {
+        // If we can't parse the error, use the status text
+      }
       throw new Error(
-        `Failed to execute SPARQL: ${response.status} ${response.statusText}`,
+        `Failed to execute SPARQL: ${errorMessage}`,
       );
     }
 

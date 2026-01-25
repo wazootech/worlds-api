@@ -167,6 +167,7 @@ async function executeSparqlRequest(
   request: Request,
   worldId: string,
   accountId?: string,
+  isAdmin?: boolean,
 ): Promise<Response> {
   const { query } = await parseQuery(request);
 
@@ -212,12 +213,14 @@ async function executeSparqlRequest(
 
   // Execute query or update using centralized function
   // Resolve accountId for the search store (always use the world's owner)
+  // Also get the world to use its accountId for plan policy checks
+  const world = await appContext.db.worlds.find(worldId);
   let searchAccountId = accountId;
   if (!searchAccountId) {
-    const world = await appContext.db.worlds.find(worldId);
     searchAccountId = world?.value.accountId;
   }
 
+  const patchHandlerStart = performance.now();
   const patchHandler = new BufferedPatchHandler(
     searchAccountId
       ? (() => {
@@ -235,39 +238,70 @@ async function executeSparqlRequest(
       })()
       : { patch: async () => {} },
   );
+  const patchHandlerTime = performance.now() - patchHandlerStart;
+  if (patchHandlerTime > 100) {
+    console.log(
+      `[PERF] PatchHandler creation: ${patchHandlerTime.toFixed(2)}ms`,
+    );
+  }
 
+  const blobStart = performance.now();
   const worldBlobEntry = await appContext.db.worldBlobs.find(worldId);
   const blob = worldBlobEntry?.value
     ? new Blob([worldBlobEntry.value])
     : new Blob([], { type: "application/n-quads" });
+  const blobTime = performance.now() - blobStart;
+  if (blobTime > 100) {
+    console.log(`[PERF] Blob retrieval: ${blobTime.toFixed(2)}ms`);
+  }
 
+  const sparqlStart = performance.now();
   const { blob: newBlob, result } = await sparql(
     blob,
     query,
     patchHandler,
   );
+  const sparqlTime = performance.now() - sparqlStart;
+  if (sparqlTime > 1000) {
+    console.log(`[PERF] SPARQL execution: ${sparqlTime.toFixed(2)}ms`);
+  }
 
   // For updates, return 204 instead of the stream response
   if (isUpdate) {
-    // Check world size limits
-    const account = accountId
-      ? await appContext.db.accounts.find(accountId)
-      : null;
-    const planPolicy = getPlanPolicy(account?.value.plan ?? null);
-
     const newData = new Uint8Array(await newBlob.arrayBuffer());
-    if (newData.length > planPolicy.worldLimits.maxWorldSize) {
-      return new Response("World size limit exceeded", { status: 413 });
+
+    // Check world size limits (bypass for admin API keys)
+    if (!isAdmin) {
+      // If accountId is not provided (e.g., using admin API), use the world's owner
+      const effectiveAccountId = accountId ?? world?.value.accountId;
+
+      const account = effectiveAccountId
+        ? await appContext.db.accounts.find(effectiveAccountId)
+        : null;
+      const planPolicy = getPlanPolicy(account?.value.plan ?? null);
+      if (newData.length > planPolicy.worldLimits.maxWorldSize) {
+        return new Response("World size limit exceeded", { status: 413 });
+      }
     }
 
     // Commit patches to search index
+    const commitStart = performance.now();
     await patchHandler.commit();
+    const commitTime = performance.now() - commitStart;
+    if (commitTime > 1000) {
+      console.log(`[PERF] Search index commit: ${commitTime.toFixed(2)}ms`);
+    }
 
     // Persist new blob. If the world doesn't exist, create it.
+    const persistStart = performance.now();
     if (worldBlobEntry) {
       await appContext.db.worldBlobs.update(worldId, newData);
     } else {
       await appContext.db.worldBlobs.set(worldId, newData);
+    }
+    const persistTime = performance.now() - persistStart;
+    if (persistTime > 100) {
+      console.log(`[PERF] Blob persistence: ${persistTime.toFixed(2)}ms`);
     }
 
     return new Response(null, {
@@ -315,6 +349,7 @@ export default (appContext: AppContext) => {
             ctx.request,
             worldId,
             authorized.account?.id,
+            authorized.admin,
           );
         } catch (error) {
           console.error("SPARQL query error:", error);
@@ -367,6 +402,7 @@ export default (appContext: AppContext) => {
             ctx.request,
             worldId,
             authorized.account?.id,
+            authorized.admin,
           );
         } catch (error) {
           console.error("SPARQL query/update error:", error);

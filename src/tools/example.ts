@@ -12,7 +12,8 @@ import { InternalWorldsSdk } from "#/sdk/internal/sdk.ts";
 import { UniversalSentenceEncoderEmbeddings } from "#/server/embeddings/use.ts";
 import { createWorldsKvdex } from "#/server/db/kvdex.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { createTools, formatPrompt } from "./tools.ts";
+import { createTools } from "./tools.ts";
+import { formatPrompt } from "./format.ts";
 import systemPrompt from "./prompt.md" with { type: "text" };
 
 /**
@@ -25,6 +26,24 @@ async function createExampleContext(): Promise<AppContext> {
 
   const libsqlClient = createClient({ url: ":memory:" });
   const embeddings = new UniversalSentenceEncoderEmbeddings();
+
+  // Preload embeddings model to avoid first-request delay
+  console.log(
+    "%c[INFO]%c Preloading embeddings model...",
+    "color: #6366f1; font-weight: bold",
+    "color: #64748b",
+  );
+  const loadStart = performance.now();
+  await embeddings.load();
+  const loadTime = performance.now() - loadStart;
+  console.log(
+    "%c[INFO]%c Embeddings model loaded in %c%.2fs",
+    "color: #6366f1; font-weight: bold",
+    "color: #64748b",
+    "color: #10b981; font-weight: bold",
+    (loadTime / 1000).toFixed(2),
+  );
+
   return {
     db,
     kv,
@@ -46,17 +65,48 @@ if (import.meta.main) {
 
   const sdk = new InternalWorldsSdk(worldsOptions);
 
-  const testAccount = await createTestAccount(appContext.db);
+  // Create test account with explicit free plan.
+  const testAccount = await createTestAccount(appContext.db, {
+    plan: "free",
+  });
+
+  // Verify account plan.
+  const account = await appContext.db.accounts.find(testAccount.id);
+  if (account?.value.plan !== "free") {
+    throw new Error(
+      `Account created with plan "${account?.value.plan}" instead of "free"`,
+    );
+  }
+
+  console.log(
+    "%c[DEBUG]%c Test account created with plan: %c%s",
+    "color: #6366f1; font-weight: bold",
+    "color: #64748b",
+    "color: #10b981; font-weight: bold",
+    account.value.plan,
+  );
+
   const worldRecord = await sdk.worlds.create({
     label: "Test World",
     description: "Test World",
     isPublic: false,
   }, { accountId: testAccount.id });
 
+  // Shared configuration for tools and prompts.
+  const sharedOptions = {
+    write: true,
+    userIri: "https://etok.me/",
+    sources: [
+      {
+        worldId: worldRecord.id,
+      },
+    ],
+  };
+
   // Set up tools.
   const tools = createTools({
     ...worldsOptions,
-    worldIds: [worldRecord.id],
+    ...sharedOptions,
   });
 
   // Set up AI agent.
@@ -119,15 +169,35 @@ if (import.meta.main) {
       break;
     }
 
+    const formattedPrompt = formatPrompt({
+      content: userInput,
+      date: new Date(),
+      ...sharedOptions,
+    });
+
+    // Debug: Log user input and formatted prompt.
+    console.log(
+      "\n%c[DEBUG]%c User input: %c%s",
+      "color: #6366f1; font-weight: bold",
+      "color: #64748b",
+      "color: #e5e7eb",
+      userInput,
+    );
+    if (Deno.env.get("DEBUG_PROMPT") === "true") {
+      console.log(
+        "%c[DEBUG]%c Formatted prompt:\n%c%s",
+        "color: #6366f1; font-weight: bold",
+        "color: #64748b",
+        "color: #9ca3af; font-family: monospace; font-size: 0.9em",
+        formattedPrompt,
+      );
+    }
+
     messages.push({
       role: "user",
       content: [{
         type: "text",
-        text: formatPrompt({
-          content: userInput,
-          userIri: "https://etok.me/",
-          date: new Date(),
-        }),
+        text: formattedPrompt,
       }],
     });
 
@@ -143,83 +213,339 @@ if (import.meta.main) {
     // Track state for logging tool calls.
     // deno-lint-ignore no-explicit-any
     const toolCalls = new Map<string, any>();
+    const startTime = Date.now();
+    let stepCount = 0;
 
     console.log("\n%c✦ Assistant", "color: #10b981; font-weight: bold");
 
     const spinner = new Spinner({ message: "Thinking...", color: "yellow" });
     spinner.start();
 
-    for await (const part of result.fullStream) {
-      switch (part.type) {
-        case "text-delta": {
-          spinner.stop();
-          if (part.text) {
-            await Deno.stdout.write(
-              new TextEncoder().encode(
-                `\x1b[38;2;16;185;129m${part.text}\x1b[0m`,
-              ),
-            );
-          }
-          break;
-        }
-
-        case "tool-call": {
-          spinner.stop();
-          toolCalls.set(part.toolCallId, part);
-          break;
-        }
-
-        case "tool-result": {
-          spinner.stop();
-          const call = toolCalls.get(part.toolCallId);
-          if (!call) break;
-
-          const styles = [
-            "color: #64748b", // gear icon
-            "color: #94a3b8", // name
-            "color: #cbd5e1", // input
-            "color: #94a3b8", // name end
-            "color: #d97706", // arrow
-            "color: #d97706", // output
-          ];
-
-          let callDetail = "";
-          switch (call.toolName) {
-            case "generateIri": {
-              callDetail = `generateIri(%c${call.input.entityText}%c)`;
-              break;
-            }
-            case "executeSparql": {
-              callDetail = `executeSparql(%c${call.input.sparql.trim()}%c)`;
-              break;
-            }
-            case "searchFacts": {
-              callDetail = `searchFacts(%c${call.input.query}%c)`;
-              break;
-            }
-            default: {
-              callDetail = `${call.toolName}(%c${
-                JSON.stringify(call.input)
-              }%c)`;
-            }
-          }
-
+    try {
+      for await (const part of result.fullStream) {
+        // Debug: Log all stream events to help diagnose hangs
+        if (Deno.env.get("DEBUG_STREAM") === "true") {
           console.log(
-            `\n%c⚙ %c${callDetail}%c => %c${JSON.stringify(part.output)}`,
-            ...styles,
+            `%c[DEBUG STREAM]%c Event type: %c${part.type}`,
+            "color: #8b5cf6; font-weight: bold",
+            "color: #64748b",
+            "color: #cbd5e1",
           );
-          break;
+        }
+
+        switch (part.type) {
+          case "text-delta": {
+            spinner.stop();
+            if (part.text) {
+              await Deno.stdout.write(
+                new TextEncoder().encode(
+                  `\x1b[38;2;16;185;129m${part.text}\x1b[0m`,
+                ),
+              );
+            }
+            break;
+          }
+
+          case "tool-call": {
+            spinner.stop();
+            toolCalls.set(part.toolCallId, part);
+            stepCount++;
+
+            // Debug: Log tool call start.
+            const timestamp = new Date().toISOString();
+            let callPreview = "";
+            const toolInput = "input" in part ? part.input as unknown : {};
+            switch (part.toolName) {
+              case "generateIri": {
+                const input = toolInput as { entityText?: string };
+                callPreview = `entityText: "${input?.entityText ?? "N/A"}"`;
+                break;
+              }
+              case "executeSparql": {
+                const input = toolInput as { sparql?: string };
+                const sparql = input?.sparql?.trim() || "";
+                const preview = sparql.split("\n")[0] ||
+                  sparql.substring(0, 60);
+                callPreview = `sparql: "${preview}${
+                  sparql.length > 60 ? "..." : ""
+                }"`;
+                break;
+              }
+              case "searchFacts": {
+                const input = toolInput as { query?: string };
+                callPreview = `query: "${input?.query ?? "N/A"}"`;
+                break;
+              }
+              default: {
+                callPreview = JSON.stringify(toolInput).substring(0, 100);
+              }
+            }
+
+            console.log(
+              `\n%c[DEBUG]%c [${timestamp}] Step ${stepCount}: Calling %c${part.toolName}%c with %c${callPreview}`,
+              "color: #6366f1; font-weight: bold",
+              "color: #64748b",
+              "color: #10b981; font-weight: bold",
+              "color: #64748b",
+              "color: #cbd5e1",
+            );
+            break;
+          }
+
+          case "tool-result": {
+            spinner.stop();
+            const call = toolCalls.get(part.toolCallId);
+            if (!call) break;
+
+            const timestamp = new Date().toISOString();
+            const styles = [
+              "color: #64748b", // gear icon
+              "color: #94a3b8", // name
+              "color: #cbd5e1", // input
+              "color: #94a3b8", // name end
+              "color: #d97706", // arrow
+              "color: #d97706", // output
+            ];
+
+            let callDetail = "";
+            let inputPreview = "";
+            const callInput = "input" in call ? call.input as unknown : {};
+            switch (call.toolName) {
+              case "generateIri": {
+                const input = callInput as { entityText?: string };
+                callDetail = `generateIri(%c${input.entityText}%c)`;
+                inputPreview = `entityText: "${input.entityText}"`;
+                break;
+              }
+              case "executeSparql": {
+                const input = callInput as { sparql?: string };
+                const sparql = input.sparql?.trim() || "";
+                const sparqlPreview = sparql.length > 200
+                  ? `${sparql.substring(0, 200)}...`
+                  : sparql;
+                callDetail = `executeSparql(%c${sparqlPreview}%c)`;
+                inputPreview = `sparql: ${sparql.split("\n").length} lines`;
+                break;
+              }
+              case "searchFacts": {
+                const input = callInput as { query?: string };
+                callDetail = `searchFacts(%c${input.query}%c)`;
+                inputPreview = `query: "${input.query}"`;
+                break;
+              }
+              default: {
+                const inputStr = JSON.stringify(callInput);
+                const inputPreviewStr = inputStr.length > 100
+                  ? `${inputStr.substring(0, 100)}...`
+                  : inputStr;
+                callDetail = `${call.toolName}(%c${inputPreviewStr}%c)`;
+                inputPreview = inputStr.substring(0, 100);
+              }
+            }
+
+            // Format output for better readability.
+            const partOutput = "output" in part ? part.output as unknown : part;
+            let outputStr = "";
+            try {
+              if (typeof partOutput === "string") {
+                outputStr = partOutput.length > 500
+                  ? `${partOutput.substring(0, 500)}...`
+                  : partOutput;
+              } else {
+                const jsonStr = JSON.stringify(partOutput, null, 2);
+                outputStr = jsonStr.length > 500
+                  ? `${jsonStr.substring(0, 500)}...`
+                  : jsonStr;
+              }
+            } catch {
+              outputStr = String(partOutput);
+            }
+
+            // Check if this is an error result - check multiple error formats
+            // Also check if output is a string that looks like an error
+            const outputStrLower = typeof partOutput === "string"
+              ? partOutput.toLowerCase()
+              : "";
+            const looksLikeError = outputStrLower.includes("error") ||
+              outputStrLower.includes("failed") ||
+              outputStrLower.includes("limit") ||
+              outputStrLower.includes("exceeded") ||
+              outputStrLower.includes("413") ||
+              outputStrLower.includes("403") ||
+              outputStrLower.includes("400");
+
+            const isError = partOutput instanceof Error ||
+              looksLikeError ||
+              (typeof partOutput === "object" && partOutput !== null && (
+                "error" in partOutput ||
+                "message" in partOutput ||
+                (typeof partOutput === "object" && "toString" in partOutput &&
+                  partOutput.toString().includes("Error"))
+              ));
+
+            // Log detailed debug info.
+            console.log(
+              `\n%c[DEBUG]%c [${timestamp}] Tool result for %c${call.toolName}%c:`,
+              "color: #6366f1; font-weight: bold",
+              "color: #64748b",
+              "color: #10b981; font-weight: bold",
+              "color: #64748b",
+            );
+            console.log(
+              `  %cInput:%c ${inputPreview}`,
+              "color: #94a3b8; font-weight: bold",
+              "color: #cbd5e1",
+            );
+
+            // For executeSparql, show the full SPARQL query in debug
+            if (call.toolName === "executeSparql") {
+              const input = callInput as { sparql?: string };
+              const fullSparql = input.sparql?.trim() || "";
+              if (fullSparql.length > 0) {
+                console.log(
+                  `  %cFull SPARQL:%c\n%c${fullSparql}`,
+                  "color: #94a3b8; font-weight: bold",
+                  "color: #cbd5e1",
+                  "color: #9ca3af; font-family: monospace; font-size: 0.9em; white-space: pre-wrap",
+                );
+              }
+            }
+
+            if (isError) {
+              // Extract error message more thoroughly
+              let errorMessage = outputStr;
+              if (partOutput instanceof Error) {
+                errorMessage = partOutput.message;
+              } else if (
+                typeof partOutput === "object" && partOutput !== null
+              ) {
+                const errorObj = partOutput as {
+                  error?: string;
+                  message?: string;
+                  toString?: () => string;
+                };
+                errorMessage = errorObj.error || errorObj.message ||
+                  (errorObj.toString
+                    ? errorObj.toString()
+                    : JSON.stringify(partOutput));
+              }
+
+              console.log(
+                `  %cError:%c ${errorMessage}`,
+                "color: #ef4444; font-weight: bold",
+                "color: #fca5a5",
+              );
+
+              // For size limit errors, show the actual size and limit
+              if (
+                errorMessage.includes("size limit") ||
+                errorMessage.includes("413")
+              ) {
+                console.log(
+                  `  %cNote:%c Free plan allows up to 10MB per world. Check if the world blob is unexpectedly large.`,
+                  "color: #f59e0b; font-weight: bold",
+                  "color: #fbbf24",
+                );
+              }
+            } else {
+              console.log(
+                `  %cOutput:%c ${outputStr}`,
+                "color: #10b981; font-weight: bold",
+                "color: #d1fae5",
+              );
+            }
+
+            // Also log the formatted version for visual consistency.
+            if (isError) {
+              // Format error output with better visibility
+              let errorStr = "";
+              if (partOutput instanceof Error) {
+                errorStr = partOutput.message;
+              } else {
+                const errorObj = partOutput as {
+                  error?: string;
+                  message?: string;
+                };
+                errorStr = errorObj.error || errorObj.message ||
+                  JSON.stringify(partOutput);
+              }
+              // Use red color for errors
+              console.log(
+                `\n%c⚙ %c${callDetail}%c => %c${errorStr}`,
+                styles[0], // gear icon
+                styles[1], // name
+                styles[2], // input
+                "color: #ef4444; font-weight: bold", // error output in red
+              );
+            } else {
+              console.log(
+                `\n%c⚙ %c${callDetail}%c => %c${outputStr}`,
+                ...styles,
+              );
+            }
+            break;
+          }
+
+          default: {
+            // Handle any unhandled stream event types
+            if (Deno.env.get("DEBUG_STREAM") === "true") {
+              const partType = "type" in part ? String(part.type) : "unknown";
+              console.log(
+                `%c[DEBUG STREAM]%c Unhandled event type: %c${partType}%c - %c${
+                  JSON.stringify(part).substring(0, 200)
+                }`,
+                "color: #f59e0b; font-weight: bold",
+                "color: #64748b",
+                "color: #fbbf24",
+                "color: #64748b",
+                "color: #9ca3af",
+              );
+            }
+            break;
+          }
+        }
+        if (part.type === "tool-call" || part.type === "tool-result") {
+          spinner.start();
         }
       }
-      if (part.type === "tool-call" || part.type === "tool-result") {
-        spinner.start();
+    } catch (error) {
+      spinner.stop();
+      console.error(
+        "\n%c[ERROR]%c Stream error: %c%s",
+        "color: #ef4444; font-weight: bold",
+        "color: #64748b",
+        "color: #fca5a5",
+        error instanceof Error ? error.message : String(error),
+      );
+      if (error instanceof Error && error.stack) {
+        console.error(
+          "%c[ERROR]%c Stack trace:\n%c%s",
+          "color: #ef4444; font-weight: bold",
+          "color: #64748b",
+          "color: #9ca3af; font-family: monospace; font-size: 0.9em",
+          error.stack,
+        );
       }
+      throw error;
     }
 
     spinner.stop();
-    console.log("");
 
     const response = await result.response;
+    const duration = Date.now() - startTime;
+
+    // Debug: Log completion stats.
+    console.log(
+      `\n%c[DEBUG]%c Completed in %c${duration}ms%c with %c${stepCount}%c step(s)`,
+      "color: #6366f1; font-weight: bold",
+      "color: #64748b",
+      "color: #10b981; font-weight: bold",
+      "color: #64748b",
+      "color: #10b981; font-weight: bold",
+      "color: #64748b",
+    );
+    console.log("");
+
     messages.push(...response.messages as ModelMessage[]);
   }
 }
