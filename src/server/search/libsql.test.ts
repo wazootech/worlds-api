@@ -15,7 +15,10 @@ Deno.test("LibsqlSearchStoreManager e2e", async (t) => {
 
   const searchStore = new LibsqlSearchStoreManager({
     client,
-    embeddings: { embed: (_text) => Promise.resolve([0]), dimensions: 1 },
+    embeddings: {
+      embed: (_text) => Promise.resolve(new Array(1536).fill(0)),
+      dimensions: 1536,
+    },
   });
 
   await t.step("Create tables", async () => {

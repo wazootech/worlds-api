@@ -10,12 +10,17 @@ import { getPlanPolicy, getPolicy } from "#/server/rate-limit/policies.ts";
 import { Parser, Store, Writer } from "n3";
 import { TokenBucketRateLimiter } from "#/server/rate-limit/rate-limiter.ts";
 import {
-  worldsAdd,
-  worldsDelete,
-  worldsFind,
-  worldsFindByTenantId,
-  worldsUpdate,
-} from "#/server/db/queries/worlds.sql.ts";
+  deleteWorld,
+  insertWorld,
+  selectWorldById,
+  selectWorldByIdWithBlob,
+  selectWorldsByTenantId,
+  updateWorld,
+} from "#/server/db/resources/worlds/queries.sql.ts";
+import {
+  worldTableInsertSchema,
+  worldTableUpdateSchema,
+} from "#/server/db/resources/worlds/schema.ts";
 
 const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
   {
@@ -43,7 +48,7 @@ export default (appContext: AppContext) => {
         }
 
         const result = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldById,
           args: [worldId],
         });
         const world = result.rows[0];
@@ -66,7 +71,6 @@ export default (appContext: AppContext) => {
           createdAt: world.created_at,
           updatedAt: world.updated_at,
           ...(world.deleted_at ? { deletedAt: world.deleted_at } : {}),
-          isPublic: Boolean(world.is_public),
         });
       },
     )
@@ -84,7 +88,7 @@ export default (appContext: AppContext) => {
         }
 
         const worldResult = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
         const world = worldResult.rows[0];
@@ -187,7 +191,7 @@ export default (appContext: AppContext) => {
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         const worldResult = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
         const world = worldResult.rows[0];
@@ -214,14 +218,20 @@ export default (appContext: AppContext) => {
         const data = parseResult.data;
 
         const updatedAt = Date.now();
+        const worldUpdate = worldTableUpdateSchema.parse({
+          label: data.label ?? world.label,
+          description: data.description ?? world.description,
+          updated_at: updatedAt,
+          blob: world.blob,
+        });
+
         await appContext.libsqlClient.execute({
-          sql: worldsUpdate,
+          sql: updateWorld,
           args: [
-            data.label ?? world.label,
-            data.description ?? world.description,
-            data.isPublic ?? world.is_public,
-            updatedAt,
-            world.blob,
+            worldUpdate.label ?? world.label,
+            worldUpdate.description ?? world.description ?? null,
+            worldUpdate.updated_at ?? updatedAt,
+            worldUpdate.blob ?? world.blob ?? null,
             worldId,
           ],
         });
@@ -239,7 +249,7 @@ export default (appContext: AppContext) => {
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         const worldResult = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldById,
           args: [worldId],
         });
         const world = worldResult.rows[0];
@@ -263,7 +273,7 @@ export default (appContext: AppContext) => {
         try {
           // Delete world
           await appContext.libsqlClient.execute({
-            sql: worldsDelete,
+            sql: deleteWorld,
             args: [worldId],
           });
           return new Response(null, { status: 204 });
@@ -289,7 +299,7 @@ export default (appContext: AppContext) => {
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
-          sql: worldsFindByTenantId,
+          sql: selectWorldsByTenantId,
           args: [authorized.tenant.id, pageSize, offset],
         });
 
@@ -302,7 +312,6 @@ export default (appContext: AppContext) => {
             createdAt: row.created_at,
             updatedAt: row.updated_at,
             ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
-            isPublic: Boolean(row.is_public),
           })),
         );
       },
@@ -331,7 +340,7 @@ export default (appContext: AppContext) => {
 
         // Check world limit
         const worldsResult = await appContext.libsqlClient.execute({
-          sql: worldsFindByTenantId,
+          sql: selectWorldsByTenantId,
           args: [authorized.tenant.id, 1000, 0], // Get all worlds to count
         });
         const activeWorlds = worldsResult.rows.filter((w) =>
@@ -345,30 +354,39 @@ export default (appContext: AppContext) => {
         const now = Date.now();
         const worldId = crypto.randomUUID();
 
+        const world = worldTableInsertSchema.parse({
+          id: worldId,
+          tenant_id: authorized.tenant!.id,
+          label: data.label,
+          description: data.description ?? null,
+          blob: null,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
+
         await appContext.libsqlClient.execute({
-          sql: worldsAdd,
+          sql: insertWorld,
           args: [
-            worldId,
-            authorized.tenant!.id,
-            data.label,
-            data.description ?? null,
-            null, // blob
-            now,
-            now,
-            null,
-            data.isPublic ? 1 : 0,
+            world.id,
+            world.tenant_id,
+            world.label,
+            world.description ?? null,
+            world.blob ?? null,
+            world.created_at,
+            world.updated_at,
+            world.deleted_at ?? null,
           ],
         });
 
         return Response.json({
-          id: worldId,
-          tenantId: authorized.tenant!.id,
-          label: data.label,
-          description: data.description,
-          createdAt: now,
-          updatedAt: now,
+          id: world.id,
+          tenantId: world.tenant_id,
+          label: world.label,
+          description: world.description,
+          createdAt: world.created_at,
+          updatedAt: world.updated_at,
           deletedAt: undefined,
-          isPublic: data.isPublic,
         }, { status: 201 });
       },
     );

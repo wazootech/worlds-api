@@ -9,7 +9,11 @@ import {
   tenantsGetMany,
   tenantsRotateApiKey,
   tenantsUpdate,
-} from "#/server/db/queries/tenants.sql.ts";
+} from "#/server/db/resources/tenants/queries.sql.ts";
+import {
+  tenantTableInsertSchema,
+  tenantTableUpdateSchema,
+} from "#/server/db/resources/tenants/schema.ts";
 
 const DEPRECATION_HEADERS = {
   "Warning":
@@ -120,12 +124,20 @@ export default (appContext: AppContext) =>
         }
 
         const body = await ctx.request.json().catch(() => ({}));
+
+        const updateNow = Date.now();
+        const tenantUpdate = tenantTableUpdateSchema.parse({
+          description: body.description ?? undefined,
+          plan: body.plan ?? undefined,
+          updated_at: updateNow,
+        });
+
         await appContext.libsqlClient.execute({
           sql: tenantsUpdate,
           args: [
-            body.description ?? null,
-            body.plan ?? null,
-            Date.now(),
+            tenantUpdate.description ?? null,
+            tenantUpdate.plan ?? null,
+            tenantUpdate.updated_at ?? updateNow,
             tenantId,
           ],
         });
@@ -220,26 +232,37 @@ export default (appContext: AppContext) =>
         const apiKey = ulid();
         const now = Date.now();
 
+        const tenant = tenantTableInsertSchema.parse({
+          id,
+          description: body.description ?? null,
+          plan: body.plan ?? null,
+          api_key: apiKey,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
+
         await appContext.libsqlClient.execute({
           sql: tenantsAdd,
           args: [
-            id,
-            body.description ?? null,
-            body.plan ?? null,
-            apiKey,
-            now,
-            now,
-            null,
+            tenant.id,
+            tenant.description ?? null,
+            tenant.plan ?? null,
+            tenant.api_key,
+            tenant.created_at,
+            tenant.updated_at,
+            tenant.deleted_at ?? null,
           ],
         });
 
         return Response.json({
-          id,
-          description: body.description,
-          plan: body.plan,
-          apiKey,
-          createdAt: now,
-          updatedAt: now,
+          id: tenant.id,
+          description: tenant.description,
+          plan: tenant.plan,
+          apiKey: tenant.api_key,
+          createdAt: tenant.created_at,
+          updatedAt: tenant.updated_at,
+          deletedAt: tenant.deleted_at,
         }, {
           status: 201,
           headers: DEPRECATION_HEADERS,

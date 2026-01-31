@@ -2,7 +2,7 @@ import type { AppContext } from "#/server/app-context.ts";
 import {
   tenantsFind,
   tenantsFindByApiKey,
-} from "#/server/db/queries/tenants.sql.ts";
+} from "#/server/db/resources/tenants/queries.sql.ts";
 
 /**
  * AuthorizedRequest is the result of a successful authentication.

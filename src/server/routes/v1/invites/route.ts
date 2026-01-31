@@ -9,8 +9,13 @@ import {
   invitesFind,
   invitesGetMany,
   invitesUpdate,
-} from "#/server/db/queries/invites.sql.ts";
-import { tenantsUpdate } from "#/server/db/queries/tenants.sql.ts";
+} from "#/server/db/resources/invites/queries.sql.ts";
+import { tenantsUpdate } from "#/server/db/resources/tenants/queries.sql.ts";
+import {
+  inviteTableInsertSchema,
+  inviteTableUpdateSchema,
+} from "#/server/db/resources/invites/schema.ts";
+import { tenantTableUpdateSchema } from "#/server/db/resources/tenants/schema.ts";
 
 export default (appContext: AppContext) =>
   new Router()
@@ -78,17 +83,22 @@ export default (appContext: AppContext) =>
 
         const code = parseResult.data.code ?? ulid();
         const now = Date.now();
-        const invite = {
+        const invite = inviteTableInsertSchema.parse({
           code: code,
-          createdAt: now,
-          redeemedBy: null,
-          redeemedAt: null,
-        };
+          created_at: now,
+          redeemed_by: null,
+          redeemed_at: null,
+        });
 
         try {
           await appContext.libsqlClient.execute({
             sql: invitesAdd,
-            args: [code, now, null, null],
+            args: [
+              invite.code,
+              invite.created_at,
+              invite.redeemed_by ?? null,
+              invite.redeemed_at ?? null,
+            ],
           });
         } catch (e: unknown) {
           console.error("SQL Insert failed:", e);
@@ -98,7 +108,12 @@ export default (appContext: AppContext) =>
           });
         }
 
-        return Response.json(invite, { status: 201 });
+        return Response.json({
+          code: invite.code,
+          createdAt: invite.created_at,
+          redeemedBy: invite.redeemed_by,
+          redeemedAt: invite.redeemed_at,
+        }, { status: 201 });
       },
     )
     .get(
@@ -209,22 +224,43 @@ export default (appContext: AppContext) =>
 
         const now = Date.now();
 
-        // Update the invite
-        await appContext.libsqlClient.execute({
-          sql: invitesUpdate,
-          args: [authorized.tenant.id, now, code],
-        });
+        try {
+          // Update the invite
+          const inviteUpdate = inviteTableUpdateSchema.parse({
+            redeemed_by: authorized.tenant.id,
+            redeemed_at: now,
+          });
+          await appContext.libsqlClient.execute({
+            sql: invitesUpdate,
+            args: [
+              inviteUpdate.redeemed_by ?? null,
+              inviteUpdate.redeemed_at ?? null,
+              code,
+            ],
+          });
 
-        // Update the tenant's plan to "free"
-        await appContext.libsqlClient.execute({
-          sql: tenantsUpdate,
-          args: [
-            tenant.description ?? null,
-            "free",
-            now,
-            authorized.tenant.id,
-          ],
-        });
+          // Update the tenant's plan to "free"
+          const tenantUpdate = tenantTableUpdateSchema.parse({
+            description: tenant.description ?? null,
+            plan: "free",
+            updated_at: now,
+          });
+          await appContext.libsqlClient.execute({
+            sql: tenantsUpdate,
+            args: [
+              tenantUpdate.description ?? null,
+              tenantUpdate.plan ?? null,
+              tenantUpdate.updated_at ?? now,
+              authorized.tenant.id,
+            ],
+          });
+        } catch (e: unknown) {
+          console.error("Redemption failed:", e);
+          const message = e instanceof Error ? e.message : "Unknown error";
+          return new Response("Failed to redeem invite: " + message, {
+            status: 500,
+          });
+        }
 
         return Response.json({
           message: "Invite redeemed successfully",

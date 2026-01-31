@@ -3,10 +3,10 @@ import { createTestContext, createTestTenant } from "#/server/testing.ts";
 import createRoute from "./route.ts";
 import { createServer } from "#/server/server.ts";
 import {
-  worldsAdd,
-  worldsFind,
-  worldsUpdate,
-} from "#/server/db/queries/worlds.sql.ts";
+  insertWorld,
+  selectWorldById,
+  updateWorld,
+} from "#/server/db/resources/worlds/queries.sql.ts";
 
 Deno.test("Worlds API routes - GET operations", async (t) => {
   const testContext = await createTestContext();
@@ -19,7 +19,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
     const worldId = crypto.randomUUID();
     const now = Date.now();
     await testContext.libsqlClient.execute({
-      sql: worldsAdd,
+      sql: insertWorld,
       args: [
         worldId,
         tenantId,
@@ -51,7 +51,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
     assertEquals(world.deletedAt, undefined);
-    assertEquals(world.isPublic, false);
+    assertEquals(world.deletedAt, undefined);
   });
 
   await t.step(
@@ -81,7 +81,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -97,7 +97,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
 
       // Mark world as deleted
       await testContext.libsqlClient.execute({
-        sql: worldsUpdate,
+        sql: updateWorld,
         args: ["Test World", "Test Description", 0, Date.now(), worldId, null],
       });
       // Actually delete it
@@ -130,7 +130,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
       const quads =
         "<http://example.org/s> <http://example.org/p> <http://example.org/o> <http://example.org/g> .";
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -188,7 +188,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [worldId, tenantId, "Test World", null, null, now, now, null, 0],
       });
 
@@ -219,7 +219,6 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
       body: JSON.stringify({
         label: "New World",
         description: "New Description",
-        isPublic: true,
       }),
     });
     const res = await app.fetch(req);
@@ -228,7 +227,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
     const world = await res.json();
     assertEquals(world.label, "New World");
     assertEquals(world.description, "New Description");
-    assertEquals(world.isPublic, true);
+    assert(typeof world.updatedAt === "number");
     assert(typeof world.id === "string");
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
@@ -249,7 +248,7 @@ Deno.test("Worlds API routes - PUT operations", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -300,7 +299,7 @@ Deno.test("Worlds API routes - PUT operations", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -310,7 +309,6 @@ Deno.test("Worlds API routes - PUT operations", async (t) => {
           now,
           now,
           null,
-          0,
         ],
       });
 
@@ -359,7 +357,7 @@ Deno.test("Worlds API routes - DELETE operations", async (t) => {
     const worldId = crypto.randomUUID();
     const now = Date.now();
     await testContext.libsqlClient.execute({
-      sql: worldsAdd,
+      sql: insertWorld,
       args: [
         worldId,
         tenantId,
@@ -369,7 +367,6 @@ Deno.test("Worlds API routes - DELETE operations", async (t) => {
         now,
         now,
         null,
-        0,
       ],
     });
 
@@ -397,7 +394,7 @@ Deno.test("Worlds API routes - DELETE operations", async (t) => {
 
     // Verify row deletion
     const dbResult = await testContext.libsqlClient.execute({
-      sql: worldsFind,
+      sql: selectWorldById,
       args: [worldId],
     });
     assertEquals(dbResult.rows.length, 0);
@@ -418,7 +415,7 @@ Deno.test("Worlds API routes - List operations", async (t) => {
       const now1 = Date.now();
       const worldId1 = crypto.randomUUID();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId1,
           tenantId,
@@ -435,7 +432,7 @@ Deno.test("Worlds API routes - List operations", async (t) => {
       const now2 = Date.now();
       const worldId2 = crypto.randomUUID();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId2,
           tenantId,
@@ -484,7 +481,7 @@ Deno.test("Admin Tenant Override", async (t) => {
     const now1 = Date.now();
     const worldIdA = crypto.randomUUID();
     await testContext.libsqlClient.execute({
-      sql: worldsAdd,
+      sql: insertWorld,
       args: [
         worldIdA,
         tenantA.id,
@@ -502,7 +499,7 @@ Deno.test("Admin Tenant Override", async (t) => {
     const now2 = Date.now();
     const worldIdB = crypto.randomUUID();
     await testContext.libsqlClient.execute({
-      sql: worldsAdd,
+      sql: insertWorld,
       args: [
         worldIdB,
         tenantB.id,
@@ -568,7 +565,7 @@ Deno.test("Admin Tenant Override", async (t) => {
 
     // Verify in DB
     const dbWorldResult = await testContext.libsqlClient.execute({
-      sql: worldsFind,
+      sql: selectWorldById,
       args: [world.id],
     });
     assert(dbWorldResult.rows.length > 0);

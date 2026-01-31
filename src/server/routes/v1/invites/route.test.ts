@@ -2,8 +2,14 @@ import { assert, assertEquals } from "@std/assert";
 import { ulid } from "@std/ulid";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
-import { invitesAdd, invitesFind } from "#/server/db/queries/invites.sql.ts";
-import { tenantsAdd, tenantsFind } from "#/server/db/queries/tenants.sql.ts";
+import {
+  invitesAdd,
+  invitesFind,
+} from "#/server/db/resources/invites/queries.sql.ts";
+import {
+  tenantsAdd,
+  tenantsFind,
+} from "#/server/db/resources/tenants/queries.sql.ts";
 
 Deno.test("Invites API routes - Admin CRUD", async (t) => {
   const testContext = await createTestContext();

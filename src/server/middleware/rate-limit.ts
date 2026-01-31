@@ -2,7 +2,7 @@ import type { AppContext } from "#/server/app-context.ts";
 import type { ResourceType } from "#/server/rate-limit/policies.ts";
 import { getPolicy } from "#/server/rate-limit/policies.ts";
 import { TokenBucketRateLimiter } from "#/server/rate-limit/rate-limiter.ts";
-import { tenantsFind } from "#/server/db/queries/tenants.sql.ts";
+import { tenantsFind } from "#/server/db/resources/tenants/queries.sql.ts";
 
 /**
  * RateLimitOptions configures the rate limit middleware.

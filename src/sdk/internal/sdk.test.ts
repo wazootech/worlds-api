@@ -102,7 +102,6 @@ Deno.test("InternalWorldsSdk - Worlds", async (t) => {
     const world = await sdk.worlds.create({
       label: "SDK World",
       description: "Test World",
-      isPublic: false,
     });
     assert(world.id !== undefined);
     assertEquals(world.label, "SDK World");
@@ -225,7 +224,7 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now1 = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId1,
         tenantA.id,
@@ -234,7 +233,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
         now1,
         now1,
         null,
-        0,
       ],
     });
 
@@ -242,7 +240,7 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now2 = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId2,
         tenantB.id,
@@ -251,7 +249,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
         now2,
         now2,
         null,
-        0,
       ],
     });
 
@@ -276,7 +273,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const world = await adminSdk.worlds.create({
       label: "Admin Created World",
       description: "Created via admin override",
-      isPublic: false,
     }, { tenantId: tenantB.id }); // This tenantId takes precedence
 
     assertEquals(world.tenantId, tenantB.id);
@@ -298,8 +294,8 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [worldId, tenantA.id, "Test World", "Test", now, now, null, 0],
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      args: [worldId, tenantA.id, "Test World", "Test", now, now, null],
     });
 
     // Get world using admin override
@@ -316,7 +312,7 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now3 = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId2,
         tenantA.id,
@@ -325,7 +321,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
         now3,
         now3,
         null,
-        0,
       ],
     });
 
@@ -348,8 +343,8 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now4 = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [worldId3, tenantB.id, "To Delete", "Test", now4, now4, null, 0],
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      args: [worldId3, tenantB.id, "To Delete", "Test", now4, now4, null],
     });
 
     // Delete using admin override
@@ -371,7 +366,7 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
       const now5 = Date.now();
       await appContext.libsqlClient.execute({
         sql:
-          "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
         args: [
           worldId4,
           tenantA.id,
@@ -380,7 +375,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
           now5,
           now5,
           null,
-          0,
         ],
       });
       const worldId = worldId4;
@@ -413,7 +407,7 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
     const now6 = Date.now();
     await appContext.libsqlClient.execute({
       sql:
-        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, tenant_id, label, description, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId5,
         tenantA.id,
@@ -422,7 +416,6 @@ Deno.test("InternalWorldsSdk - Admin Tenant Override", async (t) => {
         now6,
         now6,
         null,
-        0,
       ],
     });
 
@@ -495,7 +488,7 @@ Deno.test("InternalWorldsSdk - Invites", async (t) => {
       id: "ten_sdk_no_plan",
       description: "Tenant without plan",
     });
-    assertEquals(tenant.plan, undefined);
+    assertEquals(tenant.plan ?? undefined, undefined);
 
     // Create user SDK with tenant's API key
     const userSdk = new InternalWorldsSdk({

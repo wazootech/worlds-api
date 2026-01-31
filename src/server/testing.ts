@@ -3,7 +3,7 @@ import type { Client } from "@libsql/client";
 import type { AppContext } from "./app-context.ts";
 import { createClient } from "@libsql/client";
 import { initializeDatabase } from "./db/init.ts";
-import { tenantsAdd } from "./db/queries/tenants.sql.ts";
+import { tenantsAdd } from "./db/resources/tenants/queries.sql.ts";
 
 /**
  * createTestContext creates a test context for the application.
@@ -17,8 +17,8 @@ export async function createTestContext(): Promise<AppContext> {
   await initializeDatabase(client);
 
   const embedder = {
-    embed: (_: string) => Promise.resolve(new Array(768).fill(0)),
-    dimensions: 768,
+    embed: (_: string) => Promise.resolve(new Array(1536).fill(0)),
+    dimensions: 1536,
   };
 
   return {

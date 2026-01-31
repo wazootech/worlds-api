@@ -57,7 +57,6 @@ export interface WorldRecord {
   createdAt: number;
   updatedAt: number;
   deletedAt?: number;
-  isPublic?: boolean;
 }
 
 /**

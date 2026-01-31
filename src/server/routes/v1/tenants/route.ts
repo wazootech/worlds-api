@@ -14,7 +14,11 @@ import {
   tenantsGetMany,
   tenantsRotateApiKey,
   tenantsUpdate,
-} from "#/server/db/queries/tenants.sql.ts";
+} from "#/server/db/resources/tenants/queries.sql.ts";
+import {
+  tenantTableInsertSchema,
+  tenantTableUpdateSchema,
+} from "../../../db/resources/tenants/schema.ts";
 
 export default (appContext: AppContext) =>
   new Router()
@@ -87,26 +91,27 @@ export default (appContext: AppContext) =>
         const apiKey = ulid();
 
         const now = Date.now();
-        const tenant = {
-          id: id,
-          description: data.description,
-          plan: data.plan,
-          apiKey: apiKey,
-          createdAt: now,
-          updatedAt: now,
-        };
+        const tenant = tenantTableInsertSchema.parse({
+          id,
+          description: data.description ?? null,
+          plan: data.plan ?? null,
+          api_key: apiKey,
+          created_at: now,
+          updated_at: now,
+          deleted_at: null,
+        });
 
         try {
           await appContext.libsqlClient.execute({
             sql: tenantsAdd,
             args: [
-              id,
-              data.description ?? null,
-              data.plan ?? null,
-              apiKey,
-              now,
-              now,
-              null,
+              tenant.id,
+              tenant.description ?? null,
+              tenant.plan ?? null,
+              tenant.api_key,
+              tenant.created_at,
+              tenant.updated_at,
+              tenant.deleted_at ?? null,
             ],
           });
         } catch (e: unknown) {
@@ -117,7 +122,15 @@ export default (appContext: AppContext) =>
           });
         }
 
-        return Response.json(tenant, { status: 201 });
+        return Response.json({
+          id: tenant.id,
+          description: tenant.description,
+          plan: tenant.plan,
+          apiKey: tenant.api_key,
+          createdAt: tenant.created_at,
+          updatedAt: tenant.updated_at,
+          deletedAt: tenant.deleted_at,
+        }, { status: 201 });
       },
     )
     .get(
@@ -192,12 +205,19 @@ export default (appContext: AppContext) =>
         }
         const data = parseResult.data;
 
+        const updateNow = Date.now();
+        const tenantUpdate = tenantTableUpdateSchema.parse({
+          description: data.description ?? undefined,
+          plan: data.plan ?? undefined,
+          updated_at: updateNow,
+        });
+
         await appContext.libsqlClient.execute({
           sql: tenantsUpdate,
           args: [
-            data.description ?? null,
-            data.plan ?? null,
-            Date.now(),
+            tenantUpdate.description ?? null,
+            tenantUpdate.plan ?? null,
+            tenantUpdate.updated_at ?? updateNow,
             tenantId,
           ],
         });

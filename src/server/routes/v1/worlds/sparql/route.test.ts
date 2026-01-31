@@ -3,7 +3,7 @@ import { Parser, Store } from "n3";
 import { createTestContext, createTestTenant } from "#/server/testing.ts";
 import { generateBlobFromN3Store } from "#/server/db/n3.ts";
 import createRoute from "./route.ts";
-import { worldsAdd } from "#/server/db/queries/worlds.sql.ts";
+import { insertWorld } from "#/server/db/resources/worlds/queries.sql.ts";
 import type { Client } from "@libsql/client";
 
 /**
@@ -43,7 +43,7 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -90,7 +90,7 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -157,7 +157,7 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,
@@ -215,7 +215,7 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
       const worldId = crypto.randomUUID();
       const now = Date.now();
       await testContext.libsqlClient.execute({
-        sql: worldsAdd,
+        sql: insertWorld,
         args: [
           worldId,
           tenantId,

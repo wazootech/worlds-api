@@ -11,7 +11,7 @@ import type { WorldsOptions } from "#/sdk/types.ts";
 import { InternalWorldsSdk } from "#/sdk/internal/sdk.ts";
 import { UniversalSentenceEncoderEmbeddings } from "#/server/embeddings/use.ts";
 import { initializeDatabase } from "#/server/db/init.ts";
-import { tenantsFind } from "#/server/db/queries/tenants.sql.ts";
+import { tenantsFind } from "#/server/db/resources/tenants/queries.sql.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { createTools } from "./tools.ts";
 import { formatPrompt } from "./format.ts";
@@ -94,8 +94,7 @@ if (import.meta.main) {
 
   const worldRecord = await sdk.worlds.create({
     label: "Test World",
-    description: "Test World",
-    isPublic: false,
+    description: "A test world for the example",
   }, { tenantId: testTenant.id });
 
   // Shared configuration for tools and prompts.

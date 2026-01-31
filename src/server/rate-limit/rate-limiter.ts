@@ -7,7 +7,7 @@ import type {
 import {
   tokenBucketsFind,
   tokenBucketsUpsert,
-} from "#/server/db/queries/token-buckets.sql.ts";
+} from "#/server/db/resources/token-buckets/queries.sql.ts";
 import { ulid } from "@std/ulid";
 
 /**

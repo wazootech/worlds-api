@@ -4,7 +4,7 @@ import route from "./route.ts";
 import { createClient } from "@libsql/client";
 import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import { initializeDatabase } from "#/server/db/init.ts";
-import { worldsAdd } from "#/server/db/queries/worlds.sql.ts";
+import { insertWorld } from "#/server/db/resources/worlds/queries.sql.ts";
 import { createTestTenant } from "#/server/testing.ts";
 
 Deno.test("Search API - Top-Level Route", async (t) => {
@@ -12,8 +12,8 @@ Deno.test("Search API - Top-Level Route", async (t) => {
   await initializeDatabase(client);
 
   const embedder = {
-    embed: (_: string) => Promise.resolve(new Array(768).fill(0)),
-    dimensions: 768,
+    embed: (_: string) => Promise.resolve(new Array(1536).fill(0)),
+    dimensions: 1536,
   };
   const appContext = { libsqlClient: client, embeddings: embedder };
   const adminHandler = route({ ...appContext, admin: { apiKey: "admin-key" } });
@@ -26,11 +26,11 @@ Deno.test("Search API - Top-Level Route", async (t) => {
   const now = Date.now();
 
   await client.execute({
-    sql: worldsAdd,
+    sql: insertWorld,
     args: [worldId1, tenantId, "World 1", null, null, now, now, null, 0],
   });
   await client.execute({
-    sql: worldsAdd,
+    sql: insertWorld,
     args: [worldId2, tenantId, "World 2", null, null, now, now, null, 0],
   });
 

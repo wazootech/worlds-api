@@ -13,8 +13,12 @@ import {
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 import type { Patch, PatchHandler } from "@fartlabs/search-store";
 import { getPlanPolicy } from "#/server/rate-limit/policies.ts";
-import { worldsFind, worldsUpdate } from "#/server/db/queries/worlds.sql.ts";
-import { tenantsFind } from "#/server/db/queries/tenants.sql.ts";
+import {
+  selectWorldByIdWithBlob,
+  updateWorld,
+} from "#/server/db/resources/worlds/queries.sql.ts";
+import { worldTableUpdateSchema } from "#/server/db/resources/worlds/schema.ts";
+import { tenantsFind } from "#/server/db/resources/tenants/queries.sql.ts";
 
 const { namedNode, quad } = DataFactory;
 
@@ -217,7 +221,7 @@ async function executeSparqlRequest(
   // Resolve tenantId for the search store (always use the world's owner)
   // Also get the world to use its tenantId for plan policy checks
   const worldResult = await appContext.libsqlClient.execute({
-    sql: worldsFind,
+    sql: selectWorldByIdWithBlob,
     args: [worldId],
   });
   const world = worldResult.rows[0];
@@ -303,22 +307,23 @@ async function executeSparqlRequest(
     }
 
     // Persist new blob. Since the world metadata row exists, we just update it.
-    const persistStart = performance.now();
+    const worldUpdate = worldTableUpdateSchema.parse({
+      label: world?.label as string | undefined,
+      description: world?.description as string | null | undefined,
+      updated_at: Date.now(),
+      blob: newData,
+    });
+
     await appContext.libsqlClient.execute({
-      sql: worldsUpdate,
+      sql: updateWorld,
       args: [
-        world?.label,
-        world?.description,
-        world?.is_public,
-        Date.now(),
-        newData,
+        worldUpdate.label ?? world?.label ?? null,
+        worldUpdate.description ?? world?.description ?? null,
+        worldUpdate.updated_at ?? Date.now(),
+        worldUpdate.blob ?? newData,
         worldId,
       ],
     });
-    const persistTime = performance.now() - persistStart;
-    if (persistTime > 100) {
-      console.log(`[PERF] Blob persistence: ${persistTime.toFixed(2)}ms`);
-    }
 
     return new Response(null, {
       status: 204,
@@ -351,7 +356,7 @@ export default (appContext: AppContext) => {
         }
 
         const worldResult = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
         const world = worldResult.rows[0];
@@ -397,7 +402,7 @@ export default (appContext: AppContext) => {
         }
 
         const worldResult = await appContext.libsqlClient.execute({
-          sql: worldsFind,
+          sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
         const world = worldResult.rows[0];

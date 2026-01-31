@@ -58,7 +58,6 @@ export const worldRecordSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.number(),
   deletedAt: z.number().optional(),
-  isPublic: z.boolean().optional(),
 });
 
 /**

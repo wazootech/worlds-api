@@ -2,7 +2,10 @@ import { assert, assertEquals } from "@std/assert";
 import { ulid } from "@std/ulid";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
-import { tenantsAdd, tenantsFind } from "#/server/db/queries/tenants.sql.ts";
+import {
+  tenantsAdd,
+  tenantsFind,
+} from "#/server/db/resources/tenants/queries.sql.ts";
 
 Deno.test("Accounts API routes (Deprecated)", async (t) => {
   const testContext = await createTestContext();

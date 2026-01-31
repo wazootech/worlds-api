@@ -3,7 +3,7 @@ import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
-import { worldsFind } from "#/server/db/queries/worlds.sql.ts";
+import { selectWorldById } from "#/server/db/resources/worlds/queries.sql.ts";
 
 export default (appContext: AppContext) => {
   return new Router().get(
@@ -28,7 +28,7 @@ export default (appContext: AppContext) => {
       if (worldIds) {
         for (const worldId of worldIds) {
           const worldResult = await appContext.libsqlClient.execute({
-            sql: worldsFind,
+            sql: selectWorldById,
             args: [worldId],
           });
           const world = worldResult.rows[0];
