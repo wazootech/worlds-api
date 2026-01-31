@@ -206,10 +206,8 @@ export class Worlds {
       },
     );
     if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(
-        `Failed to execute SPARQL: ${response.status} ${response.statusText}. ${errorBody}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to execute SPARQL: ${errorMessage}`);
     }
 
     if (response.status === 204) {
