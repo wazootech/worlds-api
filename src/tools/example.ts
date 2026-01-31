@@ -7,7 +7,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createClient } from "@libsql/client";
 import { createServer } from "#/server/server.ts";
 import { createTestTenant } from "#/server/testing.ts";
-import type { WorldsOptions } from "#/sdk/types.ts";
+import type { WorldsOptions } from "#/sdk/schema.ts";
 import { InternalWorldsSdk } from "#/sdk/internal/sdk.ts";
 import { UniversalSentenceEncoderEmbeddings } from "#/server/embeddings/use.ts";
 import { initializeDatabase } from "#/server/db/init.ts";

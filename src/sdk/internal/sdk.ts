@@ -1,4 +1,4 @@
-import type { WorldsOptions } from "#/sdk/types.ts";
+import type { WorldsOptions } from "#/sdk/schema.ts";
 import { Worlds } from "#/sdk/worlds.ts";
 
 import { Tenants } from "./tenants.ts";

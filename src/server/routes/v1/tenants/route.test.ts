@@ -7,29 +7,47 @@ import {
   tenantsFind,
 } from "#/server/db/resources/tenants/queries.sql.ts";
 
-Deno.test("Accounts API routes (Deprecated)", async (t) => {
+Deno.test("Tenants API routes", async (t) => {
   const testContext = await createTestContext();
   const app = createApp(testContext);
 
   await t.step(
-    "GET /v1/accounts returns paginated list of accounts (tenants)",
+    "GET /v1/tenants returns paginated list of tenants",
     async () => {
       const apiKey1 = ulid();
       const now1 = Date.now();
       await testContext.libsqlClient.execute({
         sql: tenantsAdd,
-        args: ["acc_1", "Test account 1", "free", apiKey1, now1, now1, null],
+        args: [
+          "tenant_1",
+          null,
+          "Test tenant 1",
+          "free",
+          apiKey1,
+          now1,
+          now1,
+          null,
+        ],
       });
 
       const apiKey2 = ulid();
       const now2 = Date.now();
       await testContext.libsqlClient.execute({
         sql: tenantsAdd,
-        args: ["acc_2", "Test account 2", "pro", apiKey2, now2, now2, null],
+        args: [
+          "tenant_2",
+          null,
+          "Test tenant 2",
+          "pro",
+          apiKey2,
+          now2,
+          now2,
+          null,
+        ],
       });
 
       const req = new Request(
-        "http://localhost/v1/accounts?page=1&pageSize=20",
+        "http://localhost/v1/tenants?page=1&pageSize=20",
         {
           method: "GET",
           headers: {
@@ -39,53 +57,60 @@ Deno.test("Accounts API routes (Deprecated)", async (t) => {
       );
       const res = await app.fetch(req);
       assertEquals(res.status, 200);
-      assert(res.headers.get("Deprecation") === "true");
 
-      const accounts = await res.json();
-      assert(Array.isArray(accounts));
-      assert(accounts.length >= 2);
+      const tenants = await res.json();
+      assert(Array.isArray(tenants));
+      assert(tenants.length >= 2);
     },
   );
 });
 
-Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
+Deno.test("Tenants API routes - CRUD operations", async (t) => {
   const testContext = await createTestContext();
   const app = createApp(testContext);
 
-  await t.step("POST /v1/accounts creates a new account (tenant)", async () => {
-    const req = new Request("http://localhost/v1/accounts", {
+  await t.step("POST /v1/tenants creates a new tenant", async () => {
+    const req = new Request("http://localhost/v1/tenants", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${testContext.admin!.apiKey}`,
       },
       body: JSON.stringify({
-        id: "acc_new",
-        description: "Test account",
+        id: "tenant_new",
+        description: "Test tenant",
         plan: "free",
       }),
     });
     const res = await app.fetch(req);
     assertEquals(res.status, 201);
-    assert(res.headers.get("Deprecation") === "true");
 
     const body = await res.json();
-    assertEquals(body.id, "acc_new");
-    assertEquals(body.description, "Test account");
+    assertEquals(body.id, "tenant_new");
+    assertEquals(body.description, "Test tenant");
     assertEquals(body.plan, "free");
   });
 
-  await t.step("GET /v1/accounts/:account retrieves an account", async () => {
+  await t.step("GET /v1/tenants/:tenant retrieves a tenant", async () => {
     const apiKey = ulid();
     const now = Date.now();
     await testContext.libsqlClient.execute({
       sql: tenantsAdd,
-      args: ["acc_get", "Test account 2", "pro", apiKey, now, now, null],
+      args: [
+        "tenant_get",
+        null,
+        "Test tenant 2",
+        "pro",
+        apiKey,
+        now,
+        now,
+        null,
+      ],
     });
-    const accountId = "acc_get";
+    const tenantId = "tenant_get";
 
     const req = new Request(
-      `http://localhost/v1/accounts/${accountId}`,
+      `http://localhost/v1/tenants/${tenantId}`,
       {
         method: "GET",
         headers: {
@@ -95,24 +120,38 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
     );
     const res = await app.fetch(req);
     assertEquals(res.status, 200);
-    assert(res.headers.get("Deprecation") === "true");
 
-    const account = await res.json();
-    assertEquals(account.description, "Test account 2");
-    assertEquals(account.plan, "pro");
+    const tenant = await res.json();
+    assertEquals(tenant.description, "Test tenant 2");
+    assertEquals(tenant.plan, "pro");
   });
 
-  await t.step("PUT /v1/accounts/:account updates an account", async () => {
+  await t.step("PUT /v1/tenants/:tenant updates a tenant", async () => {
     const apiKey = ulid();
     const now = Date.now();
     await testContext.libsqlClient.execute({
       sql: tenantsAdd,
-      args: ["acc_put", "Original description", "free", apiKey, now, now, null],
+      args: [
+        "tenant_put",
+        "Original description",
+        "free",
+        apiKey,
+        now,
+        now,
+        "tenant_put",
+        null,
+        "Original description",
+        "free",
+        apiKey,
+        now,
+        now,
+        null,
+      ],
     });
-    const accountId = "acc_put";
+    const tenantId = "tenant_put";
 
     const req = new Request(
-      `http://localhost/v1/accounts/${accountId}`,
+      `http://localhost/v1/tenants/${tenantId}`,
       {
         method: "PUT",
         headers: {
@@ -127,11 +166,10 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
     );
     const res = await app.fetch(req);
     assertEquals(res.status, 204);
-    assert(res.headers.get("Deprecation") === "true");
 
     const getRes = await app.fetch(
       new Request(
-        `http://localhost/v1/accounts/${accountId}`,
+        `http://localhost/v1/tenants/${tenantId}`,
         {
           method: "GET",
           headers: {
@@ -140,21 +178,30 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
         },
       ),
     );
-    const account = await getRes.json();
-    assertEquals(account.description, "Updated description");
+    const tenant = await getRes.json();
+    assertEquals(tenant.description, "Updated description");
   });
 
-  await t.step("DELETE /v1/accounts/:account removes an account", async () => {
+  await t.step("DELETE /v1/tenants/:tenant removes a tenant", async () => {
     const apiKey = ulid();
     const now = Date.now();
     await testContext.libsqlClient.execute({
       sql: tenantsAdd,
-      args: ["acc_del", "To be deleted", "free", apiKey, now, now, null],
+      args: [
+        "tenant_del",
+        null,
+        "To be deleted",
+        "free",
+        apiKey,
+        now,
+        now,
+        null,
+      ],
     });
-    const accountId = "acc_del";
+    const tenantId = "tenant_del";
 
     const req = new Request(
-      `http://localhost/v1/accounts/${accountId}`,
+      `http://localhost/v1/tenants/${tenantId}`,
       {
         method: "DELETE",
         headers: {
@@ -164,11 +211,10 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
     );
     const res = await app.fetch(req);
     assertEquals(res.status, 204);
-    assert(res.headers.get("Deprecation") === "true");
 
     const getRes = await app.fetch(
       new Request(
-        `http://localhost/v1/accounts/${accountId}`,
+        `http://localhost/v1/tenants/${tenantId}`,
         {
           method: "GET",
           headers: {
@@ -181,24 +227,39 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
   });
 
   await t.step(
-    "POST /v1/accounts/:account/rotate rotates account API key",
+    "POST /v1/tenants/:tenant/rotate rotates tenant API key",
     async () => {
       const apiKey = ulid();
       const now = Date.now();
       await testContext.libsqlClient.execute({
         sql: tenantsAdd,
-        args: ["acc_rot", "Account to rotate", "free", apiKey, now, now, null],
+        args: [
+          "tenant_rot",
+          "Tenant to rotate",
+          "free",
+          apiKey,
+          now,
+          now,
+          "tenant_rot",
+          null,
+          "Tenant to rotate",
+          "free",
+          apiKey,
+          now,
+          now,
+          null,
+        ],
       });
-      const accountId = "acc_rot";
+      const tenantId = "tenant_rot";
 
-      const accountResult = await testContext.libsqlClient.execute({
+      const tenantResult = await testContext.libsqlClient.execute({
         sql: tenantsFind,
-        args: [accountId],
+        args: [tenantId],
       });
-      const originalApiKey = accountResult.rows[0].api_key as string;
+      const originalApiKey = tenantResult.rows[0].api_key as string;
 
       const req = new Request(
-        `http://localhost/v1/accounts/${accountId}/rotate`,
+        `http://localhost/v1/tenants/${tenantId}/rotate`,
         {
           method: "POST",
           headers: {
@@ -208,11 +269,10 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
       );
       const res = await app.fetch(req);
       assertEquals(res.status, 204);
-      assert(res.headers.get("Deprecation") === "true");
 
       const getRes = await app.fetch(
         new Request(
-          `http://localhost/v1/accounts/${accountId}`,
+          `http://localhost/v1/tenants/${tenantId}`,
           {
             method: "GET",
             headers: {
@@ -221,8 +281,8 @@ Deno.test("Accounts API routes - CRUD operations (Deprecated)", async (t) => {
           },
         ),
       );
-      const account = await getRes.json();
-      assert(account.apiKey !== originalApiKey);
+      const tenant = await getRes.json();
+      assert(tenant.apiKey !== originalApiKey);
     },
   );
 });

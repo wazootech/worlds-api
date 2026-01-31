@@ -6,7 +6,8 @@ import type {
   WorldRecord,
   WorldsOptions,
   WorldsSearchResult,
-} from "./types.ts";
+} from "./schema.ts";
+import { parseError } from "./error-utils.ts";
 
 /**
  * Worlds is a TypeScript SDK for the Worlds API.
@@ -42,9 +43,8 @@ export class Worlds {
       },
     });
     if (!response.ok) {
-      throw new Error(
-        `Failed to list worlds: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to list worlds: ${errorMessage}`);
     }
 
     return await response.json();
@@ -76,9 +76,8 @@ export class Worlds {
     }
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to get world: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to get world: ${errorMessage}`);
     }
 
     return await response.json();
@@ -109,9 +108,8 @@ export class Worlds {
       },
     );
     if (!response.ok) {
-      throw new Error(
-        `Failed to create world: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to create world: ${errorMessage}`);
     }
 
     return await response.json();
@@ -143,9 +141,8 @@ export class Worlds {
       },
     );
     if (!response.ok) {
-      throw new Error(
-        `Failed to update world: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to update world: ${errorMessage}`);
     }
   }
 
@@ -172,9 +169,8 @@ export class Worlds {
       },
     );
     if (!response.ok) {
-      throw new Error(
-        `Failed to remove world: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to remove world: ${errorMessage}`);
     }
   }
 
@@ -210,29 +206,8 @@ export class Worlds {
       },
     );
     if (!response.ok) {
-      // Try to extract error message from response body
-      let errorMessage = `${response.status} ${response.statusText}`;
-      try {
-        const contentType = response.headers.get("content-type");
-        if (contentType?.includes("application/json")) {
-          const errorBody = await response.json();
-          if (errorBody.error) {
-            errorMessage = errorBody.error;
-          } else if (errorBody.message) {
-            errorMessage = errorBody.message;
-          }
-        } else {
-          const text = await response.text();
-          if (text) {
-            errorMessage = text;
-          }
-        }
-      } catch {
-        // If we can't parse the error, use the status text
-      }
-      throw new Error(
-        `Failed to execute SPARQL: ${errorMessage}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to execute SPARQL: ${errorMessage}`);
     }
 
     if (response.status === 204) {
@@ -274,9 +249,8 @@ export class Worlds {
       },
     });
     if (!response.ok) {
-      throw new Error(
-        `Failed to search: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to search: ${errorMessage}`);
     }
 
     return await response.json();
@@ -313,9 +287,8 @@ export class Worlds {
     });
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to download world: ${response.status} ${response.statusText}`,
-      );
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to download world: ${errorMessage}`);
     }
 
     return await response.arrayBuffer();
