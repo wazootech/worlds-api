@@ -128,11 +128,9 @@ export class Invites {
   public async redeem(
     code: string,
     tenantId: string,
-    options?: { accountId?: string },
   ): Promise<RedeemInviteResult> {
     const url = new URL(`${this.options.baseUrl}/v1/invites/${code}/redeem`);
-    const id = tenantId ?? options?.accountId;
-    url.searchParams.set("tenant", id);
+    url.searchParams.set("tenant", tenantId);
     const response = await this.fetch(
       url,
       {
