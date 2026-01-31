@@ -4,8 +4,10 @@ import type { AppContext } from "#/server/app-context.ts";
 import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
   createWorldParamsSchema,
+  paginationParamsSchema,
   updateWorldParamsSchema,
-} from "#/server/schemas.ts";
+  worldRecordSchema,
+} from "#/sdk/schema.ts";
 import { getPlanPolicy, getPolicy } from "#/server/rate-limit/policies.ts";
 import { Parser, Store, Writer } from "n3";
 import { TokenBucketRateLimiter } from "#/server/rate-limit/rate-limiter.ts";
@@ -18,9 +20,12 @@ import {
   updateWorld,
 } from "#/server/db/resources/worlds/queries.sql.ts";
 import {
+  worldRowSchema,
   worldTableInsertSchema,
+  worldTableSchema,
   worldTableUpdateSchema,
 } from "#/server/db/resources/worlds/schema.ts";
+import { ErrorResponse } from "#/server/errors.ts";
 
 const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
   {
@@ -39,12 +44,12 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         const result = await appContext.libsqlClient.execute({
@@ -58,20 +63,32 @@ export default (appContext: AppContext) => {
           (world.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
 
-        // TODO: Respond with different formats based on the relevant HTTP header.
-
-        return Response.json({
+        // Validate SQL result before returning
+        const row = worldRowSchema.parse({
           id: world.id,
-          tenantId: world.tenant_id,
+          tenant_id: world.tenant_id,
           label: world.label,
           description: world.description,
-          createdAt: world.created_at,
-          updatedAt: world.updated_at,
-          ...(world.deleted_at ? { deletedAt: world.deleted_at } : {}),
+          created_at: world.created_at,
+          updated_at: world.updated_at,
+          deleted_at: world.deleted_at,
         });
+
+        // Map to SDK record and validate against SDK schema
+        const record = worldRecordSchema.parse({
+          id: row.id,
+          tenantId: row.tenant_id,
+          label: row.label,
+          description: row.description,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+          deletedAt: row.deleted_at,
+        });
+
+        return Response.json(record);
       },
     )
     .get(
@@ -79,27 +96,39 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         const worldResult = await appContext.libsqlClient.execute({
           sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
-        const world = worldResult.rows[0];
+        const rawWorld = worldResult.rows[0];
 
         if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
+          !rawWorld || rawWorld.deleted_at != null ||
+          (rawWorld.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
+
+        // Validate SQL result
+        const world = worldTableSchema.parse({
+          id: rawWorld.id,
+          tenant_id: rawWorld.tenant_id,
+          label: rawWorld.label,
+          description: rawWorld.description,
+          blob: rawWorld.blob,
+          created_at: rawWorld.created_at,
+          updated_at: rawWorld.updated_at,
+          deleted_at: rawWorld.deleted_at,
+        });
 
         // Apply rate limit
         const plan = authorized.tenant?.value.plan ?? "free";
@@ -112,13 +141,10 @@ export default (appContext: AppContext) => {
         );
 
         if (!rateLimitResult.allowed) {
-          return new Response("Rate limit exceeded", {
-            status: 429,
-            headers: {
-              "X-RateLimit-Limit": policy.capacity.toString(),
-              "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
-              "X-RateLimit-Reset": rateLimitResult.reset.toString(),
-            },
+          return ErrorResponse.RateLimitExceeded("Rate limit exceeded", {
+            "X-RateLimit-Limit": policy.capacity.toString(),
+            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Reset": rateLimitResult.reset.toString(),
           });
         }
 
@@ -140,7 +166,7 @@ export default (appContext: AppContext) => {
 
         // worldResult.rows[0] is used to get the world record
         if (!world || !world.blob) {
-          return new Response("World data not found", { status: 404 });
+          return ErrorResponse.NotFound("World data not found");
         }
 
         // world.blob is an ArrayBuffer from LibSQL
@@ -175,9 +201,9 @@ export default (appContext: AppContext) => {
           });
         } catch (error) {
           console.error("Serialization error:", error);
-          return new Response("Failed to serialize world data", {
-            status: 500,
-          });
+          return ErrorResponse.InternalServerError(
+            "Failed to serialize world data",
+          );
         }
       },
     )
@@ -186,7 +212,7 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
@@ -194,26 +220,41 @@ export default (appContext: AppContext) => {
           sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
-        const world = worldResult.rows[0];
+        const rawWorld = worldResult.rows[0];
 
         if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
+          !rawWorld || rawWorld.deleted_at != null ||
+          (rawWorld.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
+
+        // Validate SQL result
+        const world = worldTableSchema.parse({
+          id: rawWorld.id,
+          tenant_id: rawWorld.tenant_id,
+          label: rawWorld.label,
+          description: rawWorld.description,
+          blob: rawWorld.blob,
+          created_at: rawWorld.created_at,
+          updated_at: rawWorld.updated_at,
+          deleted_at: rawWorld.deleted_at,
+        });
 
         let body;
         try {
           body = await ctx.request.json();
         } catch {
-          return new Response("Invalid JSON", { status: 400 });
+          return ErrorResponse.BadRequest("Invalid JSON");
         }
 
         const parseResult = updateWorldParamsSchema.safeParse(body);
         if (!parseResult.success) {
-          return Response.json(parseResult.error, { status: 400 });
+          return ErrorResponse.BadRequest(
+            "Invalid parameters: " +
+              parseResult.error.issues.map((e) => e.message).join(", "),
+          );
         }
         const data = parseResult.data;
 
@@ -244,7 +285,7 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
@@ -252,15 +293,26 @@ export default (appContext: AppContext) => {
           sql: selectWorldById,
           args: [worldId],
         });
-        const world = worldResult.rows[0];
+        const rawWorld = worldResult.rows[0];
 
         if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
+          !rawWorld || rawWorld.deleted_at != null ||
+          (rawWorld.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
+
+        // Validate SQL result
+        const world = worldRowSchema.parse({
+          id: rawWorld.id,
+          tenant_id: rawWorld.tenant_id,
+          label: rawWorld.label,
+          description: rawWorld.description,
+          created_at: rawWorld.created_at,
+          updated_at: rawWorld.updated_at,
+          deleted_at: rawWorld.deleted_at,
+        });
 
         // Initialize search store to delete world's search data
         const searchStore = new LibsqlSearchStoreManager({
@@ -279,7 +331,7 @@ export default (appContext: AppContext) => {
           return new Response(null, { status: 204 });
         } catch (error) {
           console.error("Failed to delete world:", error);
-          return new Response("Internal Server Error", { status: 500 });
+          return ErrorResponse.InternalServerError();
         }
       },
     )
@@ -288,14 +340,27 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         const url = new URL(ctx.request.url);
         const pageString = url.searchParams.get("page") ?? "1";
         const pageSizeString = url.searchParams.get("pageSize") ?? "20";
-        const page = parseInt(pageString);
-        const pageSize = parseInt(pageSizeString);
+
+        // Validate pagination parameters
+        const paginationResult = paginationParamsSchema.safeParse({
+          page: parseInt(pageString),
+          pageSize: parseInt(pageSizeString),
+        });
+
+        if (!paginationResult.success) {
+          return ErrorResponse.BadRequest(
+            "Invalid pagination parameters: " +
+              paginationResult.error.issues.map((e) => e.message).join(", "),
+          );
+        }
+
+        const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
@@ -303,17 +368,30 @@ export default (appContext: AppContext) => {
           args: [authorized.tenant.id, pageSize, offset],
         });
 
-        return Response.json(
-          result.rows.map((row) => ({
+        // Validate each SQL result row
+        const validatedRows = result.rows.map((row) => {
+          const validated = worldRowSchema.parse({
             id: row.id,
-            tenantId: row.tenant_id,
+            tenant_id: row.tenant_id,
             label: row.label,
             description: row.description,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            ...(row.deleted_at ? { deletedAt: row.deleted_at } : {}),
-          })),
-        );
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+          });
+
+          return worldRecordSchema.parse({
+            id: validated.id,
+            tenantId: validated.tenant_id,
+            label: validated.label,
+            description: validated.description,
+            createdAt: validated.created_at,
+            updatedAt: validated.updated_at,
+            deletedAt: validated.deleted_at,
+          });
+        });
+
+        return Response.json(validatedRows);
       },
     )
     .post(
@@ -321,19 +399,22 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         let body;
         try {
           body = await ctx.request.json();
         } catch {
-          return new Response("Invalid JSON", { status: 400 });
+          return ErrorResponse.BadRequest("Invalid JSON");
         }
 
         const parseResult = createWorldParamsSchema.safeParse(body);
         if (!parseResult.success) {
-          return Response.json(parseResult.error, { status: 400 });
+          return ErrorResponse.BadRequest(
+            "Invalid parameters: " +
+              parseResult.error.issues.map((e) => e.message).join(", "),
+          );
         }
         const data = parseResult.data;
         const planPolicy = getPlanPolicy(authorized.tenant.value.plan ?? null);
@@ -348,7 +429,7 @@ export default (appContext: AppContext) => {
         );
 
         if (activeWorlds.length >= planPolicy.worldLimits.maxWorlds) {
-          return new Response("World limit reached", { status: 403 });
+          return ErrorResponse.Forbidden("World limit reached");
         }
 
         const now = Date.now();
@@ -379,15 +460,17 @@ export default (appContext: AppContext) => {
           ],
         });
 
-        return Response.json({
+        const record = worldRecordSchema.parse({
           id: world.id,
           tenantId: world.tenant_id,
           label: world.label,
           description: world.description,
           createdAt: world.created_at,
           updatedAt: world.updated_at,
-          deletedAt: undefined,
-        }, { status: 201 });
+          deletedAt: world.deleted_at,
+        });
+
+        return Response.json(record, { status: 201 });
       },
     );
 };

@@ -1,7 +1,7 @@
 import type { Tool } from "ai";
 import { tool } from "ai";
 import { z } from "zod";
-import type { SparqlResult } from "#/sdk/types.ts";
+import type { SparqlResult } from "#/sdk/schema.ts";
 import { Worlds } from "#/sdk/worlds.ts";
 import type { CreateToolsOptions } from "#/tools/types.ts";
 import {

@@ -1,9 +1,9 @@
-import type { WorldsOptions } from "#/sdk/types.ts";
+import type { WorldsOptions } from "#/sdk/schema.ts";
 import type {
   CreateTenantParams,
   TenantRecord,
   UpdateTenantParams,
-} from "#/sdk/internal/types.ts";
+} from "#/sdk/internal/schema.ts";
 
 /**
  * Tenants is a TypeScript SDK for the Tenants API.

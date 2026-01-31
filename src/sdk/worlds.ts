@@ -6,7 +6,7 @@ import type {
   WorldRecord,
   WorldsOptions,
   WorldsSearchResult,
-} from "./types.ts";
+} from "./schema.ts";
 
 /**
  * Worlds is a TypeScript SDK for the Worlds API.

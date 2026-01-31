@@ -54,7 +54,9 @@ Deno.test("World Limits - World Count", async (t) => {
       }),
     );
     assertEquals(resp.status, 403);
-    assertEquals(await resp.text(), "World limit reached");
+    assertEquals(await resp.json(), {
+      error: { code: 403, message: "World limit reached" },
+    });
   });
 
   await t.step(
@@ -79,7 +81,9 @@ Deno.test("World Limits - World Count", async (t) => {
         }),
       );
       assertEquals(resp.status, 403);
-      assertEquals(await resp.text(), "World limit reached");
+      assertEquals(await resp.json(), {
+        error: { code: 403, message: "World limit reached" },
+      });
     },
   );
 });
@@ -144,7 +148,9 @@ Deno.test("World Limits - World Size", async (t) => {
         }),
       );
       assertEquals(resp.status, 413);
-      assertEquals(await resp.text(), "World size limit exceeded");
+      assertEquals(await resp.json(), {
+        error: { code: 413, message: "World size limit exceeded" },
+      });
     },
   );
 });

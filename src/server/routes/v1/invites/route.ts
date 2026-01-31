@@ -2,7 +2,11 @@ import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { createInviteParamsSchema } from "#/server/schemas.ts";
+import { paginationParamsSchema } from "#/sdk/schema.ts";
+import {
+  createInviteParamsSchema,
+  inviteRecordSchema,
+} from "#/sdk/internal/schema.ts";
 import {
   invitesAdd,
   invitesDelete,
@@ -13,9 +17,14 @@ import {
 import { tenantsUpdate } from "#/server/db/resources/tenants/queries.sql.ts";
 import {
   inviteTableInsertSchema,
+  inviteTableSchema,
   inviteTableUpdateSchema,
 } from "#/server/db/resources/invites/schema.ts";
-import { tenantTableUpdateSchema } from "#/server/db/resources/tenants/schema.ts";
+import {
+  tenantTableSchema,
+  tenantTableUpdateSchema,
+} from "#/server/db/resources/tenants/schema.ts";
+import { ErrorResponse } from "#/server/errors.ts";
 
 export default (appContext: AppContext) =>
   new Router()
@@ -24,20 +33,31 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const url = new URL(ctx.request.url);
         const pageString = url.searchParams.get("page") ?? "1";
         const pageSizeString = url.searchParams.get("pageSize") ?? "20";
-        const page = parseInt(pageString);
-        const pageSize = parseInt(pageSizeString);
+
+        // Validate pagination parameters
+        const paginationResult = paginationParamsSchema.safeParse({
+          page: parseInt(pageString),
+          pageSize: parseInt(pageSizeString),
+        });
+
+        if (!paginationResult.success) {
+          return ErrorResponse.BadRequest(
+            "Invalid pagination parameters: " +
+              paginationResult.error.issues.map((e) => e.message).join(", "),
+          );
+        }
+
+        const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
@@ -45,14 +65,24 @@ export default (appContext: AppContext) =>
           args: [pageSize, offset],
         });
 
-        return Response.json(
-          result.rows.map((row) => ({
+        // Validate each SQL result row
+        const validatedRows = result.rows.map((row) => {
+          const validated = inviteTableSchema.parse({
             code: row.code,
-            createdAt: row.created_at,
-            redeemedBy: row.redeemed_by,
-            redeemedAt: row.redeemed_at,
-          })),
-        );
+            created_at: row.created_at,
+            redeemed_by: row.redeemed_by,
+            redeemed_at: row.redeemed_at,
+          });
+
+          return inviteRecordSchema.parse({
+            code: validated.code,
+            createdAt: validated.created_at,
+            redeemedBy: validated.redeemed_by,
+            redeemedAt: validated.redeemed_at,
+          });
+        });
+
+        return Response.json(validatedRows);
       },
     )
     .post(
@@ -60,13 +90,11 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         let body = {};
@@ -78,7 +106,10 @@ export default (appContext: AppContext) =>
 
         const parseResult = createInviteParamsSchema.safeParse(body);
         if (!parseResult.success) {
-          return Response.json(parseResult.error, { status: 400 });
+          return ErrorResponse.BadRequest(
+            "Invalid parameters: " +
+              parseResult.error.issues.map((e) => e.message).join(", "),
+          );
         }
 
         const code = parseResult.data.code ?? ulid();
@@ -103,17 +134,19 @@ export default (appContext: AppContext) =>
         } catch (e: unknown) {
           console.error("SQL Insert failed:", e);
           const message = e instanceof Error ? e.message : "Unknown error";
-          return new Response("Failed to create invite: " + message, {
-            status: 500,
-          });
+          return ErrorResponse.InternalServerError(
+            "Failed to create invite: " + message,
+          );
         }
 
-        return Response.json({
+        const record = inviteRecordSchema.parse({
           code: invite.code,
           createdAt: invite.created_at,
           redeemedBy: invite.redeemed_by,
           redeemedAt: invite.redeemed_at,
-        }, { status: 201 });
+        });
+
+        return Response.json(record, { status: 201 });
       },
     )
     .get(
@@ -121,18 +154,16 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const code = ctx.params?.pathname.groups.code;
         if (!code) {
-          return new Response("Invite code required", { status: 400 });
+          return ErrorResponse.BadRequest("Invite code required");
         }
 
         const result = await appContext.libsqlClient.execute({
@@ -142,15 +173,25 @@ export default (appContext: AppContext) =>
 
         const row = result.rows[0];
         if (!row) {
-          return new Response("Invite not found", { status: 404 });
+          return ErrorResponse.NotFound("Invite not found");
         }
 
-        return Response.json({
+        // Validate SQL result
+        const validated = inviteTableSchema.parse({
           code: row.code,
-          createdAt: row.created_at,
-          redeemedBy: row.redeemed_by,
-          redeemedAt: row.redeemed_at,
+          created_at: row.created_at,
+          redeemed_by: row.redeemed_by,
+          redeemed_at: row.redeemed_at,
         });
+
+        const record = inviteRecordSchema.parse({
+          code: validated.code,
+          createdAt: validated.created_at,
+          redeemedBy: validated.redeemed_by,
+          redeemedAt: validated.redeemed_at,
+        });
+
+        return Response.json(record);
       },
     )
     .delete(
@@ -158,18 +199,16 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const code = ctx.params?.pathname.groups.code;
         if (!code) {
-          return new Response("Invite code required", { status: 400 });
+          return ErrorResponse.BadRequest("Invite code required");
         }
 
         await appContext.libsqlClient.execute({
@@ -185,19 +224,17 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         // For redemption, we need an actual tenant (not just admin)
         if (!authorized.tenant) {
-          return new Response("Tenant required for redemption", {
-            status: 400,
-          });
+          return ErrorResponse.BadRequest("Tenant required for redemption");
         }
 
         const code = ctx.params?.pathname.groups.code;
         if (!code) {
-          return new Response("Invite code required", { status: 400 });
+          return ErrorResponse.BadRequest("Invite code required");
         }
 
         // Find the invite
@@ -206,20 +243,37 @@ export default (appContext: AppContext) =>
           args: [code],
         });
 
-        const invite = inviteResult.rows[0];
-        if (!invite) {
-          return new Response("Invite not found", { status: 404 });
+        const rawInvite = inviteResult.rows[0];
+        if (!rawInvite) {
+          return ErrorResponse.NotFound("Invite not found");
         }
+
+        // Validate SQL result
+        const invite = inviteTableSchema.parse({
+          code: rawInvite.code,
+          created_at: rawInvite.created_at,
+          redeemed_by: rawInvite.redeemed_by,
+          redeemed_at: rawInvite.redeemed_at,
+        });
 
         // Check if already redeemed
         if (invite.redeemed_by) {
-          return new Response("Invite already redeemed", { status: 410 });
+          return new ErrorResponse("Invite already redeemed", 410);
         }
 
-        // Check if user already has a plan
-        const tenant = authorized.tenant.value;
+        // Validate tenant data before business logic checks
+        const tenant = tenantTableSchema.parse({
+          id: authorized.tenant.value.id,
+          description: authorized.tenant.value.description,
+          plan: authorized.tenant.value.plan,
+          api_key: authorized.tenant.value.apiKey,
+          created_at: authorized.tenant.value.createdAt,
+          updated_at: authorized.tenant.value.updatedAt,
+          deleted_at: authorized.tenant.value.deletedAt ?? null,
+        });
+
         if (tenant.plan && tenant.plan !== "shadow") {
-          return new Response("Tenant already has a plan", { status: 409 });
+          return ErrorResponse.Conflict("Tenant already has a plan");
         }
 
         const now = Date.now();
@@ -257,9 +311,9 @@ export default (appContext: AppContext) =>
         } catch (e: unknown) {
           console.error("Redemption failed:", e);
           const message = e instanceof Error ? e.message : "Unknown error";
-          return new Response("Failed to redeem invite: " + message, {
-            status: 500,
-          });
+          return ErrorResponse.InternalServerError(
+            "Failed to redeem invite: " + message,
+          );
         }
 
         return Response.json({

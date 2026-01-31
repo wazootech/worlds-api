@@ -1,4 +1,4 @@
-import type { WorldsOptions } from "./types.ts";
+import type { WorldsOptions } from "./schema.ts";
 import { Worlds } from "./worlds.ts";
 
 export class WorldsSdk {

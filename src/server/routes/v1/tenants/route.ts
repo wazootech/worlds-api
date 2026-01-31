@@ -2,10 +2,12 @@ import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
+import { paginationParamsSchema } from "#/sdk/schema.ts";
 import {
   createTenantParamsSchema,
+  tenantRecordSchema,
   updateTenantParamsSchema,
-} from "#/server/schemas.ts";
+} from "#/sdk/internal/schema.ts";
 import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
   tenantsAdd,
@@ -17,8 +19,10 @@ import {
 } from "#/server/db/resources/tenants/queries.sql.ts";
 import {
   tenantTableInsertSchema,
+  tenantTableSchema,
   tenantTableUpdateSchema,
 } from "../../../db/resources/tenants/schema.ts";
+import { ErrorResponse } from "#/server/errors.ts";
 
 export default (appContext: AppContext) =>
   new Router()
@@ -27,20 +31,31 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const url = new URL(ctx.request.url);
         const pageString = url.searchParams.get("page") ?? "1";
         const pageSizeString = url.searchParams.get("pageSize") ?? "20";
-        const page = parseInt(pageString);
-        const pageSize = parseInt(pageSizeString);
+
+        // Validate pagination parameters
+        const paginationResult = paginationParamsSchema.safeParse({
+          page: parseInt(pageString),
+          pageSize: parseInt(pageSizeString),
+        });
+
+        if (!paginationResult.success) {
+          return ErrorResponse.BadRequest(
+            "Invalid pagination parameters: " +
+              paginationResult.error.issues.map((e) => e.message).join(", "),
+          );
+        }
+
+        const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
@@ -48,17 +63,30 @@ export default (appContext: AppContext) =>
           args: [pageSize, offset],
         });
 
-        return Response.json(
-          result.rows.map((row) => ({
+        // Validate each SQL result row
+        const validatedRows = result.rows.map((row) => {
+          const validated = tenantTableSchema.parse({
             id: row.id,
             description: row.description,
             plan: row.plan,
-            apiKey: row.api_key,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-            deletedAt: row.deleted_at,
-          })),
-        );
+            api_key: row.api_key,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+            deleted_at: row.deleted_at,
+          });
+
+          return tenantRecordSchema.parse({
+            id: validated.id,
+            description: validated.description,
+            plan: validated.plan,
+            apiKey: validated.api_key,
+            createdAt: validated.created_at,
+            updatedAt: validated.updated_at,
+            deletedAt: validated.deleted_at,
+          });
+        });
+
+        return Response.json(validatedRows);
       },
     )
     .post(
@@ -66,25 +94,26 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         let body;
         try {
           body = await ctx.request.json();
         } catch {
-          return new Response("Invalid JSON", { status: 400 });
+          return ErrorResponse.BadRequest("Invalid JSON");
         }
 
         const parseResult = createTenantParamsSchema.safeParse(body);
         if (!parseResult.success) {
-          return Response.json(parseResult.error, { status: 400 });
+          return ErrorResponse.BadRequest(
+            "Invalid parameters: " +
+              parseResult.error.issues.map((e) => e.message).join(", "),
+          );
         }
         const { id, ...data } = parseResult.data;
 
@@ -117,12 +146,12 @@ export default (appContext: AppContext) =>
         } catch (e: unknown) {
           console.error("SQL Insert failed:", e);
           const message = e instanceof Error ? e.message : "Unknown error";
-          return new Response("Failed to create tenant: " + message, {
-            status: 500,
-          });
+          return ErrorResponse.InternalServerError(
+            "Failed to create tenant: " + message,
+          );
         }
 
-        return Response.json({
+        const record = tenantRecordSchema.parse({
           id: tenant.id,
           description: tenant.description,
           plan: tenant.plan,
@@ -130,7 +159,9 @@ export default (appContext: AppContext) =>
           createdAt: tenant.created_at,
           updatedAt: tenant.updated_at,
           deletedAt: tenant.deleted_at,
-        }, { status: 201 });
+        });
+
+        return Response.json(record, { status: 201 });
       },
     )
     .get(
@@ -138,18 +169,16 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const tenantId = ctx.params?.pathname.groups.tenant;
         if (!tenantId) {
-          return new Response("Tenant ID required", { status: 400 });
+          return ErrorResponse.BadRequest("Tenant ID required");
         }
 
         const result = await appContext.libsqlClient.execute({
@@ -159,18 +188,31 @@ export default (appContext: AppContext) =>
 
         const row = result.rows[0];
         if (!row) {
-          return new Response("Tenant not found", { status: 404 });
+          return ErrorResponse.NotFound("Tenant not found");
         }
 
-        return Response.json({
+        // Validate SQL result
+        const validated = tenantTableSchema.parse({
           id: row.id,
           description: row.description,
           plan: row.plan,
-          apiKey: row.api_key,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          deletedAt: row.deleted_at,
+          api_key: row.api_key,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          deleted_at: row.deleted_at,
         });
+
+        const record = tenantRecordSchema.parse({
+          id: validated.id,
+          description: validated.description,
+          plan: validated.plan,
+          apiKey: validated.api_key,
+          createdAt: validated.created_at,
+          updatedAt: validated.updated_at,
+          deletedAt: validated.deleted_at,
+        });
+
+        return Response.json(record);
       },
     )
     .put(
@@ -178,30 +220,31 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const tenantId = ctx.params?.pathname.groups.tenant;
         if (!tenantId) {
-          return new Response("Tenant ID required", { status: 400 });
+          return ErrorResponse.BadRequest("Tenant ID required");
         }
 
         let body;
         try {
           body = await ctx.request.json();
         } catch {
-          return new Response("Invalid JSON", { status: 400 });
+          return ErrorResponse.BadRequest("Invalid JSON");
         }
 
         const parseResult = updateTenantParamsSchema.safeParse(body);
         if (!parseResult.success) {
-          return Response.json(parseResult.error, { status: 400 });
+          return ErrorResponse.BadRequest(
+            "Invalid parameters: " +
+              parseResult.error.issues.map((e) => e.message).join(", "),
+          );
         }
         const data = parseResult.data;
 
@@ -230,18 +273,16 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         if (!authorized.admin) {
-          return new Response("Forbidden: Admin access required", {
-            status: 403,
-          });
+          return ErrorResponse.Forbidden("Forbidden: Admin access required");
         }
 
         const tenantId = ctx.params?.pathname.groups.tenant;
         if (!tenantId) {
-          return new Response("Tenant ID required", { status: 400 });
+          return ErrorResponse.BadRequest("Tenant ID required");
         }
 
         // Cleanup search data
@@ -265,17 +306,17 @@ export default (appContext: AppContext) =>
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("Unauthorized", { status: 401 });
+          return ErrorResponse.Unauthorized();
         }
 
         const tenantId = ctx.params?.pathname.groups.tenant;
         if (!tenantId) {
-          return new Response("Tenant ID required", { status: 400 });
+          return ErrorResponse.BadRequest("Tenant ID required");
         }
 
         // Security Check: Only admins or the tenant owner can rotate the key.
         if (!authorized.admin && authorized.tenant?.id !== tenantId) {
-          return new Response("Forbidden: Permission denied", { status: 403 });
+          return ErrorResponse.Forbidden("Forbidden: Permission denied");
         }
 
         const apiKey = ulid();

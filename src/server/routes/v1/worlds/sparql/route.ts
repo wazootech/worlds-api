@@ -13,12 +13,18 @@ import {
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 import type { Patch, PatchHandler } from "@fartlabs/search-store";
 import { getPlanPolicy } from "#/server/rate-limit/policies.ts";
+import { sparqlResultSchema } from "#/sdk/schema.ts";
 import {
   selectWorldByIdWithBlob,
   updateWorld,
 } from "#/server/db/resources/worlds/queries.sql.ts";
-import { worldTableUpdateSchema } from "#/server/db/resources/worlds/schema.ts";
+import {
+  worldTableSchema,
+  worldTableUpdateSchema,
+} from "#/server/db/resources/worlds/schema.ts";
 import { tenantsFind } from "#/server/db/resources/tenants/queries.sql.ts";
+import { tenantTableSchema } from "#/server/db/resources/tenants/schema.ts";
+import { ErrorResponse } from "#/server/errors.ts";
 
 const { namedNode, quad } = DataFactory;
 
@@ -198,7 +204,7 @@ async function executeSparqlRequest(
         headers: { "Content-Type": contentType },
       });
     } else {
-      return new Response("Query or update required", { status: 400 });
+      return ErrorResponse.BadRequest("Query or update required");
     }
   }
 
@@ -207,7 +213,7 @@ async function executeSparqlRequest(
 
   // Updates are only allowed via POST
   if (isUpdate && request.method !== "POST") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return ErrorResponse.MethodNotAllowed();
   }
 
   // Apply rate limiting if tenantId is present
@@ -224,7 +230,21 @@ async function executeSparqlRequest(
     sql: selectWorldByIdWithBlob,
     args: [worldId],
   });
-  const world = worldResult.rows[0];
+  const rawWorld = worldResult.rows[0];
+
+  // Validate SQL result
+  const world = rawWorld
+    ? worldTableSchema.parse({
+      id: rawWorld.id,
+      tenant_id: rawWorld.tenant_id,
+      label: rawWorld.label,
+      description: rawWorld.description,
+      blob: rawWorld.blob,
+      created_at: rawWorld.created_at,
+      updated_at: rawWorld.updated_at,
+      deleted_at: rawWorld.deleted_at,
+    })
+    : undefined;
 
   let searchTenantId = tenantId;
   if (!searchTenantId) {
@@ -288,13 +308,26 @@ async function executeSparqlRequest(
           sql: tenantsFind,
           args: [effectiveTenantId],
         });
-        const tenant = tenantResult.rows[0];
-        tenantPlan = tenant?.plan as string | null ?? null;
+        const rawTenant = tenantResult.rows[0];
+
+        // Validate SQL result
+        if (rawTenant) {
+          const tenant = tenantTableSchema.parse({
+            id: rawTenant.id,
+            description: rawTenant.description,
+            plan: rawTenant.plan,
+            api_key: rawTenant.api_key,
+            created_at: rawTenant.created_at,
+            updated_at: rawTenant.updated_at,
+            deleted_at: rawTenant.deleted_at,
+          });
+          tenantPlan = tenant.plan;
+        }
       }
 
       const planPolicy = getPlanPolicy(tenantPlan);
       if (newData.length > planPolicy.worldLimits.maxWorldSize) {
-        return new Response("World size limit exceeded", { status: 413 });
+        return ErrorResponse.PayloadTooLarge("World size limit exceeded");
       }
     }
 
@@ -331,8 +364,9 @@ async function executeSparqlRequest(
     });
   }
 
-  // For queries, return the stream response
-  return new Response(JSON.stringify(result), {
+  // For queries, return the result response
+  const validatedResult = sparqlResultSchema.parse(result);
+  return Response.json(validatedResult, {
     headers: {
       "Content-Type": "application/sparql-results+json",
       ...rateLimitHeaders,
@@ -347,27 +381,39 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
 
         const worldResult = await appContext.libsqlClient.execute({
           sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
-        const world = worldResult.rows[0];
+        const rawWorld = worldResult.rows[0];
 
         if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
+          !rawWorld || rawWorld.deleted_at != null ||
+          (rawWorld.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
+
+        // Validate SQL result
+        worldTableSchema.parse({
+          id: rawWorld.id,
+          tenant_id: rawWorld.tenant_id,
+          label: rawWorld.label,
+          description: rawWorld.description,
+          blob: rawWorld.blob,
+          created_at: rawWorld.created_at,
+          updated_at: rawWorld.updated_at,
+          deleted_at: rawWorld.deleted_at,
+        });
 
         try {
           return await executeSparqlRequest(
@@ -393,27 +439,39 @@ export default (appContext: AppContext) => {
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
-          return new Response("World ID required", { status: 400 });
+          return ErrorResponse.BadRequest("World ID required");
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.tenant && !authorized.admin) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
 
         const worldResult = await appContext.libsqlClient.execute({
           sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
-        const world = worldResult.rows[0];
+        const rawWorld = worldResult.rows[0];
 
         if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
+          !rawWorld || rawWorld.deleted_at != null ||
+          (rawWorld.tenant_id !== authorized.tenant?.id &&
             !authorized.admin)
         ) {
-          return new Response("World not found", { status: 404 });
+          return ErrorResponse.NotFound("World not found");
         }
+
+        // Validate SQL result
+        worldTableSchema.parse({
+          id: rawWorld.id,
+          tenant_id: rawWorld.tenant_id,
+          label: rawWorld.label,
+          description: rawWorld.description,
+          blob: rawWorld.blob,
+          created_at: rawWorld.created_at,
+          updated_at: rawWorld.updated_at,
+          deleted_at: rawWorld.deleted_at,
+        });
 
         // Check for unsupported content types
         const contentType = ctx.request.headers.get("content-type") || "";
@@ -424,7 +482,7 @@ export default (appContext: AppContext) => {
           !contentType.includes("application/sparql-update") &&
           !contentType.includes("text/plain")
         ) {
-          return new Response("Unsupported Media Type", { status: 415 });
+          return ErrorResponse.UnsupportedMediaType();
         }
 
         try {
@@ -452,18 +510,16 @@ export default (appContext: AppContext) => {
     .put(
       "/v1/worlds/:world/sparql",
       () => {
-        return new Response("Method Not Allowed", {
-          status: 405,
-          headers: { "Allow": "GET, POST" },
+        return ErrorResponse.MethodNotAllowed("Method Not Allowed", {
+          "Allow": "GET, POST",
         });
       },
     )
     .delete(
       "/v1/worlds/:world/sparql",
       () => {
-        return new Response("Method Not Allowed", {
-          status: 405,
-          headers: { "Allow": "GET, POST" },
+        return ErrorResponse.MethodNotAllowed("Method Not Allowed", {
+          "Allow": "GET, POST",
         });
       },
     );

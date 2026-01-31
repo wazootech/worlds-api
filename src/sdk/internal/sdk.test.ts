@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { createServer } from "#/server/server.ts";
 import { createTestContext, createTestTenant } from "#/server/testing.ts";
-import type { SparqlSelectResults } from "#/sdk/types.ts";
+import type { SparqlSelectResults } from "#/sdk/schema.ts";
 import { InternalWorldsSdk } from "./sdk.ts";
 
 Deno.test("InternalWorldsSdk - Tenants", async (t) => {
@@ -488,7 +488,7 @@ Deno.test("InternalWorldsSdk - Invites", async (t) => {
       id: "ten_sdk_no_plan",
       description: "Tenant without plan",
     });
-    assertEquals(tenant.plan ?? undefined, undefined);
+    assertEquals(tenant.plan, null);
 
     // Create user SDK with tenant's API key
     const userSdk = new InternalWorldsSdk({

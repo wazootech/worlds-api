@@ -50,8 +50,7 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
     assertEquals(world.label, "Test World");
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
-    assertEquals(world.deletedAt, undefined);
-    assertEquals(world.deletedAt, undefined);
+    assertEquals(world.deletedAt, null);
   });
 
   await t.step(
@@ -231,7 +230,7 @@ Deno.test("Worlds API routes - POST operations", async (t) => {
     assert(typeof world.id === "string");
     assert(typeof world.createdAt === "number");
     assert(typeof world.updatedAt === "number");
-    assertEquals(world.deletedAt, undefined);
+    assertEquals(world.deletedAt, null);
   });
 });
 

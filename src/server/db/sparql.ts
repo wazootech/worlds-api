@@ -2,7 +2,7 @@ import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import type { PatchHandler } from "@fartlabs/search-store";
 import { connectSearchStoreToN3Store } from "@fartlabs/search-store/n3";
 import { generateBlobFromN3Store, generateN3StoreFromBlob } from "./n3.ts";
-import type { SparqlBinding, SparqlQuad, SparqlResult } from "#/sdk/types.ts";
+import type { SparqlBinding, SparqlQuad, SparqlResult } from "#/sdk/schema.ts";
 
 /**
  * DatasetParams are the parameters for a SPARQL query.
@@ -85,6 +85,8 @@ async function handleBindings(queryType: any): Promise<SparqlResult> {
             bindingObj[v] = {
               type: type as "uri" | "literal" | "bnode",
               value: term.value,
+              "xml:lang": null,
+              datatype: null,
             };
 
             if (term.termType === "Literal") {
@@ -109,7 +111,7 @@ async function handleBindings(queryType: any): Promise<SparqlResult> {
   );
 
   return {
-    head: { vars },
+    head: { vars, link: null },
     results: { bindings },
   };
 }
@@ -118,7 +120,7 @@ async function handleBindings(queryType: any): Promise<SparqlResult> {
 async function handleBoolean(queryType: any): Promise<SparqlResult> {
   const booleanResult = await queryType.execute();
   return {
-    head: {},
+    head: { link: null },
     boolean: booleanResult,
   };
 }
@@ -146,12 +148,12 @@ async function handleQuads(queryType: any): Promise<SparqlResult> {
             ? "bnode"
             : "literal",
           value: quad.object.value,
-          ...(quad.object.language ? { "xml:lang": quad.object.language } : {}),
-          ...(quad.object.datatype &&
+          "xml:lang": quad.object.language || null,
+          datatype: (quad.object.datatype &&
               quad.object.datatype.value !==
-                "http://www.w3.org/2001/XMLSchema#string"
-            ? { datatype: quad.object.datatype.value }
-            : {}),
+                "http://www.w3.org/2001/XMLSchema#string")
+            ? quad.object.datatype.value
+            : null,
         },
         graph: {
           type: quad.graph.termType === "DefaultGraph" ? "default" : "uri",
@@ -164,7 +166,7 @@ async function handleQuads(queryType: any): Promise<SparqlResult> {
   });
 
   return {
-    head: {},
+    head: { link: null },
     results: { quads },
   };
 }
