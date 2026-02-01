@@ -4,7 +4,6 @@ import type {
   ExecuteSparqlOutput,
   RdfFormat,
   SearchResult,
-  SearchResultItem,
   UpdateWorldParams,
   WorldRecord,
 } from "./schema.ts";
@@ -224,11 +223,11 @@ export class Worlds {
   public async search(
     query: string,
     options?: {
-      worldIds?: string[];
       limit?: number;
       tenantId?: string;
+      worldIds?: string[];
     },
-  ): Promise<SearchResult<SearchResultItem>[]> {
+  ): Promise<SearchResult[]> {
     const url = new URL(`${this.options.baseUrl}/v1/search`);
     const tenantId = options?.tenantId;
     if (tenantId) {

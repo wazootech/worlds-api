@@ -1,32 +1,9 @@
 import { z } from "zod";
 
 /**
- * SearchResultItem represents a search result item.
- */
-export interface SearchResultItem {
-  tenantId: string;
-  worldId: string;
-  subject: string;
-  predicate: string;
-  object: string;
-}
-
-/**
- * searchResultItemSchema is the Zod schema for SearchResultItem.
- */
-export const searchResultItemSchema: z.ZodType<SearchResultItem> = z
-  .object({
-    tenantId: z.string(),
-    worldId: z.string(),
-    subject: z.string(),
-    predicate: z.string(),
-    object: z.string(),
-  });
-
-/**
  * SearchResult is a result with a score.
  */
-export interface SearchResult<T> {
+export interface SearchResult {
   /**
    * score is the score of the result.
    */
@@ -35,17 +12,28 @@ export interface SearchResult<T> {
   /**
    * value is the result value.
    */
-  value: T;
+  value: {
+    tenantId: string;
+    worldId: string;
+    subject: string;
+    predicate: string;
+    object: string;
+  };
 }
 
 /**
  * searchResultSchema is the Zod schema for SearchResult.
  */
-export const searchResultSchema: z.ZodType<SearchResult<SearchResultItem>> = z
-  .object({
-    score: z.number(),
-    value: searchResultItemSchema,
-  });
+export const searchResultSchema: z.ZodType<SearchResult> = z.object({
+  score: z.number(),
+  value: z.object({
+    tenantId: z.string(),
+    worldId: z.string(),
+    subject: z.string(),
+    predicate: z.string(),
+    object: z.string(),
+  }),
+});
 
 /**
  * WorldRecord represents a world in the Worlds API.

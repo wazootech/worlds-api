@@ -7,6 +7,7 @@ import {
   executeSparqlOutputSchema,
 } from "#/sdk/worlds/schema.ts";
 import type { CreateToolsOptions } from "#/ai-sdk/interfaces.ts";
+import { isSparqlUpdate } from "#/sdk/utils.ts";
 
 // Re-export the output schema and type from the SDK.
 export { type ExecuteSparqlOutput, executeSparqlOutputSchema };
@@ -39,10 +40,22 @@ export function createExecuteSparqlTool(
 ): Tool<ExecuteSparqlInput, ExecuteSparqlOutput> {
   const sdk = new WorldsSdk(options);
   return tool({
-    description: "Execute a SPARQL query or update against a specific source.",
+    description:
+      "Execute SPARQL queries and updates against a specific world knowledge base.",
     inputSchema: executeSparqlInputSchema,
     outputSchema: executeSparqlOutputSchema,
-    execute: async ({ source, sparql }) => {
+    execute: async ({ sparql, source }) => {
+      // Validate write permissions for update queries.
+      if (
+        isSparqlUpdate(sparql) &&
+        !options.sources.find((s) => s.id === source)?.writable
+      ) {
+        throw new Error(
+          "Write operations are disabled. This source is configured as read-only. " +
+            "Only SELECT, ASK, CONSTRUCT, and DESCRIBE queries are allowed.",
+        );
+      }
+
       return await sdk.worlds.sparql(source, sparql);
     },
   });
