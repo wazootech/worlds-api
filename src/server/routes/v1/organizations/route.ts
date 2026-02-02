@@ -4,38 +4,34 @@ import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { paginationParamsSchema } from "#/sdk/utils.ts";
 import {
-  createTenantParamsSchema,
-  tenantRecordSchema,
-  updateTenantParamsSchema,
-} from "#/sdk/tenants/schema.ts";
-import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
+  createOrganizationParamsSchema,
+  organizationRecordSchema,
+  updateOrganizationParamsSchema,
+} from "#/sdk/organizations/schema.ts";
+// import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
-  tenantsAdd,
-  tenantsDelete,
-  tenantsFind,
-  tenantsGetMany,
-  tenantsRotateApiKey,
-  tenantsUpdate,
-} from "#/server/db/resources/tenants/queries.sql.ts";
+  organizationsAdd,
+  organizationsDelete,
+  organizationsFind,
+  organizationsGetMany,
+  organizationsRotateApiKey,
+  organizationsUpdate,
+} from "#/server/db/resources/organizations/queries.sql.ts";
 import {
-  tenantTableInsertSchema,
-  tenantTableSchema,
-  tenantTableUpdateSchema,
-} from "#/server/db/resources/tenants/schema.ts";
+  organizationTableInsertSchema,
+  organizationTableSchema,
+  organizationTableUpdateSchema,
+} from "#/server/db/resources/organizations/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 
 export default (appContext: AppContext) =>
   new Router()
     .get(
-      "/v1/tenants",
+      "/v1/organizations",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         const url = new URL(ctx.request.url);
@@ -61,13 +57,13 @@ export default (appContext: AppContext) =>
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
-          sql: tenantsGetMany,
+          sql: organizationsGetMany,
           args: [pageSize, offset],
         });
 
         // Validate each SQL result row
         const validatedRows = result.rows.map((row) => {
-          const validated = tenantTableSchema.parse({
+          const validated = organizationTableSchema.parse({
             id: row.id,
             label: row.label,
             description: row.description,
@@ -78,7 +74,7 @@ export default (appContext: AppContext) =>
             deleted_at: row.deleted_at,
           });
 
-          return tenantRecordSchema.parse({
+          return organizationRecordSchema.parse({
             id: validated.id,
             label: validated.label,
             description: validated.description,
@@ -94,15 +90,11 @@ export default (appContext: AppContext) =>
       },
     )
     .post(
-      "/v1/tenants",
+      "/v1/organizations",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         let body;
@@ -112,7 +104,7 @@ export default (appContext: AppContext) =>
           return ErrorResponse.BadRequest("Invalid JSON");
         }
 
-        const parseResult = createTenantParamsSchema.safeParse(body);
+        const parseResult = createOrganizationParamsSchema.safeParse(body);
         if (!parseResult.success) {
           return ErrorResponse.BadRequest(
             "Invalid parameters: " +
@@ -126,7 +118,7 @@ export default (appContext: AppContext) =>
         const apiKey = ulid();
 
         const now = Date.now();
-        const tenant = tenantTableInsertSchema.parse({
+        const organization = organizationTableInsertSchema.parse({
           id,
           label: data.label ?? null,
           description: data.description ?? null,
@@ -139,69 +131,65 @@ export default (appContext: AppContext) =>
 
         try {
           await appContext.libsqlClient.execute({
-            sql: tenantsAdd,
+            sql: organizationsAdd,
             args: [
-              tenant.id,
-              tenant.label ?? null,
-              tenant.description ?? null,
-              tenant.plan ?? null,
-              tenant.api_key,
-              tenant.created_at,
-              tenant.updated_at,
-              tenant.deleted_at ?? null,
+              organization.id,
+              organization.label ?? null,
+              organization.description ?? null,
+              organization.plan ?? null,
+              organization.api_key,
+              organization.created_at,
+              organization.updated_at,
+              organization.deleted_at ?? null,
             ],
           });
         } catch (e: unknown) {
           console.error("SQL Insert failed:", e);
           const message = e instanceof Error ? e.message : "Unknown error";
           return ErrorResponse.InternalServerError(
-            "Failed to create tenant: " + message,
+            "Failed to create organization: " + message,
           );
         }
 
-        const record = tenantRecordSchema.parse({
-          id: tenant.id,
-          label: tenant.label,
-          description: tenant.description,
-          plan: tenant.plan,
-          apiKey: tenant.api_key,
-          createdAt: tenant.created_at,
-          updatedAt: tenant.updated_at,
-          deletedAt: tenant.deleted_at,
+        const record = organizationRecordSchema.parse({
+          id: organization.id,
+          label: organization.label,
+          description: organization.description,
+          plan: organization.plan,
+          apiKey: organization.api_key,
+          createdAt: organization.created_at,
+          updatedAt: organization.updated_at,
+          deletedAt: organization.deleted_at,
         });
 
         return Response.json(record, { status: 201 });
       },
     )
     .get(
-      "/v1/tenants/:tenant",
+      "/v1/organizations/:organization",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
-        if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
-        }
-
-        const tenantId = ctx.params?.pathname.groups.tenant;
-        if (!tenantId) {
-          return ErrorResponse.BadRequest("Tenant ID required");
+        const organizationId = ctx.params?.pathname.groups.organization;
+        if (!organizationId) {
+          return ErrorResponse.BadRequest("Organization ID required");
         }
 
         const result = await appContext.libsqlClient.execute({
-          sql: tenantsFind,
-          args: [tenantId],
+          sql: organizationsFind,
+          args: [organizationId],
         });
 
         const row = result.rows[0];
         if (!row) {
-          return ErrorResponse.NotFound("Tenant not found");
+          return ErrorResponse.NotFound("Organization not found");
         }
 
         // Validate SQL result
-        const validated = tenantTableSchema.parse({
+        const validated = organizationTableSchema.parse({
           id: row.id,
           label: row.label,
           description: row.description,
@@ -212,7 +200,7 @@ export default (appContext: AppContext) =>
           deleted_at: row.deleted_at,
         });
 
-        const record = tenantRecordSchema.parse({
+        const record = organizationRecordSchema.parse({
           id: validated.id,
           label: validated.label,
           description: validated.description,
@@ -227,20 +215,16 @@ export default (appContext: AppContext) =>
       },
     )
     .put(
-      "/v1/tenants/:tenant",
+      "/v1/organizations/:organization",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
-        if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
-        }
-
-        const tenantId = ctx.params?.pathname.groups.tenant;
-        if (!tenantId) {
-          return ErrorResponse.BadRequest("Tenant ID required");
+        const organizationId = ctx.params?.pathname.groups.organization;
+        if (!organizationId) {
+          return ErrorResponse.BadRequest("Organization ID required");
         }
 
         let body;
@@ -250,7 +234,7 @@ export default (appContext: AppContext) =>
           return ErrorResponse.BadRequest("Invalid JSON");
         }
 
-        const parseResult = updateTenantParamsSchema.safeParse(body);
+        const parseResult = updateOrganizationParamsSchema.safeParse(body);
         if (!parseResult.success) {
           return ErrorResponse.BadRequest(
             "Invalid parameters: " +
@@ -262,7 +246,7 @@ export default (appContext: AppContext) =>
         const data = parseResult.data;
 
         const updateNow = Date.now();
-        const tenantUpdate = tenantTableUpdateSchema.parse({
+        const organizationUpdate = organizationTableUpdateSchema.parse({
           label: data.label ?? undefined,
           description: data.description ?? undefined,
           plan: data.plan ?? undefined,
@@ -270,13 +254,13 @@ export default (appContext: AppContext) =>
         });
 
         await appContext.libsqlClient.execute({
-          sql: tenantsUpdate,
+          sql: organizationsUpdate,
           args: [
-            tenantUpdate.label ?? null,
-            tenantUpdate.description ?? null,
-            tenantUpdate.plan ?? null,
-            tenantUpdate.updated_at ?? updateNow,
-            tenantId,
+            organizationUpdate.label ?? null,
+            organizationUpdate.description ?? null,
+            organizationUpdate.plan ?? null,
+            organizationUpdate.updated_at ?? updateNow,
+            organizationId,
           ],
         });
 
@@ -284,60 +268,52 @@ export default (appContext: AppContext) =>
       },
     )
     .delete(
-      "/v1/tenants/:tenant",
+      "/v1/organizations/:organization",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
-        if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
-        }
-
-        const tenantId = ctx.params?.pathname.groups.tenant;
-        if (!tenantId) {
-          return ErrorResponse.BadRequest("Tenant ID required");
+        const organizationId = ctx.params?.pathname.groups.organization;
+        if (!organizationId) {
+          return ErrorResponse.BadRequest("Organization ID required");
         }
 
         // Cleanup search data
-        const searchStore = new LibsqlSearchStoreManager({
-          client: appContext.libsqlClient,
-          embeddings: appContext.embeddings,
-        });
-        await searchStore.createTablesIfNotExists();
-        await searchStore.deleteTenant(tenantId);
+        // Cleanup search data
+        // const searchStore = new LibsqlSearchStoreManager({
+        //   client: appContext.libsqlClient,
+        //   embeddings: appContext.embeddings,
+        // });
+        // await searchStore.createTablesIfNotExists();
+        // await searchStore.deleteOrganization(organizationId);
 
         await appContext.libsqlClient.execute({
-          sql: tenantsDelete,
-          args: [tenantId],
+          sql: organizationsDelete,
+          args: [organizationId],
         });
 
         return new Response(null, { status: 204 });
       },
     )
     .post(
-      "/v1/tenants/:tenant/rotate",
+      "/v1/organizations/:organization/rotate",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
-        const tenantId = ctx.params?.pathname.groups.tenant;
-        if (!tenantId) {
-          return ErrorResponse.BadRequest("Tenant ID required");
-        }
-
-        // Security Check: Only admins or the tenant owner can rotate the key.
-        if (!authorized.admin && authorized.tenant?.id !== tenantId) {
-          return ErrorResponse.Forbidden("Forbidden: Permission denied");
+        const organizationId = ctx.params?.pathname.groups.organization;
+        if (!organizationId) {
+          return ErrorResponse.BadRequest("Organization ID required");
         }
 
         const apiKey = ulid();
         await appContext.libsqlClient.execute({
-          sql: tenantsRotateApiKey,
-          args: [apiKey, Date.now(), tenantId],
+          sql: organizationsRotateApiKey,
+          args: [apiKey, Date.now(), organizationId],
         });
 
         return new Response(null, { status: 204 });

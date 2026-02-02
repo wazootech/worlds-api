@@ -5,14 +5,14 @@
  * Reference: https://en.wikipedia.org/wiki/Token_bucket
  */
 export const tokenBucketsTable =
-  "CREATE TABLE IF NOT EXISTS token_buckets (\n  id TEXT PRIMARY KEY NOT NULL,\n  tenant_id TEXT NOT NULL,\n  KEY TEXT NOT NULL,  -- Composite key: worldId:resourceType\n  tokens REAL NOT NULL,\n  last_refill_at INTEGER NOT NULL,\n  FOREIGN KEY (tenant_id) REFERENCES tenants(id)\n);";
+  "CREATE TABLE IF NOT EXISTS token_buckets (\n  id TEXT PRIMARY KEY NOT NULL,\n  organization_id TEXT NOT NULL,\n  KEY TEXT NOT NULL,  -- Composite key: worldId:resourceType\n  tokens REAL NOT NULL,\n  last_refill_at INTEGER NOT NULL,\n  FOREIGN KEY (organization_id) REFERENCES organizations(id)\n);";
 
 /**
- * tokenBucketsTenantIdIndex is an index on tenant_id for efficient lookups
- * by tenant.
+ * tokenBucketsOrganizationIdIndex is an index on organization_id for efficient lookups
+ * by organization.
  */
-export const tokenBucketsTenantIdIndex =
-  "CREATE INDEX IF NOT EXISTS idx_token_buckets_tenant_id ON token_buckets(tenant_id);";
+export const tokenBucketsOrganizationIdIndex =
+  "CREATE INDEX IF NOT EXISTS idx_token_buckets_organization_id ON token_buckets(\n  organization_id\n);";
 
 /**
  * tokenBucketsFind is a query that finds a token bucket by key
@@ -26,14 +26,14 @@ export const tokenBucketsFind =
  * (used in rate limiter atomic operations).
  */
 export const tokenBucketsUpsert =
-  "INSERT\n  OR REPLACE INTO token_buckets (id, tenant_id, KEY, tokens, last_refill_at)\nVALUES\n  (?, ?, ?, ?, ?);";
+  "INSERT\n  OR REPLACE INTO token_buckets (\n    id,\n    organization_id,\n    KEY,\n    tokens,\n    last_refill_at\n  )\nVALUES\n  (?, ?, ?, ?, ?);";
 
 /**
- * tokenBucketsDeleteByTenant is a query that deletes all token buckets for
- * a tenant (cleanup when tenant is deleted).
+ * tokenBucketsDeleteByOrganization is a query that deletes all token buckets for
+ * an organization (cleanup when organization is deleted).
  */
-export const tokenBucketsDeleteByTenant =
-  "DELETE FROM\n  token_buckets\nWHERE\n  tenant_id = ?;";
+export const tokenBucketsDeleteByOrganization =
+  "DELETE FROM\n  token_buckets\nWHERE\n  organization_id = ?;";
 
 /**
  * tokenBucketsCleanupOld is a query that deletes token buckets that haven't

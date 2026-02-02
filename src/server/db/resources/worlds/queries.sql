@@ -1,27 +1,31 @@
--- worldsTable is a table where each world is owned by a tenant.
--- TODO: Make tenant_id nullable to support admin-created (non-tenant scoped) worlds
+-- worldsTable is a table where each world is owned by an organization.
+-- TODO: Make organization_id nullable to support admin-created (non-org scoped) worlds
 CREATE TABLE IF NOT EXISTS worlds (
   id TEXT PRIMARY KEY NOT NULL,
-  tenant_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL,
   label TEXT NOT NULL,
   description TEXT,
   blob BLOB,
+  db_hostname TEXT,
+  db_token TEXT,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER,
-  FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+  FOREIGN KEY (organization_id) REFERENCES organizations(id)
 );
 
--- worldsTenantIdIndex is an index on tenant_id for secondary lookups.
-CREATE INDEX IF NOT EXISTS idx_worlds_tenant_id ON worlds(tenant_id);
+-- worldsOrganizationIdIndex is an index on organization_id for secondary lookups.
+CREATE INDEX IF NOT EXISTS idx_worlds_organization_id ON worlds(organization_id);
 
 -- selectWorldById is a query that finds a world by ID
 -- (used in GET /v1/worlds/:world and SPARQL routes).
 SELECT
   id,
-  tenant_id,
+  organization_id,
   label,
   description,
+  db_hostname,
+  db_token,
   created_at,
   updated_at,
   deleted_at
@@ -41,20 +45,22 @@ WHERE
   id = ?
   AND deleted_at IS NULL;
 
--- selectWorldsByTenantId is a query that finds worlds by tenant ID with
+-- selectWorldsByOrganizationId is a query that finds worlds by organization ID with
 -- pagination (used in GET /v1/worlds).
 SELECT
   id,
-  tenant_id,
+  organization_id,
   label,
   description,
+  db_hostname,
+  db_token,
   created_at,
   updated_at,
   deleted_at
 FROM
   worlds
 WHERE
-  tenant_id = ?
+  organization_id = ?
   AND deleted_at IS NULL
 ORDER BY
   created_at DESC
@@ -65,16 +71,18 @@ LIMIT
 INSERT INTO
   worlds (
     id,
-    tenant_id,
+    organization_id,
     label,
     description,
     blob,
+    db_hostname,
+    db_token,
     created_at,
     updated_at,
     deleted_at
   )
 VALUES
-  (?, ?, ?, ?, ?, ?, ?, ?);
+  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- updateWorld is a query that updates world fields
 -- (used in PUT /v1/worlds/:world).
@@ -84,7 +92,9 @@ SET
   label = ?,
   description = ?,
   updated_at = ?,
-  blob = ?
+  blob = ?,
+  db_hostname = ?,
+  db_token = ?
 WHERE
   id = ?;
 

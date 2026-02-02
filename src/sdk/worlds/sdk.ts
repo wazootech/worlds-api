@@ -27,12 +27,12 @@ export class Worlds {
   public async list(
     page = 1,
     pageSize = 20,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<WorldRecord[]> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     url.searchParams.set("page", page.toString());
@@ -55,12 +55,12 @@ export class Worlds {
    */
   public async get(
     worldId: string,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<WorldRecord | null> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     const response = await this.fetch(
@@ -88,12 +88,12 @@ export class Worlds {
    */
   public async create(
     data: CreateWorldParams,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<WorldRecord> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     const response = await this.fetch(
@@ -121,12 +121,12 @@ export class Worlds {
   public async update(
     worldId: string,
     data: UpdateWorldParams,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     const response = await this.fetch(
@@ -151,12 +151,12 @@ export class Worlds {
    */
   public async delete(
     worldId: string,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<void> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     const response = await this.fetch(
@@ -183,14 +183,14 @@ export class Worlds {
   public async sparql(
     worldId: string,
     query: string,
-    options?: { tenantId?: string },
+    options?: { organizationId?: string },
   ): Promise<ExecuteSparqlOutput> {
     const url = new URL(
       `${this.options.baseUrl}/v1/worlds/${worldId}/sparql`,
     );
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     const response = await this.fetch(
@@ -224,14 +224,16 @@ export class Worlds {
     query: string,
     options?: {
       limit?: number;
-      tenantId?: string;
+      organizationId?: string;
       worldIds?: string[];
+      subjects?: string[];
+      predicates?: string[];
     },
   ): Promise<SearchResult[]> {
     const url = new URL(`${this.options.baseUrl}/v1/search`);
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
 
     url.searchParams.set("q", query);
@@ -241,6 +243,18 @@ export class Worlds {
 
     if (options?.limit) {
       url.searchParams.set("limit", options.limit.toString());
+    }
+
+    if (options?.subjects) {
+      for (const s of options.subjects) {
+        url.searchParams.append("s", s);
+      }
+    }
+
+    if (options?.predicates) {
+      for (const p of options.predicates) {
+        url.searchParams.append("p", p);
+      }
     }
 
     const response = await this.fetch(url, {
@@ -267,14 +281,14 @@ export class Worlds {
    */
   public async download(
     worldId: string,
-    options?: { format?: RdfFormat; tenantId?: string },
+    options?: { format?: RdfFormat; organizationId?: string },
   ): Promise<ArrayBuffer> {
     const url = new URL(
       `${this.options.baseUrl}/v1/worlds/${worldId}/download`,
     );
-    const tenantId = options?.tenantId;
-    if (tenantId) {
-      url.searchParams.set("tenant", tenantId);
+    const organizationId = options?.organizationId;
+    if (organizationId) {
+      url.searchParams.set("organizationId", organizationId);
     }
     if (options?.format) {
       url.searchParams.set("format", options.format);

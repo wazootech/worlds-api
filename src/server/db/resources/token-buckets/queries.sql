@@ -2,16 +2,16 @@
 -- Reference: https://en.wikipedia.org/wiki/Token_bucket
 CREATE TABLE IF NOT EXISTS token_buckets (
   id TEXT PRIMARY KEY NOT NULL,
-  tenant_id TEXT NOT NULL,
+  organization_id TEXT NOT NULL,
   KEY TEXT NOT NULL,  -- Composite key: worldId:resourceType
   tokens REAL NOT NULL,
   last_refill_at INTEGER NOT NULL,
-  FOREIGN KEY (tenant_id) REFERENCES tenants(id)
+  FOREIGN KEY (organization_id) REFERENCES organizations(id)
 );
 
--- tokenBucketsTenantIdIndex is an index on tenant_id for efficient lookups
--- by tenant.
-CREATE INDEX IF NOT EXISTS idx_token_buckets_tenant_id ON token_buckets(tenant_id);
+-- tokenBucketsOrganizationIdIndex is an index on organization_id for efficient lookups
+-- by organization.
+CREATE INDEX IF NOT EXISTS idx_token_buckets_organization_id ON token_buckets(organization_id);
 
 -- tokenBucketsFind is a query that finds a token bucket by key
 -- (used in rate limiter consume operation).
@@ -25,16 +25,22 @@ WHERE
 -- tokenBucketsUpsert is a query that inserts or updates a token bucket
 -- (used in rate limiter atomic operations).
 INSERT
-  OR REPLACE INTO token_buckets (id, tenant_id, KEY, tokens, last_refill_at)
+  OR REPLACE INTO token_buckets (
+    id,
+    organization_id,
+    KEY,
+    tokens,
+    last_refill_at
+  )
 VALUES
   (?, ?, ?, ?, ?);
 
--- tokenBucketsDeleteByTenant is a query that deletes all token buckets for
--- a tenant (cleanup when tenant is deleted).
+-- tokenBucketsDeleteByOrganization is a query that deletes all token buckets for
+-- an organization (cleanup when organization is deleted).
 DELETE FROM
   token_buckets
 WHERE
-  tenant_id = ?;
+  organization_id = ?;
 
 -- tokenBucketsCleanupOld is a query that deletes token buckets that haven't
 -- been used in a while (maintenance query).

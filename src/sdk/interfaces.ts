@@ -19,3 +19,23 @@ export interface WorldsSdkOptions {
    */
   fetch?: typeof globalThis.fetch;
 }
+
+/**
+ * Source is the ID of a source.
+ */
+export interface Source {
+  /**
+   * id is the ID of the source.
+   */
+  id: string;
+
+  /**
+   * writable is true if the source is writable.
+   */
+  writable?: boolean;
+
+  /**
+   * schema is true if the source contains schema information.
+   */
+  schema?: boolean;
+}

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+// TODO: Redesign named node search for entity resolution
+
 /**
  * SearchResult is a result with a score.
  */
@@ -13,7 +15,7 @@ export interface SearchResult {
    * value is the result value.
    */
   value: {
-    tenantId: string;
+    organizationId: string;
     worldId: string;
     subject: string;
     predicate: string;
@@ -27,7 +29,7 @@ export interface SearchResult {
 export const searchResultSchema: z.ZodType<SearchResult> = z.object({
   score: z.number(),
   value: z.object({
-    tenantId: z.string(),
+    organizationId: z.string(),
     worldId: z.string(),
     subject: z.string(),
     predicate: z.string(),
@@ -40,7 +42,7 @@ export const searchResultSchema: z.ZodType<SearchResult> = z.object({
  */
 export interface WorldRecord {
   id: string;
-  tenantId: string;
+  organizationId: string;
   label: string;
   description: string | null;
   createdAt: number;
@@ -53,7 +55,7 @@ export interface WorldRecord {
  */
 export const worldRecordSchema: z.ZodType<WorldRecord> = z.object({
   id: z.string(),
-  tenantId: z.string(),
+  organizationId: z.string(),
   label: z.string(),
   description: z.string().nullable(),
   createdAt: z.number(),
@@ -65,6 +67,7 @@ export const worldRecordSchema: z.ZodType<WorldRecord> = z.object({
  * CreateWorldParams represents the parameters for creating a world.
  */
 export interface CreateWorldParams {
+  organizationId: string;
   label: string;
   description?: string | null;
 }
@@ -73,6 +76,7 @@ export interface CreateWorldParams {
  * createWorldParamsSchema is the Zod schema for CreateWorldParams.
  */
 export const createWorldParamsSchema: z.ZodType<CreateWorldParams> = z.object({
+  organizationId: z.string(),
   label: z.string(),
   description: z.string().nullable().optional(),
 });

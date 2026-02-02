@@ -6,11 +6,13 @@ import { z } from "zod";
  */
 export const worldTableSchema = z.object({
   id: z.string(),
-  tenant_id: z.string(),
+  organization_id: z.string(),
   label: z.string(),
   description: z.string().nullable(),
   blob: z.union([z.instanceof(ArrayBuffer), z.instanceof(Uint8Array)])
     .nullable(),
+  db_hostname: z.string().nullable(),
+  db_token: z.string().nullable(),
   created_at: z.number(),
   updated_at: z.number(),
   deleted_at: z.number().nullable(),
@@ -46,7 +48,12 @@ export type WorldTableInsert = z.infer<typeof worldTableInsertSchema>;
  * worldTableUpdateSchema is the Zod schema for updating a world.
  */
 export const worldTableUpdateSchema = worldTableSchema
-  .omit({ id: true, tenant_id: true, created_at: true, deleted_at: true })
+  .omit({
+    id: true,
+    organization_id: true,
+    created_at: true,
+    deleted_at: true,
+  })
   .partial();
 
 /**

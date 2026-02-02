@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { Parser, Store } from "n3";
-import { createTestContext, createTestTenant } from "#/server/testing.ts";
-import { generateBlobFromN3Store } from "#/server/db/n3.ts";
+import { createTestContext, createTestOrganization } from "#/server/testing.ts";
+import { generateBlobFromN3Store } from "#/server/blobs/n3.ts";
 import createRoute from "./route.ts";
 import { insertWorld } from "#/server/db/resources/worlds/queries.sql.ts";
 import type { Client } from "@libsql/client";
@@ -37,8 +37,8 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
   await t.step(
     "GET /v1/worlds/:world/sparql returns service description when no query",
     async () => {
-      const { id: tenantId, apiKey } = await createTestTenant(
-        testContext.libsqlClient,
+      const { id: organizationId, apiKey } = await createTestOrganization(
+        testContext,
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
@@ -46,14 +46,15 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
         sql: insertWorld,
         args: [
           worldId,
-          tenantId,
+          organizationId,
           "Test World",
           "Test Description",
           null, // blob
+          null, // db_hostname
+          null, // db_token
           now,
           now,
-          null,
-          0,
+          null, // deleted_at
         ],
       });
 
@@ -84,8 +85,8 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
   await t.step(
     "POST /v1/worlds/:world/sparql (query parameter) executes SPARQL Query",
     async () => {
-      const { id: tenantId, apiKey } = await createTestTenant(
-        testContext.libsqlClient,
+      const { id: organizationId, apiKey } = await createTestOrganization(
+        testContext,
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
@@ -93,14 +94,15 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
         sql: insertWorld,
         args: [
           worldId,
-          tenantId,
+          organizationId,
           "Test World",
           "Test Description",
           null, // blob
+          null, // db_hostname
+          null, // db_token
           now,
           now,
-          null,
-          0,
+          null, // deleted_at
         ],
       });
 
@@ -151,8 +153,8 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
   await t.step(
     "POST /v1/worlds/:world/sparql (body) executes SPARQL Query",
     async () => {
-      const { id: tenantId, apiKey } = await createTestTenant(
-        testContext.libsqlClient,
+      const { id: organizationId, apiKey } = await createTestOrganization(
+        testContext,
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
@@ -160,14 +162,15 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
         sql: insertWorld,
         args: [
           worldId,
-          tenantId,
+          organizationId,
           "Test World",
           "Test Description",
           null, // blob
+          null, // db_hostname
+          null, // db_token
           now,
           now,
-          null,
-          0,
+          null, // deleted_at
         ],
       });
 
@@ -209,8 +212,8 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
   await t.step(
     "POST /v1/worlds/:world/sparql executes SPARQL Update",
     async () => {
-      const { id: tenantId, apiKey } = await createTestTenant(
-        testContext.libsqlClient,
+      const { id: organizationId, apiKey } = await createTestOrganization(
+        testContext,
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
@@ -218,14 +221,15 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
         sql: insertWorld,
         args: [
           worldId,
-          tenantId,
+          organizationId,
           "Test World",
           "Test Description",
           null, // blob
+          null, // db_hostname
+          null, // db_token
           now,
           now,
-          null,
-          0,
+          null, // deleted_at
         ],
       });
 
@@ -284,7 +288,7 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
   await t.step(
     "POST /v1/worlds/:world/sparql returns 404 for non-existent world",
     async () => {
-      const { apiKey } = await createTestTenant(testContext.libsqlClient);
+      const { apiKey } = await createTestOrganization(testContext);
 
       const query = encodeURIComponent("SELECT ?s WHERE { ?s ?p ?o }");
       const req = new Request(

@@ -1,66 +1,59 @@
+import { type Client, createClient } from "@libsql/client";
 import { ulid } from "@std/ulid";
-import type { Client } from "@libsql/client";
-import type { AppContext } from "./app-context.ts";
-import { createClient } from "@libsql/client";
 import { initializeDatabase } from "./db/init.ts";
-import { tenantsAdd } from "./db/resources/tenants/queries.sql.ts";
+import { organizationsAdd } from "./db/resources/organizations/queries.sql.ts";
+import type { Embeddings } from "./embeddings/embeddings.ts";
+// import type { TestContext } from "./testing.ts"; // Removed self-reference
 
-/**
- * createTestContext creates a test context for the application.
- */
-export async function createTestContext(): Promise<AppContext> {
-  const apiKey = "admin-api-key";
-
-  const client = createClient({ url: ":memory:" });
-
-  // Initialize database tables
-  await initializeDatabase(client);
-
-  const embedder = {
-    embed: (_: string) => Promise.resolve(new Array(1536).fill(0)),
-    dimensions: 1536,
-  };
-
-  return {
-    admin: { apiKey },
-    libsqlClient: client,
-    embeddings: embedder,
+export interface TestContext {
+  libsqlClient: Client;
+  embeddings: Embeddings;
+  admin?: {
+    apiKey: string;
   };
 }
 
-/**
- * createTestTenant creates a test tenant and returns its ID and API key.
- */
-export async function createTestTenant(
-  client: Client,
-  tenant?: {
-    id?: string;
-    label?: string | null;
-    description?: string;
-    plan?: string | null;
-    apiKey?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    deletedAt?: number | null;
-  },
-): Promise<{ id: string; apiKey: string }> {
-  const timestamp = Date.now();
-  const id = tenant?.id ?? ulid(timestamp);
-  const apiKey = tenant?.apiKey ?? ulid(timestamp);
+export async function createTestContext(): Promise<TestContext> {
+  const client = createClient({ url: ":memory:" });
+  await initializeDatabase(client);
 
-  await client.execute({
-    sql: tenantsAdd,
+  const mockEmbeddings: Embeddings = {
+    dimensions: 768,
+    embed: (texts: string | string[]) => {
+      const count = Array.isArray(texts) ? texts.length : 1;
+      return Promise.resolve(Array(count).fill(Array(768).fill(0)));
+    },
+  };
+
+  return {
+    libsqlClient: client,
+    embeddings: mockEmbeddings,
+    admin: {
+      apiKey: ulid(),
+    },
+  };
+}
+
+export async function createTestOrganization(
+  context: TestContext,
+  options?: { plan?: string },
+) {
+  const id = ulid();
+  const apiKey = ulid(); // Generated but unused for auth
+  const now = Date.now();
+  await context.libsqlClient.execute({
+    sql: organizationsAdd,
     args: [
       id,
-      tenant?.label ?? null,
-      tenant?.description ?? "Test tenant",
-      tenant?.plan === undefined ? "free" : tenant.plan,
+      "Test Org",
+      "Description",
+      options?.plan ?? "free",
       apiKey,
-      tenant?.createdAt ?? Date.now(),
-      tenant?.updatedAt ?? Date.now(),
-      tenant?.deletedAt ?? null,
+      now,
+      now,
+      null,
     ],
   });
-
-  return { id, apiKey };
+  // Return the admin API key for authentication, as org keys are no longer valid
+  return { id, apiKey: context.admin?.apiKey ?? apiKey };
 }

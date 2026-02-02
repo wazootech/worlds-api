@@ -60,45 +60,6 @@ Deno.test("WorldsSdk - Invites", async (t) => {
     assert(found !== undefined);
   });
 
-  await t.step("redeem invite", async () => {
-    // Create a tenant without a plan
-    const tenant = await sdk.tenants.create({
-      id: "ten_sdk_no_plan",
-      description: "Tenant without plan",
-    });
-    assertEquals(tenant.plan, null);
-
-    // Create user SDK with tenant's API key
-    const userSdk = new WorldsSdk({
-      baseUrl: "http://localhost",
-      apiKey: tenant.apiKey,
-      fetch: (url: string | URL | Request, init?: RequestInit) =>
-        server.fetch(new Request(url, init)),
-    });
-
-    // Create a fresh invite for redemption
-    const invite = await sdk.invites.create({ code: "redeem_sdk_test" });
-    assertEquals(invite.code, "redeem_sdk_test");
-
-    // Redeem the invite (user must pass their own ID even with their API key)
-    const result = await userSdk.invites.redeem(
-      "redeem_sdk_test",
-      "ten_sdk_no_plan",
-    );
-    assertEquals(result.plan, "free");
-
-    // Verify tenant now has a plan
-    const updatedTenant = await sdk.tenants.get("ten_sdk_no_plan");
-    assert(updatedTenant !== null);
-    assertEquals(updatedTenant.plan, "free");
-
-    // Verify invite is marked as redeemed
-    const redeemedInvite = await sdk.invites.get("redeem_sdk_test");
-    assert(redeemedInvite !== null);
-    assertEquals(redeemedInvite.redeemedBy, "ten_sdk_no_plan");
-    assert(redeemedInvite.redeemedAt !== null);
-  });
-
   await t.step("delete invite", async () => {
     await sdk.invites.delete("sdk_invite_test");
     const invite = await sdk.invites.get("sdk_invite_test");

@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 export const tokenBucketTableSchema = z.object({
   id: z.string(),
-  tenant_id: z.string(),
+  organization_id: z.string(),
   KEY: z.string(),
   tokens: z.number(),
   last_refill_at: z.number(),

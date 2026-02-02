@@ -1,6 +1,6 @@
 import type { WorldsSdkOptions } from "./interfaces.ts";
 import { Invites } from "./invites/sdk.ts";
-import { Tenants } from "./tenants/sdk.ts";
+import { Organizations } from "./organizations/sdk.ts";
 import { Worlds } from "./worlds/sdk.ts";
 
 /**
@@ -9,11 +9,11 @@ import { Worlds } from "./worlds/sdk.ts";
 export class WorldsSdk {
   public readonly worlds: Worlds;
   public readonly invites: Invites;
-  public readonly tenants: Tenants;
+  public readonly organizations: Organizations;
 
   public constructor(options: WorldsSdkOptions) {
     this.worlds = new Worlds(options);
     this.invites = new Invites(options);
-    this.tenants = new Tenants(options);
+    this.organizations = new Organizations(options);
   }
 }

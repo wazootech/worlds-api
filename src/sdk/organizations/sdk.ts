@@ -1,15 +1,15 @@
 import type { WorldsSdkOptions } from "#/sdk/interfaces.ts";
 import type {
-  CreateTenantParams,
-  TenantRecord,
-  UpdateTenantParams,
+  CreateOrganizationParams,
+  OrganizationRecord,
+  UpdateOrganizationParams,
 } from "./schema.ts";
 import { parseError } from "#/sdk/utils.ts";
 
 /**
- * Tenants is a TypeScript SDK for the Tenants API.
+ * Organizations is a TypeScript SDK for the Organizations API.
  */
-export class Tenants {
+export class Organizations {
   private readonly fetch: typeof fetch;
 
   public constructor(
@@ -19,13 +19,13 @@ export class Tenants {
   }
 
   /**
-   * list paginates tenants from the Worlds API.
+   * list paginates organizations from the Worlds API.
    */
   public async list(
     page = 1,
     pageSize = 20,
-  ): Promise<TenantRecord[]> {
-    const url = new URL(`${this.options.baseUrl}/v1/tenants`);
+  ): Promise<OrganizationRecord[]> {
+    const url = new URL(`${this.options.baseUrl}/v1/organizations`);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("pageSize", pageSize.toString());
     const response = await this.fetch(url, {
@@ -35,17 +35,19 @@ export class Tenants {
     });
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to list tenants: ${errorMessage}`);
+      throw new Error(`Failed to list organizations: ${errorMessage}`);
     }
 
     return await response.json();
   }
 
   /**
-   * create creates a tenant in the Worlds API.
+   * create creates an organization in the Worlds API.
    */
-  public async create(data: CreateTenantParams): Promise<TenantRecord> {
-    const url = new URL(`${this.options.baseUrl}/v1/tenants`);
+  public async create(
+    data: CreateOrganizationParams,
+  ): Promise<OrganizationRecord> {
+    const url = new URL(`${this.options.baseUrl}/v1/organizations`);
     const response = await this.fetch(
       url,
       {
@@ -59,19 +61,21 @@ export class Tenants {
     );
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to create tenant: ${errorMessage}`);
+      throw new Error(`Failed to create organization: ${errorMessage}`);
     }
 
     return await response.json();
   }
 
   /**
-   * get retrieves a tenant from the Worlds API.
+   * get retrieves an organization from the Worlds API.
    */
   public async get(
-    tenantId: string,
-  ): Promise<TenantRecord | null> {
-    const url = new URL(`${this.options.baseUrl}/v1/tenants/${tenantId}`);
+    organizationId: string,
+  ): Promise<OrganizationRecord | null> {
+    const url = new URL(
+      `${this.options.baseUrl}/v1/organizations/${organizationId}`,
+    );
     const response = await this.fetch(
       url,
       {
@@ -86,20 +90,22 @@ export class Tenants {
 
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to get tenant: ${errorMessage}`);
+      throw new Error(`Failed to get organization: ${errorMessage}`);
     }
 
     return await response.json();
   }
 
   /**
-   * update updates a tenant in the Worlds API.
+   * update updates an organization in the Worlds API.
    */
   public async update(
-    tenantId: string,
-    data: UpdateTenantParams,
+    organizationId: string,
+    data: UpdateOrganizationParams,
   ): Promise<void> {
-    const url = new URL(`${this.options.baseUrl}/v1/tenants/${tenantId}`);
+    const url = new URL(
+      `${this.options.baseUrl}/v1/organizations/${organizationId}`,
+    );
     const response = await this.fetch(
       url,
       {
@@ -113,15 +119,17 @@ export class Tenants {
     );
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to update tenant: ${errorMessage}`);
+      throw new Error(`Failed to update organization: ${errorMessage}`);
     }
   }
 
   /**
-   * delete deletes a tenant from the Worlds API.
+   * delete deletes an organization from the Worlds API.
    */
-  public async delete(tenantId: string): Promise<void> {
-    const url = new URL(`${this.options.baseUrl}/v1/tenants/${tenantId}`);
+  public async delete(organizationId: string): Promise<void> {
+    const url = new URL(
+      `${this.options.baseUrl}/v1/organizations/${organizationId}`,
+    );
     const response = await this.fetch(
       url,
       {
@@ -133,16 +141,16 @@ export class Tenants {
     );
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to delete tenant: ${errorMessage}`);
+      throw new Error(`Failed to delete organization: ${errorMessage}`);
     }
   }
 
   /**
-   * rotate rotates the API key of a tenant.
+   * rotate rotates the API key of an organization.
    */
-  public async rotate(tenantId: string): Promise<void> {
+  public async rotate(organizationId: string): Promise<void> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/tenants/${tenantId}/rotate`,
+      `${this.options.baseUrl}/v1/organizations/${organizationId}/rotate`,
     );
     const response = await this.fetch(
       url,
@@ -155,7 +163,7 @@ export class Tenants {
     );
     if (!response.ok) {
       const errorMessage = await parseError(response);
-      throw new Error(`Failed to rotate tenant key: ${errorMessage}`);
+      throw new Error(`Failed to rotate organization key: ${errorMessage}`);
     }
   }
 }

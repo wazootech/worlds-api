@@ -120,14 +120,14 @@ export class Invites {
   }
 
   /**
-   * redeem redeems an invite code to upgrade a tenant's plan to "free".
+   * redeem redeems an invite code to upgrade an organization's plan to "free".
    */
   public async redeem(
     code: string,
-    tenantId: string,
+    organizationId: string,
   ): Promise<RedeemInviteResult> {
     const url = new URL(`${this.options.baseUrl}/v1/invites/${code}/redeem`);
-    url.searchParams.set("tenant", tenantId);
+    url.searchParams.set("organization", organizationId);
     const response = await this.fetch(
       url,
       {

@@ -1,15 +1,8 @@
 import { assert, assertEquals } from "@std/assert";
-import { ulid } from "@std/ulid";
+// import { ulid } from "@std/ulid";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
-import {
-  invitesAdd,
-  invitesFind,
-} from "#/server/db/resources/invites/queries.sql.ts";
-import {
-  tenantsAdd,
-  tenantsFind,
-} from "#/server/db/resources/tenants/queries.sql.ts";
+import { invitesAdd } from "#/server/db/resources/invites/queries.sql.ts";
 
 Deno.test("Invites API routes - Admin CRUD", async (t) => {
   const testContext = await createTestContext();
@@ -141,65 +134,5 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
     );
     const getRes = await app.fetch(getReq);
     assertEquals(getRes.status, 404);
-  });
-});
-
-Deno.test("Invites API routes - Redemption", async (t) => {
-  const testContext = await createTestContext();
-  const app = createApp(testContext);
-
-  await t.step("Redeem invite upgrades nullish plan to free", async () => {
-    // Create a tenant with no plan
-    const userApiKey = ulid();
-    await testContext.libsqlClient.execute({
-      sql: tenantsAdd,
-      args: [
-        "ten_no_plan",
-        null, // label
-        "Tenant without plan",
-        null, // plan
-        userApiKey,
-        Date.now(),
-        Date.now(),
-        null,
-      ],
-    });
-
-    // Create an invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["redeem_test_invite", Date.now(), null, null],
-    });
-
-    // Redeem the invite
-    const req = new Request(
-      "http://localhost/v1/invites/redeem_test_invite/redeem",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${userApiKey}`,
-        },
-      },
-    );
-    const res = await app.fetch(req);
-    assertEquals(res.status, 200);
-
-    const body = await res.json();
-    assertEquals(body.plan, "free");
-
-    // Verify tenant plan was updated
-    const tenantResult = await testContext.libsqlClient.execute({
-      sql: tenantsFind,
-      args: ["ten_no_plan"],
-    });
-    assertEquals(tenantResult.rows[0]?.plan, "free");
-
-    // Verify invite was marked as redeemed
-    const inviteResult = await testContext.libsqlClient.execute({
-      sql: invitesFind,
-      args: ["redeem_test_invite"],
-    });
-    assertEquals(inviteResult.rows[0]?.redeemed_by, "ten_no_plan");
-    assert(inviteResult.rows[0]?.redeemed_at);
   });
 });

@@ -1,22 +1,20 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
+// import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
   createWorldParamsSchema,
   updateWorldParamsSchema,
   worldRecordSchema,
 } from "#/sdk/worlds/schema.ts";
 import { paginationParamsSchema } from "#/sdk/utils.ts";
-import { getPlanPolicy, getPolicy } from "#/server/rate-limit/policies.ts";
 import { Parser, Store, Writer } from "n3";
-import { TokenBucketRateLimiter } from "#/server/rate-limit/rate-limiter.ts";
 import {
   deleteWorld,
   insertWorld,
   selectWorldById,
   selectWorldByIdWithBlob,
-  selectWorldsByTenantId,
+  selectWorldsByOrganizationId,
   updateWorld,
 } from "#/server/db/resources/worlds/queries.sql.ts";
 import {
@@ -48,7 +46,7 @@ export default (appContext: AppContext) => {
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
@@ -58,20 +56,18 @@ export default (appContext: AppContext) => {
         });
         const world = result.rows[0];
 
-        if (
-          !world || world.deleted_at != null ||
-          (world.tenant_id !== authorized.tenant?.id &&
-            !authorized.admin)
-        ) {
+        if (!world || world.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
         }
 
         // Validate SQL result before returning
         const row = worldRowSchema.parse({
           id: world.id,
-          tenant_id: world.tenant_id,
+          organization_id: world.organization_id,
           label: world.label,
           description: world.description,
+          db_hostname: world.db_hostname,
+          db_token: world.db_token,
           created_at: world.created_at,
           updated_at: world.updated_at,
           deleted_at: world.deleted_at,
@@ -80,7 +76,7 @@ export default (appContext: AppContext) => {
         // Map to SDK record and validate against SDK schema
         const record = worldRecordSchema.parse({
           id: row.id,
-          tenantId: row.tenant_id,
+          organizationId: row.organization_id,
           label: row.label,
           description: row.description,
           createdAt: row.created_at,
@@ -100,7 +96,7 @@ export default (appContext: AppContext) => {
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
@@ -110,43 +106,23 @@ export default (appContext: AppContext) => {
         });
         const rawWorld = worldResult.rows[0];
 
-        if (
-          !rawWorld || rawWorld.deleted_at != null ||
-          (rawWorld.tenant_id !== authorized.tenant?.id &&
-            !authorized.admin)
-        ) {
+        if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
         }
 
         // Validate SQL result
         const world = worldTableSchema.parse({
           id: rawWorld.id,
-          tenant_id: rawWorld.tenant_id,
+          organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
           blob: rawWorld.blob,
+          db_hostname: rawWorld.db_hostname,
+          db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
           updated_at: rawWorld.updated_at,
           deleted_at: rawWorld.deleted_at,
         });
-
-        // Apply rate limit
-        const plan = authorized.tenant?.plan ?? "free";
-        const policy = getPolicy(plan, "world_download");
-        const rateLimiter = new TokenBucketRateLimiter(appContext.libsqlClient);
-        const rateLimitResult = await rateLimiter.consume(
-          `${authorized.tenant?.id || "admin"}:world_download`,
-          1,
-          policy,
-        );
-
-        if (!rateLimitResult.allowed) {
-          return ErrorResponse.RateLimitExceeded("Rate limit exceeded", {
-            "X-RateLimit-Limit": policy.capacity.toString(),
-            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
-            "X-RateLimit-Reset": rateLimitResult.reset.toString(),
-          });
-        }
 
         const url = new URL(ctx.request.url);
         const formatParam = url.searchParams.get("format");
@@ -216,27 +192,29 @@ export default (appContext: AppContext) => {
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin) {
+          return ErrorResponse.Unauthorized();
+        }
+
         const worldResult = await appContext.libsqlClient.execute({
           sql: selectWorldByIdWithBlob,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
 
-        if (
-          !rawWorld || rawWorld.deleted_at != null ||
-          (rawWorld.tenant_id !== authorized.tenant?.id &&
-            !authorized.admin)
-        ) {
+        if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
         }
 
         // Validate SQL result
         const world = worldTableSchema.parse({
           id: rawWorld.id,
-          tenant_id: rawWorld.tenant_id,
+          organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
           blob: rawWorld.blob,
+          db_hostname: rawWorld.db_hostname,
+          db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
           updated_at: rawWorld.updated_at,
           deleted_at: rawWorld.deleted_at,
@@ -275,6 +253,8 @@ export default (appContext: AppContext) => {
             worldUpdate.description ?? world.description ?? null,
             worldUpdate.updated_at ?? updatedAt,
             worldUpdate.blob ?? world.blob ?? null,
+            world.db_hostname,
+            world.db_token,
             worldId,
           ],
         });
@@ -291,38 +271,50 @@ export default (appContext: AppContext) => {
         }
 
         const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin) {
+          return ErrorResponse.Unauthorized();
+        }
+
         const worldResult = await appContext.libsqlClient.execute({
           sql: selectWorldById,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
 
-        if (
-          !rawWorld || rawWorld.deleted_at != null ||
-          (rawWorld.tenant_id !== authorized.tenant?.id &&
-            !authorized.admin)
-        ) {
+        if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
         }
 
         // Validate SQL result
-        const world = worldRowSchema.parse({
+        const _world = worldRowSchema.parse({
           id: rawWorld.id,
-          tenant_id: rawWorld.tenant_id,
+          organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
+          db_hostname: rawWorld.db_hostname,
+          db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
           updated_at: rawWorld.updated_at,
           deleted_at: rawWorld.deleted_at,
         });
 
-        // Initialize search store to delete world's search data
-        const searchStore = new LibsqlSearchStoreManager({
-          client: appContext.libsqlClient,
-          embeddings: appContext.embeddings,
-        });
-        await searchStore.createTablesIfNotExists();
-        await searchStore.deleteWorld(world.tenant_id as string, worldId);
+        if (appContext.libsqlManager) {
+          try {
+            // Database ID is the same as World ID
+            await appContext.libsqlManager.delete(worldId);
+          } catch (error) {
+            console.error("Failed to delete Turso database:", error);
+          }
+        }
+
+        if (appContext.libsqlManager) {
+          try {
+            // Database ID is the same as World ID
+            await appContext.libsqlManager.delete(worldId);
+          } catch (error) {
+            console.error("Failed to delete Turso database:", error);
+          }
+        }
 
         try {
           // Delete world
@@ -341,11 +333,19 @@ export default (appContext: AppContext) => {
       "/v1/worlds",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
         const url = new URL(ctx.request.url);
+        // Admin must specify organizationId to list worlds for that organization
+        const organizationId = url.searchParams.get("organizationId");
+        if (!organizationId) {
+          return ErrorResponse.BadRequest(
+            "organizationId query parameter is required",
+          );
+        }
+
         const pageString = url.searchParams.get("page") ?? "1";
         const pageSizeString = url.searchParams.get("pageSize") ?? "20";
 
@@ -368,17 +368,19 @@ export default (appContext: AppContext) => {
         const offset = (page - 1) * pageSize;
 
         const result = await appContext.libsqlClient.execute({
-          sql: selectWorldsByTenantId,
-          args: [authorized.tenant.id, pageSize, offset],
+          sql: selectWorldsByOrganizationId,
+          args: [organizationId, pageSize, offset],
         });
 
         // Validate each SQL result row
         const validatedRows = result.rows.map((row) => {
           const validated = worldRowSchema.parse({
             id: row.id,
-            tenant_id: row.tenant_id,
+            organization_id: row.organization_id,
             label: row.label,
             description: row.description,
+            db_hostname: row.db_hostname,
+            db_token: row.db_token,
             created_at: row.created_at,
             updated_at: row.updated_at,
             deleted_at: row.deleted_at,
@@ -386,7 +388,7 @@ export default (appContext: AppContext) => {
 
           return worldRecordSchema.parse({
             id: validated.id,
-            tenantId: validated.tenant_id,
+            organizationId: validated.organization_id,
             label: validated.label,
             description: validated.description,
             createdAt: validated.created_at,
@@ -402,7 +404,7 @@ export default (appContext: AppContext) => {
       "/v1/worlds",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant) {
+        if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
 
@@ -423,30 +425,39 @@ export default (appContext: AppContext) => {
           );
         }
         const data = parseResult.data;
-        const planPolicy = getPlanPolicy(authorized.tenant.plan ?? null);
 
-        // Check world limit
-        const worldsResult = await appContext.libsqlClient.execute({
-          sql: selectWorldsByTenantId,
-          args: [authorized.tenant.id, 1000, 0], // Get all worlds to count
-        });
-        const activeWorlds = worldsResult.rows.filter((w) =>
-          w.deleted_at == null
-        );
-
-        if (activeWorlds.length >= planPolicy.worldLimits.maxWorlds) {
-          return ErrorResponse.Forbidden("World limit reached");
-        }
+        // No rate limits check
 
         const now = Date.now();
         const worldId = crypto.randomUUID();
 
+        let _dbId: string | null = null;
+        const dbHostname: string | null = null; // Stored as null, use LibsqlManager.get()
+        const dbToken: string | null = null; // Stored as null, use LibsqlManager.get()
+
+        if (appContext.libsqlManager) {
+          try {
+            const client = await appContext.libsqlManager.create(worldId);
+            _dbId = worldId; // The ID passed to create is the database ID
+
+            const { initializeDatabase } = await import("#/server/db/init.ts");
+            await initializeDatabase(client);
+          } catch (error) {
+            console.error("Failed to provision Turso database:", error);
+            return ErrorResponse.InternalServerError(
+              "Failed to provision world database",
+            );
+          }
+        }
+
         const world = worldTableInsertSchema.parse({
           id: worldId,
-          tenant_id: authorized.tenant!.id,
+          organization_id: data.organizationId,
           label: data.label,
           description: data.description ?? null,
           blob: null,
+          db_hostname: dbHostname,
+          db_token: dbToken,
           created_at: now,
           updated_at: now,
           deleted_at: null,
@@ -456,10 +467,12 @@ export default (appContext: AppContext) => {
           sql: insertWorld,
           args: [
             world.id,
-            world.tenant_id,
+            world.organization_id,
             world.label,
             world.description ?? null,
             world.blob ?? null,
+            world.db_hostname,
+            world.db_token,
             world.created_at,
             world.updated_at,
             world.deleted_at ?? null,
@@ -468,7 +481,7 @@ export default (appContext: AppContext) => {
 
         const record = worldRecordSchema.parse({
           id: world.id,
-          tenantId: world.tenant_id,
+          organizationId: world.organization_id,
           label: world.label,
           description: world.description,
           createdAt: world.created_at,

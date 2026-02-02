@@ -12,18 +12,11 @@ import {
   invitesDelete,
   invitesFind,
   invitesGetMany,
-  invitesUpdate,
 } from "#/server/db/resources/invites/queries.sql.ts";
-import { tenantsUpdate } from "#/server/db/resources/tenants/queries.sql.ts";
 import {
   inviteTableInsertSchema,
   inviteTableSchema,
-  inviteTableUpdateSchema,
 } from "#/server/db/resources/invites/schema.ts";
-import {
-  tenantTableSchema,
-  tenantTableUpdateSchema,
-} from "#/server/db/resources/tenants/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 
 export default (appContext: AppContext) =>
@@ -32,12 +25,8 @@ export default (appContext: AppContext) =>
       "/v1/invites",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         const url = new URL(ctx.request.url);
@@ -91,12 +80,8 @@ export default (appContext: AppContext) =>
       "/v1/invites",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         let body = {};
@@ -157,12 +142,8 @@ export default (appContext: AppContext) =>
       "/v1/invites/:code",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         const code = ctx.params?.pathname.groups.code;
@@ -202,12 +183,8 @@ export default (appContext: AppContext) =>
       "/v1/invites/:code",
       async (ctx) => {
         const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
         if (!authorized.admin) {
-          return ErrorResponse.Forbidden("Forbidden: Admin access required");
+          return ErrorResponse.Unauthorized();
         }
 
         const code = ctx.params?.pathname.groups.code;
@@ -221,112 +198,5 @@ export default (appContext: AppContext) =>
         });
 
         return new Response(null, { status: 204 });
-      },
-    )
-    .post(
-      "/v1/invites/:code/redeem",
-      async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
-        if (!authorized.tenant && !authorized.admin) {
-          return ErrorResponse.Unauthorized();
-        }
-
-        // For redemption, we need an actual tenant (not just admin)
-        if (!authorized.tenant) {
-          return ErrorResponse.BadRequest("Tenant required for redemption");
-        }
-
-        const code = ctx.params?.pathname.groups.code;
-        if (!code) {
-          return ErrorResponse.BadRequest("Invite code required");
-        }
-
-        // Find the invite
-        const inviteResult = await appContext.libsqlClient.execute({
-          sql: invitesFind,
-          args: [code],
-        });
-
-        const rawInvite = inviteResult.rows[0];
-        if (!rawInvite) {
-          return ErrorResponse.NotFound("Invite not found");
-        }
-
-        // Validate SQL result
-        const invite = inviteTableSchema.parse({
-          code: rawInvite.code,
-          created_at: rawInvite.created_at,
-          redeemed_by: rawInvite.redeemed_by,
-          redeemed_at: rawInvite.redeemed_at,
-        });
-
-        // Check if already redeemed
-        if (invite.redeemed_by) {
-          return new ErrorResponse("Invite already redeemed", 410);
-        }
-
-        // Validate tenant data before business logic checks
-        const tenant = tenantTableSchema.parse({
-          id: authorized.tenant.id,
-          label: authorized.tenant.label,
-          description: authorized.tenant.description,
-          plan: authorized.tenant.plan,
-          api_key: authorized.tenant.api_key,
-          created_at: authorized.tenant.created_at,
-          updated_at: authorized.tenant.updated_at,
-          deleted_at: authorized.tenant.deleted_at,
-        });
-
-        if (tenant.plan && tenant.plan !== "shadow") {
-          return ErrorResponse.Conflict("Tenant already has a plan");
-        }
-
-        const now = Date.now();
-
-        try {
-          // Update the invite
-          const inviteUpdate = inviteTableUpdateSchema.parse({
-            redeemed_by: authorized.tenant.id,
-            redeemed_at: now,
-          });
-          await appContext.libsqlClient.execute({
-            sql: invitesUpdate,
-            args: [
-              inviteUpdate.redeemed_by ?? null,
-              inviteUpdate.redeemed_at ?? null,
-              code,
-            ],
-          });
-
-          // Update the tenant's plan to "free"
-          // Update the tenant's plan to "free"
-          const tenantUpdate = tenantTableUpdateSchema.parse({
-            label: tenant.label ?? null,
-            description: tenant.description ?? null,
-            plan: "free",
-            updated_at: now,
-          });
-          await appContext.libsqlClient.execute({
-            sql: tenantsUpdate,
-            args: [
-              tenantUpdate.label ?? null,
-              tenantUpdate.description ?? null,
-              tenantUpdate.plan ?? null,
-              tenantUpdate.updated_at ?? now,
-              authorized.tenant.id,
-            ],
-          });
-        } catch (e: unknown) {
-          console.error("Redemption failed:", e);
-          const message = e instanceof Error ? e.message : "Unknown error";
-          return ErrorResponse.InternalServerError(
-            "Failed to redeem invite: " + message,
-          );
-        }
-
-        return Response.json({
-          message: "Invite redeemed successfully",
-          plan: "free",
-        });
       },
     );

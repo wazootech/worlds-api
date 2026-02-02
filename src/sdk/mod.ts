@@ -1,5 +1,5 @@
 export * from "./invites/mod.ts";
-export * from "./tenants/mod.ts";
+export * from "./organizations/mod.ts";
 export * from "./worlds/mod.ts";
 export * from "./interfaces.ts";
 export * from "./utils.ts";
