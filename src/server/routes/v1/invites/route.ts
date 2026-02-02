@@ -24,7 +24,7 @@ export default (appContext: AppContext) =>
     .get(
       "/v1/invites",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -79,7 +79,7 @@ export default (appContext: AppContext) =>
     .post(
       "/v1/invites",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }

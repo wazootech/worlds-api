@@ -16,7 +16,7 @@ export default (appContext: AppContext) => {
   return new Router().get(
     "/v1/search",
     async (ctx) => {
-      const authorized = await authorizeRequest(appContext, ctx.request);
+      const authorized = authorizeRequest(appContext, ctx.request);
       if (!authorized.admin) {
         return ErrorResponse.Unauthorized();
       }
@@ -59,6 +59,9 @@ export default (appContext: AppContext) => {
           sql: selectWorldsByOrganizationId,
           args: [organizationId, 100, 0], // Max 100 worlds for now
         });
+        console.error(
+          `[DEBUG] Found ${result.rows.length} worlds for org ${organizationId}`,
+        );
         worldIds = result.rows.map((row) => row.id as string);
       } else {
         // Validate specifically requested worlds belong to the organization
@@ -120,6 +123,9 @@ export default (appContext: AppContext) => {
               subjects: subjects.length > 0 ? subjects : undefined,
               predicates: predicates.length > 0 ? predicates : undefined,
             });
+            console.error(
+              `[DEBUG] World ${worldId} search returned ${results.length} results`,
+            );
 
             return results.map((r) => ({ ...r, worldId }));
           } catch (error) {
