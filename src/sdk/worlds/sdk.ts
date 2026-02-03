@@ -3,7 +3,7 @@ import type {
   CreateWorldParams,
   ExecuteSparqlOutput,
   RdfFormat,
-  SearchResult,
+  TripleSearchResult,
   UpdateWorldParams,
   WorldRecord,
 } from "./schema.ts";
@@ -229,7 +229,7 @@ export class Worlds {
       subjects?: string[];
       predicates?: string[];
     },
-  ): Promise<SearchResult[]> {
+  ): Promise<TripleSearchResult[]> {
     const url = new URL(`${this.options.baseUrl}/v1/search`);
     const organizationId = options?.organizationId;
     if (organizationId) {

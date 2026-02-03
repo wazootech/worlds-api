@@ -1,41 +1,34 @@
 import { z } from "zod";
 
-// TODO: Redesign named node search for entity resolution
-
 /**
- * SearchResult is a result with a score.
+ * TripleSearchResult represents a search result from the TripleSearch service.
  */
-export interface SearchResult {
-  /**
-   * score is the score of the result.
-   */
+export interface TripleSearchResult {
+  subject: string;
+  predicate: string;
+  object: string;
+  vecRank: number | null;
+  ftsRank: number | null;
   score: number;
-
-  /**
-   * value is the result value.
-   */
-  value: {
-    organizationId: string;
-    worldId: string;
-    subject: string;
-    predicate: string;
-    object: string;
-  };
+  worldId?: string;
+  organizationId?: string;
 }
 
 /**
- * searchResultSchema is the Zod schema for SearchResult.
+ * tripleSearchResultSchema is the Zod schema for TripleSearchResult.
  */
-export const searchResultSchema: z.ZodType<SearchResult> = z.object({
-  score: z.number(),
-  value: z.object({
-    organizationId: z.string(),
-    worldId: z.string(),
+export const tripleSearchResultSchema: z.ZodType<TripleSearchResult> = z.object(
+  {
     subject: z.string(),
     predicate: z.string(),
     object: z.string(),
-  }),
-});
+    vecRank: z.number().nullable(),
+    ftsRank: z.number().nullable(),
+    score: z.number(),
+    worldId: z.string().optional(),
+    organizationId: z.string().optional(),
+  },
+);
 
 /**
  * WorldRecord represents a world in the Worlds API.

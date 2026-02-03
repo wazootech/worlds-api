@@ -32,11 +32,11 @@ export class NoopPatchHandler implements PatchHandler {
 export async function sparql(
   blob: Blob,
   query: string,
-  searchStore: PatchHandler = new NoopPatchHandler(),
-): Promise<{ blob: Blob; result: ExecuteSparqlOutput | null }> {
+  handler: PatchHandler = new NoopPatchHandler(),
+): Promise<{ blob: Blob; result: ExecuteSparqlOutput }> {
   const store = await generateN3StoreFromBlob(blob);
   const { store: proxiedStore, sync } = connectSearchStoreToN3Store(
-    searchStore,
+    handler,
     store,
   );
 

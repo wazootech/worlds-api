@@ -4,6 +4,8 @@ import { z } from "zod";
 import { WorldsSdk } from "#/sdk/sdk.ts";
 import type { CreateToolsOptions } from "#/ai-sdk/interfaces.ts";
 
+// TODO: Consider rename to resolve-schema.ts
+
 /**
  * DiscoverSchemaInput is the input to the discoverSchema tool.
  */
@@ -104,9 +106,9 @@ export function createDiscoverSchemaTool(
       for (const result of searchResults) {
         // We prioritize results where the subject matches our search, or the object matches (label search)
         // For simplicity, we take the subject of any matching triple as a candidate concept.
-        const subject = result.value.subject;
-        if (!subjectMap.has(subject)) {
-          subjectMap.set(subject, result.value.worldId);
+        const subject = result.subject;
+        if (!subjectMap.has(subject) && result.worldId) {
+          subjectMap.set(subject, result.worldId);
         }
 
         if (subjectMap.size >= (limit ?? 10)) break;
@@ -123,7 +125,11 @@ export function createDiscoverSchemaTool(
           try {
             const query = `
               SELECT ?p ?o WHERE {
-                <${iri}> ?p ?o .
+                { <${iri}> ?p ?o . }
+                UNION
+                { <${iri}> rdfs:subClassOf* ?parent . ?parent ?p ?o . }
+                UNION
+                { <${iri}> owl:equivalentClass ?equiv . ?equiv ?p ?o . }
               }
             `;
             const output = await sdk.worlds.sparql(worldId, query);
@@ -167,6 +173,11 @@ export function createDiscoverSchemaTool(
                 ) {
                   concept.kind = "Property";
                 }
+              } else if (
+                p === "http://www.w3.org/2000/01/rdf-schema#subClassOf"
+              ) {
+                // If it's a subclass of something, it's a Class.
+                concept.kind = "Class";
               } else if (
                 p === "http://www.w3.org/2000/01/rdf-schema#domain"
               ) {

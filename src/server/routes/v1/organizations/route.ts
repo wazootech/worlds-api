@@ -168,7 +168,7 @@ export default (appContext: AppContext) =>
     .get(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -217,7 +217,7 @@ export default (appContext: AppContext) =>
     .put(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -270,7 +270,7 @@ export default (appContext: AppContext) =>
     .delete(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -300,7 +300,7 @@ export default (appContext: AppContext) =>
     .post(
       "/v1/organizations/:organization/rotate",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }

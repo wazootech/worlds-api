@@ -6,11 +6,7 @@ import type { AppContext } from "#/server/app-context.ts";
 import type { DatasetParams } from "#/server/blobs/sparql.ts";
 import { sparql } from "#/server/blobs/sparql.ts";
 import { isSparqlUpdate } from "#/sdk/utils.ts";
-// import {
-//   LibsqlPatchHandler,
-//   LibsqlSearchStoreManager,
-// } from "#/server/search/libsql.ts";
-import type { Patch, PatchHandler } from "@fartlabs/search-store";
+import { BufferedPatchHandler, handlePatch } from "#/server/db/rdf-patch.ts";
 import { executeSparqlOutputSchema } from "#/sdk/worlds/schema.ts";
 import {
   selectWorldByIdWithBlob,
@@ -143,26 +139,6 @@ function generateServiceDescription(endpointUrl: string): Promise<string> {
 }
 
 /**
- * BufferedPatchHandler buffers patches and only applies them when commit is called.
- */
-class BufferedPatchHandler implements PatchHandler {
-  private patches: Patch[] = [];
-
-  constructor(private readonly handler: PatchHandler) {}
-
-  public patch(patches: Patch[]): Promise<void> {
-    this.patches.push(...patches);
-    return Promise.resolve();
-  }
-
-  public async commit(): Promise<void> {
-    if (this.patches.length > 0) {
-      await this.handler.patch(this.patches);
-    }
-  }
-}
-
-/**
  * Shared handler for executing SPARQL queries and updates
  */
 async function executeSparqlRequest(
@@ -227,7 +203,7 @@ async function executeSparqlRequest(
     })
     : undefined;
 
-  const searchOrganizationId = world?.organization_id as string | undefined;
+  const _searchOrganizationId = world?.organization_id as string | undefined;
 
   /*
   // Create world-specific client if available
@@ -241,26 +217,24 @@ async function executeSparqlRequest(
   }
   */
 
+  // Get the world-specific client using LibsqlManager
+  // This ensures we are connected to the correct database for this world
+  let worldClient;
+  if (appContext.libsqlManager) {
+    try {
+      worldClient = await appContext.libsqlManager.get(worldId);
+    } catch (error) {
+      console.error(`Failed to get client for world ${worldId}:`, error);
+    }
+  }
+
   const patchHandlerStart = performance.now();
   const patchHandler = new BufferedPatchHandler(
-    searchOrganizationId
-      ? (() => {
-        /*
-        const searchStore = new LibsqlSearchStoreManager({
-          client: worldClient,
-          embeddings: appContext.embeddings,
-        });
-        // Create tables asynchronously - don't block on it
-        searchStore.createTablesIfNotExists();
-        return new LibsqlPatchHandler({
-          manager: searchStore,
-          organizationId: searchOrganizationId!,
-          worldId,
-        });
-        */
-        // Placeholder until search store is restored
-        return { patch: async () => {} };
-      })()
+    worldClient
+      ? {
+        patch: (patches) =>
+          handlePatch(worldClient, appContext.embeddings, patches),
+      }
       : { patch: async () => {} },
   );
   const patchHandlerTime = performance.now() - patchHandlerStart;

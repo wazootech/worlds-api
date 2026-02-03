@@ -1,7 +1,7 @@
 import { join } from "@std/path";
 import { createClient } from "@libsql/client";
 import type { Client } from "@libsql/client";
-import type { LibsqlManager } from "#/server/db/libsql/manager.ts";
+import type { LibsqlManager } from "#/server/db/manager.ts";
 
 /**
  * FileLibsqlManager implements LibsqlManager using local files.

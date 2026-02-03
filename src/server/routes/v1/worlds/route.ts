@@ -191,7 +191,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -270,7 +270,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -332,7 +332,7 @@ export default (appContext: AppContext) => {
     .get(
       "/v1/worlds",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
@@ -403,7 +403,7 @@ export default (appContext: AppContext) => {
     .post(
       "/v1/worlds",
       async (ctx) => {
-        const authorized = await authorizeRequest(appContext, ctx.request);
+        const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }

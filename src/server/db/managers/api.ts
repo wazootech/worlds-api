@@ -1,7 +1,7 @@
 import type { createClient as createTursoClient } from "@tursodatabase/api";
 import type { Client } from "@libsql/client";
 import { createClient } from "@libsql/client";
-import type { LibsqlManager } from "#/server/db/libsql/manager.ts";
+import type { LibsqlManager } from "#/server/db/manager.ts";
 
 /**
  * TursoClient is the client for the Turso Database API.

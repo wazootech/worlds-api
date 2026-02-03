@@ -14,6 +14,7 @@
     "@fartlabs/search-store": "jsr:@fartlabs/search-store@^0.0.2",
     "@google/genai": "npm:@google/genai@^1.38.0",
     "@kitsonk/kv-toolbox": "jsr:@kitsonk/kv-toolbox@^0.30.0",
+    "@langchain/textsplitters": "npm:@langchain/textsplitters@^1.0.1",
     "@libsql/client": "npm:@libsql/client@^0.17.0",
     "@olli/kvdex": "jsr:@olli/kvdex@^3.4.2",
     "@std/assert": "jsr:@std/assert@^1.0.17",
@@ -46,7 +47,7 @@
         "fmt"
       ]
     },
-    "example": "deno -A --env --unstable-kv --unstable-raw-imports src/tools/example.ts",
-    "generate": "deno -A jsr:@fartlabs/sql-embedder@0.0.5 src"
+    "example": "deno -A --env --unstable-kv --unstable-raw-imports src/cli/main.ts",
+    "generate": "deno -A jsr:@fartlabs/sql-embedder@0.0.5"
   }
 }

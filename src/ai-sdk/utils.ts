@@ -1,4 +1,27 @@
+import { createDiscoverSchemaTool } from "./tools/discover-schema.ts";
+import { createExecuteSparqlTool } from "./tools/execute-sparql.ts";
+import { createGenerateIriTool } from "./tools/generate-iri.ts";
+import { createSearchEntitiesTool } from "./tools/search-entities.ts";
 import type { CreateToolsOptions } from "./interfaces.ts";
+
+/**
+ * createTools creates a toolset from a CreateToolsOptions.
+ */
+export function createTools(options: CreateToolsOptions): {
+  discoverSchema: ReturnType<typeof createDiscoverSchemaTool>;
+  executeSparql: ReturnType<typeof createExecuteSparqlTool>;
+  generateIri: ReturnType<typeof createGenerateIriTool>;
+  searchEntities: ReturnType<typeof createSearchEntitiesTool>;
+} {
+  validateCreateToolsOptions(options);
+
+  return {
+    discoverSchema: createDiscoverSchemaTool(options),
+    executeSparql: createExecuteSparqlTool(options),
+    generateIri: createGenerateIriTool(options),
+    searchEntities: createSearchEntitiesTool(options),
+  };
+}
 
 /**
  * validateCreateToolsOptions enforces constraints on CreateToolsOptions.

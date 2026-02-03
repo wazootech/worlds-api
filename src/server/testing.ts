@@ -3,7 +3,7 @@ import { ulid } from "@std/ulid";
 import { initializeDatabase, initializeWorldDatabase } from "./db/init.ts";
 import { organizationsAdd } from "./db/resources/organizations/queries.sql.ts";
 import type { Embeddings } from "./embeddings/embeddings.ts";
-import type { LibsqlManager } from "./db/libsql/manager.ts";
+import type { LibsqlManager } from "./db/manager.ts";
 
 export interface TestContext {
   libsqlClient: Client;
@@ -48,8 +48,10 @@ export async function createTestContext(): Promise<TestContext> {
   const mockEmbeddings: Embeddings = {
     dimensions: 1536,
     embed: (texts: string | string[]) => {
-      const count = Array.isArray(texts) ? texts.length : 1;
-      return Promise.resolve(Array(count).fill(Array(1536).fill(0)));
+      if (Array.isArray(texts)) {
+        return Promise.resolve(Array(texts.length).fill(Array(1536).fill(0)));
+      }
+      return Promise.resolve(Array(1536).fill(0));
     },
   };
 

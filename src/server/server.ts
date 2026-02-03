@@ -4,7 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import type { AppContext } from "./app-context.ts";
 import { GeminiEmbeddings } from "./embeddings/gemini.ts";
 import { initializeDatabase } from "./db/init.ts";
-import type { LibsqlManager } from "./db/libsql/manager.ts";
+import type { LibsqlManager } from "./db/manager.ts";
 
 const routes = [
   "routes/v1/organizations/route.ts",

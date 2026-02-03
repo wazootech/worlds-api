@@ -1,5 +1,8 @@
 import type { Client } from "@libsql/client";
 
+/**
+ * LibsqlManager manages LibSQL databases.
+ */
 export interface LibsqlManager {
   /**
    * create creates a new LibSQL database.

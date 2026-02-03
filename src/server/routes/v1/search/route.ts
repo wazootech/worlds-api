@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
+import { searchChunks } from "#/server/db/resources/chunks/queries.sql.ts";
 import {
   selectWorldById,
   selectWorldsByOrganizationId,
@@ -9,6 +9,7 @@ import {
 import { limitParamSchema } from "#/sdk/utils.ts";
 import { worldIdsParamSchema } from "#/sdk/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
+import type { TripleSearchResult } from "#/sdk/worlds/schema.ts";
 
 // TODO: Allow users to filter by subject and predicate.
 
@@ -23,8 +24,8 @@ export default (appContext: AppContext) => {
 
       const url = new URL(ctx.request.url);
       const query = url.searchParams.get("q");
-      const subjects = url.searchParams.getAll("s");
-      const predicates = url.searchParams.getAll("p");
+      const _subjects = url.searchParams.getAll("subjects");
+      const _predicates = url.searchParams.getAll("predicates");
 
       if (!query) {
         return ErrorResponse.BadRequest("Query required");
@@ -108,26 +109,36 @@ export default (appContext: AppContext) => {
       }
 
       try {
+        const vector = await appContext.embeddings.embed(query);
+
         // Search across all target worlds in parallel
         const searchPromises = worldIds.map(async (worldId) => {
           try {
             const client = await appContext.libsqlManager!.get(worldId);
-            const store = new LibsqlSearchStoreManager({
-              client: client,
-              embeddings: appContext.embeddings,
+
+            const args = [
+              new Uint8Array(new Float32Array(vector).buffer),
+              limit,
+              query,
+              limit,
+              limit,
+            ];
+
+            const result = await client.execute({
+              sql: searchChunks,
+              args,
             });
 
-            const results = await store.search(query, {
-              organizationId: organizationId,
-              limit: limit,
-              subjects: subjects.length > 0 ? subjects : undefined,
-              predicates: predicates.length > 0 ? predicates : undefined,
-            });
-            console.error(
-              `[DEBUG] World ${worldId} search returned ${results.length} results`,
-            );
+            const results: TripleSearchResult[] = result.rows.map((row) => ({
+              subject: row.subject as string,
+              predicate: row.predicate as string,
+              object: row.object as string,
+              vecRank: row.vec_rank as number | null,
+              ftsRank: row.fts_rank as number | null,
+              score: row.combined_rank as number,
+            }));
 
-            return results.map((r) => ({ ...r, worldId }));
+            return results.map((r) => ({ ...r, worldId, organizationId }));
           } catch (error) {
             console.error(`Search error for world ${worldId}:`, error);
             return [];
@@ -138,7 +149,7 @@ export default (appContext: AppContext) => {
 
         // Sort by combined rank and limit
         const sortedResults = allResults
-          .sort((a, b) => b.combinedRank - a.combinedRank)
+          .sort((a, b) => b.score - a.score)
           .slice(0, limit);
 
         return Response.json(sortedResults);

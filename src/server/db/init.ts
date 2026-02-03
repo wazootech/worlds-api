@@ -8,15 +8,17 @@ import {
   worldsTable,
 } from "./resources/worlds/queries.sql.ts";
 import {
-  factsFtsDeleteTrigger,
-  factsFtsInsertTrigger,
-  factsFtsTable,
-  factsFtsUpdateTrigger,
-  factsItemIdIndex,
-  factsPropertyIndex,
-  factsTable,
-  factsVectorIndex,
-} from "./resources/facts/queries.sql.ts";
+  chunksFtsDeleteTrigger,
+  chunksFtsInsertTrigger,
+  chunksFtsTable,
+  chunksFtsUpdateTrigger,
+  chunksPredicateIndex,
+  chunksSubjectIndex,
+  chunksTable,
+  chunksTripleIdIndex,
+  chunksVectorIndex,
+} from "./resources/chunks/queries.sql.ts";
+import { triplesTable } from "./resources/triples/queries.sql.ts";
 import {
   invitesRedeemedByIndex,
   invitesTable,
@@ -42,16 +44,18 @@ export async function initializeDatabase(client: Client): Promise<void> {
  */
 export async function initializeWorldDatabase(client: Client): Promise<void> {
   // Create tables
-  await client.execute(factsTable);
-  await client.execute(factsFtsTable);
+  await client.execute(chunksTable);
+  await client.execute(chunksFtsTable);
+  await client.execute(triplesTable);
 
   // Create indexes
-  await client.execute(factsItemIdIndex);
-  await client.execute(factsPropertyIndex);
-  await client.execute(factsVectorIndex);
+  await client.execute(chunksTripleIdIndex);
+  await client.execute(chunksSubjectIndex);
+  await client.execute(chunksPredicateIndex);
+  await client.execute(chunksVectorIndex);
 
   // Create triggers
-  await client.execute(factsFtsInsertTrigger);
-  await client.execute(factsFtsDeleteTrigger);
-  await client.execute(factsFtsUpdateTrigger);
+  await client.execute(chunksFtsInsertTrigger);
+  await client.execute(chunksFtsDeleteTrigger);
+  await client.execute(chunksFtsUpdateTrigger);
 }
