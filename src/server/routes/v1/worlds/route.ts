@@ -1,5 +1,6 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
 import type { AppContext } from "#/server/app-context.ts";
 // import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import {
@@ -13,17 +14,18 @@ import {
   deleteWorld,
   insertWorld,
   selectWorldById,
-  selectWorldByIdWithBlob,
   selectWorldsByOrganizationId,
   updateWorld,
-} from "#/server/db/resources/worlds/queries.sql.ts";
+} from "#/server/databases/core/worlds/queries.sql.ts";
 import {
   worldRowSchema,
   worldTableInsertSchema,
-  worldTableSchema,
   worldTableUpdateSchema,
-} from "#/server/db/resources/worlds/schema.ts";
+} from "#/server/databases/core/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
+import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { LogsService } from "#/server/databases/world/logs/service.ts";
+import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
 
 const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
   {
@@ -45,12 +47,13 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
-        const result = await appContext.libsqlClient.execute({
+        const result = await appContext.database.execute({
           sql: selectWorldById,
           args: [worldId],
         });
@@ -58,6 +61,29 @@ export default (appContext: AppContext) => {
 
         if (!world || world.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
+        }
+
+        if (
+          !authorized.admin &&
+          authorized.organizationId !== world.organization_id
+        ) {
+          return ErrorResponse.Forbidden();
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_get",
+        );
+        if (rateLimitRes) return rateLimitRes;
+
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_get",
+            quantity: 1,
+          });
         }
 
         // Validate SQL result before returning
@@ -95,13 +121,14 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.libsqlClient.execute({
-          sql: selectWorldByIdWithBlob,
+        const worldResult = await appContext.database.execute({
+          sql: selectWorldById,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
@@ -110,13 +137,48 @@ export default (appContext: AppContext) => {
           return ErrorResponse.NotFound("World not found");
         }
 
-        // Validate SQL result
-        const world = worldTableSchema.parse({
+        if (
+          !authorized.admin &&
+          authorized.organizationId !== rawWorld.organization_id
+        ) {
+          return ErrorResponse.Forbidden();
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_download",
+        );
+        if (rateLimitRes) return rateLimitRes;
+
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_download",
+            quantity: 1,
+          });
+        }
+
+        const managed = await appContext.databaseManager.get(worldId);
+        const logsService = new LogsService(managed.database);
+        await logsService.add({
+          id: crypto.randomUUID(),
+          world_id: worldId,
+          timestamp: Date.now(),
+          level: "info",
+          message: "World downloaded",
+          metadata: null,
+        });
+
+        const worldDataService = new WorldDataService(managed.database);
+        const worldData = await worldDataService.get();
+
+        const _world = worldRowSchema.parse({
           id: rawWorld.id,
           organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
-          blob: rawWorld.blob,
           db_hostname: rawWorld.db_hostname,
           db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
@@ -140,13 +202,12 @@ export default (appContext: AppContext) => {
           }
         }
 
-        // worldResult.rows[0] is used to get the world record
-        if (!world || !world.blob) {
+        // worldData.blob is used to get the world record
+        if (!worldData || !worldData.blob) {
           return ErrorResponse.NotFound("World data not found");
         }
 
-        // world.blob is an ArrayBuffer from LibSQL
-        const blobData = world.blob as ArrayBuffer;
+        const blobData = worldData.blob as unknown as ArrayBuffer;
         const worldString = new TextDecoder().decode(new Uint8Array(blobData));
 
         // If requested format is already N-Quads (our internal storage format), return as is
@@ -191,13 +252,14 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.libsqlClient.execute({
-          sql: selectWorldByIdWithBlob,
+        const worldResult = await appContext.database.execute({
+          sql: selectWorldById,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
@@ -206,13 +268,26 @@ export default (appContext: AppContext) => {
           return ErrorResponse.NotFound("World not found");
         }
 
+        if (
+          !authorized.admin &&
+          authorized.organizationId !== rawWorld.organization_id
+        ) {
+          return ErrorResponse.Forbidden();
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_update",
+        );
+        if (rateLimitRes) return rateLimitRes;
+
         // Validate SQL result
-        const world = worldTableSchema.parse({
+        const world = worldRowSchema.parse({
           id: rawWorld.id,
           organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
-          blob: rawWorld.blob,
           db_hostname: rawWorld.db_hostname,
           db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
@@ -243,20 +318,41 @@ export default (appContext: AppContext) => {
           label: data.label ?? world.label,
           description: data.description ?? world.description,
           updated_at: updatedAt,
-          blob: world.blob,
         });
 
-        await appContext.libsqlClient.execute({
+        await appContext.database.execute({
           sql: updateWorld,
           args: [
             worldUpdate.label ?? world.label,
             worldUpdate.description ?? world.description ?? null,
             worldUpdate.updated_at ?? updatedAt,
-            worldUpdate.blob ?? world.blob ?? null,
             world.db_hostname,
             world.db_token,
             worldId,
           ],
+        });
+
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_update",
+            quantity: 1,
+          });
+        }
+
+        const managed = await appContext.databaseManager.get(worldId);
+        const logsService = new LogsService(managed.database);
+        await logsService.add({
+          id: crypto.randomUUID(),
+          world_id: worldId,
+          timestamp: Date.now(),
+          level: "info",
+          message: "World updated",
+          metadata: JSON.stringify({
+            label: worldUpdate.label,
+            description: worldUpdate.description,
+          }),
         });
 
         return new Response(null, { status: 204 });
@@ -270,12 +366,13 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.libsqlClient.execute({
+        const worldResult = await appContext.database.execute({
           sql: selectWorldById,
           args: [worldId],
         });
@@ -284,6 +381,20 @@ export default (appContext: AppContext) => {
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
         }
+
+        if (
+          !authorized.admin &&
+          authorized.organizationId !== rawWorld.organization_id
+        ) {
+          return ErrorResponse.Forbidden();
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_delete",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         // Validate SQL result
         const _world = worldRowSchema.parse({
@@ -298,19 +409,25 @@ export default (appContext: AppContext) => {
           deleted_at: rawWorld.deleted_at,
         });
 
-        if (appContext.libsqlManager) {
-          try {
-            // Database ID is the same as World ID
-            await appContext.libsqlManager.delete(worldId);
-          } catch (error) {
-            console.error("Failed to delete Turso database:", error);
-          }
+        try {
+          const managed = await appContext.databaseManager.get(worldId);
+          const logsService = new LogsService(managed.database);
+          await logsService.add({
+            id: crypto.randomUUID(),
+            world_id: worldId,
+            timestamp: Date.now(),
+            level: "info",
+            message: "World deleted",
+            metadata: null,
+          });
+        } catch (error) {
+          console.error("Failed to log world deletion:", error);
         }
 
-        if (appContext.libsqlManager) {
+        if (appContext.databaseManager) {
           try {
             // Database ID is the same as World ID
-            await appContext.libsqlManager.delete(worldId);
+            await appContext.databaseManager.delete(worldId);
           } catch (error) {
             console.error("Failed to delete Turso database:", error);
           }
@@ -318,13 +435,14 @@ export default (appContext: AppContext) => {
 
         try {
           // Delete world
-          await appContext.libsqlClient.execute({
+          await appContext.database.execute({
             sql: deleteWorld,
             args: [worldId],
           });
+
           return new Response(null, { status: 204 });
         } catch (error) {
-          console.error("Failed to delete world:", error);
+          console.error("Failed to delete world metadata:", error);
           return ErrorResponse.InternalServerError();
         }
       },
@@ -332,18 +450,39 @@ export default (appContext: AppContext) => {
     .get(
       "/v1/worlds",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
         const url = new URL(ctx.request.url);
-        // Admin must specify organizationId to list worlds for that organization
-        const organizationId = url.searchParams.get("organizationId");
+        // Admin must specify organizationId, service account uses its own
+        let organizationId = url.searchParams.get("organizationId");
+        if (!authorized.admin) {
+          organizationId = authorized.organizationId!;
+        }
+
         if (!organizationId) {
           return ErrorResponse.BadRequest(
             "organizationId query parameter is required",
           );
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_list",
+        );
+        if (rateLimitRes) return rateLimitRes;
+
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_list",
+            quantity: 1,
+          });
         }
 
         const pageString = url.searchParams.get("page") ?? "1";
@@ -367,7 +506,7 @@ export default (appContext: AppContext) => {
         const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
-        const result = await appContext.libsqlClient.execute({
+        const result = await appContext.database.execute({
           sql: selectWorldsByOrganizationId,
           args: [organizationId, pageSize, offset],
         });
@@ -403,8 +542,9 @@ export default (appContext: AppContext) => {
     .post(
       "/v1/worlds",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
+          console.warn("[DEBUG] Unauthorized in worlds/route.ts:", authorized);
           return ErrorResponse.Unauthorized();
         }
 
@@ -415,18 +555,32 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("Invalid JSON");
         }
 
-        const parseResult = createWorldParamsSchema.safeParse(body);
-        if (!parseResult.success) {
+        const result = createWorldParamsSchema.safeParse(body);
+        if (!result.success) {
+          console.warn(
+            "[DEBUG] Validation error in POST /v1/worlds:",
+            result.error.format(),
+          );
           return ErrorResponse.BadRequest(
-            "Invalid parameters: " +
-              parseResult.error.issues.map((e: { message: string }) =>
-                e.message
-              ).join(", "),
+            "Invalid request body: " + result.error.message,
           );
         }
-        const data = parseResult.data;
+        const data = result.data;
 
-        // No rate limits check
+        if (
+          !authorized.admin && authorized.organizationId !== data.organizationId
+        ) {
+          return ErrorResponse.Forbidden(
+            "Cannot create world for another organization",
+          );
+        }
+
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "worlds_create",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         const now = Date.now();
         const worldId = crypto.randomUUID();
@@ -435,13 +589,16 @@ export default (appContext: AppContext) => {
         const dbHostname: string | null = null; // Stored as null, use LibsqlManager.get()
         const dbToken: string | null = null; // Stored as null, use LibsqlManager.get()
 
-        if (appContext.libsqlManager) {
+        if (appContext.databaseManager) {
           try {
-            const client = await appContext.libsqlManager.create(worldId);
+            const { database: client } = await appContext.databaseManager
+              .create(worldId);
             _dbId = worldId; // The ID passed to create is the database ID
 
-            const { initializeDatabase } = await import("#/server/db/init.ts");
-            await initializeDatabase(client);
+            const { initializeWorldDatabase } = await import(
+              "#/server/databases/world/init.ts"
+            );
+            await initializeWorldDatabase(client);
           } catch (error) {
             console.error("Failed to provision Turso database:", error);
             return ErrorResponse.InternalServerError(
@@ -455,7 +612,6 @@ export default (appContext: AppContext) => {
           organization_id: data.organizationId,
           label: data.label,
           description: data.description ?? null,
-          blob: null,
           db_hostname: dbHostname,
           db_token: dbToken,
           created_at: now,
@@ -463,20 +619,41 @@ export default (appContext: AppContext) => {
           deleted_at: null,
         });
 
-        await appContext.libsqlClient.execute({
+        await appContext.database.execute({
           sql: insertWorld,
           args: [
             world.id,
             world.organization_id,
             world.label,
             world.description ?? null,
-            world.blob ?? null,
             world.db_hostname,
             world.db_token,
             world.created_at,
             world.updated_at,
             world.deleted_at ?? null,
           ],
+        });
+
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_create",
+            quantity: 1,
+          });
+        }
+
+        const managed = await appContext.databaseManager.get(worldId);
+        const logsService = new LogsService(managed.database);
+        await logsService.add({
+          id: crypto.randomUUID(),
+          world_id: worldId,
+          timestamp: Date.now(),
+          level: "info",
+          message: "World created",
+          metadata: JSON.stringify({
+            label: world.label,
+          }),
         });
 
         const record = worldRecordSchema.parse({

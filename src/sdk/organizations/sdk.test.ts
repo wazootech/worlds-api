@@ -70,14 +70,6 @@ Deno.test("WorldsSdk - Organizations", async (t) => {
     assertEquals(organization.description, "Updated SDK Organization");
   });
 
-  await t.step("rotate organization key", async () => {
-    const original = await sdk.organizations.get("org_sdk_test");
-    await sdk.organizations.rotate("org_sdk_test");
-    const rotated = await sdk.organizations.get("org_sdk_test");
-    assert(original && rotated);
-    assert(original.apiKey !== rotated.apiKey);
-  });
-
   await t.step("delete organization", async () => {
     await sdk.organizations.delete("org_sdk_test");
     const organization = await sdk.organizations.get("org_sdk_test");

@@ -1,10 +1,14 @@
 import { assert, assertEquals } from "@std/assert";
 import { Parser, Store } from "n3";
-import { createTestContext, createTestOrganization } from "#/server/testing.ts";
+import {
+  createTestContext,
+  createTestOrganization,
+  type TestContext,
+} from "#/server/testing.ts";
 import { generateBlobFromN3Store } from "#/server/blobs/n3.ts";
 import createRoute from "./route.ts";
-import { insertWorld } from "#/server/db/resources/worlds/queries.sql.ts";
-import type { Client } from "@libsql/client";
+import { insertWorld } from "#/server/databases/core/worlds/queries.sql.ts";
+import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
 
 /**
  * For a comprehensive suite of test cases for standard SPARQL endpoints, see:
@@ -12,7 +16,7 @@ import type { Client } from "@libsql/client";
  */
 
 async function setWorldData(
-  client: Client,
+  testContext: TestContext,
   worldId: string,
   ttl: string,
 ) {
@@ -23,11 +27,9 @@ async function setWorldData(
   const blob = await generateBlobFromN3Store(store);
   const blobData = new Uint8Array(await blob.arrayBuffer());
 
-  // In the new schema, blobs are stored directly in the worlds table
-  await client.execute({
-    sql: `UPDATE worlds SET blob = ?, updated_at = ? WHERE id = ?`,
-    args: [blobData, Date.now(), worldId],
-  });
+  const managed = await testContext.databaseManager.get(worldId);
+  const worldDataService = new WorldDataService(managed.database);
+  await worldDataService.set(blobData, Date.now());
 }
 
 Deno.test("SPARQL API routes - GET operations", async (t) => {
@@ -42,21 +44,21 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
-      await testContext.libsqlClient.execute({
+      await testContext.database.execute({
         sql: insertWorld,
         args: [
           worldId,
           organizationId,
           "Test World",
           "Test Description",
-          null, // blob
           null, // db_hostname
-          null, // db_token
+          null, // db_auth_token
           now,
           now,
           null, // deleted_at
         ],
       });
+      await testContext.databaseManager!.create(worldId);
 
       const resp = await app.fetch(
         new Request(`http://localhost/v1/worlds/${worldId}/sparql`, {
@@ -90,25 +92,25 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
-      await testContext.libsqlClient.execute({
+      await testContext.database.execute({
         sql: insertWorld,
         args: [
           worldId,
           organizationId,
           "Test World",
           "Test Description",
-          null, // blob
           null, // db_hostname
-          null, // db_token
+          null, // db_auth_token
           now,
           now,
           null, // deleted_at
         ],
       });
+      await testContext.databaseManager!.create(worldId);
 
       // Set up test data
       await setWorldData(
-        testContext.libsqlClient,
+        testContext,
         worldId,
         '<http://example.com/s> <http://example.com/p> "o" .',
       );
@@ -126,12 +128,14 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       );
 
       const res = await app.fetch(req);
-      assertEquals(res.status, 200);
+      if (res.status !== 200) {
+        console.log("SPARQL Query POST failed:", await res.text());
+        assertEquals(res.status, 200);
+      }
       assertEquals(
         res.headers.get("content-type"),
         "application/sparql-results+json",
       );
-
       const json = await res.json();
 
       // Check Standard SPARQL JSON Results Structure
@@ -158,25 +162,25 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
-      await testContext.libsqlClient.execute({
+      await testContext.database.execute({
         sql: insertWorld,
         args: [
           worldId,
           organizationId,
           "Test World",
           "Test Description",
-          null, // blob
           null, // db_hostname
-          null, // db_token
+          null, // db_auth_token
           now,
           now,
           null, // deleted_at
         ],
       });
+      await testContext.databaseManager!.create(worldId);
 
       // Set up test data
       await setWorldData(
-        testContext.libsqlClient,
+        testContext,
         worldId,
         '<http://example.com/s2> <http://example.com/p2> "o2" .',
       );
@@ -196,6 +200,9 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       );
 
       const res = await app.fetch(req);
+      if (res.status !== 200) {
+        console.log("SPARQL Query POST Response body:", await res.text());
+      }
       assertEquals(res.status, 200);
       const json = await res.json();
       assert(json.head);
@@ -217,25 +224,25 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
       );
       const worldId = crypto.randomUUID();
       const now = Date.now();
-      await testContext.libsqlClient.execute({
+      await testContext.database.execute({
         sql: insertWorld,
         args: [
           worldId,
           organizationId,
           "Test World",
           "Test Description",
-          null, // blob
           null, // db_hostname
-          null, // db_token
+          null, // db_auth_token
           now,
           now,
           null, // deleted_at
         ],
       });
+      await testContext.databaseManager!.create(worldId);
 
       // Set up initial data
       await setWorldData(
-        testContext.libsqlClient,
+        testContext,
         worldId,
         '<http://example.com/s> <http://example.com/p> "o" .',
       );
@@ -256,6 +263,10 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
       );
 
       const res = await app.fetch(req);
+      if (res.status !== 204) {
+        console.log("SPARQL Update failed:", await res.text());
+        assertEquals(res.status, 204);
+      }
       assertEquals(res.status, 204);
 
       // Verify update by querying - need to wait a bit for the update to persist

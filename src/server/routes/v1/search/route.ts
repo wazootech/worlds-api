@@ -1,40 +1,54 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
 import type { AppContext } from "#/server/app-context.ts";
-import { searchChunks } from "#/server/db/resources/chunks/queries.sql.ts";
-import {
-  selectWorldById,
-  selectWorldsByOrganizationId,
-} from "#/server/db/resources/worlds/queries.sql.ts";
 import { limitParamSchema } from "#/sdk/utils.ts";
 import { worldIdsParamSchema } from "#/sdk/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
-import type { TripleSearchResult } from "#/sdk/worlds/schema.ts";
-
-// TODO: Allow users to filter by subject and predicate.
+import { WorldsService } from "#/server/databases/core/worlds/service.ts";
+import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { ChunksService } from "#/server/databases/world/chunks/service.ts";
+import type { WorldRow } from "#/server/databases/core/worlds/schema.ts";
 
 export default (appContext: AppContext) => {
   return new Router().get(
     "/v1/search",
     async (ctx) => {
-      const authorized = authorizeRequest(appContext, ctx.request);
-      if (!authorized.admin) {
+      const authorized = await authorizeRequest(appContext, ctx.request);
+      if (!authorized.admin && !authorized.serviceAccountId) {
         return ErrorResponse.Unauthorized();
       }
+      const rateLimitRes = await checkRateLimit(
+        appContext,
+        authorized,
+        "semantic_search",
+      );
+      if (rateLimitRes) return rateLimitRes;
 
       const url = new URL(ctx.request.url);
       const query = url.searchParams.get("q");
-      const _subjects = url.searchParams.getAll("subjects");
-      const _predicates = url.searchParams.getAll("predicates");
+      const subjects = url.searchParams.getAll("subjects");
+      const predicates = url.searchParams.getAll("predicates");
 
       if (!query) {
         return ErrorResponse.BadRequest("Query required");
       }
 
-      // Admin must specify organizationId to search
-      const organizationId = url.searchParams.get("organizationId");
+      // Organization check
+      const organizationIdParam = url.searchParams.get("organizationId");
+      const organizationId = authorized.admin
+        ? organizationIdParam
+        : authorized.organizationId;
+
       if (!organizationId) {
         return ErrorResponse.BadRequest("Organization ID required");
+      }
+
+      if (
+        !authorized.admin && organizationIdParam &&
+        organizationIdParam !== authorized.organizationId
+      ) {
+        return ErrorResponse.Forbidden();
       }
 
       const worldIdsParam = url.searchParams.get("worlds");
@@ -54,34 +68,30 @@ export default (appContext: AppContext) => {
         worldIds = worldIdsResult.data;
       }
 
+      let worlds: WorldRow[] = [];
+
+      const worldsService = new WorldsService(appContext.database);
+      const usageService = new UsageService(appContext.database);
+      const chunksService = new ChunksService(appContext, worldsService);
+
       // If no worldIds provided, list all worlds for the organization
       if (!worldIds) {
-        const result = await appContext.libsqlClient.execute({
-          sql: selectWorldsByOrganizationId,
-          args: [organizationId, 100, 0], // Max 100 worlds for now
-        });
-        console.error(
-          `[DEBUG] Found ${result.rows.length} worlds for org ${organizationId}`,
+        worlds = await worldsService.getByOrganizationId(
+          organizationId,
+          100,
+          0,
         );
-        worldIds = result.rows.map((row) => row.id as string);
       } else {
         // Validate specifically requested worlds belong to the organization
-        const validWorldIds: string[] = [];
         for (const worldId of worldIds) {
-          const worldResult = await appContext.libsqlClient.execute({
-            sql: selectWorldById,
-            args: [worldId],
-          });
-          const world = worldResult.rows[0];
-
+          const world = await worldsService.getById(worldId);
           if (world && world.organization_id === organizationId) {
-            validWorldIds.push(worldId);
+            worlds.push(world);
           }
         }
-        worldIds = validWorldIds;
       }
 
-      if (worldIds.length === 0) {
+      if (worlds.length === 0) {
         return Response.json([]);
       }
 
@@ -102,57 +112,28 @@ export default (appContext: AppContext) => {
         limit = limitResult.data;
       }
 
-      if (!appContext.libsqlManager) {
-        return ErrorResponse.InternalServerError(
-          "Search manager not available",
-        );
-      }
-
       try {
-        const vector = await appContext.embeddings.embed(query);
-
-        // Search across all target worlds in parallel
-        const searchPromises = worldIds.map(async (worldId) => {
-          try {
-            const client = await appContext.libsqlManager!.get(worldId);
-
-            const args = [
-              new Uint8Array(new Float32Array(vector).buffer),
-              limit,
-              query,
-              limit,
-              limit,
-            ];
-
-            const result = await client.execute({
-              sql: searchChunks,
-              args,
-            });
-
-            const results: TripleSearchResult[] = result.rows.map((row) => ({
-              subject: row.subject as string,
-              predicate: row.predicate as string,
-              object: row.object as string,
-              vecRank: row.vec_rank as number | null,
-              ftsRank: row.fts_rank as number | null,
-              score: row.combined_rank as number,
-            }));
-
-            return results.map((r) => ({ ...r, worldId, organizationId }));
-          } catch (error) {
-            console.error(`Search error for world ${worldId}:`, error);
-            return [];
-          }
+        const results = await chunksService.search({
+          query,
+          worlds,
+          subjects,
+          predicates,
+          limit,
+          organizationId,
         });
 
-        const allResults = (await Promise.all(searchPromises)).flat();
+        if (authorized.serviceAccountId) {
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "semantic_search",
+            quantity: 1,
+            metadata: JSON.stringify({
+              world_count: results.length,
+            }),
+          });
+        }
 
-        // Sort by combined rank and limit
-        const sortedResults = allResults
-          .sort((a, b) => b.score - a.score)
-          .slice(0, limit);
-
-        return Response.json(sortedResults);
+        return Response.json(results);
       } catch (error) {
         console.error("Global search error:", error);
         return ErrorResponse.InternalServerError("Search failed");

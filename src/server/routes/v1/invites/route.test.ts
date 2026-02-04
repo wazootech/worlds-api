@@ -1,8 +1,8 @@
 import { assert, assertEquals } from "@std/assert";
-// import { ulid } from "@std/ulid";
+// import { ulid } from "@std/ulid/ulid";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
-import { invitesAdd } from "#/server/db/resources/invites/queries.sql.ts";
+import { insertInvite } from "#/server/databases/core/invites/queries.sql.ts";
 
 Deno.test("Invites API routes - Admin CRUD", async (t) => {
   const testContext = await createTestContext();
@@ -11,12 +11,12 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("GET /v1/invites returns list of invites", async () => {
     // Create some test invites
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
+    await testContext.database.execute({
+      sql: insertInvite,
       args: ["invite1", Date.now(), null, null],
     });
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
+    await testContext.database.execute({
+      sql: insertInvite,
       args: ["invite2", Date.now(), null, null],
     });
 
@@ -71,8 +71,8 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("GET /v1/invites/:code retrieves an invite", async () => {
     // Create test invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
+    await testContext.database.execute({
+      sql: insertInvite,
       args: ["invite_get_test", Date.now(), null, null],
     });
 
@@ -105,8 +105,8 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("DELETE /v1/invites/:code removes an invite", async () => {
     // Create test invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
+    await testContext.database.execute({
+      sql: insertInvite,
       args: ["invite_delete_test", Date.now(), null, null],
     });
 

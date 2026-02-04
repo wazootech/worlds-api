@@ -1,22 +1,30 @@
 // @deno-types="@types/n3"
 import { DataFactory, Writer } from "n3";
 import { Router } from "@fartlabs/rt";
-import { authorizeRequest } from "#/server/middleware/auth.ts";
+import {
+  type AuthorizedRequest,
+  authorizeRequest,
+} from "#/server/middleware/auth.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import type { DatasetParams } from "#/server/blobs/sparql.ts";
 import { sparql } from "#/server/blobs/sparql.ts";
 import { isSparqlUpdate } from "#/sdk/utils.ts";
-import { BufferedPatchHandler, handlePatch } from "#/server/db/rdf-patch.ts";
+import { BufferedPatchHandler, handlePatch } from "#/server/rdf-patch.ts";
+import type { Patch } from "#/server/rdf-patch.ts";
 import { executeSparqlOutputSchema } from "#/sdk/worlds/schema.ts";
 import {
-  selectWorldByIdWithBlob,
+  selectWorldById,
   updateWorld,
-} from "#/server/db/resources/worlds/queries.sql.ts";
+} from "#/server/databases/core/worlds/queries.sql.ts";
 import {
-  worldTableSchema,
   worldTableUpdateSchema,
-} from "#/server/db/resources/worlds/schema.ts";
+} from "#/server/databases/core/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
+import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { LogsService } from "#/server/databases/world/logs/service.ts";
+import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
+import { worldRowSchema } from "#/server/databases/core/worlds/schema.ts";
 
 const { namedNode, quad } = DataFactory;
 
@@ -145,8 +153,25 @@ async function executeSparqlRequest(
   appContext: AppContext,
   request: Request,
   worldId: string,
+  authorized: AuthorizedRequest,
 ): Promise<Response> {
   const { query } = await parseQuery(request);
+
+  // Determine feature ID for rate limiting and metering
+  let featureId: "sparql_describe" | "sparql_query" | "sparql_update" =
+    "sparql_query";
+  if (!query) {
+    featureId = "sparql_describe";
+  } else if (await isSparqlUpdate(query)) {
+    featureId = "sparql_update";
+  }
+
+  const rateLimitRes = await checkRateLimit(
+    appContext,
+    authorized,
+    featureId,
+  );
+  if (rateLimitRes) return rateLimitRes;
 
   // If no query, this should only happen for GET - return service description
   if (!query) {
@@ -156,6 +181,15 @@ async function executeSparqlRequest(
       const serviceDescription = await generateServiceDescription(
         endpointUrl,
       );
+
+      if (authorized.serviceAccountId) {
+        const usageService = new UsageService(appContext.database);
+        usageService.meter({
+          service_account_id: authorized.serviceAccountId,
+          feature_id: "sparql_describe",
+          quantity: 1,
+        });
+      }
 
       // Determine content type based on Accept header
       const contentType = acceptHeader?.includes("application/rdf+xml")
@@ -171,7 +205,7 @@ async function executeSparqlRequest(
   }
 
   // Check if this is an update query
-  const isUpdate = await isSparqlUpdate(query);
+  const isUpdate = featureId === "sparql_update";
 
   // Updates are only allowed via POST
   if (isUpdate && request.method !== "POST") {
@@ -181,27 +215,35 @@ async function executeSparqlRequest(
   // Execute query or update using centralized function
   // Resolve organizationId for the search store (always use the world's owner)
   // Also get the world to use its organizationId for plan policy checks
-  const worldResult = await appContext.libsqlClient.execute({
-    sql: selectWorldByIdWithBlob,
+  const worldResult = await appContext.database.execute({
+    sql: selectWorldById,
     args: [worldId],
   });
   const rawWorld = worldResult.rows[0];
 
+  if (!rawWorld || rawWorld.deleted_at != null) {
+    return ErrorResponse.NotFound("World not found");
+  }
+
+  if (
+    !authorized.admin &&
+    authorized.organizationId !== rawWorld.organization_id
+  ) {
+    return ErrorResponse.Forbidden();
+  }
+
   // Validate SQL result
-  const world = rawWorld
-    ? worldTableSchema.parse({
-      id: rawWorld.id,
-      organization_id: rawWorld.organization_id,
-      label: rawWorld.label,
-      description: rawWorld.description,
-      blob: rawWorld.blob,
-      db_hostname: rawWorld.db_hostname,
-      db_token: rawWorld.db_token,
-      created_at: rawWorld.created_at,
-      updated_at: rawWorld.updated_at,
-      deleted_at: rawWorld.deleted_at,
-    })
-    : undefined;
+  const world = worldRowSchema.parse({
+    id: rawWorld.id,
+    organization_id: rawWorld.organization_id,
+    label: rawWorld.label,
+    description: rawWorld.description,
+    db_hostname: rawWorld.db_hostname,
+    db_token: rawWorld.db_token,
+    created_at: rawWorld.created_at,
+    updated_at: rawWorld.updated_at,
+    deleted_at: rawWorld.deleted_at,
+  });
 
   const _searchOrganizationId = world?.organization_id as string | undefined;
 
@@ -217,12 +259,12 @@ async function executeSparqlRequest(
   }
   */
 
-  // Get the world-specific client using LibsqlManager
+  // Get the world-specific client using DatabaseManager
   // This ensures we are connected to the correct database for this world
-  let worldClient;
-  if (appContext.libsqlManager) {
+  let managedWorld;
+  if (appContext.databaseManager) {
     try {
-      worldClient = await appContext.libsqlManager.get(worldId);
+      managedWorld = await appContext.databaseManager.get(worldId);
     } catch (error) {
       console.error(`Failed to get client for world ${worldId}:`, error);
     }
@@ -230,10 +272,10 @@ async function executeSparqlRequest(
 
   const patchHandlerStart = performance.now();
   const patchHandler = new BufferedPatchHandler(
-    worldClient
+    managedWorld
       ? {
-        patch: (patches) =>
-          handlePatch(worldClient, appContext.embeddings, patches),
+        patch: (patches: Patch[]) =>
+          handlePatch(managedWorld.database, appContext.embeddings, patches),
       }
       : { patch: async () => {} },
   );
@@ -244,9 +286,16 @@ async function executeSparqlRequest(
     );
   }
 
-  // Use world.blob directly from worldsResult
-  const blob = world?.blob
-    ? new Blob([new Uint8Array(world.blob as ArrayBuffer)])
+  if (!managedWorld) {
+    return ErrorResponse.InternalServerError("World database not found");
+  }
+
+  // Get the blob from WorldDataService
+  const worldDataService = new WorldDataService(managedWorld.database);
+  const worldData = await worldDataService.get();
+  const blobData = worldData?.blob as unknown as ArrayBuffer;
+  const blob = blobData
+    ? new Blob([new Uint8Array(blobData)])
     : new Blob([], { type: "application/n-quads" });
 
   const sparqlStart = performance.now();
@@ -272,31 +321,78 @@ async function executeSparqlRequest(
       console.log(`[PERF] Search index commit: ${commitTime.toFixed(2)}ms`);
     }
 
-    // Persist new blob. Since the world metadata row exists, we just update it.
+    // Persist new blob via WorldDataService
+    const updatedAt = Date.now();
+    await worldDataService.set(newData, updatedAt);
+
+    // Update world metadata (labels etc)
     const worldUpdate = worldTableUpdateSchema.parse({
       label: world?.label as string | undefined,
       description: world?.description as string | null | undefined,
-      updated_at: Date.now(),
-      blob: newData,
+      updated_at: updatedAt,
     });
 
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql: updateWorld,
       args: [
         worldUpdate.label ?? world?.label ?? null,
         worldUpdate.description ?? world?.description ?? null,
-        worldUpdate.updated_at ?? Date.now(),
-        worldUpdate.blob ?? newData,
+        worldUpdate.updated_at ?? updatedAt,
         world?.db_hostname ?? null,
         world?.db_token ?? null,
         worldId,
       ],
     });
 
+    if (authorized.serviceAccountId) {
+      const usageService = new UsageService(appContext.database);
+      usageService.meter({
+        service_account_id: authorized.serviceAccountId,
+        feature_id: "sparql_update",
+        quantity: 1,
+      });
+    }
+
+    const managed = await appContext.databaseManager.get(worldId);
+    const logsService = new LogsService(managed.database);
+    await logsService.add({
+      id: crypto.randomUUID(),
+      world_id: worldId,
+      timestamp: Date.now(),
+      level: "info",
+      message: "SPARQL update",
+      metadata: JSON.stringify({
+        query: query.slice(0, 1000), // Safety truncation
+      }),
+    });
+
     return new Response(null, {
       status: 204,
     });
   }
+
+  // Meter and log for queries
+  if (authorized.serviceAccountId) {
+    const usageService = new UsageService(appContext.database);
+    usageService.meter({
+      service_account_id: authorized.serviceAccountId,
+      feature_id: "sparql_query",
+      quantity: 1,
+    });
+  }
+
+  const managed = await appContext.databaseManager.get(worldId);
+  const logsService = new LogsService(managed.database);
+  await logsService.add({
+    id: crypto.randomUUID(),
+    world_id: worldId,
+    timestamp: Date.now(),
+    level: "info",
+    message: "SPARQL query",
+    metadata: JSON.stringify({
+      query: query.slice(0, 1000), // Safety truncation
+    }),
+  });
 
   // For queries, return the result response
   const validatedResult = executeSparqlOutputSchema.parse(result);
@@ -317,13 +413,13 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.libsqlClient.execute({
-          sql: selectWorldByIdWithBlob,
+        const worldResult = await appContext.database.execute({
+          sql: selectWorldById,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
@@ -333,12 +429,11 @@ export default (appContext: AppContext) => {
         }
 
         // Validate SQL result
-        worldTableSchema.parse({
+        worldRowSchema.parse({
           id: rawWorld.id,
           organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
-          blob: rawWorld.blob,
           db_hostname: rawWorld.db_hostname,
           db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
@@ -351,6 +446,7 @@ export default (appContext: AppContext) => {
             appContext,
             ctx.request,
             worldId,
+            authorized,
           );
         } catch (error) {
           console.error("SPARQL query error:", error);
@@ -371,13 +467,13 @@ export default (appContext: AppContext) => {
           return ErrorResponse.BadRequest("World ID required");
         }
 
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.organizationId) {
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.libsqlClient.execute({
-          sql: selectWorldByIdWithBlob,
+        const worldResult = await appContext.database.execute({
+          sql: selectWorldById,
           args: [worldId],
         });
         const rawWorld = worldResult.rows[0];
@@ -387,12 +483,11 @@ export default (appContext: AppContext) => {
         }
 
         // Validate SQL result
-        worldTableSchema.parse({
+        worldRowSchema.parse({
           id: rawWorld.id,
           organization_id: rawWorld.organization_id,
           label: rawWorld.label,
           description: rawWorld.description,
-          blob: rawWorld.blob,
           db_hostname: rawWorld.db_hostname,
           db_token: rawWorld.db_token,
           created_at: rawWorld.created_at,
@@ -417,6 +512,7 @@ export default (appContext: AppContext) => {
             appContext,
             ctx.request,
             worldId,
+            authorized,
           );
         } catch (error) {
           console.error("SPARQL query/update error:", error);

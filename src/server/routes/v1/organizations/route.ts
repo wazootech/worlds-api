@@ -1,6 +1,6 @@
 import { Router } from "@fartlabs/rt";
-import { ulid } from "@std/ulid";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { paginationParamsSchema } from "#/sdk/utils.ts";
 import {
@@ -9,30 +9,30 @@ import {
   updateOrganizationParamsSchema,
 } from "#/sdk/organizations/schema.ts";
 // import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
-import {
-  organizationsAdd,
-  organizationsDelete,
-  organizationsFind,
-  organizationsGetMany,
-  organizationsRotateApiKey,
-  organizationsUpdate,
-} from "#/server/db/resources/organizations/queries.sql.ts";
+import { ErrorResponse } from "#/server/errors.ts";
+import { OrganizationsService } from "#/server/databases/core/organizations/service.ts";
+import { UsageService } from "#/server/databases/core/usage/service.ts";
+import type { OrganizationRow } from "#/server/databases/core/organizations/schema.ts";
 import {
   organizationTableInsertSchema,
-  organizationTableSchema,
   organizationTableUpdateSchema,
-} from "#/server/db/resources/organizations/schema.ts";
-import { ErrorResponse } from "#/server/errors.ts";
+} from "#/server/databases/core/organizations/schema.ts";
 
-export default (appContext: AppContext) =>
-  new Router()
+export default (appContext: AppContext) => {
+  return new Router()
     .get(
       "/v1/organizations",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
+        const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "organizations_list",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         const url = new URL(ctx.request.url);
         const pageString = url.searchParams.get("page") ?? "1";
@@ -56,46 +56,51 @@ export default (appContext: AppContext) =>
         const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
-        const result = await appContext.libsqlClient.execute({
-          sql: organizationsGetMany,
-          args: [pageSize, offset],
-        });
+        const organizationsService = new OrganizationsService(
+          appContext.database,
+        );
+        const organizations = await organizationsService.getMany(
+          pageSize,
+          offset,
+        );
 
-        // Validate each SQL result row
-        const validatedRows = result.rows.map((row) => {
-          const validated = organizationTableSchema.parse({
-            id: row.id,
-            label: row.label,
-            description: row.description,
-            plan: row.plan,
-            api_key: row.api_key,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-            deleted_at: row.deleted_at,
-          });
-
+        // Map to SDK record and validate
+        const validatedRows = organizations.map((org: OrganizationRow) => {
           return organizationRecordSchema.parse({
-            id: validated.id,
-            label: validated.label,
-            description: validated.description,
-            plan: validated.plan,
-            apiKey: validated.api_key,
-            createdAt: validated.created_at,
-            updatedAt: validated.updated_at,
-            deletedAt: validated.deleted_at,
+            id: org.id,
+            label: org.label,
+            description: org.description,
+            plan: org.plan,
+            createdAt: org.created_at,
+            updatedAt: org.updated_at,
+            deletedAt: org.deleted_at,
           });
         });
 
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "organizations_list",
+            quantity: 1,
+          });
+        }
         return Response.json(validatedRows);
       },
     )
     .post(
       "/v1/organizations",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
+        const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "organizations_create",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         let body;
         try {
@@ -115,48 +120,35 @@ export default (appContext: AppContext) =>
         }
         const { id, ...data } = parseResult.data;
 
-        const apiKey = ulid();
-
+        const organizationsService = new OrganizationsService(
+          appContext.database,
+        );
         const now = Date.now();
         const organization = organizationTableInsertSchema.parse({
           id,
           label: data.label ?? null,
           description: data.description ?? null,
           plan: data.plan ?? null,
-          api_key: apiKey,
           created_at: now,
           updated_at: now,
           deleted_at: null,
         });
 
-        try {
-          await appContext.libsqlClient.execute({
-            sql: organizationsAdd,
-            args: [
-              organization.id,
-              organization.label ?? null,
-              organization.description ?? null,
-              organization.plan ?? null,
-              organization.api_key,
-              organization.created_at,
-              organization.updated_at,
-              organization.deleted_at ?? null,
-            ],
-          });
-        } catch (e: unknown) {
-          console.error("SQL Insert failed:", e);
-          const message = e instanceof Error ? e.message : "Unknown error";
-          return ErrorResponse.InternalServerError(
-            "Failed to create organization: " + message,
-          );
-        }
+        await organizationsService.add(organization);
 
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "organizations_create",
+            quantity: 1,
+          });
+        }
         const record = organizationRecordSchema.parse({
           id: organization.id,
           label: organization.label,
           description: organization.description,
           plan: organization.plan,
-          apiKey: organization.api_key,
           createdAt: organization.created_at,
           updatedAt: organization.updated_at,
           deletedAt: organization.deleted_at,
@@ -168,59 +160,65 @@ export default (appContext: AppContext) =>
     .get(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
+        const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "organizations_get",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         if (!organizationId) {
           return ErrorResponse.BadRequest("Organization ID required");
         }
 
-        const result = await appContext.libsqlClient.execute({
-          sql: organizationsFind,
-          args: [organizationId],
-        });
+        const organizationsService = new OrganizationsService(
+          appContext.database,
+        );
+        const organization = await organizationsService.find(organizationId);
 
-        const row = result.rows[0];
-        if (!row) {
+        if (!organization) {
           return ErrorResponse.NotFound("Organization not found");
         }
 
-        // Validate SQL result
-        const validated = organizationTableSchema.parse({
-          id: row.id,
-          label: row.label,
-          description: row.description,
-          plan: row.plan,
-          api_key: row.api_key,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-          deleted_at: row.deleted_at,
-        });
-
         const record = organizationRecordSchema.parse({
-          id: validated.id,
-          label: validated.label,
-          description: validated.description,
-          plan: validated.plan,
-          apiKey: validated.api_key,
-          createdAt: validated.created_at,
-          updatedAt: validated.updated_at,
-          deletedAt: validated.deleted_at,
+          id: organization.id,
+          label: organization.label,
+          description: organization.description,
+          plan: organization.plan,
+          createdAt: organization.created_at,
+          updatedAt: organization.updated_at,
+          deletedAt: organization.deleted_at,
         });
 
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "organizations_get",
+            quantity: 1,
+          });
+        }
         return Response.json(record);
       },
     )
     .put(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
+        const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "organizations_update",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         if (!organizationId) {
@@ -253,34 +251,41 @@ export default (appContext: AppContext) =>
           updated_at: updateNow,
         });
 
-        await appContext.libsqlClient.execute({
-          sql: organizationsUpdate,
-          args: [
-            organizationUpdate.label ?? null,
-            organizationUpdate.description ?? null,
-            organizationUpdate.plan ?? null,
-            organizationUpdate.updated_at ?? updateNow,
-            organizationId,
-          ],
-        });
+        const organizationsService = new OrganizationsService(
+          appContext.database,
+        );
+        await organizationsService.update(organizationId, organizationUpdate);
 
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "organizations_update",
+            quantity: 1,
+          });
+        }
         return new Response(null, { status: 204 });
       },
     )
     .delete(
       "/v1/organizations/:organization",
       async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
+        const authorized = await authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
           return ErrorResponse.Unauthorized();
         }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "organizations_delete",
+        );
+        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         if (!organizationId) {
           return ErrorResponse.BadRequest("Organization ID required");
         }
 
-        // Cleanup search data
         // Cleanup search data
         // const searchStore = new LibsqlSearchStoreManager({
         //   client: appContext.libsqlClient,
@@ -289,33 +294,20 @@ export default (appContext: AppContext) =>
         // await searchStore.createTablesIfNotExists();
         // await searchStore.deleteOrganization(organizationId);
 
-        await appContext.libsqlClient.execute({
-          sql: organizationsDelete,
-          args: [organizationId],
-        });
+        const organizationsService = new OrganizationsService(
+          appContext.database,
+        );
+        await organizationsService.delete(organizationId);
 
-        return new Response(null, { status: 204 });
-      },
-    )
-    .post(
-      "/v1/organizations/:organization/rotate",
-      async (ctx) => {
-        const authorized = authorizeRequest(appContext, ctx.request);
-        if (!authorized.admin) {
-          return ErrorResponse.Unauthorized();
+        if (authorized.serviceAccountId) {
+          const usageService = new UsageService(appContext.database);
+          usageService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "organizations_delete",
+            quantity: 1,
+          });
         }
-
-        const organizationId = ctx.params?.pathname.groups.organization;
-        if (!organizationId) {
-          return ErrorResponse.BadRequest("Organization ID required");
-        }
-
-        const apiKey = ulid();
-        await appContext.libsqlClient.execute({
-          sql: organizationsRotateApiKey,
-          args: [apiKey, Date.now(), organizationId],
-        });
-
         return new Response(null, { status: 204 });
       },
     );
+};

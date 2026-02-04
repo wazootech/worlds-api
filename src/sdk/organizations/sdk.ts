@@ -144,26 +144,4 @@ export class Organizations {
       throw new Error(`Failed to delete organization: ${errorMessage}`);
     }
   }
-
-  /**
-   * rotate rotates the API key of an organization.
-   */
-  public async rotate(organizationId: string): Promise<void> {
-    const url = new URL(
-      `${this.options.baseUrl}/v1/organizations/${organizationId}/rotate`,
-    );
-    const response = await this.fetch(
-      url,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.options.apiKey}`,
-        },
-      },
-    );
-    if (!response.ok) {
-      const errorMessage = await parseError(response);
-      throw new Error(`Failed to rotate organization key: ${errorMessage}`);
-    }
-  }
 }

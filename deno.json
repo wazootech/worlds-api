@@ -39,15 +39,18 @@
     "lint": "deno lint --unstable-kv --unstable-raw-imports",
     "check": "deno check --unstable-kv --unstable-raw-imports",
     "precommit": {
-      "description": "Runs fmt, lint, and test",
+      "description": "Runs fmt, lint, check, and test",
       "dependencies": [
-        "test",
-        "check",
+        "fmt",
         "lint",
-        "fmt"
+        "check",
+        "test"
       ]
     },
     "example": "deno -A --env --unstable-kv --unstable-raw-imports src/cli/main.ts",
-    "generate": "deno -A jsr:@fartlabs/sql-embedder@0.0.5"
+    "generate": {
+      "description": "Generate .sql.ts from queries.sql (edit SQL only; run after changing any queries.sql)",
+      "command": "deno -A jsr:@fartlabs/sql-embedder@0.0.5"
+    }
   }
 }

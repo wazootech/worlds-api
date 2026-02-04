@@ -135,41 +135,41 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create worlds for both organizations directly in DB
     const worldId1 = crypto.randomUUID();
     const now1 = Date.now();
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql:
-        "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId1,
         organizationA.id,
         "Organization A World",
         "Test",
-        null,
-        null,
-        null,
+        null, // db_hostname
+        null, // db_token
         now1,
         now1,
-        null,
+        null, // deleted_at
       ],
     });
+    await appContext.databaseManager!.create(worldId1);
 
     const worldId2 = crypto.randomUUID();
     const now2 = Date.now();
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql:
-        "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId2,
         organizationB.id,
         "Organization B World",
         "Test",
-        null,
-        null,
-        null,
+        null, // db_hostname
+        null, // db_token
         now2,
         now2,
-        null,
+        null, // deleted_at
       ],
     });
+    await appContext.databaseManager!.create(worldId2);
 
     // List worlds for Organization A using admin override
     const worldsA = await adminSdk.worlds.list(1, 20, {
@@ -199,7 +199,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     assertEquals(world.label, "Admin Created World");
 
     // Verify in database
-    const dbWorldResult = await appContext.libsqlClient.execute({
+    const dbWorldResult = await appContext.database.execute({
       sql: "SELECT * FROM worlds WHERE id = ?",
       args: [world.id],
     });
@@ -212,22 +212,22 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const worldId = crypto.randomUUID();
     const now = Date.now();
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql:
-        "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId,
         organizationA.id,
         "Test World",
         "Test",
-        null,
-        null,
-        null,
+        null, // db_hostname
+        null, // db_token
         now,
         now,
-        null,
+        null, // deleted_at
       ],
     });
+    await appContext.databaseManager!.create(worldId);
 
     // Get world using admin override
     const world = await adminSdk.worlds.get(worldId, {
@@ -241,22 +241,22 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const worldId2 = crypto.randomUUID();
     const now3 = Date.now();
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql:
-        "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId2,
         organizationA.id,
         "Original Name",
         "Original",
-        null,
-        null,
-        null,
+        null, // db_hostname
+        null, // db_token
         now3,
         now3,
-        null,
+        null, // deleted_at
       ],
     });
+    await appContext.databaseManager!.create(worldId2);
 
     // Update using admin override
     await adminSdk.worlds.update(worldId2, {
@@ -275,22 +275,22 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization B
     const worldId3 = crypto.randomUUID();
     const now4 = Date.now();
-    await appContext.libsqlClient.execute({
+    await appContext.database.execute({
       sql:
-        "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
       args: [
         worldId3,
         organizationB.id,
         "To Delete",
         "Test",
-        null,
-        null,
-        null,
+        null, // db_hostname
+        null, // db_token
         now4,
         now4,
-        null,
+        null, // deleted_at
       ],
     });
+    await appContext.databaseManager!.create(worldId3);
 
     // Delete using admin override
     await adminSdk.worlds.delete(worldId3, {
@@ -298,7 +298,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     });
 
     // Verify deletion
-    const worldResult = await appContext.libsqlClient.execute({
+    const worldResult = await appContext.database.execute({
       sql: "SELECT * FROM worlds WHERE id = ?",
       args: [worldId3],
     });
@@ -311,22 +311,22 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
       // Create a world for Organization A
       const worldId4 = crypto.randomUUID();
       const now5 = Date.now();
-      await appContext.libsqlClient.execute({
+      await appContext.database.execute({
         sql:
-          "INSERT INTO worlds (id, organization_id, label, description, blob, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         args: [
           worldId4,
           organizationA.id,
           "SPARQL Test World",
           "Test",
-          null,
-          null,
-          null,
+          null, // db_hostname
+          null, // db_token
           now5,
           now5,
-          null,
+          null, // deleted_at
         ],
       });
+      await appContext.databaseManager!.create(worldId4);
       const worldId = worldId4;
 
       // Perform SPARQL update using admin override

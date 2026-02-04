@@ -8,7 +8,6 @@ export interface OrganizationRecord {
   label: string | null;
   description: string | null;
   plan: string | null;
-  apiKey: string;
   createdAt: number;
   updatedAt: number;
   deletedAt: number | null;
@@ -23,7 +22,6 @@ export const organizationRecordSchema: z.ZodType<OrganizationRecord> = z.object(
     label: z.string().nullable(),
     description: z.string().nullable(),
     plan: z.string().nullable(),
-    apiKey: z.string(),
     createdAt: z.number(),
     updatedAt: z.number(),
     deletedAt: z.number().nullable(),
