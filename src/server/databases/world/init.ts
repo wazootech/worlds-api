@@ -11,7 +11,7 @@ import {
   chunksVectorIndex,
 } from "./chunks/queries.sql.ts";
 import { triplesTable } from "./triples/queries.sql.ts";
-import { worldDataTable } from "./world-data/queries.sql.ts";
+import { blobsTable } from "./blobs/queries.sql.ts";
 import {
   logsTable,
   logsTimestampIndex,
@@ -25,7 +25,7 @@ export async function initializeWorldDatabase(client: Client): Promise<void> {
   // Create tables
   await client.execute(chunksTable);
   await client.execute(chunksFtsTable);
-  await client.execute(worldDataTable);
+  await client.execute(blobsTable);
   await client.execute(triplesTable);
   await client.execute(logsTable);
 

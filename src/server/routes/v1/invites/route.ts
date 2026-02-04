@@ -10,7 +10,7 @@ import {
 } from "#/sdk/invites/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { InvitesService } from "#/server/databases/core/invites/service.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import type { InviteTable } from "#/server/databases/core/invites/schema.ts";
 import { inviteTableInsertSchema } from "#/server/databases/core/invites/schema.ts";
 
@@ -66,8 +66,8 @@ export default (appContext: AppContext) =>
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_list",
             quantity: 1,
@@ -120,8 +120,8 @@ export default (appContext: AppContext) =>
         await invitesService.add(invite);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_create",
             quantity: 1,
@@ -171,8 +171,8 @@ export default (appContext: AppContext) =>
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_get",
             quantity: 1,
@@ -204,8 +204,8 @@ export default (appContext: AppContext) =>
         await invitesService.delete(code);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_delete",
             quantity: 1,

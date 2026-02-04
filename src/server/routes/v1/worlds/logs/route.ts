@@ -6,7 +6,7 @@ import type { AppContext } from "#/server/app-context.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";
 import { WorldsService } from "#/server/databases/core/worlds/service.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -58,8 +58,8 @@ export default (appContext: AppContext) => {
         const logs = await logsService.listByWorld(worldId, limit);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "logs_list",
             quantity: 1,

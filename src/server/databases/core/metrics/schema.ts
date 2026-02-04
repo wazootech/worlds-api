@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const usageSchema = z.object({
+export const metricSchema = z.object({
   id: z.string(),
   service_account_id: z.string(),
   feature_id: z.string(),
@@ -9,4 +9,4 @@ export const usageSchema = z.object({
   timestamp: z.number(),
 });
 
-export type Usage = z.infer<typeof usageSchema>;
+export type Metric = z.infer<typeof metricSchema>;

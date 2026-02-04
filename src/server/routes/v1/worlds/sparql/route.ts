@@ -21,9 +21,9 @@ import {
 } from "#/server/databases/core/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";
-import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
+import { BlobsService } from "#/server/databases/world/blobs/service.ts";
 import { worldRowSchema } from "#/server/databases/core/worlds/schema.ts";
 
 const { namedNode, quad } = DataFactory;
@@ -183,8 +183,8 @@ async function executeSparqlRequest(
       );
 
       if (authorized.serviceAccountId) {
-        const usageService = new UsageService(appContext.database);
-        usageService.meter({
+        const metricsService = new MetricsService(appContext.database);
+        metricsService.record({
           service_account_id: authorized.serviceAccountId,
           feature_id: "sparql_describe",
           quantity: 1,
@@ -290,9 +290,9 @@ async function executeSparqlRequest(
     return ErrorResponse.InternalServerError("World database not found");
   }
 
-  // Get the blob from WorldDataService
-  const worldDataService = new WorldDataService(managedWorld.database);
-  const worldData = await worldDataService.get();
+  // Get the blob from BlobsService
+  const blobsService = new BlobsService(managedWorld.database);
+  const worldData = await blobsService.get();
   const blobData = worldData?.blob as unknown as ArrayBuffer;
   const blob = blobData
     ? new Blob([new Uint8Array(blobData)])
@@ -321,9 +321,9 @@ async function executeSparqlRequest(
       console.log(`[PERF] Search index commit: ${commitTime.toFixed(2)}ms`);
     }
 
-    // Persist new blob via WorldDataService
+    // Persist new blob via BlobsService
     const updatedAt = Date.now();
-    await worldDataService.set(newData, updatedAt);
+    await blobsService.set(newData, updatedAt);
 
     // Update world metadata (labels etc)
     const worldUpdate = worldTableUpdateSchema.parse({
@@ -345,8 +345,8 @@ async function executeSparqlRequest(
     });
 
     if (authorized.serviceAccountId) {
-      const usageService = new UsageService(appContext.database);
-      usageService.meter({
+      const metricsService = new MetricsService(appContext.database);
+      metricsService.record({
         service_account_id: authorized.serviceAccountId,
         feature_id: "sparql_update",
         quantity: 1,
@@ -373,8 +373,8 @@ async function executeSparqlRequest(
 
   // Meter and log for queries
   if (authorized.serviceAccountId) {
-    const usageService = new UsageService(appContext.database);
-    usageService.meter({
+    const metricsService = new MetricsService(appContext.database);
+    metricsService.record({
       service_account_id: authorized.serviceAccountId,
       feature_id: "sparql_query",
       quantity: 1,

@@ -2,7 +2,7 @@
 
 /**
  * invitesTable is a table where each invite allows a user to be promoted to the free plan.
- * An invite allows a user with a nullish plan to be promoted to the free plan
+ * An invite allows a user with a nullish or shadow plan to be promoted to the free plan
  * upon redemption. Once redeemed, the invite cannot be used again.
  */
 export const invitesTable =

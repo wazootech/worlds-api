@@ -7,7 +7,7 @@ import {
   selectWorldById,
   updateWorld,
 } from "#/server/databases/core/worlds/queries.sql.ts";
-import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
+import { BlobsService } from "#/server/databases/world/blobs/service.ts";
 
 Deno.test("Worlds API routes - GET operations", async (t) => {
   const testContext = await createTestContext();
@@ -160,8 +160,8 @@ Deno.test("Worlds API routes - GET operations", async (t) => {
 
       // Initialize world data in scoped DB
       const managed = await testContext.databaseManager.create(worldId);
-      const worldDataService = new WorldDataService(managed.database);
-      await worldDataService.set(new TextEncoder().encode(quads), now);
+      const blobsService = new BlobsService(managed.database);
+      await blobsService.set(new TextEncoder().encode(quads), now);
 
       // Test default (N-Quads)
       const resp = await app.fetch(

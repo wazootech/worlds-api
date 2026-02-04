@@ -1,25 +1,25 @@
 import type { Client } from "@libsql/client";
-import { insertUsage } from "./queries.sql.ts";
+import { insertMetric } from "./queries.sql.ts";
 
 /**
- * UsageService records usage events (e.g. for billing/analytics).
+ * MetricsService records metrics (formerly usage events).
  */
-export interface UsageRecord {
+export interface MetricRecord {
   service_account_id: string;
   feature_id: string;
   quantity: number;
   metadata?: string;
 }
 
-export class UsageService {
+export class MetricsService {
   constructor(private readonly db: Client) {}
 
-  async meter(record: UsageRecord): Promise<void> {
+  async record(record: MetricRecord): Promise<void> {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
 
     await this.db.execute({
-      sql: insertUsage,
+      sql: insertMetric,
       args: [
         id,
         record.service_account_id,

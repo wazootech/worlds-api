@@ -13,7 +13,7 @@ import {
   updateServiceAccountSchema,
 } from "#/server/databases/core/service-accounts/schema.ts";
 import { OrganizationsService } from "#/server/databases/core/organizations/service.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 
 function requireOrgAccess(
   authorized: { admin: boolean; serviceAccountId?: string },
@@ -85,8 +85,8 @@ export default (appContext: AppContext) => {
         const rows = all.slice(offset, offset + pageSize);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_list",
             quantity: 1,
@@ -168,8 +168,8 @@ export default (appContext: AppContext) => {
         await serviceAccountsService.add(insert);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_create",
             quantity: 1,
@@ -230,8 +230,8 @@ export default (appContext: AppContext) => {
         }
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_get",
             quantity: 1,
@@ -309,8 +309,8 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_update",
             quantity: 1,
@@ -362,8 +362,8 @@ export default (appContext: AppContext) => {
         await serviceAccountsService.remove(accountId);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_delete",
             quantity: 1,

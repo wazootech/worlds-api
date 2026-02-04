@@ -12,11 +12,11 @@ import { OrganizationsService } from "./databases/core/organizations/service.ts"
 import { RateLimitsService } from "./databases/core/rate-limits/service.ts";
 import { ServiceAccountsService } from "./databases/core/service-accounts/service.ts";
 import { TriplesService } from "./databases/world/triples/service.ts";
-import { UsageService } from "./databases/core/usage/service.ts";
+import { MetricsService } from "./databases/core/metrics/service.ts";
 import { WorldsService } from "./databases/core/worlds/service.ts";
 
 export interface TestContext extends AppContext {
-  usageService: UsageService;
+  metricsService: MetricsService;
   rateLimitsService: RateLimitsService;
   invitesService: InvitesService;
   logsService: LogsService;
@@ -41,7 +41,7 @@ export async function createTestContext(): Promise<TestContext> {
     },
   };
 
-  const usageService = new UsageService(client);
+  const metricsService = new MetricsService(client);
   const rateLimitsService = new RateLimitsService(client);
   const invitesService = new InvitesService(client);
   const logsService = new LogsService(client);
@@ -54,7 +54,7 @@ export async function createTestContext(): Promise<TestContext> {
     database: client,
     embeddings: mockEmbeddings,
     databaseManager: new MemoryDatabaseManager(worldsService),
-    usageService,
+    metricsService,
     rateLimitsService,
     invitesService,
     logsService,
@@ -74,7 +74,7 @@ export async function createTestContext(): Promise<TestContext> {
 
   return {
     ...partialContext,
-    usageService,
+    metricsService,
     rateLimitsService,
     invitesService,
     logsService,

@@ -6,7 +6,7 @@ import { limitParamSchema } from "#/sdk/utils.ts";
 import { worldIdsParamSchema } from "#/sdk/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { WorldsService } from "#/server/databases/core/worlds/service.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import { ChunksService } from "#/server/databases/world/chunks/service.ts";
 import type { WorldRow } from "#/server/databases/core/worlds/schema.ts";
 
@@ -71,7 +71,7 @@ export default (appContext: AppContext) => {
       let worlds: WorldRow[] = [];
 
       const worldsService = new WorldsService(appContext.database);
-      const usageService = new UsageService(appContext.database);
+      const metricsService = new MetricsService(appContext.database);
       const chunksService = new ChunksService(appContext, worldsService);
 
       // If no worldIds provided, list all worlds for the organization
@@ -123,7 +123,7 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          usageService.meter({
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "semantic_search",
             quantity: 1,

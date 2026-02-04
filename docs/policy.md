@@ -67,13 +67,13 @@ table.
 | Delete service account      | DELETE   | `/v1/organizations/:organization/service-accounts/:account` | `service_accounts_delete` | 20              |                                                                                       |
 | **Logs**                    |          |                                                             |                           |                 |                                                                                       |
 | List logs                   | GET      | `/v1/worlds/:world/logs`                                    | `logs_list`               | 120             | Paginated; scoped by world.                                                           |
-| **Metrics / usage**         |          |                                                             |                           |                 |                                                                                       |
-| Query usage                 | GET      | `/v1/usage` or by org/world                                 | `usage_query`             | 120             | Read metering data.                                                                   |
+| **Metrics**                 |          |                                                             |                           |                 |                                                                                       |
+| Query metrics               | GET      | `/v1/metrics`                                               | `metrics_query`           | 120             | Read metering data.                                                                   |
 
 ---
 
 Events below should trigger an insert into the log (world-scoped; each entry has
-`world_id`). Use **LogsService** from `databases/core/logs/service.ts` with the
+`world_id`). Use **LogsService** from `databases/world/logs/service.ts` with the
 **world** database client (e.g. `databaseManager.get(worldId).database`) to add
 entries. **Level** is the log level (`info`, `warn`, `error`, `debug`).
 
@@ -120,28 +120,26 @@ Checked against route implementations under `src/server/routes/v1/`.
 | Service accounts | PUT    | `/v1/organizations/:organization/service-accounts/:account` | ✓           |
 | Service accounts | DELETE | `/v1/organizations/:organization/service-accounts/:account` | ✓           |
 | Logs             | GET    | `/v1/worlds/:world/logs`                                    | ✓           |
-| Usage            | GET    | `/v1/usage` (or by org/world)                               | ✓           |
+| Metrics          | GET    | `/v1/metrics`                                               | ✓           |
 
 **Missing (in policy, not implemented):**
 
 None. All v1 routes from policy are implemented.
 
 **Rate limiting:** The policy table defines per-resource limits above. The
-codebase has a `rateLimiter` middleware and `RateLimitsService`, but the server
-does not yet apply route-specific limits when mounting routes. When
-implementing, wire the limiter per route (or per resource group) with the limits
-from this table.
+codebase has a `rateLimiter` middleware and `RateLimitsService`. Limits are
+applied per-route.
 
 **Usage metering:** To record usage for billing/analytics, call
-**UsageService.meter()** (`databases/core/usage/service.ts`) with a
-**UsageRecord**: `service_account_id` (identifies the service account),
+**MetricsService.record()** (`databases/core/metrics/service.ts`) with a
+**MetricRecord**: `service_account_id` (identifies the service account),
 **feature_id** (use the Feature ID from the table above, e.g. `semantic_search`
 for GET `/v1/search`), `quantity`, and optional `metadata`. Search currently
 meters with `feature_id: "semantic_search"`; other routes can be wired the same
 way.
 
 **Logs (world DB):** Log entries are stored per-world. The **LOGS** table and
-indexes are defined in `databases/core/logs/queries.sql`. The
+indexes are defined in `databases/world/logs/queries.sql`. The
 **initializeWorldDatabase** in `databases/world/init.ts` creates the logs table
 and indexes in each world database.
 
@@ -150,7 +148,7 @@ and indexes in each world database.
 ## Summary
 
 - **Read-heavy (list, get):** 120/min — organizations, invites, worlds, service
-  accounts, logs, usage.
+  accounts, logs, metrics.
 - **Write (create, update, delete):** 20–30/min — organizations, invites,
   worlds, service accounts.
 - **Sensitive or expensive (SPARQL update, search):** 10–30/min.

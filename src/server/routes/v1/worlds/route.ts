@@ -23,9 +23,9 @@ import {
   worldTableUpdateSchema,
 } from "#/server/databases/core/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";
-import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
+import { BlobsService } from "#/server/databases/world/blobs/service.ts";
 
 const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
   {
@@ -78,8 +78,8 @@ export default (appContext: AppContext) => {
         if (rateLimitRes) return rateLimitRes;
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_get",
             quantity: 1,
@@ -152,8 +152,8 @@ export default (appContext: AppContext) => {
         if (rateLimitRes) return rateLimitRes;
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_download",
             quantity: 1,
@@ -171,8 +171,8 @@ export default (appContext: AppContext) => {
           metadata: null,
         });
 
-        const worldDataService = new WorldDataService(managed.database);
-        const worldData = await worldDataService.get();
+        const blobsService = new BlobsService(managed.database);
+        const worldData = await blobsService.get();
 
         const _world = worldRowSchema.parse({
           id: rawWorld.id,
@@ -333,8 +333,8 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_update",
             quantity: 1,
@@ -477,8 +477,8 @@ export default (appContext: AppContext) => {
         if (rateLimitRes) return rateLimitRes;
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_list",
             quantity: 1,
@@ -635,8 +635,8 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_create",
             quantity: 1,

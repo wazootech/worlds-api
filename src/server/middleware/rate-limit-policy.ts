@@ -9,13 +9,12 @@ const PERIOD_MS = 60_000;
 /**
  * Policy feature_id to max requests per minute. Derived from docs/policy.md.
  */
-export const POLICY_LIMITS: Record<string, number> = {
+export const POLICY_LIMITS = {
   organizations_list: 120,
   organizations_create: 20,
   organizations_get: 120,
   organizations_update: 30,
   organizations_delete: 20,
-  organizations_rotate: 10,
   invites_list: 120,
   invites_create: 30,
   invites_get: 120,
@@ -36,9 +35,8 @@ export const POLICY_LIMITS: Record<string, number> = {
   service_accounts_update: 30,
   service_accounts_delete: 20,
   logs_list: 120,
-  logs_stream: 60,
-  usage_query: 120,
-};
+  metrics_query: 120,
+} as const;
 
 /**
  * checkRateLimit enforces per-service-account rate limits. Admin is exempt.
@@ -47,7 +45,7 @@ export const POLICY_LIMITS: Record<string, number> = {
 export async function checkRateLimit(
   appContext: AppContext,
   authorized: AuthorizedRequest,
-  featureId: string,
+  featureId: keyof typeof POLICY_LIMITS,
 ): Promise<Response | null> {
   if (authorized.admin) {
     return null;

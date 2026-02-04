@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 /**
- * worldDataSchema represents the singleton world data record.
+ * blobSchema represents the singleton blob record.
  */
-export const worldDataSchema = z.object({
+export const blobSchema = z.object({
   blob: z.union([
     z.instanceof(Uint8Array),
     z.instanceof(ArrayBuffer).transform((ab) => new Uint8Array(ab)),
@@ -11,4 +11,4 @@ export const worldDataSchema = z.object({
   updated_at: z.number(),
 });
 
-export type WorldData = z.infer<typeof worldDataSchema>;
+export type BlobRow = z.infer<typeof blobSchema>;

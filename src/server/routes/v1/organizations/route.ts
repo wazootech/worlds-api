@@ -11,7 +11,7 @@ import {
 // import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { OrganizationsService } from "#/server/databases/core/organizations/service.ts";
-import { UsageService } from "#/server/databases/core/usage/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import type { OrganizationRow } from "#/server/databases/core/organizations/schema.ts";
 import {
   organizationTableInsertSchema,
@@ -78,8 +78,8 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "organizations_list",
             quantity: 1,
@@ -137,8 +137,8 @@ export default (appContext: AppContext) => {
         await organizationsService.add(organization);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "organizations_create",
             quantity: 1,
@@ -196,8 +196,8 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "organizations_get",
             quantity: 1,
@@ -257,8 +257,8 @@ export default (appContext: AppContext) => {
         await organizationsService.update(organizationId, organizationUpdate);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "organizations_update",
             quantity: 1,
@@ -300,8 +300,8 @@ export default (appContext: AppContext) => {
         await organizationsService.delete(organizationId);
 
         if (authorized.serviceAccountId) {
-          const usageService = new UsageService(appContext.database);
-          usageService.meter({
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.record({
             service_account_id: authorized.serviceAccountId,
             feature_id: "organizations_delete",
             quantity: 1,

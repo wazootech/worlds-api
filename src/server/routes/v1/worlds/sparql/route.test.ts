@@ -8,7 +8,7 @@ import {
 import { generateBlobFromN3Store } from "#/server/blobs/n3.ts";
 import createRoute from "./route.ts";
 import { insertWorld } from "#/server/databases/core/worlds/queries.sql.ts";
-import { WorldDataService } from "#/server/databases/world/world-data/service.ts";
+import { BlobsService } from "#/server/databases/world/blobs/service.ts";
 
 /**
  * For a comprehensive suite of test cases for standard SPARQL endpoints, see:
@@ -28,8 +28,8 @@ async function setWorldData(
   const blobData = new Uint8Array(await blob.arrayBuffer());
 
   const managed = await testContext.databaseManager.get(worldId);
-  const worldDataService = new WorldDataService(managed.database);
-  await worldDataService.set(blobData, Date.now());
+  const blobsService = new BlobsService(managed.database);
+  await blobsService.set(blobData, Date.now());
 }
 
 Deno.test("SPARQL API routes - GET operations", async (t) => {
