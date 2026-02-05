@@ -123,7 +123,7 @@ export default (appContext: AppContext) => {
         });
 
         if (authorized.serviceAccountId) {
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "semantic_search",
             quantity: 1,

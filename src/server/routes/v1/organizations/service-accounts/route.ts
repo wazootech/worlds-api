@@ -86,7 +86,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_list",
             quantity: 1,
@@ -169,7 +169,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_create",
             quantity: 1,
@@ -231,7 +231,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_get",
             quantity: 1,
@@ -310,7 +310,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_update",
             quantity: 1,
@@ -363,7 +363,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "service_accounts_delete",
             quantity: 1,

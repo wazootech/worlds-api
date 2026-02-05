@@ -46,7 +46,7 @@ export default (appContext: AppContext) => {
 
       if (authorized.serviceAccountId) {
         const metricsService = new MetricsService(appContext.database);
-        metricsService.record({
+        metricsService.meter({
           service_account_id: authorized.serviceAccountId,
           feature_id: "metrics_query",
           quantity: 1,

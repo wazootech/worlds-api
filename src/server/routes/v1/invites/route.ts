@@ -67,7 +67,7 @@ export default (appContext: AppContext) =>
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_list",
             quantity: 1,
@@ -121,7 +121,7 @@ export default (appContext: AppContext) =>
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_create",
             quantity: 1,
@@ -172,7 +172,7 @@ export default (appContext: AppContext) =>
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_get",
             quantity: 1,
@@ -205,7 +205,7 @@ export default (appContext: AppContext) =>
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "invites_delete",
             quantity: 1,

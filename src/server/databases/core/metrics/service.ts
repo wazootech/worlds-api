@@ -14,7 +14,7 @@ export interface MetricRecord {
 export class MetricsService {
   constructor(private readonly db: Client) {}
 
-  async record(record: MetricRecord): Promise<void> {
+  async meter(record: MetricRecord): Promise<void> {
     const id = crypto.randomUUID();
     const timestamp = Date.now();
 

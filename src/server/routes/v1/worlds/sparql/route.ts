@@ -184,7 +184,7 @@ async function executeSparqlRequest(
 
       if (authorized.serviceAccountId) {
         const metricsService = new MetricsService(appContext.database);
-        metricsService.record({
+        metricsService.meter({
           service_account_id: authorized.serviceAccountId,
           feature_id: "sparql_describe",
           quantity: 1,
@@ -346,7 +346,7 @@ async function executeSparqlRequest(
 
     if (authorized.serviceAccountId) {
       const metricsService = new MetricsService(appContext.database);
-      metricsService.record({
+      metricsService.meter({
         service_account_id: authorized.serviceAccountId,
         feature_id: "sparql_update",
         quantity: 1,
@@ -374,7 +374,7 @@ async function executeSparqlRequest(
   // Meter and log for queries
   if (authorized.serviceAccountId) {
     const metricsService = new MetricsService(appContext.database);
-    metricsService.record({
+    metricsService.meter({
       service_account_id: authorized.serviceAccountId,
       feature_id: "sparql_query",
       quantity: 1,

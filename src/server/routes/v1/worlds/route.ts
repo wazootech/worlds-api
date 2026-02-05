@@ -66,7 +66,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_get",
             quantity: 1,
@@ -129,7 +129,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_download",
             quantity: 1,
@@ -274,7 +274,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_update",
             quantity: 1,
@@ -400,7 +400,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_list",
             quantity: 1,
@@ -536,7 +536,7 @@ export default (appContext: AppContext) => {
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
-          metricsService.record({
+          metricsService.meter({
             service_account_id: authorized.serviceAccountId,
             feature_id: "worlds_create",
             quantity: 1,
