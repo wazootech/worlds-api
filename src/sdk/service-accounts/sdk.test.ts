@@ -18,7 +18,7 @@ Deno.test("WorldsSdk - Service Accounts", async (t) => {
   let createdAccountId: string;
 
   await t.step("create service account", async () => {
-    const account = await sdk.serviceAccounts.create(orgId, {
+    const account = await sdk.organizations.serviceAccounts.create(orgId, {
       label: "Test Account",
       description: "A test service account",
     });
@@ -31,31 +31,40 @@ Deno.test("WorldsSdk - Service Accounts", async (t) => {
   });
 
   await t.step("get service account", async () => {
-    const account = await sdk.serviceAccounts.get(orgId, createdAccountId);
+    const account = await sdk.organizations.serviceAccounts.get(
+      orgId,
+      createdAccountId,
+    );
     assert(account !== null);
     assertEquals(account.id, createdAccountId);
     assertEquals(account.label, "Test Account");
   });
 
   await t.step("update service account", async () => {
-    await sdk.serviceAccounts.update(orgId, createdAccountId, {
+    await sdk.organizations.serviceAccounts.update(orgId, createdAccountId, {
       label: "Updated Account",
     });
-    const account = await sdk.serviceAccounts.get(orgId, createdAccountId);
+    const account = await sdk.organizations.serviceAccounts.get(
+      orgId,
+      createdAccountId,
+    );
     assertEquals(account!.label, "Updated Account");
     assertEquals(account!.description, "A test service account");
   });
 
   await t.step("list service accounts", async () => {
-    const accounts = await sdk.serviceAccounts.list(orgId);
+    const accounts = await sdk.organizations.serviceAccounts.list(orgId);
     assert(accounts.length >= 1);
     const found = accounts.find((a) => a.id === createdAccountId);
     assert(found !== undefined);
   });
 
   await t.step("delete service account", async () => {
-    await sdk.serviceAccounts.delete(orgId, createdAccountId);
-    const account = await sdk.serviceAccounts.get(orgId, createdAccountId);
+    await sdk.organizations.serviceAccounts.delete(orgId, createdAccountId);
+    const account = await sdk.organizations.serviceAccounts.get(
+      orgId,
+      createdAccountId,
+    );
     assertEquals(account, null);
   });
 });

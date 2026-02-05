@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 
 import { authorizeRequest } from "#/server/middleware/auth.ts";
-import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 import type { AppContext } from "#/server/app-context.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";

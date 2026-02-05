@@ -1,4 +1,5 @@
 import type { WorldsSdkOptions } from "#/sdk/interfaces.ts";
+import { ServiceAccounts } from "#/sdk/service-accounts/sdk.ts";
 import type {
   CreateOrganizationParams,
   OrganizationRecord,
@@ -11,11 +12,13 @@ import { parseError } from "#/sdk/utils.ts";
  */
 export class Organizations {
   private readonly fetch: typeof fetch;
+  public readonly serviceAccounts: ServiceAccounts;
 
   public constructor(
     public readonly options: WorldsSdkOptions,
   ) {
     this.fetch = options.fetch ?? globalThis.fetch;
+    this.serviceAccounts = new ServiceAccounts(options);
   }
 
   /**

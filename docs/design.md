@@ -259,12 +259,12 @@ match first.
   `/v1/worlds/:world/download`, GET `/v1/worlds/:world/logs`.
 - **SPARQL:** GET/POST `/v1/worlds/:world/sparql` (query or update; dataset
   params from query or form).
+- **Metrics:** GET `/v1/organizations/:organization/metrics`.
 - **Search:** GET `/v1/search` (query param `q`, optional `organizationId`,
   `worlds`, `subjects`, `predicates`, `limit`).
 
-All require **admin** auth (Bearer token = `appContext.admin.apiKey`). Rate
-limits are defined in **docs/policy.md**; middleware exists but is not yet wired
-per route.
+All require **admin** auth (Bearer token = `appContext.admin.apiKey`) or
+specific Service Account permissions. Rate limits are defined in **Section 11**.
 
 ---
 
@@ -272,9 +272,10 @@ per route.
 
 - **auth.ts:** **authorizeRequest(appContext, request)** — Bearer token vs
   **appContext.admin?.apiKey**; returns **{ admin: boolean }**.
-- **rate-limit.ts:** **rateLimiter(options: { limit, period })** returns a
-  middleware that uses **RateLimitsService** and a token bucket; not yet applied
-  to routes in **createServer**.
+- **rate-limit.ts:** **checkRateLimit(appContext, authorized, featureId)** —
+  Checks usage against the **POLICY_LIMITS** constant (see Section 11). Returns
+  **ErrorResponse.RateLimitExceeded** if limit reached. Used in every route
+  handler.
 - **errors.ts:** **ErrorResponse** extends Response; static helpers
   **BadRequest**, **Unauthorized**, **NotFound**, **InternalServerError**, etc.,
   each return a JSON `{ error: { code, message } }` with the correct status and
@@ -324,6 +325,22 @@ per route.
 - **LogsService** for world DB: **listByWorld(worldId, limit)** (descending),
   **listSince(sinceTimestamp, limit)** (ascending). Queries live in
   **logs/queries.sql** (and **queries.sql.ts** after generate).
+
+### 9.1 Log triggers
+
+Events below should trigger an insert into the log (world-scoped; each entry has
+`world_id`). Use **LogsService** from `databases/world/logs/service.ts` with the
+**world** database client. **Level** is the log level (`info`, `warn`, `error`,
+`debug`).
+
+| Event            | When / trigger                     | World ID source | Level | Notes                                    |
+| ---------------- | ---------------------------------- | --------------- | ----- | ---------------------------------------- |
+| World created    | After world is created             | New world `id`  | info  | Include label in metadata.               |
+| World updated    | After world metadata is updated    | `:world`        | info  | Include changed fields in metadata.      |
+| World deleted    | Before world is deleted            | `:world`        | info  | Audit trail.                             |
+| World downloaded | After successful download          | `:world`        | info  | Optional; may be noisy.                  |
+| SPARQL query     | After SPARQL SELECT/CONSTRUCT etc. | `:world`        | info  | Include query type or size in metadata.  |
+| SPARQL update    | After SPARQL INSERT/DELETE etc.    | `:world`        | info  | Writes; include update type in metadata. |
 
 ---
 
@@ -390,5 +407,67 @@ per route.
   **initializeDatabase** in **core/init.ts**; ensure **DatabaseManager**
   implementations call **initializeDatabase** in **create()** so new world DBs
   get the table.
-- **Rate limit for a route:** Apply **rateLimiter({ limit, period })** in the
-  route or via a wrapper; document the limit in **docs/policy.md**.
+- **Rate limit for a route:** Call **checkRateLimit(appContext, authorized,
+  featureId)** at the start of the handler. Update **Rate Limits & Policy**
+  table in this doc and `POLICY_LIMITS` in `rate-limit.ts`.
+
+---
+
+## 11. Rate Limits & Policy
+
+Rate limits are enforced **per service account** using a **token bucket**
+algorithm. Admin requests are exempt.
+
+### 11.1 Mechanism
+
+- **Algorithm:** Token bucket (stored in `rate_limits` table).
+- **Period:** 60,000 ms (1 minute).
+- **Identification:**
+  - **Admin:** Exempt.
+  - **Service Account:** Limited per account.
+  - **Unauthenticated:** Rejected (401).
+
+### 11.2 Limits by resource
+
+All limits are **requests per minute**.
+
+| Resource               | Feature ID                | Limit (req/min) | Notes                                                                                 |
+| ---------------------- | ------------------------- | --------------- | ------------------------------------------------------------------------------------- |
+| **Organizations**      |                           |                 |                                                                                       |
+| List organizations     | `organizations_list`      | 120             | Paginated list.                                                                       |
+| Create organization    | `organizations_create`    | 20              |                                                                                       |
+| Get organization       | `organizations_get`       | 120             |                                                                                       |
+| Update organization    | `organizations_update`    | 30              |                                                                                       |
+| Delete organization    | `organizations_delete`    | 20              |                                                                                       |
+| **Invites**            |                           |                 |                                                                                       |
+| List invites           | `invites_list`            | 120             |                                                                                       |
+| Create invite          | `invites_create`          | 30              |                                                                                       |
+| Get invite             | `invites_get`             | 120             |                                                                                       |
+| Delete invite          | `invites_delete`          | 30              |                                                                                       |
+| **Worlds**             |                           |                 |                                                                                       |
+| List worlds            | `worlds_list`             | 120             | Scoped by organization.                                                               |
+| Get world              | `worlds_get`              | 120             |                                                                                       |
+| Create world           | `worlds_create`           | 20              | Allocates resources.                                                                  |
+| Update world           | `worlds_update`           | 30              |                                                                                       |
+| Delete world           | `worlds_delete`           | 20              |                                                                                       |
+| Download world         | `worlds_download`         | 60              | Larger response; moderate limit.                                                      |
+| **SPARQL**             |                           |                 |                                                                                       |
+| Service description    | `sparql_describe`         | 60              |                                                                                       |
+| SPARQL query           | `sparql_query`            | 60              | Read-only; may be expensive.                                                          |
+| SPARQL update          | `sparql_update`           | 30              | Writes; lower limit.                                                                  |
+| **Search**             |                           |                 |                                                                                       |
+| Semantic search        | `semantic_search`         | 30              | Uses embeddings and hybrid search. Supports `subjects` and `predicates` query params. |
+| **Service accounts**   |                           |                 |                                                                                       |
+| List service accounts  | `service_accounts_list`   | 120             | Paginated; scoped by organization.                                                    |
+| Create service account | `service_accounts_create` | 20              |                                                                                       |
+| Get service account    | `service_accounts_get`    | 120             |                                                                                       |
+| Update service account | `service_accounts_update` | 30              |                                                                                       |
+| Delete service account | `service_accounts_delete` | 20              |                                                                                       |
+| **Logs**               |                           |                 |                                                                                       |
+| List logs              | `logs_list`               | 120             | Paginated; scoped by world.                                                           |
+| **Metrics**            |                           |                 |                                                                                       |
+| Query metrics          | `metrics_query`           | 120             | Read metering data (scoped by organization).                                          |
+
+---
+
+## 12. SDK and CLI (Changes TBD based on future work)

@@ -20,7 +20,7 @@ import {
   worldTableUpdateSchema,
 } from "#/server/databases/core/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
-import { checkRateLimit } from "#/server/middleware/rate-limit-policy.ts";
+import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
 import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";
 import { BlobsService } from "#/server/databases/world/blobs/service.ts";
