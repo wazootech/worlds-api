@@ -81,6 +81,7 @@ export class WorldsService {
         updates.updated_at ?? row.updated_at,
         updates.db_hostname ?? row.db_hostname,
         updates.db_token ?? row.db_token,
+        updates.deleted_at ?? row.deleted_at,
         id,
       ],
     });

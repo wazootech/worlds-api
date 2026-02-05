@@ -1,23 +1,28 @@
 import { assert, assertEquals } from "@std/assert";
 // import { ulid } from "@std/ulid/ulid";
 import { createTestContext } from "#/server/testing.ts";
+import { InvitesService } from "#/server/databases/core/invites/service.ts";
 import createApp from "./route.ts";
-import { insertInvite } from "#/server/databases/core/invites/queries.sql.ts";
 
 Deno.test("Invites API routes - Admin CRUD", async (t) => {
   const testContext = await createTestContext();
+  const invitesService = new InvitesService(testContext.database);
   const app = createApp(testContext);
   const adminApiKey = testContext.admin!.apiKey;
 
   await t.step("GET /v1/invites returns list of invites", async () => {
     // Create some test invites
-    await testContext.database.execute({
-      sql: insertInvite,
-      args: ["invite1", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite1",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
-    await testContext.database.execute({
-      sql: insertInvite,
-      args: ["invite2", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite2",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const req = new Request("http://localhost/v1/invites", {
@@ -71,9 +76,11 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("GET /v1/invites/:code retrieves an invite", async () => {
     // Create test invite
-    await testContext.database.execute({
-      sql: insertInvite,
-      args: ["invite_get_test", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite_get_test",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const req = new Request("http://localhost/v1/invites/invite_get_test", {
@@ -105,9 +112,11 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("DELETE /v1/invites/:code removes an invite", async () => {
     // Create test invite
-    await testContext.database.execute({
-      sql: insertInvite,
-      args: ["invite_delete_test", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite_delete_test",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const delReq = new Request(

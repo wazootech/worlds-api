@@ -50,7 +50,6 @@ export const worldTableUpdateSchema = worldTableSchema
     id: true,
     organization_id: true,
     created_at: true,
-    deleted_at: true,
   })
   .partial();
 

@@ -1,10 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import { Parser, Store } from "n3";
-import {
-  createTestContext,
-  createTestOrganization,
-  type TestContext,
-} from "#/server/testing.ts";
+import { createTestContext, createTestOrganization } from "#/server/testing.ts";
+import type { AppContext } from "#/server/app-context.ts";
 import { generateBlobFromN3Store } from "#/server/blobs/n3.ts";
 import createRoute from "./route.ts";
 import { insertWorld } from "#/server/databases/core/worlds/queries.sql.ts";
@@ -16,7 +13,7 @@ import { BlobsService } from "#/server/databases/world/blobs/service.ts";
  */
 
 async function setWorldData(
-  testContext: TestContext,
+  testContext: AppContext,
   worldId: string,
   ttl: string,
 ) {

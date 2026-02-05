@@ -1,43 +1,37 @@
 import { assert, assertEquals } from "@std/assert";
 import { createTestContext } from "#/server/testing.ts";
 import createApp from "./route.ts";
-import {
-  insertOrganization,
-} from "#/server/databases/core/organizations/queries.sql.ts";
+
+import { OrganizationsService } from "#/server/databases/core/organizations/service.ts";
 
 Deno.test("Organizations API routes", async (t) => {
   const testContext = await createTestContext();
+  const organizationsService = new OrganizationsService(testContext.database);
   const app = createApp(testContext);
 
   await t.step(
     "GET /v1/organizations returns paginated list of organizations",
     async () => {
       const now1 = Date.now();
-      await testContext.database.execute({
-        sql: insertOrganization,
-        args: [
-          "organization_1",
-          "Test organization 1",
-          "Test description 1",
-          "free",
-          now1,
-          now1,
-          null,
-        ],
+      await organizationsService.add({
+        id: "organization_1",
+        label: "Test organization 1",
+        description: "Test description 1",
+        plan: "free",
+        created_at: now1,
+        updated_at: now1,
+        deleted_at: null,
       });
 
       const now2 = Date.now();
-      await testContext.database.execute({
-        sql: insertOrganization,
-        args: [
-          "organization_2",
-          "Test organization 2",
-          "Test description 2",
-          "pro",
-          now2,
-          now2,
-          null,
-        ],
+      await organizationsService.add({
+        id: "organization_2",
+        label: "Test organization 2",
+        description: "Test description 2",
+        plan: "pro",
+        created_at: now2,
+        updated_at: now2,
+        deleted_at: null,
       });
 
       const req = new Request(
@@ -61,6 +55,7 @@ Deno.test("Organizations API routes", async (t) => {
 
 Deno.test("Organizations API routes - CRUD operations", async (t) => {
   const testContext = await createTestContext();
+  const organizationsService = new OrganizationsService(testContext.database);
   const app = createApp(testContext);
 
   await t.step(
@@ -94,17 +89,14 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
     "GET /v1/organizations/:organization retrieves an organization",
     async () => {
       const now = Date.now();
-      await testContext.database.execute({
-        sql: insertOrganization,
-        args: [
-          "organization_get",
-          "Test organization 2",
-          "Test description 2",
-          "pro",
-          now,
-          now,
-          null,
-        ],
+      await organizationsService.add({
+        id: "organization_get",
+        label: "Test organization 2",
+        description: "Test description 2",
+        plan: "pro",
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
       });
       const organizationId = "organization_get";
 
@@ -130,17 +122,14 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
     "PUT /v1/organizations/:organization updates an organization",
     async () => {
       const now = Date.now();
-      await testContext.database.execute({
-        sql: insertOrganization,
-        args: [
-          "organization_put",
-          "Original label",
-          "Original description",
-          "free",
-          now,
-          now,
-          null,
-        ],
+      await organizationsService.add({
+        id: "organization_put",
+        label: "Original label",
+        description: "Original description",
+        plan: "free",
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
       });
       const organizationId = "organization_put";
 
@@ -183,17 +172,14 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
     "DELETE /v1/organizations/:organization removes an organization",
     async () => {
       const now = Date.now();
-      await testContext.database.execute({
-        sql: insertOrganization,
-        args: [
-          "organization_del",
-          "To be deleted",
-          "Description",
-          "free",
-          now,
-          now,
-          null,
-        ],
+      await organizationsService.add({
+        id: "organization_del",
+        label: "To be deleted",
+        description: "Description",
+        plan: "free",
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
       });
       const organizationId = "organization_del";
 

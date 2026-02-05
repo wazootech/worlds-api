@@ -4,30 +4,11 @@ import { initializeDatabase } from "./databases/core/init.ts";
 import { MemoryDatabaseManager } from "./database-manager/database-managers/memory.ts";
 import { insertOrganization } from "./databases/core/organizations/queries.sql.ts";
 import type { Embeddings } from "./embeddings/embeddings.ts";
-import type { AppContext } from "./app-context.ts";
-import { ChunksService } from "./databases/world/chunks/service.ts";
-import { InvitesService } from "./databases/core/invites/service.ts";
-import { LogsService } from "#/server/databases/world/logs/service.ts";
-import { OrganizationsService } from "./databases/core/organizations/service.ts";
-import { RateLimitsService } from "./databases/core/rate-limits/service.ts";
 import { ServiceAccountsService } from "./databases/core/service-accounts/service.ts";
-import { TriplesService } from "./databases/world/triples/service.ts";
-import { MetricsService } from "./databases/core/metrics/service.ts";
 import { WorldsService } from "./databases/core/worlds/service.ts";
+import type { AppContext } from "./app-context.ts";
 
-export interface TestContext extends AppContext {
-  metricsService: MetricsService;
-  rateLimitsService: RateLimitsService;
-  invitesService: InvitesService;
-  logsService: LogsService;
-  organizationsService: OrganizationsService;
-  serviceAccountsService: ServiceAccountsService;
-  triplesService: TriplesService;
-  worldsService: WorldsService;
-  chunksService: ChunksService;
-}
-
-export async function createTestContext(): Promise<TestContext> {
+export async function createTestContext(): Promise<AppContext> {
   const client = createClient({ url: ":memory:" });
   await initializeDatabase(client);
 
@@ -41,53 +22,21 @@ export async function createTestContext(): Promise<TestContext> {
     },
   };
 
-  const metricsService = new MetricsService(client);
-  const rateLimitsService = new RateLimitsService(client);
-  const invitesService = new InvitesService(client);
-  const logsService = new LogsService(client);
-  const organizationsService = new OrganizationsService(client);
-  const serviceAccountsService = new ServiceAccountsService(client);
-  const triplesService = new TriplesService(client);
   const worldsService = new WorldsService(client);
+  const databaseManager = new MemoryDatabaseManager(worldsService);
 
-  const partialContext = {
+  return {
     database: client,
     embeddings: mockEmbeddings,
-    databaseManager: new MemoryDatabaseManager(worldsService),
-    metricsService,
-    rateLimitsService,
-    invitesService,
-    logsService,
-    organizationsService,
-    serviceAccountsService,
-    triplesService,
-    worldsService,
+    databaseManager,
     admin: {
       apiKey: ulid(),
     },
   };
-
-  const chunksService = new ChunksService(
-    partialContext as unknown as AppContext,
-    worldsService,
-  );
-
-  return {
-    ...partialContext,
-    metricsService,
-    rateLimitsService,
-    invitesService,
-    logsService,
-    organizationsService,
-    serviceAccountsService,
-    triplesService,
-    worldsService,
-    chunksService,
-  };
 }
 
 export async function createTestOrganization(
-  context: TestContext,
+  context: AppContext,
   options?: { plan?: string },
 ) {
   const id = ulid();
@@ -109,13 +58,14 @@ export async function createTestOrganization(
 }
 
 export async function createTestServiceAccount(
-  context: TestContext,
+  context: AppContext,
   organizationId: string,
 ) {
+  const serviceAccountsService = new ServiceAccountsService(context.database);
   const accountId = ulid();
   const apiKey = ulid();
   const now = Date.now();
-  await context.serviceAccountsService.add({
+  await serviceAccountsService.add({
     id: accountId,
     organization_id: organizationId,
     label: "Test Service Account",

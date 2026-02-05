@@ -1,37 +1,40 @@
 import { assertEquals } from "@std/assert";
-import { insertWorld } from "#/server/databases/core/worlds/queries.sql.ts";
+
 import { createTestContext, createTestOrganization } from "#/server/testing.ts";
 import { TriplesService } from "../triples/service.ts";
+import { WorldsService } from "#/server/databases/core/worlds/service.ts";
+import { ChunksService } from "./service.ts";
 
 Deno.test("ChunksService", async (t) => {
   const testContext = await createTestContext();
-  const { id: organizationId } = await createTestOrganization(testContext);
+  const worldsService = new WorldsService(testContext.database);
+  const chunksService = new ChunksService(testContext, worldsService);
+
+  const { id: organizationId } = await createTestOrganization(testContext, {
+    plan: "free",
+  });
 
   const worldId = crypto.randomUUID();
   const now = Date.now();
-  await testContext.database.execute({
-    sql: insertWorld,
-    args: [
-      worldId,
-      organizationId,
-      "Test World",
-      "Test Description",
-      null, // db_hostname
-      null, // db_auth_token
-      now,
-      now,
-      null,
-    ],
+  await worldsService.insert({
+    id: worldId,
+    organization_id: organizationId,
+    label: "Test World",
+    description: "Test Description",
+    db_hostname: null,
+    db_token: null,
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
   });
   await testContext.databaseManager!.create(worldId);
 
-  const service = testContext.chunksService;
   const worldManaged = await testContext.databaseManager!.get(worldId);
   const triplesService = new TriplesService(worldManaged.database);
 
   await t.step("search with no results", async () => {
-    const results = await service.search({
-      query: "test",
+    const results = await chunksService.search({
+      query: "nonexistent",
       worldIds: [worldId],
       organizationId,
     });
@@ -61,7 +64,7 @@ Deno.test("ChunksService", async (t) => {
       ],
     });
 
-    const results = await service.search({
+    const results = await chunksService.search({
       query: "apples",
       worldIds: [worldId],
       organizationId,

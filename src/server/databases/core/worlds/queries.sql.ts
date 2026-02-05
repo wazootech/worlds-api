@@ -44,7 +44,7 @@ export const insertWorld =
  * (used in PUT /v1/worlds/:world).
  */
 export const updateWorld =
-  "UPDATE\n  worlds\nSET\n  label = ?,\n  description = ?,\n  updated_at = ?,\n  db_hostname = ?,\n  db_token = ?\nWHERE\n  id = ?;";
+  "UPDATE\n  worlds\nSET\n  label = ?,\n  description = ?,\n  updated_at = ?,\n  db_hostname = ?,\n  db_token = ?,\n  deleted_at = ?\nWHERE\n  id = ?;";
 
 /**
  * deleteWorld is a query that deletes a world

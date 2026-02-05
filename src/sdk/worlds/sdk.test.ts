@@ -4,6 +4,8 @@ import { createTestContext, createTestOrganization } from "#/server/testing.ts";
 import type { SparqlSelectResults } from "./schema.ts";
 import { WorldsSdk } from "#/sdk/sdk.ts";
 
+import { WorldsService } from "#/server/databases/core/worlds/service.ts";
+
 Deno.test("WorldsSdk - Worlds", async (t) => {
   const appContext = await createTestContext();
   const server = await createServer(appContext);
@@ -118,6 +120,7 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
 Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
   const appContext = await createTestContext();
   const server = await createServer(appContext);
+  const worldsService = new WorldsService(appContext.database);
 
   // Create SDK with admin API key
   const adminSdk = new WorldsSdk({
@@ -135,39 +138,31 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create worlds for both organizations directly in DB
     const worldId1 = crypto.randomUUID();
     const now1 = Date.now();
-    await appContext.database.execute({
-      sql:
-        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        worldId1,
-        organizationA.id,
-        "Organization A World",
-        "Test",
-        null, // db_hostname
-        null, // db_token
-        now1,
-        now1,
-        null, // deleted_at
-      ],
+    await worldsService.insert({
+      id: worldId1,
+      organization_id: organizationA.id,
+      label: "Organization A World",
+      description: "Test",
+      db_hostname: null,
+      db_token: null,
+      created_at: now1,
+      updated_at: now1,
+      deleted_at: null,
     });
     await appContext.databaseManager!.create(worldId1);
 
     const worldId2 = crypto.randomUUID();
     const now2 = Date.now();
-    await appContext.database.execute({
-      sql:
-        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        worldId2,
-        organizationB.id,
-        "Organization B World",
-        "Test",
-        null, // db_hostname
-        null, // db_token
-        now2,
-        now2,
-        null, // deleted_at
-      ],
+    await worldsService.insert({
+      id: worldId2,
+      organization_id: organizationB.id,
+      label: "Organization B World",
+      description: "Test",
+      db_hostname: null,
+      db_token: null,
+      created_at: now2,
+      updated_at: now2,
+      deleted_at: null,
     });
     await appContext.databaseManager!.create(worldId2);
 
@@ -199,11 +194,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     assertEquals(world.label, "Admin Created World");
 
     // Verify in database
-    const dbWorldResult = await appContext.database.execute({
-      sql: "SELECT * FROM worlds WHERE id = ?",
-      args: [world.id],
-    });
-    const dbWorld = dbWorldResult.rows[0];
+    const dbWorld = await worldsService.getById(world.id);
     assert(dbWorld);
     assertEquals(dbWorld.organization_id, organizationB.id);
   });
@@ -212,20 +203,16 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const worldId = crypto.randomUUID();
     const now = Date.now();
-    await appContext.database.execute({
-      sql:
-        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        worldId,
-        organizationA.id,
-        "Test World",
-        "Test",
-        null, // db_hostname
-        null, // db_token
-        now,
-        now,
-        null, // deleted_at
-      ],
+    await worldsService.insert({
+      id: worldId,
+      organization_id: organizationA.id,
+      label: "Test World",
+      description: "Test",
+      db_hostname: null,
+      db_token: null,
+      created_at: now,
+      updated_at: now,
+      deleted_at: null,
     });
     await appContext.databaseManager!.create(worldId);
 
@@ -241,20 +228,16 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const worldId2 = crypto.randomUUID();
     const now3 = Date.now();
-    await appContext.database.execute({
-      sql:
-        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        worldId2,
-        organizationA.id,
-        "Original Name",
-        "Original",
-        null, // db_hostname
-        null, // db_token
-        now3,
-        now3,
-        null, // deleted_at
-      ],
+    await worldsService.insert({
+      id: worldId2,
+      organization_id: organizationA.id,
+      label: "Original Name",
+      description: "Original",
+      db_hostname: null,
+      db_token: null,
+      created_at: now3,
+      updated_at: now3,
+      deleted_at: null,
     });
     await appContext.databaseManager!.create(worldId2);
 
@@ -275,20 +258,16 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization B
     const worldId3 = crypto.randomUUID();
     const now4 = Date.now();
-    await appContext.database.execute({
-      sql:
-        "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        worldId3,
-        organizationB.id,
-        "To Delete",
-        "Test",
-        null, // db_hostname
-        null, // db_token
-        now4,
-        now4,
-        null, // deleted_at
-      ],
+    await worldsService.insert({
+      id: worldId3,
+      organization_id: organizationB.id,
+      label: "To Delete",
+      description: "Test",
+      db_hostname: null,
+      db_token: null,
+      created_at: now4,
+      updated_at: now4,
+      deleted_at: null,
     });
     await appContext.databaseManager!.create(worldId3);
 
@@ -298,11 +277,8 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     });
 
     // Verify deletion
-    const worldResult = await appContext.database.execute({
-      sql: "SELECT * FROM worlds WHERE id = ?",
-      args: [worldId3],
-    });
-    assertEquals(worldResult.rows.length, 0);
+    const worldResult = await worldsService.getById(worldId3);
+    assertEquals(worldResult, null);
   });
 
   await t.step(
@@ -311,20 +287,16 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
       // Create a world for Organization A
       const worldId4 = crypto.randomUUID();
       const now5 = Date.now();
-      await appContext.database.execute({
-        sql:
-          "INSERT INTO worlds (id, organization_id, label, description, db_hostname, db_token, created_at, updated_at, deleted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        args: [
-          worldId4,
-          organizationA.id,
-          "SPARQL Test World",
-          "Test",
-          null, // db_hostname
-          null, // db_token
-          now5,
-          now5,
-          null, // deleted_at
-        ],
+      await worldsService.insert({
+        id: worldId4,
+        organization_id: organizationA.id,
+        label: "SPARQL Test World",
+        description: "Test",
+        db_hostname: null,
+        db_token: null,
+        created_at: now5,
+        updated_at: now5,
+        deleted_at: null,
       });
       await appContext.databaseManager!.create(worldId4);
       const worldId = worldId4;

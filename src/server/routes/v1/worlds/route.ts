@@ -10,18 +10,7 @@ import {
 } from "#/sdk/worlds/schema.ts";
 import { paginationParamsSchema } from "#/sdk/utils.ts";
 import { Parser, Store, Writer } from "n3";
-import {
-  deleteWorld,
-  insertWorld,
-  selectWorldById,
-  selectWorldsByOrganizationId,
-  updateWorld,
-} from "#/server/databases/core/worlds/queries.sql.ts";
-import {
-  worldRowSchema,
-  worldTableInsertSchema,
-  worldTableUpdateSchema,
-} from "#/server/databases/core/worlds/schema.ts";
+import { WorldsService } from "#/server/databases/core/worlds/service.ts";
 import { ErrorResponse } from "#/server/errors.ts";
 import { MetricsService } from "#/server/databases/core/metrics/service.ts";
 import { LogsService } from "#/server/databases/world/logs/service.ts";
@@ -38,6 +27,8 @@ const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
 const DEFAULT_SERIALIZATION = SERIALIZATIONS["n-quads"];
 
 export default (appContext: AppContext) => {
+  const worldsService = new WorldsService(appContext.database);
+
   return new Router()
     .get(
       "/v1/worlds/:world",
@@ -53,11 +44,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const result = await appContext.database.execute({
-          sql: selectWorldById,
-          args: [worldId],
-        });
-        const world = result.rows[0];
+        const world = await worldsService.getById(worldId);
 
         if (!world || world.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -87,27 +74,20 @@ export default (appContext: AppContext) => {
         }
 
         // Validate SQL result before returning
-        const row = worldRowSchema.parse({
-          id: world.id,
-          organization_id: world.organization_id,
-          label: world.label,
-          description: world.description,
-          db_hostname: world.db_hostname,
-          db_token: world.db_token,
-          created_at: world.created_at,
-          updated_at: world.updated_at,
-          deleted_at: world.deleted_at,
-        });
+        // Check if deleted_at is null (service handles this but double checking)
+        if (world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         // Map to SDK record and validate against SDK schema
         const record = worldRecordSchema.parse({
-          id: row.id,
-          organizationId: row.organization_id,
-          label: row.label,
-          description: row.description,
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
-          deletedAt: row.deleted_at,
+          id: world.id,
+          organizationId: world.organization_id,
+          label: world.label,
+          description: world.description,
+          createdAt: world.created_at,
+          updatedAt: world.updated_at,
+          deletedAt: world.deleted_at,
         });
 
         return Response.json(record);
@@ -127,11 +107,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.database.execute({
-          sql: selectWorldById,
-          args: [worldId],
-        });
-        const rawWorld = worldResult.rows[0];
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -174,17 +150,7 @@ export default (appContext: AppContext) => {
         const blobsService = new BlobsService(managed.database);
         const worldData = await blobsService.get();
 
-        const _world = worldRowSchema.parse({
-          id: rawWorld.id,
-          organization_id: rawWorld.organization_id,
-          label: rawWorld.label,
-          description: rawWorld.description,
-          db_hostname: rawWorld.db_hostname,
-          db_token: rawWorld.db_token,
-          created_at: rawWorld.created_at,
-          updated_at: rawWorld.updated_at,
-          deleted_at: rawWorld.deleted_at,
-        });
+        const _world = rawWorld; // Just to ensure it's not null, which we checked above
 
         const url = new URL(ctx.request.url);
         const formatParam = url.searchParams.get("format");
@@ -258,11 +224,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.database.execute({
-          sql: selectWorldById,
-          args: [worldId],
-        });
-        const rawWorld = worldResult.rows[0];
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -283,17 +245,7 @@ export default (appContext: AppContext) => {
         if (rateLimitRes) return rateLimitRes;
 
         // Validate SQL result
-        const world = worldRowSchema.parse({
-          id: rawWorld.id,
-          organization_id: rawWorld.organization_id,
-          label: rawWorld.label,
-          description: rawWorld.description,
-          db_hostname: rawWorld.db_hostname,
-          db_token: rawWorld.db_token,
-          created_at: rawWorld.created_at,
-          updated_at: rawWorld.updated_at,
-          deleted_at: rawWorld.deleted_at,
-        });
+        const _world = rawWorld;
 
         let body;
         try {
@@ -314,22 +266,10 @@ export default (appContext: AppContext) => {
         const data = parseResult.data;
 
         const updatedAt = Date.now();
-        const worldUpdate = worldTableUpdateSchema.parse({
-          label: data.label ?? world.label,
-          description: data.description ?? world.description,
+        await worldsService.update(worldId, {
+          label: data.label,
+          description: data.description,
           updated_at: updatedAt,
-        });
-
-        await appContext.database.execute({
-          sql: updateWorld,
-          args: [
-            worldUpdate.label ?? world.label,
-            worldUpdate.description ?? world.description ?? null,
-            worldUpdate.updated_at ?? updatedAt,
-            world.db_hostname,
-            world.db_token,
-            worldId,
-          ],
         });
 
         if (authorized.serviceAccountId) {
@@ -350,8 +290,8 @@ export default (appContext: AppContext) => {
           level: "info",
           message: "World updated",
           metadata: JSON.stringify({
-            label: worldUpdate.label,
-            description: worldUpdate.description,
+            label: data.label,
+            description: data.description,
           }),
         });
 
@@ -372,11 +312,7 @@ export default (appContext: AppContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const worldResult = await appContext.database.execute({
-          sql: selectWorldById,
-          args: [worldId],
-        });
-        const rawWorld = worldResult.rows[0];
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -396,18 +332,7 @@ export default (appContext: AppContext) => {
         );
         if (rateLimitRes) return rateLimitRes;
 
-        // Validate SQL result
-        const _world = worldRowSchema.parse({
-          id: rawWorld.id,
-          organization_id: rawWorld.organization_id,
-          label: rawWorld.label,
-          description: rawWorld.description,
-          db_hostname: rawWorld.db_hostname,
-          db_token: rawWorld.db_token,
-          created_at: rawWorld.created_at,
-          updated_at: rawWorld.updated_at,
-          deleted_at: rawWorld.deleted_at,
-        });
+        const _world = rawWorld;
 
         try {
           const managed = await appContext.databaseManager.get(worldId);
@@ -435,10 +360,7 @@ export default (appContext: AppContext) => {
 
         try {
           // Delete world
-          await appContext.database.execute({
-            sql: deleteWorld,
-            args: [worldId],
-          });
+          await worldsService.delete(worldId);
 
           return new Response(null, { status: 204 });
         } catch (error) {
@@ -506,24 +428,15 @@ export default (appContext: AppContext) => {
         const { page, pageSize } = paginationResult.data;
         const offset = (page - 1) * pageSize;
 
-        const result = await appContext.database.execute({
-          sql: selectWorldsByOrganizationId,
-          args: [organizationId, pageSize, offset],
-        });
+        const rows = await worldsService.getByOrganizationId(
+          organizationId,
+          pageSize,
+          offset,
+        );
 
         // Validate each SQL result row
-        const validatedRows = result.rows.map((row) => {
-          const validated = worldRowSchema.parse({
-            id: row.id,
-            organization_id: row.organization_id,
-            label: row.label,
-            description: row.description,
-            db_hostname: row.db_hostname,
-            db_token: row.db_token,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-            deleted_at: row.deleted_at,
-          });
+        const validatedRows = rows.map((row) => {
+          const validated = row;
 
           return worldRecordSchema.parse({
             id: validated.id,
@@ -607,7 +520,7 @@ export default (appContext: AppContext) => {
           }
         }
 
-        const world = worldTableInsertSchema.parse({
+        const world = {
           id: worldId,
           organization_id: data.organizationId,
           label: data.label,
@@ -617,22 +530,9 @@ export default (appContext: AppContext) => {
           created_at: now,
           updated_at: now,
           deleted_at: null,
-        });
+        };
 
-        await appContext.database.execute({
-          sql: insertWorld,
-          args: [
-            world.id,
-            world.organization_id,
-            world.label,
-            world.description ?? null,
-            world.db_hostname,
-            world.db_token,
-            world.created_at,
-            world.updated_at,
-            world.deleted_at ?? null,
-          ],
-        });
+        await worldsService.insert(world);
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(appContext.database);
