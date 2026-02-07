@@ -1,30 +1,28 @@
 import { assert, assertEquals } from "@std/assert";
-import { ulid } from "@std/ulid";
+// import { ulid } from "@std/ulid/ulid";
 import { createTestContext } from "#/server/testing.ts";
+import { InvitesService } from "#/server/databases/core/invites/service.ts";
 import createApp from "./route.ts";
-import {
-  invitesAdd,
-  invitesFind,
-} from "#/server/db/resources/invites/queries.sql.ts";
-import {
-  tenantsAdd,
-  tenantsFind,
-} from "#/server/db/resources/tenants/queries.sql.ts";
 
 Deno.test("Invites API routes - Admin CRUD", async (t) => {
   const testContext = await createTestContext();
+  const invitesService = new InvitesService(testContext.database);
   const app = createApp(testContext);
   const adminApiKey = testContext.admin!.apiKey;
 
   await t.step("GET /v1/invites returns list of invites", async () => {
     // Create some test invites
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["invite1", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite1",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["invite2", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite2",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const req = new Request("http://localhost/v1/invites", {
@@ -78,9 +76,11 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("GET /v1/invites/:code retrieves an invite", async () => {
     // Create test invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["invite_get_test", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite_get_test",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const req = new Request("http://localhost/v1/invites/invite_get_test", {
@@ -112,9 +112,11 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
 
   await t.step("DELETE /v1/invites/:code removes an invite", async () => {
     // Create test invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["invite_delete_test", Date.now(), null, null],
+    await invitesService.add({
+      code: "invite_delete_test",
+      created_at: Date.now(),
+      redeemed_by: null,
+      redeemed_at: null,
     });
 
     const delReq = new Request(
@@ -141,65 +143,5 @@ Deno.test("Invites API routes - Admin CRUD", async (t) => {
     );
     const getRes = await app.fetch(getReq);
     assertEquals(getRes.status, 404);
-  });
-});
-
-Deno.test("Invites API routes - Redemption", async (t) => {
-  const testContext = await createTestContext();
-  const app = createApp(testContext);
-
-  await t.step("Redeem invite upgrades nullish plan to free", async () => {
-    // Create a tenant with no plan
-    const userApiKey = ulid();
-    await testContext.libsqlClient.execute({
-      sql: tenantsAdd,
-      args: [
-        "ten_no_plan",
-        null, // label
-        "Tenant without plan",
-        null, // plan
-        userApiKey,
-        Date.now(),
-        Date.now(),
-        null,
-      ],
-    });
-
-    // Create an invite
-    await testContext.libsqlClient.execute({
-      sql: invitesAdd,
-      args: ["redeem_test_invite", Date.now(), null, null],
-    });
-
-    // Redeem the invite
-    const req = new Request(
-      "http://localhost/v1/invites/redeem_test_invite/redeem",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${userApiKey}`,
-        },
-      },
-    );
-    const res = await app.fetch(req);
-    assertEquals(res.status, 200);
-
-    const body = await res.json();
-    assertEquals(body.plan, "free");
-
-    // Verify tenant plan was updated
-    const tenantResult = await testContext.libsqlClient.execute({
-      sql: tenantsFind,
-      args: ["ten_no_plan"],
-    });
-    assertEquals(tenantResult.rows[0]?.plan, "free");
-
-    // Verify invite was marked as redeemed
-    const inviteResult = await testContext.libsqlClient.execute({
-      sql: invitesFind,
-      args: ["redeem_test_invite"],
-    });
-    assertEquals(inviteResult.rows[0]?.redeemed_by, "ten_no_plan");
-    assert(inviteResult.rows[0]?.redeemed_at);
   });
 });

@@ -1,26 +1,54 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/server/middleware/auth.ts";
-import type { AppContext } from "#/server/app-context.ts";
-import { LibsqlSearchStoreManager } from "#/server/search/libsql.ts";
 import { checkRateLimit } from "#/server/middleware/rate-limit.ts";
-import { selectWorldById } from "#/server/db/resources/worlds/queries.sql.ts";
-import { limitParamSchema, worldIdsParamSchema } from "#/sdk/schema.ts";
-import { worldRowSchema } from "#/server/db/resources/worlds/schema.ts";
+import type { AppContext } from "#/server/app-context.ts";
+import { limitParamSchema } from "#/sdk/utils.ts";
+import { worldIdsParamSchema } from "#/sdk/worlds/schema.ts";
 import { ErrorResponse } from "#/server/errors.ts";
+import { WorldsService } from "#/server/databases/core/worlds/service.ts";
+import { MetricsService } from "#/server/databases/core/metrics/service.ts";
+import { ChunksService } from "#/server/databases/world/chunks/service.ts";
+import type { WorldRow } from "#/server/databases/core/worlds/schema.ts";
 
 export default (appContext: AppContext) => {
   return new Router().get(
     "/v1/search",
     async (ctx) => {
       const authorized = await authorizeRequest(appContext, ctx.request);
-      if (!authorized.tenant && !authorized.admin) {
+      if (!authorized.admin && !authorized.serviceAccountId) {
         return ErrorResponse.Unauthorized();
       }
+      const rateLimitRes = await checkRateLimit(
+        appContext,
+        authorized,
+        "semantic_search",
+      );
+      if (rateLimitRes) return rateLimitRes;
 
       const url = new URL(ctx.request.url);
       const query = url.searchParams.get("q");
+      const subjects = url.searchParams.getAll("subjects");
+      const predicates = url.searchParams.getAll("predicates");
+
       if (!query) {
         return ErrorResponse.BadRequest("Query required");
+      }
+
+      // Organization check
+      const organizationIdParam = url.searchParams.get("organizationId");
+      const organizationId = authorized.admin
+        ? organizationIdParam
+        : authorized.organizationId;
+
+      if (!organizationId) {
+        return ErrorResponse.BadRequest("Organization ID required");
+      }
+
+      if (
+        !authorized.admin && organizationIdParam &&
+        organizationIdParam !== authorized.organizationId
+      ) {
+        return ErrorResponse.Forbidden();
       }
 
       const worldIdsParam = url.searchParams.get("worlds");
@@ -40,85 +68,35 @@ export default (appContext: AppContext) => {
         worldIds = worldIdsResult.data;
       }
 
-      const validWorldIds: string[] = [];
-      let tenantId: string | undefined;
+      let worlds: WorldRow[] = [];
 
-      if (worldIds) {
+      const worldsService = new WorldsService(appContext.database);
+      const metricsService = new MetricsService(appContext.database);
+      const chunksService = new ChunksService(appContext, worldsService);
+
+      // If no worldIds provided, list all worlds for the organization
+      if (!worldIds) {
+        worlds = await worldsService.getByOrganizationId(
+          organizationId,
+          100,
+          0,
+        );
+      } else {
+        // Validate specifically requested worlds belong to the organization
         for (const worldId of worldIds) {
-          const worldResult = await appContext.libsqlClient.execute({
-            sql: selectWorldById,
-            args: [worldId],
-          });
-          const rawWorld = worldResult.rows[0];
-
-          if (
-            !rawWorld || rawWorld.deleted_at != null ||
-            (rawWorld.tenant_id !== authorized.tenant?.id &&
-              !authorized.admin)
-          ) {
-            continue;
-          }
-
-          // Validate SQL result
-          const world = worldRowSchema.parse({
-            id: rawWorld.id,
-            tenant_id: rawWorld.tenant_id,
-            label: rawWorld.label,
-            description: rawWorld.description,
-            created_at: rawWorld.created_at,
-            updated_at: rawWorld.updated_at,
-            deleted_at: rawWorld.deleted_at,
-          });
-
-          validWorldIds.push(worldId);
-          if (!tenantId) {
-            tenantId = world.tenant_id as string;
+          const world = await worldsService.getById(worldId);
+          if (world && world.organization_id === organizationId) {
+            worlds.push(world);
           }
         }
       }
 
-      if (worldIds && validWorldIds.length === 0) {
-        return ErrorResponse.NotFound("No valid worlds found");
+      if (worlds.length === 0) {
+        return Response.json([]);
       }
-
-      if (!tenantId) {
-        if (authorized.tenant) {
-          tenantId = authorized.tenant.id;
-        } else if (authorized.admin) {
-          tenantId = url.searchParams.get("tenant") || undefined;
-
-          if (!tenantId) {
-            return ErrorResponse.BadRequest(
-              "Tenant ID required for admin search",
-            );
-          }
-        }
-      }
-
-      // Apply rate limiting if tenant is present
-      let rateLimitHeaders: Record<string, string> = {};
-      if (authorized.tenant) {
-        try {
-          rateLimitHeaders = await checkRateLimit(
-            appContext,
-            authorized.tenant.id,
-            validWorldIds[0] ?? "global",
-            { resourceType: "search" },
-          );
-        } catch (error) {
-          if (error instanceof Response) return error;
-          throw error;
-        }
-      }
-
-      const store = new LibsqlSearchStoreManager({
-        client: appContext.libsqlClient,
-        embeddings: appContext.embeddings,
-      });
-      await store.createTablesIfNotExists();
 
       const limitParam = url.searchParams.get("limit");
-      let limit: number | undefined;
+      let limit = 20;
 
       // Validate limit parameter if present
       if (limitParam) {
@@ -135,16 +113,29 @@ export default (appContext: AppContext) => {
       }
 
       try {
-        const results = await store.search(query, {
-          tenantId: tenantId!,
-          worldIds: validWorldIds.length > 0 ? validWorldIds : undefined,
-          limit: limit,
+        const results = await chunksService.search({
+          query,
+          worlds,
+          subjects,
+          predicates,
+          limit,
+          organizationId,
         });
-        return Response.json(results, {
-          headers: rateLimitHeaders,
-        });
+
+        if (authorized.serviceAccountId) {
+          metricsService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "semantic_search",
+            quantity: 1,
+            metadata: {
+              world_count: results.length,
+            },
+          });
+        }
+
+        return Response.json(results);
       } catch (error) {
-        console.error("Search error:", error);
+        console.error("Global search error:", error);
         return ErrorResponse.InternalServerError("Search failed");
       }
     },

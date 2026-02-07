@@ -1,66 +1,77 @@
-import { ulid } from "@std/ulid";
-import type { Client } from "@libsql/client";
-import type { AppContext } from "./app-context.ts";
 import { createClient } from "@libsql/client";
-import { initializeDatabase } from "./db/init.ts";
-import { tenantsAdd } from "./db/resources/tenants/queries.sql.ts";
+import { ulid } from "@std/ulid/ulid";
+import { initializeDatabase } from "./databases/core/init.ts";
+import { MemoryDatabaseManager } from "./database-manager/database-managers/memory.ts";
+import type { Embeddings } from "./embeddings/embeddings.ts";
+import { ServiceAccountsService } from "./databases/core/service-accounts/service.ts";
+import { WorldsService } from "./databases/core/worlds/service.ts";
+import type { AppContext } from "./app-context.ts";
 
-/**
- * createTestContext creates a test context for the application.
- */
 export async function createTestContext(): Promise<AppContext> {
-  const apiKey = "admin-api-key";
-
   const client = createClient({ url: ":memory:" });
-
-  // Initialize database tables
   await initializeDatabase(client);
 
-  const embedder = {
-    embed: (_: string) => Promise.resolve(new Array(1536).fill(0)),
+  const mockEmbeddings: Embeddings = {
     dimensions: 1536,
+    embed: (texts: string | string[]) => {
+      if (Array.isArray(texts)) {
+        return Promise.resolve(Array(texts.length).fill(Array(1536).fill(0)));
+      }
+      return Promise.resolve(Array(1536).fill(0));
+    },
   };
 
+  const worldsService = new WorldsService(client);
+  const databaseManager = new MemoryDatabaseManager(worldsService);
+
   return {
-    admin: { apiKey },
-    libsqlClient: client,
-    embeddings: embedder,
+    database: client,
+    embeddings: mockEmbeddings,
+    databaseManager,
+    admin: {
+      apiKey: ulid(),
+    },
   };
 }
 
-/**
- * createTestTenant creates a test tenant and returns its ID and API key.
- */
-export async function createTestTenant(
-  client: Client,
-  tenant?: {
-    id?: string;
-    label?: string | null;
-    description?: string;
-    plan?: string | null;
-    apiKey?: string;
-    createdAt?: number;
-    updatedAt?: number;
-    deletedAt?: number | null;
-  },
-): Promise<{ id: string; apiKey: string }> {
-  const timestamp = Date.now();
-  const id = tenant?.id ?? ulid(timestamp);
-  const apiKey = tenant?.apiKey ?? ulid(timestamp);
+import { OrganizationsService } from "./databases/core/organizations/service.ts";
 
-  await client.execute({
-    sql: tenantsAdd,
-    args: [
-      id,
-      tenant?.label ?? null,
-      tenant?.description ?? "Test tenant",
-      tenant?.plan === undefined ? "free" : tenant.plan,
-      apiKey,
-      tenant?.createdAt ?? Date.now(),
-      tenant?.updatedAt ?? Date.now(),
-      tenant?.deletedAt ?? null,
-    ],
+export async function createTestOrganization(
+  context: AppContext,
+  options?: { plan?: string },
+) {
+  const service = new OrganizationsService(context.database);
+  const id = ulid();
+  const now = Date.now();
+  await service.add({
+    id,
+    label: "Test Org",
+    description: "Description",
+    plan: options?.plan ?? "free",
+    created_at: now,
+    updated_at: now,
+    deleted_at: null,
   });
+  // Return the admin API key for authentication, as org keys are no longer valid
+  return { id, apiKey: context.admin!.apiKey };
+}
 
-  return { id, apiKey };
+export async function createTestServiceAccount(
+  context: AppContext,
+  organizationId: string,
+) {
+  const serviceAccountsService = new ServiceAccountsService(context.database);
+  const accountId = ulid();
+  const apiKey = ulid();
+  const now = Date.now();
+  await serviceAccountsService.add({
+    id: accountId,
+    organization_id: organizationId,
+    label: "Test Service Account",
+    description: null,
+    api_key: apiKey,
+    created_at: now,
+    updated_at: now,
+  });
+  return { id: accountId, apiKey };
 }

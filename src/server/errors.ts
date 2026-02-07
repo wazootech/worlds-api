@@ -1,12 +1,23 @@
 /**
- * ErrorResponse provides a structured JSON error response.
+ * ErrorResponseInit is the initialization options for ErrorResponse.
+ */
+interface ErrorResponseInit {
+  message: string;
+  code: number;
+  headers?: Headers | HeadersInit;
+}
+
+/**
+ * ErrorResponse is a structured JSON error response.
  */
 export class ErrorResponse extends Response {
-  constructor(
-    message: string,
-    code: number,
-    headers: Record<string, string> = {},
-  ) {
+  public constructor(init: ErrorResponseInit) {
+    const { message, code } = init;
+    const headers = new Headers(init.headers);
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
     super(
       JSON.stringify({
         error: {
@@ -16,10 +27,7 @@ export class ErrorResponse extends Response {
       }),
       {
         status: code,
-        headers: {
-          "Content-Type": "application/json",
-          ...headers,
-        },
+        headers: headers,
       },
     );
   }
@@ -29,9 +37,9 @@ export class ErrorResponse extends Response {
    */
   static BadRequest(
     message: string,
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 400, headers);
+    return new ErrorResponse({ message, code: 400, headers });
   }
 
   /**
@@ -39,9 +47,9 @@ export class ErrorResponse extends Response {
    */
   static Unauthorized(
     message = "Unauthorized",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 401, headers);
+    return new ErrorResponse({ message, code: 401, headers });
   }
 
   /**
@@ -49,9 +57,9 @@ export class ErrorResponse extends Response {
    */
   static Forbidden(
     message = "Forbidden",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 403, headers);
+    return new ErrorResponse({ message, code: 403, headers });
   }
 
   /**
@@ -59,9 +67,9 @@ export class ErrorResponse extends Response {
    */
   static NotFound(
     message = "Not found",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 404, headers);
+    return new ErrorResponse({ message, code: 404, headers });
   }
 
   /**
@@ -69,9 +77,9 @@ export class ErrorResponse extends Response {
    */
   static MethodNotAllowed(
     message = "Method Not Allowed",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 405, headers);
+    return new ErrorResponse({ message, code: 405, headers });
   }
 
   /**
@@ -79,9 +87,9 @@ export class ErrorResponse extends Response {
    */
   static Conflict(
     message: string,
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 409, headers);
+    return new ErrorResponse({ message, code: 409, headers });
   }
 
   /**
@@ -89,9 +97,9 @@ export class ErrorResponse extends Response {
    */
   static PayloadTooLarge(
     message = "Payload Too Large",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 413, headers);
+    return new ErrorResponse({ message, code: 413, headers });
   }
 
   /**
@@ -99,9 +107,9 @@ export class ErrorResponse extends Response {
    */
   static UnsupportedMediaType(
     message = "Unsupported Media Type",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 415, headers);
+    return new ErrorResponse({ message, code: 415, headers });
   }
 
   /**
@@ -109,9 +117,9 @@ export class ErrorResponse extends Response {
    */
   static RateLimitExceeded(
     message = "Rate limit exceeded",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 429, headers);
+    return new ErrorResponse({ message, code: 429, headers });
   }
 
   /**
@@ -119,8 +127,8 @@ export class ErrorResponse extends Response {
    */
   static InternalServerError(
     message = "Internal Server Error",
-    headers: Record<string, string> = {},
+    headers: Headers | HeadersInit = {},
   ): ErrorResponse {
-    return new ErrorResponse(message, 500, headers);
+    return new ErrorResponse({ message, code: 500, headers });
   }
 }

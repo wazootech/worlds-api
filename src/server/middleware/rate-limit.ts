@@ -1,67 +1,76 @@
 import type { AppContext } from "#/server/app-context.ts";
-import type { ResourceType } from "#/server/rate-limit/policies.ts";
-import { getPolicy } from "#/server/rate-limit/policies.ts";
-import { TokenBucketRateLimiter } from "#/server/rate-limit/rate-limiter.ts";
-import { tenantsFind } from "#/server/db/resources/tenants/queries.sql.ts";
+import type { AuthorizedRequest } from "#/server/middleware/auth.ts";
+import { ErrorResponse } from "#/server/errors.ts";
+import { RateLimitsService } from "#/server/databases/core/rate-limits/service.ts";
 
 /**
- * RateLimitOptions configures the rate limit middleware.
+ * PERIOD_MS is the period for token bucket (ms). Policy: 60_000 = 1 minute.
  */
-export interface RateLimitOptions {
-  resourceType: ResourceType;
-  cost?: number;
-}
+const PERIOD_MS = 60_000;
 
 /**
- * checkRateLimit checks if a request should be rate limited.
- * Returns headers to add to the response and throws if rate limit exceeded.
+ * POLICY_LIMITS maps feature_id to max requests per minute. Derived from docs/policy.md.
+ */
+export const POLICY_LIMITS = {
+  organizations_list: 120,
+  organizations_create: 20,
+  organizations_get: 120,
+  organizations_update: 30,
+  organizations_delete: 20,
+  invites_list: 120,
+  invites_create: 30,
+  invites_get: 120,
+  invites_delete: 30,
+  worlds_list: 120,
+  worlds_get: 120,
+  worlds_create: 20,
+  worlds_update: 30,
+  worlds_delete: 20,
+  worlds_download: 60,
+  sparql_describe: 60,
+  sparql_query: 60,
+  sparql_update: 30,
+  semantic_search: 30,
+  service_accounts_list: 120,
+  service_accounts_create: 20,
+  service_accounts_get: 120,
+  service_accounts_update: 30,
+  service_accounts_delete: 20,
+  logs_list: 120,
+  metrics_query: 120,
+} as const;
+
+/**
+ * checkRateLimit enforces per-service-account rate limits. Admin is exempt.
+ * Returns a Response to return (429 or 401) or null to proceed.
  */
 export async function checkRateLimit(
   appContext: AppContext,
-  tenantId: string,
-  worldId: string,
-  options: RateLimitOptions,
-): Promise<Record<string, string>> {
-  const cost = options.cost ?? 1;
+  authorized: AuthorizedRequest,
+  featureId: keyof typeof POLICY_LIMITS,
+): Promise<Response | null> {
+  if (authorized.admin) {
+    return null;
+  }
+  if (!authorized.serviceAccountId) {
+    return ErrorResponse.Unauthorized();
+  }
 
-  // Get the tenant's plan
-  const result = await appContext.libsqlClient.execute({
-    sql: tenantsFind,
-    args: [tenantId],
-  });
-  const tenant = result.rows[0];
-  const planName = tenant?.plan as string | null || null;
+  const limit = POLICY_LIMITS[featureId];
+  if (limit == null) {
+    return null;
+  }
 
-  // Get the policy for this resource
-  const policy = getPolicy(planName, options.resourceType);
-
-  // Create rate limiter
-  const rateLimiter = new TokenBucketRateLimiter(appContext.libsqlClient);
-
-  // Create bucket key: tenantId:worldId:resourceType
-  const key = `${tenantId}:${worldId}:${options.resourceType}`;
-
-  // Attempt to consume tokens
-  const rateLimitResult = await rateLimiter.consume(key, cost, policy);
-
-  // Prepare headers
-  const headers: Record<string, string> = {
-    "X-RateLimit-Limit": policy.capacity.toString(),
-    "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
-    "X-RateLimit-Reset": rateLimitResult.reset.toString(),
-  };
-
-  // If not allowed, throw 429
-  if (!rateLimitResult.allowed) {
-    throw new Response("Too Many Requests", {
-      status: 429,
-      headers: {
-        ...headers,
-        "Retry-After": Math.ceil((rateLimitResult.reset - Date.now()) / 1000)
-          .toString(),
-      },
+  const key = `${authorized.serviceAccountId}:${featureId}`;
+  const rateLimitsService = new RateLimitsService(appContext.database);
+  const result = await rateLimitsService.checkLimit(key, limit, PERIOD_MS);
+  if (!result.allowed) {
+    return ErrorResponse.RateLimitExceeded("Rate limit exceeded", {
+      "X-RateLimit-Limit": limit.toString(),
+      "X-RateLimit-Remaining": result.remaining.toString(),
+      "X-RateLimit-Reset": Math.ceil(result.reset / 1000).toString(),
     });
   }
 
-  return headers;
+  return null;
 }

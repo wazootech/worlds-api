@@ -1,10 +1,19 @@
-import type { WorldsOptions } from "./schema.ts";
-import { Worlds } from "./worlds.ts";
+import type { WorldsSdkOptions } from "./interfaces.ts";
+import { Invites } from "./invites/sdk.ts";
+import { Organizations } from "./organizations/sdk.ts";
+import { Worlds } from "./worlds/sdk.ts";
 
+/**
+ * WorldsSdk is the main entry point for the Worlds API SDK.
+ */
 export class WorldsSdk {
   public readonly worlds: Worlds;
+  public readonly invites: Invites;
+  public readonly organizations: Organizations;
 
-  public constructor(options: WorldsOptions) {
+  public constructor(options: WorldsSdkOptions) {
     this.worlds = new Worlds(options);
+    this.invites = new Invites(options);
+    this.organizations = new Organizations(options);
   }
 }

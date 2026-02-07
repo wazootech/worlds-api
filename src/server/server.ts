@@ -3,14 +3,19 @@ import { createClient } from "@libsql/client";
 import { GoogleGenAI } from "@google/genai";
 import type { AppContext } from "./app-context.ts";
 import { GeminiEmbeddings } from "./embeddings/gemini.ts";
-import { initializeDatabase } from "./db/init.ts";
+import { initializeDatabase } from "./databases/core/init.ts";
+import type { DatabaseManager } from "./database-manager/database-manager.ts";
+import { WorldsService } from "./databases/core/worlds/service.ts";
 
 const routes = [
-  "routes/v1/tenants/route.ts",
+  "routes/v1/organizations/route.ts",
+  "routes/v1/organizations/service-accounts/route.ts",
   "routes/v1/invites/route.ts",
   "routes/v1/worlds/route.ts",
   "routes/v1/worlds/sparql/route.ts",
+  "routes/v1/worlds/logs/route.ts",
   "routes/v1/search/route.ts",
+  "routes/v1/organizations/metrics/route.ts",
 ];
 
 /**
@@ -32,6 +37,8 @@ export async function createServer(appContext: AppContext): Promise<Router> {
 export interface AppContextConfig {
   LIBSQL_URL?: string;
   LIBSQL_AUTH_TOKEN?: string;
+  TURSO_API_TOKEN?: string;
+  TURSO_ORG?: string;
   GOOGLE_API_KEY?: string;
   GOOGLE_EMBEDDINGS_MODEL?: string;
   ADMIN_API_KEY?: string;
@@ -69,9 +76,34 @@ export async function createAppContext(
     model: config.GOOGLE_EMBEDDINGS_MODEL ?? "models/gemini-embedding-001",
   });
 
+  const worldsService = new WorldsService(libsqlClient);
+  let libsqlManager: DatabaseManager;
+  if (config.TURSO_API_TOKEN) {
+    if (!config.TURSO_ORG) {
+      throw new Error("TURSO_ORG is required when TURSO_API_TOKEN is set");
+    }
+    const { createClient: createTursoClient } = await import(
+      "@tursodatabase/api"
+    );
+    const { TursoLibsqlManager } = await import(
+      "./database-manager/database-managers/api.ts"
+    );
+    const tursoClient = createTursoClient({
+      token: config.TURSO_API_TOKEN,
+      org: config.TURSO_ORG,
+    });
+    libsqlManager = new TursoLibsqlManager(tursoClient, worldsService);
+  } else {
+    const { FileLibsqlManager } = await import(
+      "./database-manager/database-managers/file.ts"
+    );
+    libsqlManager = new FileLibsqlManager("./database/worlds", worldsService);
+  }
+
   return {
     embeddings,
-    libsqlClient,
+    database: libsqlClient,
+    databaseManager: libsqlManager,
     admin: {
       apiKey: config.ADMIN_API_KEY!,
     },
