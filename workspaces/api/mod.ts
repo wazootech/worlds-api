@@ -18,7 +18,7 @@ export * from "./lib/database/tables/worlds/service.ts";
 export * from "./lib/embeddings/embeddings.ts";
 export * from "./lib/embeddings/gemini.ts";
 export * from "./lib/embeddings/use.ts";
+export * from "./lib/testing/context.ts";
 export * from "./context.ts";
 export * from "./errors.ts";
 export * from "./server.ts";
-export * from "./testing.ts";

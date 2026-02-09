@@ -1,5 +1,10 @@
 {
-  "workspace": ["./workspaces/*"],
+  "workspace": [
+    "./workspaces/ai-sdk",
+    "./workspaces/api",
+    "./workspaces/cli",
+    "./workspaces/sdk"
+  ],
   "tasks": {
     "test": "deno test -A",
     "check": "deno check workspaces/api/main.ts workspaces/sdk/mod.ts workspaces/cli/main.ts workspaces/ai-sdk/mod.ts",

@@ -3,8 +3,8 @@
   "version": "0.0.1",
   "exports": {
     ".": "./mod.ts",
-    "./testing": "./testing.ts",
-    "./server": "./server.ts"
+    "./server": "./server.ts",
+    "./testing": "./lib/testing/context.ts"
   },
   "imports": {
     "#/": "./",
