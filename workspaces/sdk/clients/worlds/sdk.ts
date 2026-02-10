@@ -206,7 +206,7 @@ export class Worlds {
       `${this.options.baseUrl}/v1/worlds/${worldId}/search`,
     );
 
-    url.searchParams.set("q", query);
+    url.searchParams.set("query", query);
 
     if (options?.limit) {
       url.searchParams.set("limit", options.limit.toString());

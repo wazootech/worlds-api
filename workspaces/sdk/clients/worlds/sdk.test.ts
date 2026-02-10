@@ -68,12 +68,6 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
     assertEquals(world.description, "Updated Description");
   });
 
-  /*
-  await t.step("search world", async () => {
-    // ... test code commented out ...
-  });
-  */
-
   await t.step("sparql update", async () => {
     const updateQuery = `
       INSERT DATA {
@@ -96,6 +90,13 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
     ) as SparqlSelectResults;
     assert(result.results.bindings.length > 0);
     assertEquals(result.results.bindings[0].o.value, "Update Object");
+  });
+
+  await t.step("search world", async () => {
+    const results = await sdk.worlds.search(worldId, "Update Object");
+    assert(results.length > 0);
+    assertEquals(results[0].object, "Update Object");
+    assertEquals(results[0].subject, "http://example.org/subject");
   });
 
   await t.step("export world", async () => {

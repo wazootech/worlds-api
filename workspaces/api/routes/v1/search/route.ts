@@ -25,7 +25,7 @@ export default (appContext: AppContext) => {
       if (rateLimitRes) return rateLimitRes;
 
       const url = new URL(ctx.request.url);
-      const query = url.searchParams.get("q");
+      const query = url.searchParams.get("query");
       const subjects = url.searchParams.getAll("subjects");
       const predicates = url.searchParams.getAll("predicates");
 

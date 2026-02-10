@@ -71,7 +71,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
       // 2. Search for the inserted data
       const searchUrl =
-        `http://localhost/v1/search?q=fox&organizationId=${orgId}`;
+        `http://localhost/v1/search?query=fox&organizationId=${orgId}`;
       const searchResp = await adminHandler.fetch(
         new Request(searchUrl, {
           headers: { "Authorization": `Bearer ${adminApiKey}` },
@@ -87,7 +87,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
       // 3. Search with subject filter (should match)
       const searchUrlSubjectMatch =
-        `http://localhost/v1/search?q=fox&organizationId=${orgId}&subjects=http://example.org/s1`;
+        `http://localhost/v1/search?query=fox&organizationId=${orgId}&subjects=http://example.org/s1`;
       const searchRespSubjectMatch = await adminHandler.fetch(
         new Request(searchUrlSubjectMatch, {
           headers: { "Authorization": `Bearer ${adminApiKey}` },
@@ -98,7 +98,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
       // 4. Search with subject filter (should not match)
       const searchUrlSubjectNoMatch =
-        `http://localhost/v1/search?q=fox&organizationId=${orgId}&subjects=http://example.org/s2`;
+        `http://localhost/v1/search?query=fox&organizationId=${orgId}&subjects=http://example.org/s2`;
       const searchRespSubjectNoMatch = await adminHandler.fetch(
         new Request(searchUrlSubjectNoMatch, {
           headers: { "Authorization": `Bearer ${adminApiKey}` },
@@ -109,7 +109,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
       // 5. Search with predicate filter (should match)
       const searchUrlPredicateMatch =
-        `http://localhost/v1/search?q=fox&organizationId=${orgId}&predicates=http://example.org/p1`;
+        `http://localhost/v1/search?query=fox&organizationId=${orgId}&predicates=http://example.org/p1`;
       const searchRespPredicateMatch = await adminHandler.fetch(
         new Request(searchUrlPredicateMatch, {
           headers: { "Authorization": `Bearer ${adminApiKey}` },
@@ -120,7 +120,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
       // 6. Search with predicate filter (should not match)
       const searchUrlPredicateNoMatch =
-        `http://localhost/v1/search?q=fox&organizationId=${orgId}&predicates=http://example.org/p2`;
+        `http://localhost/v1/search?query=fox&organizationId=${orgId}&predicates=http://example.org/p2`;
       const searchRespPredicateNoMatch = await adminHandler.fetch(
         new Request(searchUrlPredicateNoMatch, {
           headers: { "Authorization": `Bearer ${adminApiKey}` },
@@ -234,7 +234,7 @@ Deno.test("Search API - End-to-End via SPARQL", async (t) => {
 
     // 3. Perform Search with SA Key
     const searchUrl =
-      `http://localhost/v1/search?q=foo&organizationId=${orgId}`;
+      `http://localhost/v1/search?query=foo&organizationId=${orgId}`;
     const searchResp = await adminHandler.fetch(
       new Request(searchUrl, {
         headers: { "Authorization": `Bearer ${saKey}` },
