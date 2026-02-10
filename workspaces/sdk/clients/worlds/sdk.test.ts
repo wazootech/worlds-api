@@ -1,4 +1,5 @@
 import { assert, assertEquals, assertExists } from "@std/assert";
+import { ulid } from "@std/ulid/ulid";
 import { createServer } from "@wazoo/api";
 import { createTestContext } from "@wazoo/api/testing";
 import type { SparqlSelectResults } from "./schema.ts";
@@ -17,7 +18,7 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
   });
 
   // We need a test organization to create worlds
-  const organizationId = crypto.randomUUID();
+  const organizationId = ulid();
   await adminSdk.organizations.create({
     id: organizationId,
     label: "Test Organization",
@@ -145,9 +146,9 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
   });
 
   // Create two test organizations using SDK
-  const orgAId = crypto.randomUUID();
+  const orgAId = ulid();
   await adminSdk.organizations.create({ id: orgAId, label: "Org A" });
-  const orgBId = crypto.randomUUID();
+  const orgBId = ulid();
   await adminSdk.organizations.create({ id: orgBId, label: "Org B" });
 
   await t.step("admin can list worlds for specific organization", async () => {
