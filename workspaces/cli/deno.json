@@ -11,5 +11,8 @@
   },
   "tasks": {
     "test": "deno test -A"
+  },
+  "publish": {
+    "exclude": ["**/*.test.ts", "**/*_test.ts"]
   }
 }

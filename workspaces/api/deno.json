@@ -24,5 +24,8 @@
   "tasks": {
     "start": "deno serve -A --env main.ts",
     "generate": "deno -A jsr:@fartlabs/sql-embedder@0.0.5 ./"
+  },
+  "publish": {
+    "exclude": ["**/*.test.ts", "**/*_test.ts"]
   }
 }

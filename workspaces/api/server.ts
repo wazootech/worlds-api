@@ -8,15 +8,15 @@ import type { DatabaseManager } from "#/lib/database/manager.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 
 const routes = [
-  "routes/v1/organizations/route.ts",
-  "routes/v1/organizations/service-accounts/route.ts",
-  "routes/v1/invites/route.ts",
-  "routes/v1/worlds/route.ts",
-  "routes/v1/worlds/sparql/route.ts",
-  "routes/v1/worlds/logs/route.ts",
-  "routes/v1/search/route.ts",
-  "routes/v1/organizations/metrics/route.ts",
-];
+  "./routes/v1/organizations/route.ts",
+  "./routes/v1/organizations/service-accounts/route.ts",
+  "./routes/v1/invites/route.ts",
+  "./routes/v1/worlds/route.ts",
+  "./routes/v1/worlds/sparql/route.ts",
+  "./routes/v1/worlds/logs/route.ts",
+  "./routes/v1/search/route.ts",
+  "./routes/v1/organizations/metrics/route.ts",
+] as const;
 
 /**
  * createServer creates a server from an app context.
@@ -24,7 +24,7 @@ const routes = [
 export async function createServer(appContext: AppContext): Promise<Router> {
   const app = new Router();
   for (const specifier of routes) {
-    const module = await import(`./${specifier}`);
+    const module = await import(specifier);
     app.use(module.default(appContext));
   }
 
