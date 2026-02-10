@@ -7,6 +7,8 @@ import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 import { ChunksService } from "#/lib/database/tables/chunks/service.ts";
+import { LogsService } from "#/lib/database/tables/logs/service.ts";
+import { ulid } from "@std/ulid/ulid";
 
 export default (appContext: AppContext) => {
   return new Router().get(
@@ -88,6 +90,21 @@ export default (appContext: AppContext) => {
             },
           });
         }
+
+        const managed = await appContext.databaseManager.get(worldId);
+        const logsService = new LogsService(managed.database);
+        await logsService.add({
+          id: ulid(),
+          world_id: worldId,
+          timestamp: Date.now(),
+          level: "info",
+          message: "Semantic search executed",
+          metadata: {
+            query: query.slice(0, 500),
+            subjects: subjects.length > 0 ? subjects : null,
+            predicates: predicates.length > 0 ? predicates : null,
+          },
+        });
 
         return Response.json(results);
       } catch (error) {

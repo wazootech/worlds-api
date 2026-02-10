@@ -451,6 +451,15 @@ export default (appContext: AppContext) => {
         );
         if (rateLimitRes) return rateLimitRes;
 
+        if (authorized.serviceAccountId) {
+          const metricsService = new MetricsService(appContext.database);
+          metricsService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "worlds_delete",
+            quantity: 1,
+          });
+        }
+
         const _world = rawWorld;
 
         try {
