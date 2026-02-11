@@ -1,9 +1,9 @@
 {
   "workspace": [
-    "./workspaces/server",
-    "./workspaces/sdk",
-    "./workspaces/ai-sdk",
-    "./workspaces/cli"
+    "./packages/server",
+    "./packages/sdk",
+    "./packages/ai-sdk",
+    "./packages/cli"
   ],
   "tasks": {
     "test": "deno test -A",
@@ -22,7 +22,7 @@
     "@tensorflow/tfjs-backend-wasm": "npm:@tensorflow/tfjs-backend-wasm@^4.22.0",
     "@tensorflow-models/universal-sentence-encoder": "npm:@tensorflow-models/universal-sentence-encoder@^1.3.3"
   },
-  "exclude": ["./workspaces/console"],
+  "exclude": ["./packages/console"],
   "publish": {
     "exclude": ["**/*.test.ts", "**/*_test.ts"]
   }

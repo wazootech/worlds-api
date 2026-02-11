@@ -2,7 +2,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import { promptSecret } from "@std/cli/prompt-secret";
 import { createClient } from "@libsql/client";
 import { type RdfFormat as _RdfFormat, WorldsSdk } from "@wazoo/sdk";
-import { createAppContext, createServer } from "@wazoo/server";
+import { createServer } from "@wazoo/server";
 import { FileDatabaseManager } from "@wazoo/server/database";
 import { UniversalSentenceEncoderEmbeddings } from "@wazoo/server/embeddings";
 import { WorldsCli } from "./cli.ts";
@@ -15,7 +15,7 @@ async function main() {
     const database = createClient({ url: baseUrl });
 
     // TODO: Migrate to createAppContext
-    const server = await createServer({
+    const _server = await createServer({
       libsql: {
         database,
         manager: new FileDatabaseManager(database, "./worlds"),

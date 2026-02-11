@@ -4531,18 +4531,18 @@
       "npm:zod@^4.3.6"
     ],
     "members": {
-      "workspaces/ai-sdk": {
+      "packages/ai-sdk": {
         "dependencies": [
           "npm:ai@^6.0.77"
         ]
       },
-      "workspaces/cli": {
+      "packages/cli": {
         "dependencies": [
           "jsr:@std/cli@1.0.27",
           "npm:cfonts@^3.3.1"
         ]
       },
-      "workspaces/server": {
+      "packages/server": {
         "dependencies": [
           "jsr:@fartlabs/rt@^0.0.11",
           "jsr:@fartlabs/search-store@^0.0.2",
