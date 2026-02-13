@@ -3,7 +3,7 @@ import { CreateInviteButton } from "./create-button";
 import { InviteList } from "./invite-list";
 import { Metadata } from "next";
 import { Invite } from "@wazoo/sdk";
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 
 export const metadata: Metadata = {
@@ -23,7 +23,7 @@ export default async function InvitesPage({
 
   let currentUser = user;
   if (currentUser) {
-    const workos = authkit.getWorkOS();
+    const workos = await authkit.getWorkOS();
     currentUser = await workos.userManagement.getUser(currentUser.id);
   }
 

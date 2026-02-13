@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { sdk } from "@/lib/sdk";
 
 export async function signOutAction() {
@@ -39,12 +39,10 @@ export async function createWorld() {
     }
 
     console.log("Creating new world...", { organizationId: user.id });
-    const world = await sdk.worlds.create(
-      {
-        label: "New World",
-        organizationId: user.id,
-      },
-    );
+    const world = await sdk.worlds.create({
+      label: "New World",
+      organizationId: user.id,
+    });
 
     console.log("World created successfully:", world.id);
 
@@ -103,7 +101,7 @@ export async function rotateApiKey() {
   const serviceAccounts = await sdk.organizations.serviceAccounts.list(user.id);
   await Promise.all(
     serviceAccounts.map((sa) =>
-      sdk.organizations.serviceAccounts.delete(user.id, sa.id)
+      sdk.organizations.serviceAccounts.delete(user.id, sa.id),
     ),
   );
 
@@ -114,8 +112,8 @@ export async function rotateApiKey() {
     },
   );
 
-  const workos = authkit.getWorkOS();
-  
+  const workos = await authkit.getWorkOS();
+
   // Use the correct update signature: { userId, metadata: ... }
   // Wait, I need to check if user.id is correct. Yes.
   // And merge with existing metadata? The API merges at top level but replaces nested?
@@ -124,7 +122,7 @@ export async function rotateApiKey() {
   // But strictly for testApiKey, I can just upsert.
   // Actually, let's just do a direct update for now as we did in callback/route.ts (Wait, callback used the new signature).
   // The signature issue in route.ts was `updateUser(id, { ... })` -> `updateUser({ userId: id, ... })`.
-  
+
   await workos.userManagement.updateUser({
     userId: user.id,
     metadata: {

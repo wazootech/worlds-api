@@ -1,6 +1,6 @@
 "use server";
 
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function toggleAdminAction(userId: string, isAdmin: boolean) {
@@ -10,7 +10,7 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
@@ -64,9 +64,10 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
     console.error("Failed to update admin status:", error);
     return {
       success: false,
-      error: error instanceof Error
-        ? error.message
-        : "Failed to update admin status",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update admin status",
     };
   }
 }
@@ -78,7 +79,7 @@ export async function deleteOrganizationAction(userId: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
@@ -120,7 +121,10 @@ export async function deleteOrganizationAction(userId: string) {
     console.error("Failed to delete organization:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Failed to delete organization",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to delete organization",
     };
   }
 }

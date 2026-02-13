@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@workos-inc/authkit-nextjs/components";
+import { AuthUser } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,20 +11,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function UserMenu({
-  email,
-  accountId,
+  user,
   onSignOut,
   isAdmin,
 }: {
-  email?: string | null;
-  accountId?: string | null;
+  user?: AuthUser | null;
   onSignOut: () => Promise<void>;
   isAdmin?: boolean;
 }) {
-  const { user } = useAuth();
-
-  // Fallback to prop if context is empty (e.g. during initial load or edge cases), but context is preferred
-  const finalAccountId = user?.id || accountId;
+  const accountId = user?.id;
+  const email = user?.email;
 
   return (
     <DropdownMenu>
@@ -67,10 +63,10 @@ export function UserMenu({
           </>
         )}
 
-        {finalAccountId && (
+        {accountId && (
           <DropdownMenuItem asChild>
             <Link
-              href={`/users/${finalAccountId}`}
+              href={`/users/${accountId}`}
               className="w-full cursor-pointer"
             >
               Account

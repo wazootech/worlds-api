@@ -2,7 +2,7 @@
 
 import { sdk } from "@/lib/sdk";
 import { revalidatePath } from "next/cache";
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 
 import { customAlphabet } from "nanoid";
 
@@ -13,7 +13,7 @@ export async function createInviteAction() {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
@@ -48,7 +48,7 @@ export async function deleteInviteAction(id: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
@@ -74,7 +74,7 @@ export async function deleteInvitesAction(ids: string[]) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {

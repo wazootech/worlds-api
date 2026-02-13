@@ -3,13 +3,14 @@ import { ReactNode } from "react";
 import Image from "next/image";
 import { UserMenu } from "./user-menu";
 import { signOutAction } from "@/app/actions";
+import { AuthUser } from "@/lib/auth";
 
 export function PageHeader({
-  accountId,
+  user,
   children,
   isAdmin,
 }: {
-  accountId?: string | null;
+  user?: AuthUser | null;
   children?: ReactNode;
   isAdmin?: boolean;
 }) {
@@ -21,7 +22,7 @@ export function PageHeader({
           <Link href="/" className="flex items-center space-x-3 group">
             <div className="relative w-6 h-6 rounded-full overflow-hidden shadow-sm transition-colors">
               <Image
-                src="https://wazoo.tech/wazoo.svg"
+                src="https://wazoo.dev/wazoo.svg"
                 alt="Wazoo Logo"
                 fill
                 className="object-cover logo-image"
@@ -33,19 +34,15 @@ export function PageHeader({
           </Link>
         </div>
         <div className="flex items-center space-x-4">
-          {accountId && (
+          {user?.id && (
             <Link
-              href={`/users/${accountId}#api-keys`}
+              href={`/users/${user.id}#api-keys`}
               className="text-xs font-medium px-2.5 py-1 rounded-md border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
             >
               API Key
             </Link>
           )}
-          <UserMenu
-            accountId={accountId}
-            onSignOut={signOutAction}
-            isAdmin={isAdmin}
-          />
+          <UserMenu user={user} onSignOut={signOutAction} isAdmin={isAdmin} />
         </div>
       </div>
     </nav>

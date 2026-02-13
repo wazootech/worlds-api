@@ -1,4 +1,4 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { codeToHtml } from "shiki";
 import { notFound, redirect } from "next/navigation";
 import { sdk } from "@/lib/sdk";
@@ -52,7 +52,7 @@ export default async function WorldOverviewPage(props: {
   // Get full user object to check admin status
   let currentUser = user;
   if (currentUser) {
-    const workos = authkit.getWorkOS();
+    const workos = await authkit.getWorkOS();
     currentUser = await workos.userManagement.getUser(currentUser.id);
   }
 

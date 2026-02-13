@@ -1,4 +1,4 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 
 import { redirect } from "next/navigation";
 
@@ -21,7 +21,6 @@ export default async function Home() {
     redirect(signInUrl);
   }
 
-
   if (!user.id) {
     return (
       <ErrorState
@@ -32,7 +31,7 @@ export default async function Home() {
   }
 
   // Get full user object to access metadata
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
   const currentUser = await workos.userManagement.getUser(user.id);
 
   let account;
@@ -60,7 +59,9 @@ export default async function Home() {
 
   let worlds;
   try {
-    const listResult = await sdk.worlds.list(1, 100, { organizationId: user.id });
+    const listResult = await sdk.worlds.list(1, 100, {
+      organizationId: user.id,
+    });
     worlds = listResult.toSorted(
       (a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
     );
@@ -76,13 +77,14 @@ export default async function Home() {
   }
 
   // Generate general SDK snippets for the account
-  const apiKey = (currentUser?.metadata?.testApiKey as string) || "YOUR_API_KEY";
+  const apiKey =
+    (currentUser?.metadata?.testApiKey as string) || "YOUR_API_KEY";
 
   // Generate general SDK snippets for the account
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
-  baseUrl: "https://api.wazoo.tech",
+  baseUrl: "https://api.wazoo.dev",
   apiKey: "${apiKey}"
 });
 
@@ -92,7 +94,7 @@ console.log("My worlds:", worlds.length);`;
   const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
-  baseUrl: "https://api.wazoo.tech",
+  baseUrl: "https://api.wazoo.dev",
   apiKey: "${apiKey}"
 });
 
@@ -130,62 +132,60 @@ console.log("My worlds:", worlds.length);`;
           </div>
         </div>
 
-        {worlds.length === 0
-          ? (
-            <div className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-12 text-center bg-stone-50/50 dark:bg-stone-900/50">
-              <h3 className="text-sm font-medium text-stone-900 dark:text-white">
-                No worlds yet
-              </h3>
-              <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                Get started by creating your first world.
-              </p>
-              <div className="mt-6">
-                <CreateWorldButton />
-              </div>
+        {worlds.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-stone-300 dark:border-stone-700 p-12 text-center bg-stone-50/50 dark:bg-stone-900/50">
+            <h3 className="text-sm font-medium text-stone-900 dark:text-white">
+              No worlds yet
+            </h3>
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+              Get started by creating your first world.
+            </p>
+            <div className="mt-6">
+              <CreateWorldButton />
             </div>
-          )
-          : (
-            <div className="overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm">
-              <table className="min-w-full divide-y divide-stone-200 dark:divide-stone-800">
-                <thead className="bg-stone-50 dark:bg-stone-950/50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider w-[48px]"
-                    >
-                      <span className="sr-only">Planet</span>
-                    </th>
-                    <th
-                      scope="col"
-                      className="py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
-                    >
-                      World Name
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden md:table-cell py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
-                    >
-                      ID
-                    </th>
-                    <th
-                      scope="col"
-                      className="hidden md:table-cell py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
-                    >
-                      Updated
-                    </th>
-                    <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-200 dark:divide-stone-800 bg-white dark:bg-stone-900">
-                  {worlds.map((world) => (
-                    <WorldRow key={world.id} world={world} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm">
+            <table className="min-w-full divide-y divide-stone-200 dark:divide-stone-800">
+              <thead className="bg-stone-50 dark:bg-stone-950/50">
+                <tr>
+                  <th
+                    scope="col"
+                    className="py-3 pl-4 pr-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider w-[48px]"
+                  >
+                    <span className="sr-only">Planet</span>
+                  </th>
+                  <th
+                    scope="col"
+                    className="py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
+                  >
+                    World Name
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden md:table-cell py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
+                  >
+                    ID
+                  </th>
+                  <th
+                    scope="col"
+                    className="hidden md:table-cell py-3 px-3 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider"
+                  >
+                    Updated
+                  </th>
+                  <th scope="col" className="relative py-3 pl-3 pr-4 sm:pr-6">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-200 dark:divide-stone-800 bg-white dark:bg-stone-900">
+                {worlds.map((world) => (
+                  <WorldRow key={world.id} world={world} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </>
   );

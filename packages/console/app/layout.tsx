@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AuthKitProvider } from "@workos-inc/authkit-nextjs/components";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { PageFooter } from "@/components/page-footer";
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 import "./globals.css";
 
@@ -35,8 +34,7 @@ export default async function RootLayout({
 }>) {
   const userInfo = await authkit.withAuth();
   if (userInfo.user) {
-    const user = await authkit
-      .getWorkOS()
+    const user = await (await authkit.getWorkOS())
       .userManagement.getUser(userInfo.user.id);
     userInfo.user = user;
   }
@@ -57,15 +55,13 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased h-full flex flex-col`}
       >
         <NuqsAdapter>
-          <AuthKitProvider>
-            <div className="flex-1 flex flex-col min-h-screen w-full min-w-0">
-              <PageHeader accountId={userInfo?.user?.id} isAdmin={isAdmin} />
-              <main className="flex-1 flex flex-col w-full min-w-0">
-                {children}
-              </main>
-              <PageFooter />
-            </div>
-          </AuthKitProvider>
+          <div className="flex-1 flex flex-col min-h-screen w-full min-w-0">
+            <PageHeader user={userInfo.user} isAdmin={isAdmin} />
+            <main className="flex-1 flex flex-col w-full min-w-0">
+              {children}
+            </main>
+            <PageFooter />
+          </div>
         </NuqsAdapter>
       </body>
     </html>

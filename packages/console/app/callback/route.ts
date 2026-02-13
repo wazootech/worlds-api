@@ -1,4 +1,5 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
+import { AuthUser } from "@/lib/auth";
 import { sdk } from "@/lib/sdk";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
@@ -14,9 +15,9 @@ export async function GET(request: NextRequest) {
 
   // Create a handler with the return path
 
-  return await authkit.handleAuth({
+  return await (await authkit.handleAuth({
     returnPathname: returnPath,
-    onSuccess: async (data) => {
+    onSuccess: async (data: { user: AuthUser }) => {
       if (!data.user) {
         return;
       }
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
         );
 
         // Update WorkOS user metadata.
-        const workos = authkit.getWorkOS();
+        const workos = await authkit.getWorkOS();
         await workos.userManagement.updateUser({
           userId: data.user.id,
           metadata: {
@@ -57,5 +58,5 @@ export async function GET(request: NextRequest) {
         throw error; // Re-throw to trigger AuthKit error handling.
       }
     },
-  })(request);
+  }))(request);
 }

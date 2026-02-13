@@ -1,4 +1,4 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DeleteAccountSection } from "@/components/delete-account-section";
@@ -13,8 +13,10 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   const { user } = await authkit.withAuth();
 
-  const workos = authkit.getWorkOS();
-  const currentUser = user ? await workos.userManagement.getUser(user.id) : null;
+  const workos = await authkit.getWorkOS();
+  const currentUser = user
+    ? await workos.userManagement.getUser(user.id)
+    : null;
 
   if (!user) {
     const signInUrl = await authkit.getSignInUrl();

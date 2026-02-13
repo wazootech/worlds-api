@@ -1,4 +1,4 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import React from "react";
 import { sdk } from "@/lib/sdk";
@@ -16,7 +16,7 @@ export default async function AdminLayout({
 
   let currentUser = user;
   if (currentUser) {
-    const workos = authkit.getWorkOS();
+    const workos = await authkit.getWorkOS();
     currentUser = await workos.userManagement.getUser(currentUser.id);
   }
 

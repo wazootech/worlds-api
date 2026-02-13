@@ -1,4 +1,4 @@
-import * as authkit from "@workos-inc/authkit-nextjs";
+import * as authkit from "@/lib/auth";
 import { AdminList } from "./admin-list";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -26,7 +26,7 @@ export default async function AdminsPage({
   );
   const after = params.after as string | undefined;
 
-  const workos = authkit.getWorkOS();
+  const workos = await authkit.getWorkOS();
 
   type WorkOSUser = Awaited<ReturnType<typeof workos.userManagement.getUser>>;
 
