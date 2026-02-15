@@ -1,4 +1,5 @@
 import { OrganizationProvider } from "@/components/organization-context";
+import { OrganizationHeader } from "@/components/organization-header";
 import { PageHeader } from "@/components/page-header";
 import * as authkit from "@/lib/auth";
 import { sdk } from "@/lib/sdk";
@@ -61,14 +62,7 @@ export default async function OrganizationLayout({
   const actualOrgId = organization.id;
   const orgSlug = organization.slug || organization.id;
 
-  // Canonical redirect to slug if ID was used in the URL
-  if (
-    organizationId === organization.id &&
-    organization.slug &&
-    organization.slug !== organization.id
-  ) {
-    redirect(`/organizations/${organization.slug}`);
-  }
+
 
   // Generate general SDK snippets for the account
   const apiKey = (user?.metadata?.testApiKey as string) || "YOUR_API_KEY";
@@ -109,46 +103,8 @@ console.log("My worlds:", worlds.length);`;
         maskedCodeSnippetHtml,
       }}
     >
-      <PageHeader
-        user={user}
-        isAdmin={isAdmin}
-        resource={{
-          label: "Worlds",
-          href: `/organizations/${orgSlug}`,
-          icon: <LayoutGrid className="w-3 h-3 text-stone-500" />,
-          menuItems: [
-            {
-              label: "Worlds",
-              href: `/organizations/${orgSlug}`,
-              icon: <LayoutGrid className="w-4 h-4" />,
-            },
-            {
-              label: "Service Accounts",
-              href: `/organizations/${orgSlug}/service-accounts`,
-              icon: <ShieldCheck className="w-4 h-4" />,
-            },
-            {
-              label: "Metrics",
-              href: `/organizations/${orgSlug}/metrics`,
-              icon: <BarChart3 className="w-4 h-4" />,
-            },
-            {
-              label: "Settings",
-              href: `/organizations/${orgSlug}/settings`,
-              icon: <Settings className="w-4 h-4" />,
-            },
-          ],
-        }}
-        tabs={[
-          { label: "Worlds", href: `/organizations/${orgSlug}` },
-          {
-            label: "Service Accounts",
-            href: `/organizations/${orgSlug}/service-accounts`,
-          },
-          { label: "Metrics", href: `/organizations/${orgSlug}/metrics` },
-          { label: "Settings", href: `/organizations/${orgSlug}/settings` },
-        ]}
-      />
+
+      <OrganizationHeader />
       {children}
     </OrganizationProvider>
   );

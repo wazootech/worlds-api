@@ -2,7 +2,8 @@
 
 export function OrganizationMetricsContent() {
   return (
-    <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <main>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
         <h1 className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
           Metrics
@@ -16,6 +17,7 @@ export function OrganizationMetricsContent() {
         <p className="text-stone-500 dark:text-stone-400">
           Metrics coming soon...
         </p>
+      </div>
       </div>
     </main>
   );

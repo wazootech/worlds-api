@@ -13,9 +13,11 @@ import {
 export function ServiceAccountSettings({
   serviceAccount,
   organizationId,
+  organizationSlug,
 }: {
   serviceAccount: ServiceAccount;
   organizationId: string;
+  organizationSlug: string;
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export function ServiceAccountSettings({
     setError(null);
     try {
       await deleteServiceAccount(organizationId, serviceAccount.id);
-      router.push(`/organizations/${organizationId}/service-accounts`);
+      router.push(`/organizations/${organizationSlug}/service-accounts`);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to delete service account",
@@ -136,7 +138,7 @@ export function ServiceAccountSettings({
 
           <button
             onClick={() =>
-              router.push(`/organizations/${organizationId}/service-accounts`)
+              router.push(`/organizations/${organizationSlug}/service-accounts`)
             }
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
           >

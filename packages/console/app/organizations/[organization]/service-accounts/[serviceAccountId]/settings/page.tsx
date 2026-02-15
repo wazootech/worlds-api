@@ -6,20 +6,20 @@ import { PageHeader } from "@/components/page-header";
 import { ShieldCheck, LayoutGrid, BarChart3, Settings } from "lucide-react";
 import { ServiceAccountSettings } from "@/components/service-account-settings";
 
-type Params = { organizationId: string; serviceAccountId: string };
+type Params = { organization: string; serviceAccountId: string };
 
 export async function generateMetadata(props: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { organizationId, serviceAccountId } = await props.params;
+  const { organization: organizationSlug, serviceAccountId } = await props.params;
 
   try {
-    const [sa, organization] = await Promise.all([
-      sdk.organizations.serviceAccounts.get(organizationId, serviceAccountId),
-      sdk.organizations.get(organizationId),
-    ]);
+    const organization = await sdk.organizations.get(organizationSlug);
+    if (!organization) return { title: "Settings | Service Account" };
 
-    if (!sa || !organization) {
+    const sa = await sdk.organizations.serviceAccounts.get(organization.id, serviceAccountId);
+
+    if (!sa) {
       return { title: "Settings | Service Account" };
     }
 
@@ -36,7 +36,7 @@ export async function generateMetadata(props: {
 export default async function ServiceAccountSettingsPage(props: {
   params: Promise<Params>;
 }) {
-  const { organizationId, serviceAccountId } = await props.params;
+  const { organization: organizationSlug, serviceAccountId } = await props.params;
 
   // Check authentication
   const { user } = await authkit.withAuth();
@@ -48,36 +48,42 @@ export default async function ServiceAccountSettingsPage(props: {
   const isAdmin = !!user?.metadata?.admin;
 
   // Fetch data
-  const [organization, sa] = await Promise.all([
-    sdk.organizations.get(organizationId).catch(() => null),
-    sdk.organizations.serviceAccounts
-      .get(organizationId, serviceAccountId)
-      .catch(() => null),
-  ]);
+  // Fetch data
+  const organization = await sdk.organizations.get(organizationSlug).catch(() => null);
 
-  if (!organization || !sa) {
+  if (!organization) {
     notFound();
   }
+
+  const sa = await sdk.organizations.serviceAccounts
+    .get(organization.id, serviceAccountId)
+    .catch(() => null);
+
+  if (!sa) {
+    notFound();
+  }
+
+  const orgSlug = organization.slug || organization.id;
 
   const resourceMenuItems = [
     {
       label: "Worlds",
-      href: `/organizations/${organizationId}`,
+      href: `/organizations/${orgSlug}`,
       icon: <LayoutGrid className="w-4 h-4" />,
     },
     {
       label: "Service Accounts",
-      href: `/organizations/${organizationId}/service-accounts`,
+      href: `/organizations/${orgSlug}/service-accounts`,
       icon: <ShieldCheck className="w-4 h-4" />,
     },
     {
       label: "Metrics",
-      href: `/organizations/${organizationId}/metrics`,
+      href: `/organizations/${orgSlug}/metrics`,
       icon: <BarChart3 className="w-4 h-4" />,
     },
     {
       label: "Settings",
-      href: `/organizations/${organizationId}/settings`,
+      href: `/organizations/${orgSlug}/settings`,
       icon: <Settings className="w-4 h-4" />,
     },
   ];
@@ -85,18 +91,18 @@ export default async function ServiceAccountSettingsPage(props: {
   const breadcrumbs = [
     {
       label: "Service Accounts",
-      href: `/organizations/${organizationId}/service-accounts`,
+      href: `/organizations/${orgSlug}/service-accounts`,
       icon: <ShieldCheck className="w-3 h-3 text-stone-500" />,
       menuItems: resourceMenuItems,
     },
     {
       label: sa.label || sa.id,
-      href: `/organizations/${organizationId}/service-accounts/${serviceAccountId}`,
+      href: `/organizations/${orgSlug}/service-accounts/${serviceAccountId}`,
       icon: <ShieldCheck className="w-3 h-3 text-stone-500" />,
     },
     {
       label: "Settings",
-      href: `/organizations/${organizationId}/service-accounts/${serviceAccountId}/settings`,
+      href: `/organizations/${orgSlug}/service-accounts/${serviceAccountId}/settings`,
       icon: <Settings className="w-3 h-3 text-stone-500" />,
     },
   ];
@@ -104,11 +110,11 @@ export default async function ServiceAccountSettingsPage(props: {
   const tabs = [
     {
       label: "Overview",
-      href: `/organizations/${organizationId}/service-accounts/${serviceAccountId}`,
+      href: `/organizations/${orgSlug}/service-accounts/${serviceAccountId}`,
     },
     {
       label: "Settings",
-      href: `/organizations/${organizationId}/service-accounts/${serviceAccountId}/settings`,
+      href: `/organizations/${orgSlug}/service-accounts/${serviceAccountId}/settings`,
     },
   ];
 
@@ -123,7 +129,8 @@ export default async function ServiceAccountSettingsPage(props: {
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <ServiceAccountSettings
           serviceAccount={sa}
-          organizationId={organizationId}
+          organizationId={organization.id}
+          organizationSlug={orgSlug}
         />
       </main>
     </>

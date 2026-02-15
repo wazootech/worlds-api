@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Worlds",
-    default: "Worlds",
+    template: "%s | Wazoo",
+    default: "Wazoo",
   },
   description: "The console for managing your Worlds.",
   icons: {

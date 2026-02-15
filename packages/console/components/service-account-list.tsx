@@ -5,18 +5,20 @@ import { ResourceTable, Column } from "./resource-table";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { Key, Eye } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 
 export function ServiceAccountList({
+  organizationSlug,
   initialData,
   initialPageSize,
   initialPage,
 }: {
+  organizationSlug: string;
   initialData: ServiceAccount[];
   initialPageSize: number;
   initialPage: number;
 }) {
   const router = useRouter();
-  const { organizationId } = useParams() as { organizationId: string };
   const [page, setPage] = useQueryState(
     "page",
     parseAsInteger.withDefault(initialPage).withOptions({ shallow: false }),
@@ -31,12 +33,17 @@ export function ServiceAccountList({
       key: "name",
       label: "Name / ID",
       render: (sa) => (
-        <div className="flex flex-col">
-          <span>{sa.label || sa.id}</span>
+        <Link
+          href={`/organizations/${organizationSlug}/service-accounts/${sa.id}`}
+          className="flex flex-col hover:opacity-75 transition-opacity block"
+        >
+          <span className="font-medium text-stone-900 dark:text-stone-100">
+            {sa.label || sa.id}
+          </span>
           <span className="text-xs text-stone-500 font-mono italic">
             {sa.id}
           </span>
-        </div>
+        </Link>
       ),
     },
     {
@@ -62,7 +69,7 @@ export function ServiceAccountList({
           onClick={(e) => {
             e.stopPropagation();
             router.push(
-              `/organizations/${organizationId}/service-accounts/${sa.id}`,
+              `/organizations/${organizationSlug}/service-accounts/${sa.id}`,
             );
           }}
           className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
@@ -80,7 +87,7 @@ export function ServiceAccountList({
       data={initialData}
       onRowClick={(sa) =>
         router.push(
-          `/organizations/${organizationId}/service-accounts/${sa.id}`,
+          `/organizations/${organizationSlug}/service-accounts/${sa.id}`,
         )
       }
       pagination={{

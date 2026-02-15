@@ -12,16 +12,18 @@ type Params = { organization: string; world: string };
 export async function generateMetadata(props: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { organization: organizationId, world: worldId } = await props.params;
+  const { organization: organizationSlug, world: worldSlug } = await props.params;
   try {
-    const [world, organization] = await Promise.all([
-      sdk.worlds.get(worldId, { organizationId }),
-      sdk.organizations.get(organizationId),
-    ]);
+    const organization = await sdk.organizations.get(organizationSlug);
+    if (!organization) return { title: "World" };
+
+    const world = await sdk.worlds.get(worldSlug, { organizationId: organization.id });
+    if (!world) return { title: "World" };
+
     return {
       title: {
-        template: `%s | ${world?.label || "World"}`,
-        default: world?.label || "World",
+        template: `%s | ${world.slug || world.id || "World"} | Wazoo`,
+        default: `${world.slug || world.id || "World"} | Wazoo`,
       },
     };
   } catch {
