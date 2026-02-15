@@ -48,7 +48,6 @@ export default async function ServiceAccountDetailsPage(props: {
   const isAdmin = !!user?.metadata?.admin;
 
   // Fetch data
-  // Fetch data
   const organization = await sdk.organizations.get(organizationSlug).catch(() => null);
 
   if (!organization) {

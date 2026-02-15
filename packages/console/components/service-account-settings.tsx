@@ -72,17 +72,7 @@ export function ServiceAccountSettings({
         serviceAccount.id,
       );
       setNewKey(newSa.apiKey); // Assuming create returns apiKey
-      // We need to redirect because the ID changed
-      // Wait, rotateServiceAccountKey returns the new SA object.
-      // And we know the ID changed.
-      // The user needs to see the new key FIRST, then we redirect?
-      // Or we show a modal?
-      // Let's show the key and a button to "Go to new Service Account"
-      // Actually, if we redirect immediately, they lose the key if they didn't copy it.
-      // But the key is visible on the details page? No, keys are usually only shown once.
-      // Wait, does `sdk.organizations.serviceAccounts.create` return the key? Yes.
-      // Does `get` return the key? No (usually).
-      // So this IS the only time they see the key.
+
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rotate key");
       setIsRotating(false); // Only stop rotating if error, otherwise keep state to show key
