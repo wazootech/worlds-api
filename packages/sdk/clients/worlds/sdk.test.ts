@@ -21,6 +21,7 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
   const organizationId = ulid();
   await adminSdk.organizations.create({
     id: organizationId,
+    slug: "test-org-sdk",
     label: "Test Organization",
     description: "SDK Test",
   });
@@ -33,6 +34,7 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
   await t.step("create world", async () => {
     const world = await sdk.worlds.create({
       organizationId,
+      slug: "sdk-world",
       label: "SDK World",
       description: "Test World",
     });
@@ -49,8 +51,16 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
 
   await t.step("list worlds pagination", async () => {
     // Create more worlds for pagination
-    await sdk.worlds.create({ organizationId, label: "World 1" });
-    await sdk.worlds.create({ organizationId, label: "World 2" });
+    await sdk.worlds.create({
+      organizationId,
+      slug: "world-1",
+      label: "World 1",
+    });
+    await sdk.worlds.create({
+      organizationId,
+      slug: "world-2",
+      label: "World 2",
+    });
 
     const page1 = await sdk.worlds.list(1, 1, { organizationId });
     assertEquals(page1.length, 1);
@@ -147,20 +157,30 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
 
   // Create two test organizations using SDK
   const orgAId = ulid();
-  await adminSdk.organizations.create({ id: orgAId, label: "Org A" });
+  await adminSdk.organizations.create({
+    id: orgAId,
+    slug: "org-a",
+    label: "Org A",
+  });
   const orgBId = ulid();
-  await adminSdk.organizations.create({ id: orgBId, label: "Org B" });
+  await adminSdk.organizations.create({
+    id: orgBId,
+    slug: "org-b",
+    label: "Org B",
+  });
 
   await t.step("admin can list worlds for specific organization", async () => {
     // Create worlds for both organizations using SDK
     await adminSdk.worlds.create({
       organizationId: orgAId,
+      slug: "org-a-world",
       label: "Organization A World",
       description: "Test",
     });
 
     await adminSdk.worlds.create({
       organizationId: orgBId,
+      slug: "org-b-world",
       label: "Organization B World",
       description: "Test",
     });
@@ -184,6 +204,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
   await t.step("admin can create world for specific organization", async () => {
     const world = await adminSdk.worlds.create({
       organizationId: orgBId,
+      slug: "admin-created-world",
       label: "Admin Created World",
       description: "Created via admin override",
     });
@@ -201,6 +222,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const world = await adminSdk.worlds.create({
       organizationId: orgAId,
+      slug: "test-world-a",
       label: "Test World",
       description: "Test",
     });
@@ -215,6 +237,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization A
     const world = await adminSdk.worlds.create({
       organizationId: orgAId,
+      slug: "original-name-world",
       label: "Original Name",
       description: "Original",
     });
@@ -234,6 +257,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     // Create a world for Organization B
     const world = await adminSdk.worlds.create({
       organizationId: orgBId,
+      slug: "to-delete-world",
       label: "To Delete",
       description: "Test",
     });
@@ -252,6 +276,7 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
       // Create a world for Organization A
       const world = await adminSdk.worlds.create({
         organizationId: orgAId,
+        slug: "sparql-test-world",
         label: "SPARQL Test World",
         description: "Test",
       });

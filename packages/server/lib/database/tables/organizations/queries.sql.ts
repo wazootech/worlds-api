@@ -5,39 +5,45 @@
  * zero or more worlds.
  */
 export const organizationsTable =
-  "CREATE TABLE IF NOT EXISTS organizations (\n  id TEXT PRIMARY KEY NOT NULL,\n  label TEXT,\n  description TEXT,\n  plan TEXT,\n  created_at INTEGER NOT NULL,\n  updated_at INTEGER NOT NULL,\n  deleted_at INTEGER\n);";
+  "CREATE TABLE IF NOT EXISTS organizations (\r\n  id TEXT PRIMARY KEY NOT NULL,\r\n  slug TEXT UNIQUE NOT NULL,\r\n  label TEXT,\r\n  description TEXT,\r\n  plan TEXT,\r\n  created_at INTEGER NOT NULL,\r\n  updated_at INTEGER NOT NULL,\r\n  deleted_at INTEGER\r\n);";
 
 /**
  * selectOrganizations is a query that gets organizations with pagination
  * (used in GET /v1/organizations).
  */
 export const selectOrganizations =
-  "SELECT\n  *\nFROM\n  organizations\nWHERE\n  deleted_at IS NULL\nORDER BY\n  created_at DESC\nLIMIT\n  ? OFFSET ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  organizations\r\nWHERE\r\n  deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
 
 /**
  * insertOrganization is a query that inserts a new organization
  * (used in POST /v1/organizations).
  */
 export const insertOrganization =
-  "INSERT INTO\n  organizations (\n    id,\n    label,\n    description,\n    plan,\n    created_at,\n    updated_at,\n    deleted_at\n  )\nVALUES\n  (?, ?, ?, ?, ?, ?, ?);";
+  "INSERT INTO\r\n  organizations (\r\n    id,\r\n    slug,\r\n    label,\r\n    description,\r\n    plan,\r\n    created_at,\r\n    updated_at,\r\n    deleted_at\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?, ?, ?);";
 
 /**
  * selectOrganizationById is a query that finds an organization by ID
  * (used in GET /v1/organizations/:organization and auth middleware).
  */
 export const selectOrganizationById =
-  "SELECT\n  *\nFROM\n  organizations\nWHERE\n  id = ?\n  AND deleted_at IS NULL;";
+  "SELECT\r\n  *\r\nFROM\r\n  organizations\r\nWHERE\r\n  id = ?\r\n  AND deleted_at IS NULL;";
+
+/**
+ * selectOrganizationBySlug is a query that finds an organization by slug.
+ */
+export const selectOrganizationBySlug =
+  "SELECT\r\n  *\r\nFROM\r\n  organizations\r\nWHERE\r\n  slug = ?\r\n  AND deleted_at IS NULL;";
 
 /**
  * updateOrganization is a query that updates organization fields
  * (used in PUT /v1/organizations/:organization).
  */
 export const updateOrganization =
-  "UPDATE\n  organizations\nSET\n  label = ?,\n  description = ?,\n  plan = ?,\n  updated_at = ?\nWHERE\n  id = ?;";
+  "UPDATE\r\n  organizations\r\nSET\r\n  slug = ?,\r\n  label = ?,\r\n  description = ?,\r\n  plan = ?,\r\n  updated_at = ?\r\nWHERE\r\n  id = ?;";
 
 /**
  * deleteOrganization is a query that deletes an organization
  * (used in DELETE /v1/organizations/:organization).
  */
 export const deleteOrganization =
-  "DELETE FROM\n  organizations\nWHERE\n  id = ?;";
+  "DELETE FROM\r\n  organizations\r\nWHERE\r\n  id = ?;";

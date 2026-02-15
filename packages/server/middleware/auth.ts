@@ -34,12 +34,12 @@ export async function authorizeRequest(
   const serviceAccountsService = new ServiceAccountsService(
     appContext.libsql.database,
   );
-  const account = await serviceAccountsService.getByApiKey(apiKey);
-  if (account != null) {
+  const serviceAccount = await serviceAccountsService.getByApiKey(apiKey);
+  if (serviceAccount != null) {
     return {
       admin: false,
-      serviceAccountId: account.id,
-      organizationId: account.organization_id,
+      serviceAccountId: serviceAccount.id,
+      organizationId: serviceAccount.organization_id,
     };
   }
 

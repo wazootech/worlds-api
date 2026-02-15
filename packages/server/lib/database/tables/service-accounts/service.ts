@@ -5,6 +5,7 @@ import {
   serviceAccountsGetById,
   serviceAccountsListByOrganizationId,
   serviceAccountsRemove,
+  serviceAccountsRotateKey,
   serviceAccountsUpdate,
 } from "./queries.sql.ts";
 import type {
@@ -16,17 +17,17 @@ import type {
 export class ServiceAccountsService {
   constructor(private readonly db: Client) {}
 
-  async add(account: ServiceAccountTableInsert): Promise<void> {
+  async add(serviceAccount: ServiceAccountTableInsert): Promise<void> {
     await this.db.execute({
       sql: serviceAccountsAdd,
       args: [
-        account.id,
-        account.organization_id,
-        account.api_key,
-        account.label,
-        account.description,
-        account.created_at,
-        account.updated_at,
+        serviceAccount.id,
+        serviceAccount.organization_id,
+        serviceAccount.api_key,
+        serviceAccount.label,
+        serviceAccount.description,
+        serviceAccount.created_at,
+        serviceAccount.updated_at,
       ],
     });
   }
@@ -99,5 +100,12 @@ export class ServiceAccountsService {
 
   async remove(id: string): Promise<void> {
     await this.db.execute({ sql: serviceAccountsRemove, args: [id] });
+  }
+
+  async rotateKey(id: string, apiKey: string): Promise<void> {
+    await this.db.execute({
+      sql: serviceAccountsRotateKey,
+      args: [apiKey, Date.now(), id],
+    });
   }
 }

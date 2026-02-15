@@ -24,6 +24,7 @@ Deno.test("Logs API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world",
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -80,6 +81,7 @@ Deno.test("Logs API routes", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: organizationId,
+      slug: "test-world",
       label: "Test World",
       description: "Test Description",
       db_hostname: null,
@@ -135,6 +137,7 @@ Deno.test("Logs API routes - Metrics", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: orgId,
+        slug: "metered-world",
         label: "Metered World",
         description: "Desc",
         db_hostname: null,

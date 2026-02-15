@@ -51,6 +51,7 @@ export async function createTestOrganization(
   const now = Date.now();
   await service.add({
     id,
+    slug: "test-org-" + id,
     label: "Test Org",
     description: "Description",
     plan: options?.plan ?? "free",

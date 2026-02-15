@@ -3,6 +3,7 @@ import {
   deleteOrganization,
   insertOrganization,
   selectOrganizationById,
+  selectOrganizationBySlug,
   selectOrganizations,
   updateOrganization,
 } from "./queries.sql.ts";
@@ -22,6 +23,7 @@ export class OrganizationsService {
     });
     return (result.rows as Record<string, unknown>[]).map((row) => ({
       id: row.id as string,
+      slug: row.slug as string,
       label: row.label as string | null,
       description: row.description as string | null,
       plan: row.plan as string | null,
@@ -36,6 +38,7 @@ export class OrganizationsService {
       sql: insertOrganization,
       args: [
         organization.id,
+        organization.slug,
         organization.label,
         organization.description,
         organization.plan,
@@ -55,6 +58,26 @@ export class OrganizationsService {
     if (!row) return null;
     return {
       id: row.id as string,
+      slug: row.slug as string,
+      label: row.label as string | null,
+      description: row.description as string | null,
+      plan: row.plan as string | null,
+      created_at: row.created_at as number,
+      updated_at: row.updated_at as number,
+      deleted_at: row.deleted_at as number | null,
+    };
+  }
+
+  async findBySlug(slug: string): Promise<OrganizationRow | null> {
+    const result = await this.db.execute({
+      sql: selectOrganizationBySlug,
+      args: [slug],
+    });
+    const row = result.rows[0] as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      id: row.id as string,
+      slug: row.slug as string,
       label: row.label as string | null,
       description: row.description as string | null,
       plan: row.plan as string | null,
@@ -71,6 +94,7 @@ export class OrganizationsService {
     await this.db.execute({
       sql: updateOrganization,
       args: [
+        updates.slug ?? null,
         updates.label ?? null,
         updates.description ?? null,
         updates.plan ?? null,

@@ -2,6 +2,7 @@
 -- zero or more worlds.
 CREATE TABLE IF NOT EXISTS organizations (
   id TEXT PRIMARY KEY NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
   label TEXT,
   description TEXT,
   plan TEXT,
@@ -28,6 +29,7 @@ LIMIT
 INSERT INTO
   organizations (
     id,
+    slug,
     label,
     description,
     plan,
@@ -36,7 +38,7 @@ INSERT INTO
     deleted_at
   )
 VALUES
-  (?, ?, ?, ?, ?, ?, ?);
+  (?, ?, ?, ?, ?, ?, ?, ?);
 
 -- selectOrganizationById is a query that finds an organization by ID
 -- (used in GET /v1/organizations/:organization and auth middleware).
@@ -48,11 +50,21 @@ WHERE
   id = ?
   AND deleted_at IS NULL;
 
+-- selectOrganizationBySlug is a query that finds an organization by slug.
+SELECT
+  *
+FROM
+  organizations
+WHERE
+  slug = ?
+  AND deleted_at IS NULL;
+
 -- updateOrganization is a query that updates organization fields
 -- (used in PUT /v1/organizations/:organization).
 UPDATE
   organizations
 SET
+  slug = ?,
   label = ?,
   description = ?,
   plan = ?,

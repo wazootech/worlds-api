@@ -35,7 +35,7 @@ export interface UserManagement {
   /**
    * listUsers lists users.
    */
-  listUsers(opts?: Record<string, any>): Promise<{
+  listUsers(opts?: Record<string, unknown>): Promise<{
     data: AuthUser[];
     listMetadata?: { after?: string };
   }>;

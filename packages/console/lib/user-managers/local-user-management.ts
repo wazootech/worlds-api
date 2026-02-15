@@ -1,42 +1,67 @@
 import { AuthUser, UserManagement } from "@/lib/user-management";
+import fs from "node:fs";
+import path from "node:path";
 
-const LOCAL_USER_ID = process.env.LOCAL_USER_ID || "local-dev-user";
-const LOCAL_USER_EMAIL = process.env.LOCAL_USER_EMAIL || "dev@localhost";
-const LOCAL_USER_FIRST_NAME = process.env.LOCAL_USER_FIRST_NAME || "Local";
-const LOCAL_USER_LAST_NAME = process.env.LOCAL_USER_LAST_NAME || "Developer";
+const USER_JSON_PATH = path.join(process.cwd(), "user.json");
+
+const DEFAULT_USER: AuthUser = {
+  id: process.env.LOCAL_USER_ID || "local-dev-user",
+  email: process.env.LOCAL_USER_EMAIL || "dev@localhost",
+  firstName: process.env.LOCAL_USER_FIRST_NAME || "Local",
+  lastName: process.env.LOCAL_USER_LAST_NAME || "Developer",
+  profilePictureUrl: null,
+  metadata: { admin: "true" },
+};
 
 export class LocalUserManagement implements UserManagement {
-  private user: AuthUser = {
-    id: LOCAL_USER_ID,
-    email: LOCAL_USER_EMAIL,
-    firstName: LOCAL_USER_FIRST_NAME,
-    lastName: LOCAL_USER_LAST_NAME,
-    profilePictureUrl: null,
-    metadata: { admin: "true" },
-  };
+  private ensureUserJson() {
+    if (!fs.existsSync(USER_JSON_PATH)) {
+      fs.writeFileSync(USER_JSON_PATH, JSON.stringify(DEFAULT_USER, null, 2));
+    }
+  }
 
-  async getUser(_userId: string): Promise<AuthUser> {
-    return { ...this.user };
+  private readUserJson(): AuthUser {
+    this.ensureUserJson();
+    try {
+      const data = fs.readFileSync(USER_JSON_PATH, "utf-8");
+      return JSON.parse(data);
+    } catch (error) {
+      console.warn("Failed to read user.json, falling back to default:", error);
+      return { ...DEFAULT_USER };
+    }
+  }
+
+  private writeUserJson(user: AuthUser) {
+    fs.writeFileSync(USER_JSON_PATH, JSON.stringify(user, null, 2));
+  }
+
+  async getUser(): Promise<AuthUser> {
+    return this.readUserJson();
   }
 
   async updateUser(opts: {
     userId: string;
     metadata?: Record<string, string>;
   }): Promise<AuthUser> {
-    this.user = {
-      ...this.user,
-      metadata: { ...this.user.metadata, ...opts.metadata },
+    const user = this.readUserJson();
+    const updatedUser: AuthUser = {
+      ...user,
+      metadata: { ...(user.metadata || {}), ...opts.metadata },
     };
-    return { ...this.user };
+    this.writeUserJson(updatedUser);
+    return updatedUser;
   }
 
-  async deleteUser(_userId: string): Promise<void> {
-    // no-op in local mode
+  async deleteUser(): Promise<void> {
+    if (fs.existsSync(USER_JSON_PATH)) {
+      fs.unlinkSync(USER_JSON_PATH);
+    }
   }
 
-  async listUsers(
-    _opts?: Record<string, unknown>,
-  ): Promise<{ data: AuthUser[]; listMetadata?: { after?: string } }> {
-    return { data: [{ ...this.user }], listMetadata: {} };
+  async listUsers(): Promise<{
+    data: AuthUser[];
+    listMetadata?: { after?: string };
+  }> {
+    return { data: [this.readUserJson()], listMetadata: {} };
   }
 }

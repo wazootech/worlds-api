@@ -4,7 +4,7 @@
  * metricsTable is the table for storing usage metrics
  */
 export const metricsTable =
-  "CREATE TABLE IF NOT EXISTS metrics (\n  id TEXT PRIMARY KEY NOT NULL,\n  service_account_id TEXT NOT NULL,\n  feature_id TEXT NOT NULL,\n  quantity INTEGER NOT NULL,\n  metadata TEXT,\n  timestamp INTEGER NOT NULL\n);";
+  "CREATE TABLE IF NOT EXISTS metrics (\r\n  id TEXT PRIMARY KEY NOT NULL,\r\n  service_account_id TEXT NOT NULL,\r\n  feature_id TEXT NOT NULL,\r\n  quantity INTEGER NOT NULL,\r\n  metadata TEXT,\r\n  timestamp INTEGER NOT NULL\r\n);";
 
 /**
  * metricsServiceAccountIdIndex is an index on service_account_id
@@ -16,16 +16,16 @@ export const metricsServiceAccountIdIndex =
  * insertMetric inserts a new metric record
  */
 export const insertMetric =
-  "INSERT INTO\n  metrics (\n    id,\n    service_account_id,\n    feature_id,\n    quantity,\n    metadata,\n    timestamp\n  )\nVALUES\n  (?, ?, ?, ?, ?, ?);";
+  "INSERT INTO\r\n  metrics (\r\n    id,\r\n    service_account_id,\r\n    feature_id,\r\n    quantity,\r\n    metadata,\r\n    timestamp\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?);";
 
 /**
  * selectLastMetric retrieves the most recent metric for a service account and feature
  */
 export const selectLastMetric =
-  "SELECT\n  *\nFROM\n  metrics\nWHERE\n  service_account_id = ?\n  AND feature_id = ?\nORDER BY\n  timestamp DESC\nLIMIT\n  1;";
+  "SELECT\r\n  *\r\nFROM\r\n  metrics\r\nWHERE\r\n  service_account_id = ?\r\n  AND feature_id = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  1;";
 
 /**
  * selectMetricsByOrganization retrieves all metrics for a given organization
  */
 export const selectMetricsByOrganization =
-  "SELECT\n  m.*\nFROM\n  metrics m\nJOIN\n  service_accounts sa ON m.service_account_id = sa.id\nWHERE\n  sa.organization_id = ?\nORDER BY\n  m.timestamp DESC;";
+  "SELECT\r\n  m.*\r\nFROM\r\n  metrics m\r\nJOIN\r\n  service_accounts sa ON m.service_account_id = sa.id\r\nWHERE\r\n  sa.organization_id = ?\r\nORDER BY\r\n  m.timestamp DESC;";

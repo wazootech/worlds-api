@@ -23,6 +23,7 @@ Deno.test("World Search API routes", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: organizationId,
+      slug: "search-world-" + worldId,
       label: "Search World",
       description: "A world for searching",
       db_hostname: null,
@@ -60,6 +61,7 @@ Deno.test("World Search API routes", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: organizationId,
+      slug: "search-world-" + worldId,
       label: "Search World",
       description: "A world for searching",
       db_hostname: null,
@@ -98,6 +100,7 @@ Deno.test("World Search API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "search-world-" + worldId,
         label: "Search World",
         description: "A world for searching",
         db_hostname: null,
@@ -131,6 +134,7 @@ Deno.test("World Search API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "search-world-" + worldId,
         label: "Search World",
         description: "A world for searching",
         db_hostname: null,
@@ -208,6 +212,7 @@ Deno.test("World Search API routes", async (t) => {
       await worldsService.insert({
         id: worldIdA,
         organization_id: orgA.id,
+        slug: "world-a",
         label: "World A",
         description: "A world",
         db_hostname: null,
@@ -248,6 +253,7 @@ Deno.test("World Search API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: orgId,
+        slug: "search-metered-world-" + worldId,
         label: "Metered World",
         description: "Desc",
         db_hostname: null,

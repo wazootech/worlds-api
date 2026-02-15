@@ -16,6 +16,7 @@ Deno.test("WorldsSdk - Organizations", async (t) => {
   await t.step("create organization", async () => {
     const organization = await sdk.organizations.create({
       id: "org_sdk_test",
+      slug: "org-sdk-test",
       description: "SDK Test Organization",
       label: "Test Label",
       plan: "free",
@@ -37,8 +38,16 @@ Deno.test("WorldsSdk - Organizations", async (t) => {
 
   await t.step("list organizations pagination", async () => {
     // Create more organizations for pagination
-    await sdk.organizations.create({ id: "org_page_1" });
-    await sdk.organizations.create({ id: "org_page_2" });
+    await sdk.organizations.create({
+      id: "org_page_1",
+      slug: "org-page-1",
+      label: "Page 1",
+    });
+    await sdk.organizations.create({
+      id: "org_page_2",
+      slug: "org-page-2",
+      label: "Page 2",
+    });
 
     const page1 = await sdk.organizations.list(1, 1);
     assertEquals(page1.length, 1);
@@ -64,6 +73,7 @@ Deno.test("WorldsSdk - Organizations", async (t) => {
   await t.step("update organization", async () => {
     await sdk.organizations.update("org_sdk_test", {
       description: "Updated SDK Organization",
+      slug: "org-sdk-test",
     });
     const organization = await sdk.organizations.get("org_sdk_test");
     assert(organization !== null);

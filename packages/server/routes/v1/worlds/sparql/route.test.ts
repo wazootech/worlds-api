@@ -51,6 +51,7 @@ Deno.test("SPARQL API routes - GET operations", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -97,6 +98,7 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -165,6 +167,7 @@ Deno.test("SPARQL API routes - POST operations (Query)", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -225,6 +228,7 @@ Deno.test("SPARQL API routes - POST operations (Update)", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -339,6 +343,7 @@ Deno.test("SPARQL API routes - Metrics", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: orgId,
+      slug: "metered-world-" + worldId,
       label: "Metered World",
       description: "Desc",
       db_hostname: null,

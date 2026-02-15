@@ -156,4 +156,31 @@ export class ServiceAccounts {
       throw new Error(`Failed to delete service account: ${errorMessage}`);
     }
   }
+
+  /**
+   * rotateKey rotates the API key for a service account in the Worlds API.
+   */
+  public async rotateKey(
+    organizationId: string,
+    accountId: string,
+  ): Promise<{ apiKey: string }> {
+    const url = new URL(
+      `${this.options.baseUrl}/v1/organizations/${organizationId}/service-accounts/${accountId}/rotate-key`,
+    );
+    const response = await this.fetch(
+      url,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.options.apiKey}`,
+        },
+      },
+    );
+    if (!response.ok) {
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to rotate service account key: ${errorMessage}`);
+    }
+
+    return await response.json();
+  }
 }

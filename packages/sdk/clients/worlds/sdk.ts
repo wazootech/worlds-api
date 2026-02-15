@@ -55,8 +55,12 @@ export class Worlds {
    */
   public async get(
     worldId: string,
+    options?: { organizationId?: string },
   ): Promise<World | null> {
     const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
+    if (options?.organizationId) {
+      url.searchParams.set("organizationId", options.organizationId);
+    }
 
     const response = await this.fetch(
       url,

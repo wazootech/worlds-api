@@ -5,6 +5,7 @@ import { z } from "zod";
  */
 export interface OrganizationTable {
   id: string;
+  slug: string;
   label: string | null;
   description: string | null;
   plan: string | null;
@@ -19,6 +20,7 @@ export interface OrganizationTable {
  */
 const organizationTableShape = z.object({
   id: z.string(),
+  slug: z.string(),
   label: z.string().nullable(),
   description: z.string().nullable(),
   plan: z.string().nullable(),
@@ -46,7 +48,10 @@ export const organizationTableInsertSchema: z.ZodType<
  * OrganizationTableUpdate represents the data needed to update an organization.
  */
 export type OrganizationTableUpdate = Partial<
-  Pick<OrganizationTable, "label" | "description" | "plan" | "updated_at">
+  Pick<
+    OrganizationTable,
+    "slug" | "label" | "description" | "plan" | "updated_at"
+  >
 >;
 
 /**
@@ -55,7 +60,13 @@ export type OrganizationTableUpdate = Partial<
 export const organizationTableUpdateSchema: z.ZodType<
   OrganizationTableUpdate
 > = organizationTableShape
-  .pick({ label: true, description: true, plan: true, updated_at: true })
+  .pick({
+    slug: true,
+    label: true,
+    description: true,
+    plan: true,
+    updated_at: true,
+  })
   .partial();
 
 /**

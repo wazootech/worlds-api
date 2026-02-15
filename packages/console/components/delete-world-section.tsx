@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { deleteWorld } from "@/app/actions";
 
 export function DeleteWorldSection({
@@ -11,6 +11,7 @@ export function DeleteWorldSection({
   worldId: string;
   worldName: string;
 }) {
+  const { organizationId } = useParams() as { organizationId: string };
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
@@ -20,7 +21,7 @@ export function DeleteWorldSection({
     if (confirmName !== worldName) return;
 
     startTransition(async () => {
-      await deleteWorld(worldId);
+      await deleteWorld(organizationId, worldId);
       router.push("/");
     });
   };

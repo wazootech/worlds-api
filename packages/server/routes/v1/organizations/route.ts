@@ -67,6 +67,7 @@ export default (appContext: ServerContext) => {
         const validatedRows = organizations.map((org: OrganizationRow) => {
           return organizationSchema.parse({
             id: org.id,
+            slug: org.slug,
             label: org.label,
             description: org.description,
             plan: org.plan,
@@ -119,14 +120,34 @@ export default (appContext: ServerContext) => {
               ).join(", "),
           );
         }
-        const { id, ...data } = parseResult.data;
+        const { id, slug, ...data } = parseResult.data;
+
+        // Validate slug: lowercase, numbers, and hyphens only
+        if (!/^[a-z0-9-]+$/.test(slug)) {
+          return ErrorResponse.BadRequest(
+            "Invalid slug: lowercase, numbers, and hyphens only",
+          );
+        }
 
         const organizationsService = new OrganizationsService(
           appContext.libsql.database,
         );
+
+        // Check if slug or ID already exists
+        const [existingById, existingBySlug] = await Promise.all([
+          organizationsService.find(id),
+          organizationsService.findBySlug(slug),
+        ]);
+        if (existingById || existingBySlug) {
+          return ErrorResponse.BadRequest(
+            "Organization ID or slug already exists",
+          );
+        }
+
         const now = Date.now();
         const organization = organizationTableInsertSchema.parse({
           id,
+          slug,
           label: data.label ?? null,
           description: data.description ?? null,
           plan: data.plan ?? null,
@@ -149,6 +170,7 @@ export default (appContext: ServerContext) => {
         }
         const record = organizationSchema.parse({
           id: organization.id,
+          slug: organization.slug,
           label: organization.label,
           description: organization.description,
           plan: organization.plan,
@@ -182,7 +204,11 @@ export default (appContext: ServerContext) => {
         const organizationsService = new OrganizationsService(
           appContext.libsql.database,
         );
-        const organization = await organizationsService.find(organizationId);
+        // Try resolving by ID first, then by slug
+        let organization = await organizationsService.find(organizationId);
+        if (!organization) {
+          organization = await organizationsService.findBySlug(organizationId);
+        }
 
         if (!organization) {
           return ErrorResponse.NotFound("Organization not found");
@@ -197,6 +223,7 @@ export default (appContext: ServerContext) => {
 
         const record = organizationSchema.parse({
           id: organization.id,
+          slug: organization.slug,
           label: organization.label,
           description: organization.description,
           plan: organization.plan,
@@ -255,18 +282,38 @@ export default (appContext: ServerContext) => {
         }
         const data = parseResult.data;
 
+        if (data.slug && !/^[a-z0-9-]+$/.test(data.slug)) {
+          return ErrorResponse.BadRequest(
+            "Invalid slug: lowercase, numbers, and hyphens only",
+          );
+        }
+
+        const organizationsService = new OrganizationsService(
+          appContext.libsql.database,
+        );
+
+        // Resolve organization
+        let organization = await organizationsService.find(organizationId);
+        if (!organization) {
+          organization = await organizationsService.findBySlug(organizationId);
+        }
+
+        if (!organization) {
+          return ErrorResponse.NotFound("Organization not found");
+        }
+
+        const actualId = organization.id;
+
         const updateNow = Date.now();
         const organizationUpdate = organizationTableUpdateSchema.parse({
+          slug: data.slug ?? undefined,
           label: data.label ?? undefined,
           description: data.description ?? undefined,
           plan: data.plan ?? undefined,
           updated_at: updateNow,
         });
 
-        const organizationsService = new OrganizationsService(
-          appContext.libsql.database,
-        );
-        await organizationsService.update(organizationId, organizationUpdate);
+        await organizationsService.update(actualId, organizationUpdate);
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(
@@ -311,7 +358,18 @@ export default (appContext: ServerContext) => {
         const organizationsService = new OrganizationsService(
           appContext.libsql.database,
         );
-        await organizationsService.delete(organizationId);
+
+        // Resolve organization
+        let organization = await organizationsService.find(organizationId);
+        if (!organization) {
+          organization = await organizationsService.findBySlug(organizationId);
+        }
+
+        if (!organization) {
+          return ErrorResponse.NotFound("Organization not found");
+        }
+
+        await organizationsService.delete(organization.id);
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(

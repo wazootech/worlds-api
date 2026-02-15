@@ -18,6 +18,7 @@ Deno.test("WorldsSdk - Service Accounts", async (t) => {
   const orgId = ulid();
   await adminSdk.organizations.create({
     id: orgId,
+    slug: "test-org",
     label: "Test Org",
     description: "Description",
   });

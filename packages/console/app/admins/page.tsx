@@ -47,20 +47,25 @@ export default async function AdminsPage({
     console.error("Failed to list organizations", e);
   }
 
-  // Fetch accounts for each user concurrently.
-  // Note: We use Promise.all here because the Worlds API doesn't currently
-  // support a batch-get or filtered-list endpoint. This ensures we only
-  // fetch exactly the accounts needed for the current page.
+  // Fetch organizations for each user concurrently.
   const organizationsWithUsers = await Promise.all(
     paginatedOrganizations.map(async (user) => {
-      let account: Organization | null = null;
+      let organization: Organization | null = null;
       try {
-        account = await sdk.organizations.get(user.id);
+        const organizationId = user.metadata?.organizationId as
+          | string
+          | undefined;
+        organization = organizationId
+          ? await sdk.organizations.get(organizationId)
+          : null;
       } catch (error) {
-        // Log error but continue - some users may not have accounts
-        console.error(`Failed to fetch account for user ${user.id}:`, error);
+        // Log error but continue - some organizations may not be initialized
+        console.error(
+          `Failed to fetch organization for user ${user.id}:`,
+          error,
+        );
       }
-      return { user, account };
+      return { user, organization };
     }),
   );
 
@@ -68,7 +73,7 @@ export default async function AdminsPage({
     <div className="space-y-6 w-full min-w-0">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-stone-900 dark:text-white">
-          Organization Management
+          User Management
         </h1>
       </div>
       <p className="text-stone-500 dark:text-stone-400">

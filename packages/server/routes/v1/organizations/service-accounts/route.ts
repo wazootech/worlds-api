@@ -23,7 +23,7 @@ function requireOrgAccess(
   if (authorized.admin) return Promise.resolve(true);
   if (!authorized.serviceAccountId) return Promise.resolve(false);
   return serviceAccountsService.getById(authorized.serviceAccountId).then(
-    (account) => account?.organization_id === organizationId,
+    (serviceAccount) => serviceAccount?.organization_id === organizationId,
   );
 }
 
@@ -101,6 +101,7 @@ export default (appContext: ServerContext) => {
           rows.map((r: ServiceAccountTable) => ({
             id: r.id,
             organizationId: r.organization_id,
+            apiKey: r.api_key,
             label: r.label,
             description: r.description,
             createdAt: r.created_at,
@@ -232,8 +233,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
-        const account = await serviceAccountsService.getById(accountId);
-        if (!account || account.organization_id !== organizationId) {
+        const serviceAccount = await serviceAccountsService.getById(accountId);
+        if (
+          !serviceAccount || serviceAccount.organization_id !== organizationId
+        ) {
           return ErrorResponse.NotFound("Service account not found");
         }
 
@@ -249,12 +252,13 @@ export default (appContext: ServerContext) => {
         }
 
         return Response.json({
-          id: account.id,
-          organizationId: account.organization_id,
-          label: account.label,
-          description: account.description,
-          createdAt: account.created_at,
-          updatedAt: account.updated_at,
+          id: serviceAccount.id,
+          organizationId: serviceAccount.organization_id,
+          apiKey: serviceAccount.api_key,
+          label: serviceAccount.label,
+          description: serviceAccount.description,
+          createdAt: serviceAccount.created_at,
+          updatedAt: serviceAccount.updated_at,
         });
       },
     )
@@ -292,8 +296,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
-        const account = await serviceAccountsService.getById(accountId);
-        if (!account || account.organization_id !== organizationId) {
+        const serviceAccount = await serviceAccountsService.getById(accountId);
+        if (
+          !serviceAccount || serviceAccount.organization_id !== organizationId
+        ) {
           return ErrorResponse.NotFound("Service account not found");
         }
 
@@ -311,10 +317,10 @@ export default (appContext: ServerContext) => {
         await serviceAccountsService.update(accountId, {
           label: update.data.label !== undefined
             ? update.data.label
-            : account.label,
+            : serviceAccount.label,
           description: update.data.description !== undefined
             ? update.data.description
-            : account.description,
+            : serviceAccount.description,
           updated_at: now,
         });
 
@@ -366,8 +372,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
-        const account = await serviceAccountsService.getById(accountId);
-        if (!account || account.organization_id !== organizationId) {
+        const serviceAccount = await serviceAccountsService.getById(accountId);
+        if (
+          !serviceAccount || serviceAccount.organization_id !== organizationId
+        ) {
           return ErrorResponse.NotFound("Service account not found");
         }
 
@@ -385,6 +393,64 @@ export default (appContext: ServerContext) => {
         }
 
         return new Response(null, { status: 204 });
+      },
+    )
+    .post(
+      "/v1/organizations/:organization/service-accounts/:account/rotate-key",
+      async (ctx) => {
+        const authorized = await authorizeRequest(appContext, ctx.request);
+        if (!authorized.admin && !authorized.serviceAccountId) {
+          return ErrorResponse.Unauthorized();
+        }
+        const rateLimitRes = await checkRateLimit(
+          appContext,
+          authorized,
+          "service_accounts_update",
+        );
+        if (rateLimitRes) return rateLimitRes;
+
+        const organizationId = ctx.params?.pathname.groups.organization;
+        const accountId = ctx.params?.pathname.groups.account;
+        if (!organizationId || !accountId) {
+          return ErrorResponse.BadRequest(
+            "Organization and account ID required",
+          );
+        }
+
+        const serviceAccountsService = new ServiceAccountsService(
+          appContext.libsql.database,
+        );
+        const allowed = await requireOrgAccess(
+          authorized,
+          organizationId,
+          serviceAccountsService,
+        );
+        if (!allowed) {
+          return ErrorResponse.Forbidden();
+        }
+
+        const serviceAccount = await serviceAccountsService.getById(accountId);
+        if (
+          !serviceAccount || serviceAccount.organization_id !== organizationId
+        ) {
+          return ErrorResponse.NotFound("Service account not found");
+        }
+
+        const newApiKey = ulid() + ulid();
+        await serviceAccountsService.rotateKey(accountId, newApiKey);
+
+        if (authorized.serviceAccountId) {
+          const metricsService = new MetricsService(
+            appContext.libsql.database,
+          );
+          metricsService.meter({
+            service_account_id: authorized.serviceAccountId,
+            feature_id: "service_accounts_update",
+            quantity: 1,
+          });
+        }
+
+        return Response.json({ apiKey: newApiKey });
       },
     );
 };

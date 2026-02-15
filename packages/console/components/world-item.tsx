@@ -8,14 +8,20 @@ import type { World } from "@wazoo/sdk";
 import { PixelPlanet } from "./pixel-planet/pixel-planet";
 import { getSeedFromId } from "./pixel-planet/lib/seed-utils";
 
-export function WorldItem({ world }: { world: World }) {
+export function WorldItem({
+  world,
+  organizationId,
+}: {
+  world: World;
+  organizationId: string;
+}) {
   const router = useRouter();
 
   const handlePlanetClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const targetUrl = `/worlds/${world.id}?lounge=true`;
+    const targetUrl = `/organizations/${organizationId}/worlds/${world.id}?lounge=true`;
 
     // Use View Transition API if available
     if (typeof document !== "undefined" && "startViewTransition" in document) {
@@ -51,7 +57,7 @@ export function WorldItem({ world }: { world: World }) {
                 title={world.label || world.id}
               >
                 <Link
-                  href={`/worlds/${world.id}`}
+                  href={`/organizations/${organizationId}/worlds/${world.id}`}
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
                   {world.label || world.id}

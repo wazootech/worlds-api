@@ -1,3 +1,4 @@
+/*
 import * as authkit from "@workos-inc/authkit-nextjs";
 import { AuthUser, UserManagement } from "@/lib/user-management";
 
@@ -24,3 +25,4 @@ export class WorkOSUserManagement implements UserManagement {
     return authkit.getWorkOS().userManagement.listUsers(opts);
   }
 }
+*/

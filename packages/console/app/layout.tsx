@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   description: "The console for managing your Worlds.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/wazoo.svg",
   },
 };
 
@@ -33,11 +33,6 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const userInfo = await authkit.withAuth();
-  if (userInfo.user) {
-    const user = await (await authkit.getWorkOS())
-      .userManagement.getUser(userInfo.user.id);
-    userInfo.user = user;
-  }
 
   const isAdmin = !!userInfo?.user?.metadata?.admin;
   return (
@@ -56,7 +51,6 @@ export default async function RootLayout({
       >
         <NuqsAdapter>
           <div className="flex-1 flex flex-col min-h-screen w-full min-w-0">
-            <PageHeader user={userInfo.user} isAdmin={isAdmin} />
             <main className="flex-1 flex flex-col w-full min-w-0">
               {children}
             </main>

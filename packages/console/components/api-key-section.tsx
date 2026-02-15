@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useParams } from "next/navigation";
 import { rotateApiKey } from "@/app/actions";
 
 export function ApiKeySection({ apiKey: initialApiKey }: { apiKey?: string }) {
+  const { organizationId } = useParams() as { organizationId: string };
   const [apiKey, setApiKey] = useState(initialApiKey ?? "");
   const [showKey, setShowKey] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -24,7 +26,7 @@ export function ApiKeySection({ apiKey: initialApiKey }: { apiKey?: string }) {
     }
 
     startTransition(async () => {
-      const newKey = await rotateApiKey();
+      const newKey = await rotateApiKey(organizationId);
       setApiKey(newKey);
       setConfirmRotate(false);
       setShowKey(true);
@@ -40,7 +42,7 @@ export function ApiKeySection({ apiKey: initialApiKey }: { apiKey?: string }) {
         API Key
       </h3>
       <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-        Your API key carries full access to your account. Keep it secret and
+        Your API key carries full access to your organization. Keep it secret and
         never share it in public repositories or client-side code.
       </p>
 

@@ -23,6 +23,7 @@ Deno.test("ChunksService", async (t) => {
   await worldsService.insert({
     id: worldId,
     organization_id: organizationId,
+    slug: "test-world",
     label: "Test World",
     description: "Test Description",
     db_hostname: null,

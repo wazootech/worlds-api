@@ -4,22 +4,22 @@
  * rateLimitsTable is the table for storing rate limit bucket tokens
  */
 export const rateLimitsTable =
-  "CREATE TABLE IF NOT EXISTS rate_limits (\n  KEY TEXT PRIMARY KEY NOT NULL,\n  tokens REAL NOT NULL,\n  last_refill INTEGER NOT NULL\n);";
+  "CREATE TABLE IF NOT EXISTS rate_limits (\r\n  KEY TEXT PRIMARY KEY NOT NULL,\r\n  tokens REAL NOT NULL,\r\n  last_refill INTEGER NOT NULL\r\n);";
 
 /**
  * selectRateLimitByKey retrieves a rate limit bucket by its key
  */
 export const selectRateLimitByKey =
-  "SELECT\n  KEY,\n  tokens,\n  last_refill\nFROM\n  rate_limits\nWHERE\n  KEY = ?;";
+  "SELECT\r\n  KEY,\r\n  tokens,\r\n  last_refill\r\nFROM\r\n  rate_limits\r\nWHERE\r\n  KEY = ?;";
 
 /**
  * insertRateLimit inserts a new rate limit bucket
  */
 export const insertRateLimit =
-  "INSERT INTO\n  rate_limits (KEY, tokens, last_refill)\nVALUES\n  (?, ?, ?);";
+  "INSERT INTO\r\n  rate_limits (KEY, tokens, last_refill)\r\nVALUES\r\n  (?, ?, ?);";
 
 /**
  * updateRateLimit updates a rate limit bucket's tokens and last refill time
  */
 export const updateRateLimit =
-  "UPDATE\n  rate_limits\nSET\n  tokens = ?,\n  last_refill = ?\nWHERE\n  KEY = ?;";
+  "UPDATE\r\n  rate_limits\r\nSET\r\n  tokens = ?,\r\n  last_refill = ?\r\nWHERE\r\n  KEY = ?;";

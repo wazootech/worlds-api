@@ -7,7 +7,6 @@ export async function POST(
 ) {
   try {
     const { worldId } = await params;
-    const searchParams = request.nextUrl.searchParams;
     const body = await request.text();
     const query = body;
     const results = await sdk.worlds.search(worldId, query);

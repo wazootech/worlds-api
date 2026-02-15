@@ -25,6 +25,7 @@ Deno.test("Worlds API routes", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: organizationId,
+      slug: "test-world-" + worldId,
       label: "Test World",
       description: "Test Description",
       db_hostname: null,
@@ -59,6 +60,53 @@ Deno.test("Worlds API routes", async (t) => {
   });
 
   await t.step(
+    "GET /v1/worlds/:world returns world metadata by slug with organizationId",
+    async () => {
+      const { id: organizationId, apiKey } = await createTestOrganization(
+        testContext,
+      );
+      const worldId = ulid();
+      const slug = "test-world-slug-" + worldId;
+      const now = Date.now();
+      await worldsService.insert({
+        id: worldId,
+        organization_id: organizationId,
+        slug: slug, // Use unknown slug
+        label: "Slug World",
+        description: "Test Description",
+        db_hostname: null,
+        db_token: null,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      });
+      await testContext.libsql.manager.create(worldId);
+
+      // Attempt lookup by slug WITH organizationId
+      const resp = await app.fetch(
+        new Request(
+          `http://localhost/v1/worlds/${slug}?organizationId=${organizationId}`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${apiKey}`,
+            },
+          },
+        ),
+      );
+
+      if (resp.status !== 200) {
+        console.log("Response body:", await resp.text());
+      }
+      assertEquals(resp.status, 200);
+      const world = await resp.json();
+      assertEquals(world.id, worldId);
+      assertEquals(world.slug, slug);
+      assertEquals(world.label, "Slug World");
+    },
+  );
+
+  await t.step(
     "GET /v1/worlds/:world returns 404 for non-existent world",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
@@ -87,6 +135,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -129,6 +178,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -189,6 +239,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: null,
         db_hostname: null,
@@ -223,6 +274,7 @@ Deno.test("Worlds API routes", async (t) => {
       },
       body: JSON.stringify({
         organizationId,
+        slug: ("new-world-" + ulid()).toLowerCase(),
         label: "New World",
         description: "New Description",
       }),
@@ -255,6 +307,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -308,6 +361,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: organizationId,
+        slug: "test-world-" + worldId,
         label: "Test World",
         description: "Test Description",
         db_hostname: null,
@@ -360,6 +414,7 @@ Deno.test("Worlds API routes", async (t) => {
     await worldsService.insert({
       id: worldId,
       organization_id: organizationId,
+      slug: "test-world-" + worldId,
       label: "Test World",
       description: "Test Description",
       db_hostname: null,
@@ -409,6 +464,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId1,
         organization_id: organizationId,
+        slug: "test-world-1-" + worldId1,
         label: "Test World 1",
         description: "Test Description 1",
         db_hostname: null,
@@ -424,6 +480,7 @@ Deno.test("Worlds API routes", async (t) => {
       await worldsService.insert({
         id: worldId2,
         organization_id: organizationId,
+        slug: "test-world-2-" + worldId2,
         label: "Test World 2",
         description: "Test Description 2",
         db_hostname: null,
@@ -481,6 +538,7 @@ Deno.test("Admin Organization Override", async (t) => {
       await worldsService.insert({
         id: worldIdA,
         organization_id: organizationA.id,
+        slug: "world-a-" + worldIdA,
         label: "World A",
         description: "Description A",
         db_hostname: null,
@@ -497,6 +555,7 @@ Deno.test("Admin Organization Override", async (t) => {
       await worldsService.insert({
         id: worldIdB,
         organization_id: organizationB.id,
+        slug: "world-b-" + worldIdB,
         label: "World B",
         description: "Description B",
         db_hostname: null,
@@ -561,6 +620,7 @@ Deno.test("Admin Organization Override", async (t) => {
             },
             body: JSON.stringify({
               organizationId: organizationC.id,
+              slug: ("world-c-" + ulid()).toLowerCase(),
               label: "World C",
               description: "Created by Admin",
             }),
@@ -611,6 +671,7 @@ Deno.test("Worlds API routes - Metrics", async (t) => {
       await worldsService.insert({
         id: worldId,
         organization_id: orgId,
+        slug: "metered-world-" + worldId,
         label: "Metered World",
         description: "Desc",
         db_hostname: null,
@@ -674,6 +735,7 @@ Deno.test("Worlds API routes - Metrics", async (t) => {
           },
           body: JSON.stringify({
             organizationId: orgId,
+            slug: ("new-metered-world-" + ulid()).toLowerCase(),
             label: "New Metered World",
             description: "Desc",
           }),

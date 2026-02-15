@@ -6,6 +6,7 @@ import { z } from "zod";
 export interface ServiceAccount {
   id: string;
   organizationId: string;
+  apiKey: string;
   label: string | null;
   description: string | null;
   createdAt: number;
@@ -18,6 +19,7 @@ export interface ServiceAccount {
 export const serviceAccountSchema: z.ZodType<ServiceAccount> = z.object({
   id: z.string(),
   organizationId: z.string(),
+  apiKey: z.string(),
   label: z.string().nullable(),
   description: z.string().nullable(),
   createdAt: z.number(),
@@ -27,19 +29,13 @@ export const serviceAccountSchema: z.ZodType<ServiceAccount> = z.object({
 /**
  * ServiceAccountCreated represents a newly created service account, including its API key.
  */
-export interface ServiceAccountCreated extends ServiceAccount {
-  apiKey: string;
-}
+export interface ServiceAccountCreated extends ServiceAccount {}
 
 /**
  * serviceAccountCreatedSchema is the Zod schema for ServiceAccountCreated.
  */
 export const serviceAccountCreatedSchema: z.ZodType<ServiceAccountCreated> =
-  serviceAccountSchema.and(
-    z.object({
-      apiKey: z.string(),
-    }),
-  );
+  serviceAccountSchema;
 
 /**
  * CreateServiceAccountParams represents the parameters for creating a service account.

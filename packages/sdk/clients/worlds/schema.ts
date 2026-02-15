@@ -36,6 +36,7 @@ export const tripleSearchResultSchema: z.ZodType<TripleSearchResult> = z.object(
 export interface World {
   id: string;
   organizationId: string | null;
+  slug: string;
   label: string;
   description: string | null;
   createdAt: number;
@@ -49,6 +50,7 @@ export interface World {
 export const worldSchema: z.ZodType<World> = z.object({
   id: z.string(),
   organizationId: z.string().nullable(),
+  slug: z.string(),
   label: z.string(),
   description: z.string().nullable(),
   createdAt: z.number(),
@@ -61,6 +63,7 @@ export const worldSchema: z.ZodType<World> = z.object({
  */
 export interface CreateWorldParams {
   organizationId?: string;
+  slug: string;
   label: string;
   description?: string | null;
 }
@@ -70,6 +73,7 @@ export interface CreateWorldParams {
  */
 export const createWorldParamsSchema: z.ZodType<CreateWorldParams> = z.object({
   organizationId: z.string().optional(),
+  slug: z.string(),
   label: z.string(),
   description: z.string().nullable().optional(),
 });
@@ -78,6 +82,7 @@ export const createWorldParamsSchema: z.ZodType<CreateWorldParams> = z.object({
  * UpdateWorldParams represents the parameters for updating a world.
  */
 export interface UpdateWorldParams {
+  slug?: string;
   label?: string;
   description?: string | null;
 }
@@ -86,6 +91,7 @@ export interface UpdateWorldParams {
  * updateWorldParamsSchema is the Zod schema for UpdateWorldParams.
  */
 export const updateWorldParamsSchema: z.ZodType<UpdateWorldParams> = z.object({
+  slug: z.string().optional(),
   label: z.string().optional(),
   description: z.string().nullable().optional(),
 });

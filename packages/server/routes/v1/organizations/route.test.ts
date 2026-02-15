@@ -22,6 +22,7 @@ Deno.test("Organizations API routes", async (t) => {
       const now1 = Date.now();
       await organizationsService.add({
         id: "organization_1",
+        slug: "org-1",
         label: "Test organization 1",
         description: "Test description 1",
         plan: "free",
@@ -33,6 +34,7 @@ Deno.test("Organizations API routes", async (t) => {
       const now2 = Date.now();
       await organizationsService.add({
         id: "organization_2",
+        slug: "org-2",
         label: "Test organization 2",
         description: "Test description 2",
         plan: "pro",
@@ -78,6 +80,7 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
         },
         body: JSON.stringify({
           id: "organization_new",
+          slug: "org-new",
           description: "Test organization",
           label: "Test Label",
           plan: "free",
@@ -100,6 +103,7 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
       const now = Date.now();
       await organizationsService.add({
         id: "organization_get",
+        slug: "org-get",
         label: "Test organization 2",
         description: "Test description 2",
         plan: "pro",
@@ -133,6 +137,7 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
       const now = Date.now();
       await organizationsService.add({
         id: "organization_put",
+        slug: "org-put",
         label: "Original label",
         description: "Original description",
         plan: "free",
@@ -152,6 +157,7 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
           },
           body: JSON.stringify({
             label: "Updated label",
+            slug: "org-put",
             description: "Updated description",
             plan: "pro",
           }),
@@ -183,6 +189,7 @@ Deno.test("Organizations API routes - CRUD operations", async (t) => {
       const now = Date.now();
       await organizationsService.add({
         id: "organization_del",
+        slug: "org-del",
         label: "To be deleted",
         description: "Description",
         plan: "free",

@@ -17,6 +17,7 @@ Deno.test("Service Accounts API routes", async (t) => {
   const orgService = new OrganizationsService(testContext.libsql.database);
   await orgService.add({
     id: organizationId,
+    slug: "test-org-sa",
     label: "Test Org",
     description: "Description",
     plan: "free",
@@ -172,6 +173,7 @@ Deno.test("Service Accounts API routes - Metrics", async (t) => {
   const orgService = new OrganizationsService(testContext.libsql.database);
   await orgService.add({
     id: organizationId,
+    slug: "test-org-sa-metrics",
     label: "Test Org",
     description: "Description",
     plan: "free",

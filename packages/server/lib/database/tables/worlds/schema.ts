@@ -7,6 +7,7 @@ import { z } from "zod";
 const worldTableShape = z.object({
   id: z.string(),
   organization_id: z.string().nullable(),
+  slug: z.string(),
   label: z.string(),
   description: z.string().nullable(),
   db_hostname: z.string().nullable(),
@@ -24,6 +25,7 @@ export const worldTableSchema: z.ZodType<WorldTable> = worldTableShape;
 export interface WorldTable {
   id: string;
   organization_id: string | null;
+  slug: string;
   label: string;
   description: string | null;
   db_hostname: string | null;

@@ -4,7 +4,7 @@
  * serviceAccountsTable definition.
  */
 export const serviceAccountsTable =
-  "CREATE TABLE IF NOT EXISTS service_accounts (\n  id TEXT PRIMARY KEY,\n  organization_id TEXT NOT NULL,\n  api_key TEXT NOT NULL UNIQUE,\n  label TEXT,\n  description TEXT,\n  created_at INTEGER NOT NULL,\n  updated_at INTEGER NOT NULL\n);";
+  "CREATE TABLE IF NOT EXISTS service_accounts (\r\n  id TEXT PRIMARY KEY,\r\n  organization_id TEXT NOT NULL,\r\n  api_key TEXT NOT NULL UNIQUE,\r\n  label TEXT,\r\n  description TEXT,\r\n  created_at INTEGER NOT NULL,\r\n  updated_at INTEGER NOT NULL\r\n);";
 
 /**
  * serviceAccountsOrganizationIdIndex is an index on organization_id.
@@ -22,34 +22,40 @@ export const serviceAccountsApiKeyIndex =
  * serviceAccountsAdd inserts a new service account.
  */
 export const serviceAccountsAdd =
-  "INSERT INTO\n  service_accounts (\n    id,\n    organization_id,\n    api_key,\n    label,\n    description,\n    created_at,\n    updated_at\n  )\nVALUES\n  (?, ?, ?, ?, ?, ?, ?);";
+  "INSERT INTO\r\n  service_accounts (\r\n    id,\r\n    organization_id,\r\n    api_key,\r\n    label,\r\n    description,\r\n    created_at,\r\n    updated_at\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?, ?);";
 
 /**
  * serviceAccountsGetById retrieves a service account by ID.
  */
 export const serviceAccountsGetById =
-  "SELECT\n  *\nFROM\n  service_accounts\nWHERE\n  id = ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  service_accounts\r\nWHERE\r\n  id = ?;";
 
 /**
  * serviceAccountsGetByApiKey retrieves a service account by API key.
  */
 export const serviceAccountsGetByApiKey =
-  "SELECT\n  *\nFROM\n  service_accounts\nWHERE\n  api_key = ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  service_accounts\r\nWHERE\r\n  api_key = ?;";
 
 /**
  * serviceAccountsListByOrganizationId retrieves all service accounts for an organization.
  */
 export const serviceAccountsListByOrganizationId =
-  "SELECT\n  *\nFROM\n  service_accounts\nWHERE\n  organization_id = ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  service_accounts\r\nWHERE\r\n  organization_id = ?;";
 
 /**
  * serviceAccountsUpdate updates a service account.
  */
 export const serviceAccountsUpdate =
-  "UPDATE\n  service_accounts\nSET\n  label = ?,\n  description = ?,\n  updated_at = ?\nWHERE\n  id = ?;";
+  "UPDATE\r\n  service_accounts\r\nSET\r\n  label = ?,\r\n  description = ?,\r\n  updated_at = ?\r\nWHERE\r\n  id = ?;";
 
 /**
  * serviceAccountsRemove deletes a service account.
  */
 export const serviceAccountsRemove =
-  "DELETE FROM\n  service_accounts\nWHERE\n  id = ?;";
+  "DELETE FROM\r\n  service_accounts\r\nWHERE\r\n  id = ?;";
+
+/**
+ * serviceAccountsRotateKey updates a service account's API key.
+ */
+export const serviceAccountsRotateKey =
+  "UPDATE\r\n  service_accounts\r\nSET\r\n  api_key = ?,\r\n  updated_at = ?\r\nWHERE\r\n  id = ?;";

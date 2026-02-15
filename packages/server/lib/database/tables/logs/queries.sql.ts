@@ -4,7 +4,7 @@
  * logsTable is the table definition for system logs.
  */
 export const logsTable =
-  "CREATE TABLE IF NOT EXISTS LOGS (\n  id TEXT PRIMARY KEY,\n  world_id TEXT,\n  timestamp INTEGER NOT NULL,\n  LEVEL TEXT NOT NULL,\n  message TEXT NOT NULL,\n  metadata TEXT\n);";
+  "CREATE TABLE IF NOT EXISTS LOGS (\r\n  id TEXT PRIMARY KEY,\r\n  world_id TEXT,\r\n  timestamp INTEGER NOT NULL,\r\n  LEVEL TEXT NOT NULL,\r\n  message TEXT NOT NULL,\r\n  metadata TEXT\r\n);";
 
 /**
  * logsWorldIdIndex is an index on world_id for faster filtering.
@@ -22,21 +22,22 @@ export const logsTimestampIndex =
  * logsAdd inserts a new log entry.
  */
 export const logsAdd =
-  "INSERT INTO\n  LOGS (\n    id,\n    world_id,\n    timestamp,\n    LEVEL,\n    message,\n    metadata\n  )\nVALUES\n  (?, ?, ?, ?, ?, ?);";
+  "INSERT INTO\r\n  LOGS (\r\n    id,\r\n    world_id,\r\n    timestamp,\r\n    LEVEL,\r\n    message,\r\n    metadata\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?);";
 
 /**
  * logsListByWorld retrieves logs for a specific world, ordered by time descending.
  */
 export const logsListByWorld =
-  "SELECT\n  *\nFROM\n  LOGS\nWHERE\n  world_id = ?\nORDER BY\n  timestamp DESC\nLIMIT\n  ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?;";
 
 /**
  * logsListSince retrieves logs after a timestamp for streaming.
  */
 export const logsListSince =
-  "SELECT\n  *\nFROM\n  LOGS\nWHERE\n  timestamp > ?\nORDER BY\n  timestamp ASC\nLIMIT\n  ?;";
+  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  timestamp > ?\r\nORDER BY\r\n  timestamp ASC\r\nLIMIT\r\n  ?;";
 
 /**
  * logsDeleteExpired deletes logs older than a specific timestamp (TTL).
  */
-export const logsDeleteExpired = "DELETE FROM\n  LOGS\nWHERE\n  timestamp < ?;";
+export const logsDeleteExpired =
+  "DELETE FROM\r\n  LOGS\r\nWHERE\r\n  timestamp < ?;";

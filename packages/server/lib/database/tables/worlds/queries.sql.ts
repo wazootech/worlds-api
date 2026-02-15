@@ -4,7 +4,7 @@
  * worldsTable initializes the worlds table.
  */
 export const worldsTable =
-  "CREATE TABLE IF NOT EXISTS worlds (\n  id TEXT PRIMARY KEY NOT NULL,\n  organization_id TEXT,\n  label TEXT NOT NULL,\n  description TEXT,\n  db_hostname TEXT,\n  db_token TEXT,\n  created_at INTEGER NOT NULL,\n  updated_at INTEGER NOT NULL,\n  deleted_at INTEGER,\n  FOREIGN KEY (organization_id) REFERENCES organizations(id)\n);";
+  "CREATE TABLE IF NOT EXISTS worlds (\r\n  id TEXT PRIMARY KEY NOT NULL,\r\n  organization_id TEXT,\r\n  slug TEXT NOT NULL,\r\n  label TEXT NOT NULL,\r\n  description TEXT,\r\n  db_hostname TEXT,\r\n  db_token TEXT,\r\n  created_at INTEGER NOT NULL,\r\n  updated_at INTEGER NOT NULL,\r\n  deleted_at INTEGER,\r\n  FOREIGN KEY (organization_id) REFERENCES organizations(id),\r\n  UNIQUE(organization_id, slug)\r\n);";
 
 /**
  * worldsOrganizationIdIndex is an index on organization_id for secondary lookups.
@@ -17,42 +17,42 @@ export const worldsOrganizationIdIndex =
  * (used in GET /v1/worlds/:world and SPARQL routes).
  */
 export const selectWorldById =
-  "SELECT\n  id,\n  organization_id,\n  label,\n  description,\n  db_hostname,\n  db_token,\n  created_at,\n  updated_at,\n  deleted_at\nFROM\n  worlds\nWHERE\n  id = ?\n  AND deleted_at IS NULL;";
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  id = ?\r\n  AND deleted_at IS NULL;";
 
 /**
- * selectWorldByIdWithBlob (deprecated, now same as selectWorldById)
+ * selectWorldBySlug is a query that finds a world by organization ID and slug.
  */
-export const selectWorldByIdWithBlob =
-  "SELECT\n  id,\n  organization_id,\n  label,\n  description,\n  db_hostname,\n  db_token,\n  created_at,\n  updated_at,\n  deleted_at\nFROM\n  worlds\nWHERE\n  id = ?\n  AND deleted_at IS NULL;";
+export const selectWorldBySlug =
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id = ?\r\n  AND slug = ?\r\n  AND deleted_at IS NULL;";
 
 /**
  * selectWorldsByOrganizationId is a query that finds worlds by organization ID with
  * pagination (used in GET /v1/worlds).
  */
 export const selectWorldsByOrganizationId =
-  "SELECT\n  id,\n  organization_id,\n  label,\n  description,\n  db_hostname,\n  db_token,\n  created_at,\n  updated_at,\n  deleted_at\nFROM\n  worlds\nWHERE\n  organization_id = ?\n  AND deleted_at IS NULL\nORDER BY\n  created_at DESC\nLIMIT\n  ? OFFSET ?;";
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id = ?\r\n  AND deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
 
 /**
  * selectAllWorlds is a query that finds worlds without organization filtering.
  */
 export const selectAllWorlds =
-  "SELECT\n  id,\n  organization_id,\n  label,\n  description,\n  db_hostname,\n  db_token,\n  created_at,\n  updated_at,\n  deleted_at\nFROM\n  worlds\nWHERE\n  deleted_at IS NULL\nORDER BY\n  created_at DESC\nLIMIT\n  ? OFFSET ?;";
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
 
 /**
  * insertWorld is a query that inserts a new world (used in POST /v1/worlds).
  */
 export const insertWorld =
-  "INSERT INTO\n  worlds (\n    id,\n    organization_id,\n    label,\n    description,\n    db_hostname,\n    db_token,\n    created_at,\n    updated_at,\n    deleted_at\n  )\nVALUES\n  (?, ?, ?, ?, ?, ?, ?, ?, ?);";
+  "INSERT INTO\r\n  worlds (\r\n    id,\r\n    organization_id,\r\n    slug,\r\n    label,\r\n    description,\r\n    db_hostname,\r\n    db_token,\r\n    created_at,\r\n    updated_at,\r\n    deleted_at\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
 /**
  * updateWorld is a query that updates world fields
  * (used in PUT /v1/worlds/:world).
  */
 export const updateWorld =
-  "UPDATE\n  worlds\nSET\n  label = ?,\n  description = ?,\n  updated_at = ?,\n  db_hostname = ?,\n  db_token = ?,\n  deleted_at = ?\nWHERE\n  id = ?;";
+  "UPDATE\r\n  worlds\r\nSET\r\n  slug = ?,\r\n  label = ?,\r\n  description = ?,\r\n  updated_at = ?,\r\n  db_hostname = ?,\r\n  db_token = ?,\r\n  deleted_at = ?\r\nWHERE\r\n  id = ?;";
 
 /**
  * deleteWorld is a query that deletes a world
  * (used in DELETE /v1/worlds/:world).
  */
-export const deleteWorld = "DELETE FROM\n  worlds\nWHERE\n  id = ?;";
+export const deleteWorld = "DELETE FROM\r\n  worlds\r\nWHERE\r\n  id = ?;";

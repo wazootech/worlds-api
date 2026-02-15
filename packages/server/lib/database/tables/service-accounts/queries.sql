@@ -68,3 +68,12 @@ DELETE FROM
   service_accounts
 WHERE
   id = ?;
+
+-- serviceAccountsRotateKey updates a service account's API key.
+UPDATE
+  service_accounts
+SET
+  api_key = ?,
+  updated_at = ?
+WHERE
+  id = ?;

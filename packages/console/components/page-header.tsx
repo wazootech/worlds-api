@@ -4,47 +4,58 @@ import Image from "next/image";
 import { UserMenu } from "./user-menu";
 import { signOutAction } from "@/app/actions";
 import { AuthUser } from "@/lib/auth";
+import { OrganizationSwitcher, ResourceMenuItem, ResourceBreadcrumb } from "./organization-switcher";
+import { NavTab, NavTabs } from "./nav-tabs";
 
 export function PageHeader({
   user,
   children,
   isAdmin,
+  resource,
+  tabs,
 }: {
   user?: AuthUser | null;
   children?: ReactNode;
   isAdmin?: boolean;
+  resource?: ResourceBreadcrumb | ResourceBreadcrumb[];
+  tabs?: NavTab[];
 }) {
   return (
-    <nav className="border-b border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          {children}
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="relative w-6 h-6 rounded-full overflow-hidden shadow-sm transition-colors">
-              <Image
-                src="https://wazoo.dev/wazoo.svg"
-                alt="Wazoo Logo"
-                fill
-                className="object-cover logo-image"
-              />
-            </div>
-            <span className="text-sm font-code tracking-tight text-stone-900 dark:text-stone-100 group-hover:text-primary transition-colors">
-              Worlds Console
-            </span>
-          </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          {user?.id && (
+    <div className="sticky top-0 z-50">
+      <nav className="border-b border-stone-200 dark:border-stone-800 bg-stone-50/80 dark:bg-stone-950/80 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {children}
             <Link
-              href={`/users/${user.id}#api-keys`}
-              className="text-xs font-medium px-2.5 py-1 rounded-md border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+              href={user?.id ? `/organizations/${user.id}` : "/"}
+              className="flex items-center py-1.5 group transition-all"
             >
-              API Key
+              <div className="relative w-6 h-6 rounded-full overflow-hidden shadow-sm transition-colors">
+                <Image
+                  src="/wazoo.svg"
+                  alt="Wazoo Logo"
+                  fill
+                  className="object-cover logo-image p-0.5"
+                />
+              </div>
             </Link>
-          )}
-          <UserMenu user={user} onSignOut={signOutAction} isAdmin={isAdmin} />
+
+            <OrganizationSwitcher resource={resource} />
+          </div>
+          <div className="flex items-center space-x-4">
+            {user?.id && (
+              <Link
+                href={`/users/${user.id}#api-keys`}
+                className="text-xs font-medium px-2.5 py-1 rounded-md border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
+              >
+                API Key
+              </Link>
+            )}
+            <UserMenu user={user} onSignOut={signOutAction} isAdmin={isAdmin} />
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+      {tabs && <NavTabs tabs={tabs} />}
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
  */
 export interface Organization {
   id: string;
+  slug: string;
   label: string | null;
   description: string | null;
   plan: string | null;
@@ -19,6 +20,7 @@ export interface Organization {
 export const organizationSchema: z.ZodType<Organization> = z.object(
   {
     id: z.string(),
+    slug: z.string(),
     label: z.string().nullable(),
     description: z.string().nullable(),
     plan: z.string().nullable(),
@@ -33,6 +35,7 @@ export const organizationSchema: z.ZodType<Organization> = z.object(
  */
 export interface CreateOrganizationParams {
   id: string;
+  slug: string;
   label?: string | null;
   description?: string | null;
   plan?: string | null;
@@ -46,6 +49,7 @@ export const createOrganizationParamsSchema: z.ZodType<
 > = z.object(
   {
     id: z.string(),
+    slug: z.string(),
     label: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
     plan: z.string().nullable().optional(),
@@ -56,6 +60,7 @@ export const createOrganizationParamsSchema: z.ZodType<
  * UpdateOrganizationParams represents the parameters for updating an organization.
  */
 export interface UpdateOrganizationParams {
+  slug?: string | null;
   label?: string | null;
   description?: string | null;
   plan?: string | null;
@@ -68,6 +73,7 @@ export const updateOrganizationParamsSchema: z.ZodType<
   UpdateOrganizationParams
 > = z.object(
   {
+    slug: z.string().nullable().optional(),
     label: z.string().nullable().optional(),
     description: z.string().nullable().optional(),
     plan: z.string().nullable().optional(),

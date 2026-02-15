@@ -72,7 +72,7 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
   }
 }
 
-export async function deleteOrganizationAction(userId: string) {
+export async function deleteUserAction(userId: string) {
   // Verify the current user is an admin
   const { user } = await authkit.withAuth();
   if (!user) {
@@ -85,7 +85,7 @@ export async function deleteOrganizationAction(userId: string) {
   if (!currentUser || !currentUser.metadata?.admin) {
     return {
       success: false,
-      error: "Forbidden: Only admins can delete organizations",
+      error: "Forbidden: Only admins can delete users",
     };
   }
 
@@ -100,16 +100,21 @@ export async function deleteOrganizationAction(userId: string) {
   try {
     const { sdk } = await import("@/lib/sdk");
 
-    // 1. Delete from Worlds API
-    try {
-      await sdk.organizations.delete(userId);
-    } catch (error) {
-      console.error(
-        `Failed to delete account ${userId} from Worlds API:`,
-        error,
-      );
-      // We continue even if Worlds API delete fails, as the account might not exist there
-      // or we want to ensure WorkOS user is deleted anyway.
+    // Get the target user to find their associated organization
+    const targetUser = await workos.userManagement.getUser(userId);
+    const organizationId = targetUser.metadata?.organizationId as string | undefined;
+
+    // 1. Delete associated organization from Worlds API if it exists
+    if (organizationId) {
+      try {
+        await sdk.organizations.delete(organizationId);
+      } catch (error) {
+        console.error(
+          `Failed to delete organization ${organizationId} for user ${userId} from Worlds API:`,
+          error,
+        );
+        // We continue even if Worlds API delete fails
+      }
     }
 
     // 2. Delete from WorkOS
@@ -118,13 +123,13 @@ export async function deleteOrganizationAction(userId: string) {
     revalidatePath("/admins");
     return { success: true };
   } catch (error) {
-    console.error("Failed to delete organization:", error);
+    console.error("Failed to delete user:", error);
     return {
       success: false,
       error:
         error instanceof Error
           ? error.message
-          : "Failed to delete organization",
+          : "Failed to delete user",
     };
   }
 }

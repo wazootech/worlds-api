@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS worlds (
   id TEXT PRIMARY KEY NOT NULL,
   organization_id TEXT,
+  slug TEXT NOT NULL,
   label TEXT NOT NULL,
   description TEXT,
   db_hostname TEXT,
@@ -9,7 +10,8 @@ CREATE TABLE IF NOT EXISTS worlds (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER,
-  FOREIGN KEY (organization_id) REFERENCES organizations(id)
+  FOREIGN KEY (organization_id) REFERENCES organizations(id),
+  UNIQUE(organization_id, slug)
 );
 
 -- worldsOrganizationIdIndex is an index on organization_id for secondary lookups.
@@ -20,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_worlds_organization_id ON worlds(organization_id)
 SELECT
   id,
   organization_id,
+  slug,
   label,
   description,
   db_hostname,
@@ -33,10 +36,11 @@ WHERE
   id = ?
   AND deleted_at IS NULL;
 
--- selectWorldByIdWithBlob (deprecated, now same as selectWorldById)
+-- selectWorldBySlug is a query that finds a world by organization ID and slug.
 SELECT
   id,
   organization_id,
+  slug,
   label,
   description,
   db_hostname,
@@ -47,7 +51,8 @@ SELECT
 FROM
   worlds
 WHERE
-  id = ?
+  organization_id = ?
+  AND slug = ?
   AND deleted_at IS NULL;
 
 -- selectWorldsByOrganizationId is a query that finds worlds by organization ID with
@@ -55,6 +60,7 @@ WHERE
 SELECT
   id,
   organization_id,
+  slug,
   label,
   description,
   db_hostname,
@@ -76,6 +82,7 @@ LIMIT
 SELECT
   id,
   organization_id,
+  slug,
   label,
   description,
   db_hostname,
@@ -97,6 +104,7 @@ INSERT INTO
   worlds (
     id,
     organization_id,
+    slug,
     label,
     description,
     db_hostname,
@@ -106,13 +114,14 @@ INSERT INTO
     deleted_at
   )
 VALUES
-  (?, ?, ?, ?, ?, ?, ?, ?, ?);
+  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- updateWorld is a query that updates world fields
 -- (used in PUT /v1/worlds/:world).
 UPDATE
   worlds
 SET
+  slug = ?,
   label = ?,
   description = ?,
   updated_at = ?,

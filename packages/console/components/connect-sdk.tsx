@@ -46,8 +46,6 @@ export function ConnectSdkButton({
       {isOpen && (
         <ConnectSdkDialog
           codeSnippet={codeSnippet}
-          maskedCodeSnippet={maskedCodeSnippet}
-          codeSnippetHtml={codeSnippetHtml}
           maskedCodeSnippetHtml={maskedCodeSnippetHtml}
           onClose={() => setIsOpen(null)}
         />
@@ -58,14 +56,10 @@ export function ConnectSdkButton({
 
 function ConnectSdkDialog({
   codeSnippet,
-  maskedCodeSnippet,
-  codeSnippetHtml,
   maskedCodeSnippetHtml,
   onClose,
 }: {
   codeSnippet: string;
-  maskedCodeSnippet: string;
-  codeSnippetHtml: string;
   maskedCodeSnippetHtml: string;
   onClose: () => void;
 }) {

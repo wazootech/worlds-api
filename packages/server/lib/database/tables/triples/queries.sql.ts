@@ -4,16 +4,16 @@
  * triplesTable is a table for triples with vector embeddings.
  */
 export const triplesTable =
-  "CREATE TABLE IF NOT EXISTS triples (\n  id TEXT PRIMARY KEY,\n  subject TEXT NOT NULL,\n  predicate TEXT NOT NULL,\n  object TEXT NOT NULL,\n  UNIQUE(subject, predicate, object)\n);";
+  "CREATE TABLE IF NOT EXISTS triples (\r\n  id TEXT PRIMARY KEY,\r\n  subject TEXT NOT NULL,\r\n  predicate TEXT NOT NULL,\r\n  object TEXT NOT NULL,\r\n  UNIQUE(subject, predicate, object)\r\n);";
 
 /**
  * deleteTriples is a query that deletes a specific triple by id.
  */
-export const deleteTriples = "DELETE FROM\n  triples\nWHERE\n  id = ?;";
+export const deleteTriples = "DELETE FROM\r\n  triples\r\nWHERE\r\n  id = ?;";
 
 /**
  * upsertTriples is a query that inserts or replaces a triple with
  * embedding.
  */
 export const upsertTriples =
-  "INSERT\n  OR REPLACE INTO triples (\n    id,\n    subject,\n    predicate,\n    object\n  )\nVALUES\n  (?, ?, ?, ?);";
+  "INSERT\r\n  OR REPLACE INTO triples (\r\n    id,\r\n    subject,\r\n    predicate,\r\n    object\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?);";

@@ -49,7 +49,19 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await worldsService.getById(worldId);
+        // Resolve world by ID or slug
+        let world = await worldsService.getById(worldId);
+
+        const url = new URL(ctx.request.url);
+        const organizationId = url.searchParams.get("organizationId") ??
+          authorized.organizationId;
+
+        if (!world && organizationId) {
+          world = await worldsService.getBySlug(
+            organizationId,
+            worldId,
+          );
+        }
 
         if (!world || world.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -90,6 +102,7 @@ export default (appContext: ServerContext) => {
         const record = worldSchema.parse({
           id: world.id,
           organizationId: world.organization_id,
+          slug: world.slug,
           label: world.label,
           description: world.description,
           createdAt: world.created_at,
@@ -114,7 +127,14 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const rawWorld = await worldsService.getById(worldId);
+        // Resolve world by ID or slug
+        let rawWorld = await worldsService.getById(worldId);
+        if (!rawWorld && authorized.organizationId) {
+          rawWorld = await worldsService.getBySlug(
+            authorized.organizationId,
+            worldId,
+          );
+        }
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -126,6 +146,8 @@ export default (appContext: ServerContext) => {
         ) {
           return ErrorResponse.Forbidden();
         }
+
+        const actualId = rawWorld.id;
 
         const rateLimitRes = await checkRateLimit(
           appContext,
@@ -145,11 +167,11 @@ export default (appContext: ServerContext) => {
           });
         }
 
-        const managed = await appContext.libsql.manager.get(worldId);
+        const managed = await appContext.libsql.manager.get(actualId);
         const logsService = new LogsService(managed.database);
         await logsService.add({
           id: ulid(),
-          world_id: worldId,
+          world_id: actualId,
           timestamp: Date.now(),
           level: "info",
           message: "World exported",
@@ -236,7 +258,14 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const rawWorld = await worldsService.getById(worldId);
+        // Resolve world by ID or slug
+        let rawWorld = await worldsService.getById(worldId);
+        if (!rawWorld && authorized.organizationId) {
+          rawWorld = await worldsService.getBySlug(
+            authorized.organizationId,
+            worldId,
+          );
+        }
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -249,12 +278,7 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_import",
-        );
-        if (rateLimitRes) return rateLimitRes;
+        const actualId = rawWorld.id;
 
         const contentType = ctx.request.headers.get("content-type") ||
           "application/n-quads";
@@ -271,7 +295,7 @@ export default (appContext: ServerContext) => {
         const parser = new Parser({ format });
         const quads = parser.parse(bodyText);
 
-        const managed = await appContext.libsql.manager.get(worldId);
+        const managed = await appContext.libsql.manager.get(actualId);
         const blobsService = new BlobsService(managed.database);
         const worldData = await blobsService.get();
 
@@ -353,7 +377,14 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const rawWorld = await worldsService.getById(worldId);
+        // Resolve world by ID or slug
+        let rawWorld = await worldsService.getById(worldId);
+        if (!rawWorld && authorized.organizationId) {
+          rawWorld = await worldsService.getBySlug(
+            authorized.organizationId,
+            worldId,
+          );
+        }
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -366,15 +397,14 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
+        const actualId = rawWorld.id;
+
         const rateLimitRes = await checkRateLimit(
           appContext,
           authorized,
           "worlds_update",
         );
         if (rateLimitRes) return rateLimitRes;
-
-        // Validate SQL result
-        const _world = rawWorld;
 
         let body;
         try {
@@ -395,7 +425,8 @@ export default (appContext: ServerContext) => {
         const data = parseResult.data;
 
         const updatedAt = Date.now();
-        await worldsService.update(worldId, {
+        await worldsService.update(actualId, {
+          slug: data.slug,
           label: data.label,
           description: data.description,
           updated_at: updatedAt,
@@ -412,11 +443,11 @@ export default (appContext: ServerContext) => {
           });
         }
 
-        const managed = await appContext.libsql.manager.get(worldId);
+        const managed = await appContext.libsql.manager.get(actualId);
         const logsService = new LogsService(managed.database);
         await logsService.add({
           id: ulid(),
-          world_id: worldId,
+          world_id: actualId,
           timestamp: Date.now(),
           level: "info",
           message: "World updated",
@@ -443,7 +474,14 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const rawWorld = await worldsService.getById(worldId);
+        // Resolve world by ID or slug
+        let rawWorld = await worldsService.getById(worldId);
+        if (!rawWorld && authorized.organizationId) {
+          rawWorld = await worldsService.getBySlug(
+            authorized.organizationId,
+            worldId,
+          );
+        }
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -455,6 +493,8 @@ export default (appContext: ServerContext) => {
         ) {
           return ErrorResponse.Forbidden();
         }
+
+        const actualId = rawWorld.id;
 
         const rateLimitRes = await checkRateLimit(
           appContext,
@@ -474,14 +514,12 @@ export default (appContext: ServerContext) => {
           });
         }
 
-        const _world = rawWorld;
-
         try {
-          const managed = await appContext.libsql.manager.get(worldId);
+          const managed = await appContext.libsql.manager.get(actualId);
           const logsService = new LogsService(managed.database);
           await logsService.add({
             id: ulid(),
-            world_id: worldId,
+            world_id: actualId,
             timestamp: Date.now(),
             level: "info",
             message: "World deleted",
@@ -494,7 +532,7 @@ export default (appContext: ServerContext) => {
         if (appContext.libsql.manager) {
           try {
             // Database ID is the same as World ID
-            await appContext.libsql.manager.delete(worldId);
+            await appContext.libsql.manager.delete(actualId);
           } catch (error) {
             console.error("Failed to delete Turso database:", error);
           }
@@ -502,7 +540,7 @@ export default (appContext: ServerContext) => {
 
         try {
           // Delete world
-          await worldsService.delete(worldId);
+          await worldsService.delete(actualId);
 
           return new Response(null, { status: 204 });
         } catch (error) {
@@ -581,6 +619,7 @@ export default (appContext: ServerContext) => {
           return worldSchema.parse({
             id: validated.id,
             organizationId: validated.organization_id,
+            slug: validated.slug,
             label: validated.label,
             description: validated.description,
             createdAt: validated.created_at,
@@ -629,6 +668,10 @@ export default (appContext: ServerContext) => {
           );
         }
 
+        if (!organizationId) {
+          return ErrorResponse.BadRequest("Organization ID required");
+        }
+
         const rateLimitRes = await checkRateLimit(
           appContext,
           authorized,
@@ -638,6 +681,25 @@ export default (appContext: ServerContext) => {
 
         const now = Date.now();
         const worldId = ulid();
+        const slug = data.slug;
+
+        // Validate slug
+        if (!/^[a-z0-9-]+$/.test(slug)) {
+          return ErrorResponse.BadRequest(
+            "Invalid slug: lowercase, numbers, and hyphens only",
+          );
+        }
+
+        // Check if slug already exists in this organization
+        const existingBySlug = await worldsService.getBySlug(
+          organizationId,
+          slug,
+        );
+        if (existingBySlug) {
+          return ErrorResponse.BadRequest(
+            "World slug already exists in this organization",
+          );
+        }
 
         let _dbId: string | null = null;
         const dbHostname: string | null = null; // Stored as null, use LibsqlManager.get()
@@ -667,6 +729,7 @@ export default (appContext: ServerContext) => {
         const world: WorldTable = {
           id: worldId,
           organization_id: organizationId ?? null,
+          slug,
           label: data.label,
           description: data.description ?? null,
           db_hostname: dbHostname,
@@ -705,6 +768,7 @@ export default (appContext: ServerContext) => {
         const record = worldSchema.parse({
           id: world.id,
           organizationId: world.organization_id,
+          slug: world.slug,
           label: world.label,
           description: world.description,
           createdAt: world.created_at,
