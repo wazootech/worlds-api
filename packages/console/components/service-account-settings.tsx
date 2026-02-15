@@ -72,7 +72,6 @@ export function ServiceAccountSettings({
         serviceAccount.id,
       );
       setNewKey(newSa.apiKey); // Assuming create returns apiKey
-
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to rotate key");
       setIsRotating(false); // Only stop rotating if error, otherwise keep state to show key

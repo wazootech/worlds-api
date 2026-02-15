@@ -11,13 +11,17 @@ type Params = { organization: string; serviceAccountId: string };
 export async function generateMetadata(props: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { organization: organizationSlug, serviceAccountId } = await props.params;
+  const { organization: organizationSlug, serviceAccountId } =
+    await props.params;
 
   try {
     const organization = await sdk.organizations.get(organizationSlug);
     if (!organization) return { title: "Settings | Service Account" };
 
-    const sa = await sdk.organizations.serviceAccounts.get(organization.id, serviceAccountId);
+    const sa = await sdk.organizations.serviceAccounts.get(
+      organization.id,
+      serviceAccountId,
+    );
 
     if (!sa) {
       return { title: "Settings | Service Account" };
@@ -36,7 +40,8 @@ export async function generateMetadata(props: {
 export default async function ServiceAccountSettingsPage(props: {
   params: Promise<Params>;
 }) {
-  const { organization: organizationSlug, serviceAccountId } = await props.params;
+  const { organization: organizationSlug, serviceAccountId } =
+    await props.params;
 
   // Check authentication
   const { user } = await authkit.withAuth();
@@ -49,7 +54,9 @@ export default async function ServiceAccountSettingsPage(props: {
 
   // Fetch data
   // Fetch data
-  const organization = await sdk.organizations.get(organizationSlug).catch(() => null);
+  const organization = await sdk.organizations
+    .get(organizationSlug)
+    .catch(() => null);
 
   if (!organization) {
     notFound();

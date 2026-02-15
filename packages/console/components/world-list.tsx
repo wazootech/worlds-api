@@ -63,13 +63,7 @@ export function WorldList({
         const seed = getSeedFromId(world.id);
         return (
           <button
-            onClick={(e) =>
-              handlePlanetClick(
-                e,
-                world.id,
-                world.slug,
-              )
-            }
+            onClick={(e) => handlePlanetClick(e, world.id, world.slug)}
             className="h-8 w-8 overflow-hidden rounded-full bg-black/5 dark:bg-black/40 flex items-center justify-center relative hover:scale-110 transition-transform cursor-pointer border border-stone-200 dark:border-stone-700 shadow-sm"
             title="View Planet"
           >

@@ -62,8 +62,6 @@ export default async function OrganizationLayout({
   const actualOrgId = organization.id;
   const orgSlug = organization.slug || organization.id;
 
-
-
   // Generate general SDK snippets for the account
   const apiKey = (user?.metadata?.testApiKey as string) || "YOUR_API_KEY";
 
@@ -103,7 +101,6 @@ console.log("My worlds:", worlds.length);`;
         maskedCodeSnippetHtml,
       }}
     >
-
       <OrganizationHeader />
       {children}
     </OrganizationProvider>

@@ -12,12 +12,15 @@ type Params = { organization: string; world: string };
 export async function generateMetadata(props: {
   params: Promise<Params>;
 }): Promise<Metadata> {
-  const { organization: organizationSlug, world: worldSlug } = await props.params;
+  const { organization: organizationSlug, world: worldSlug } =
+    await props.params;
   try {
     const organization = await sdk.organizations.get(organizationSlug);
     if (!organization) return { title: "World" };
 
-    const world = await sdk.worlds.get(worldSlug, { organizationId: organization.id });
+    const world = await sdk.worlds.get(worldSlug, {
+      organizationId: organization.id,
+    });
     if (!world) return { title: "World" };
 
     return {
