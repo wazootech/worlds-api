@@ -2,6 +2,7 @@ import type { WorldsSdkOptions } from "#/options.ts";
 import type {
   CreateWorldParams,
   ExecuteSparqlOutput,
+  Log,
   RdfFormat,
   TripleSearchResult,
   UpdateWorldParams,
@@ -309,6 +310,36 @@ export class Worlds {
       throw new Error(`Failed to export world: ${errorMessage}`);
     }
 
+
     return await response.arrayBuffer();
+  }
+
+  /**
+   * listLogs lists the logs for a world.
+   */
+  public async listLogs(
+    worldId: string,
+    limit?: number,
+  ): Promise<Log[]> {
+    const url = new URL(
+      `${this.options.baseUrl}/v1/worlds/${worldId}/logs`,
+    );
+
+    if (limit) {
+      url.searchParams.set("limit", limit.toString());
+    }
+
+    const response = await this.fetch(url, {
+      headers: {
+        Authorization: `Bearer ${this.options.apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorMessage = await parseError(response);
+      throw new Error(`Failed to list logs: ${errorMessage}`);
+    }
+
+    return await response.json();
   }
 }

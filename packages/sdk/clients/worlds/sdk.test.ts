@@ -136,6 +136,16 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
     assert(nQuads.includes("Imported Object"));
   });
 
+  await t.step("list logs", async () => {
+    // There should be some logs from previous operations (create, update, sparql, import)
+    const logs = await sdk.worlds.listLogs(worldId);
+    assert(logs.length > 0);
+    assertEquals(logs[0].worldId, worldId);
+    assertExists(logs[0].message);
+    assertExists(logs[0].level);
+    assertExists(logs[0].timestamp);
+  });
+
   await t.step("delete world", async () => {
     await sdk.worlds.delete(worldId);
     const world = await sdk.worlds.get(worldId);

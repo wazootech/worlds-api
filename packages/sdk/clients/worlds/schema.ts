@@ -318,3 +318,27 @@ export const rdfFormatSchema: z.ZodType<RdfFormat> = z.enum([
 export const worldIdsParamSchema: z.ZodType<string[]> = z.array(
   z.string().min(1),
 ).max(50);
+
+/**
+ * Log represents a log entry in a world.
+ */
+export interface Log {
+  id: string;
+  worldId: string;
+  timestamp: number;
+  level: "info" | "warn" | "error" | "debug";
+  message: string;
+  metadata: Record<string, unknown> | null;
+}
+
+/**
+ * logSchema is the Zod schema for Log.
+ */
+export const logSchema: z.ZodType<Log> = z.object({
+  id: z.string(),
+  worldId: z.string(),
+  timestamp: z.number(),
+  level: z.enum(["info", "warn", "error", "debug"]),
+  message: z.string(),
+  metadata: z.record(z.string(), z.any()).nullable(),
+});

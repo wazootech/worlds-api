@@ -118,6 +118,10 @@ export default async function WorldLayout({
       href: `/organizations/${orgSlug}/worlds/${worldSlug}/search`,
     },
     {
+      label: "Logs",
+      href: `/organizations/${orgSlug}/worlds/${worldSlug}/logs`,
+    },
+    {
       label: "Settings",
       href: `/organizations/${orgSlug}/worlds/${worldSlug}/settings`,
     },

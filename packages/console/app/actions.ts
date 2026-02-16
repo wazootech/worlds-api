@@ -424,3 +424,39 @@ export async function deleteServiceAccount(
     revalidatePath(`/organizations/${orgSlug}/service-accounts`);
   }
 }
+
+export async function listWorldLogs(worldId: string, limit?: number) {
+  const { user } = await authkit.withAuth();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    const url = new URL(
+      `${process.env.WORLDS_API_BASE_URL}/v1/worlds/${worldId}/logs`,
+    );
+
+    if (limit) {
+      url.searchParams.set("limit", limit.toString());
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.WORLDS_API_KEY}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to list logs: ${response.statusText}`);
+    }
+
+    const logs = await response.json();
+    return { success: true, logs };
+  } catch (error) {
+    console.error("Failed to list world logs:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to list logs",
+    };
+  }
+}
