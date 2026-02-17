@@ -46,12 +46,7 @@ deno -A jsr:@wazoo/server [command]
 
 ## API Reference
 
-The API follows a standard RESTful structure under the `/v1` prefix. Main
-resources include:
-
-- `/v1/worlds`: Manage individual knowledge bases.
-- `/v1/organizations`: Manage organizational structures.
-- `/v1/invites`: Handle access control.
+The API follows a standard RESTful structure under the `/v1` prefix. 
 
 ---
 

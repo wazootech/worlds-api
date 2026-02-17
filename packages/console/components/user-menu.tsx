@@ -68,11 +68,6 @@ export function UserMenu({
                 Admins
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/invites" className="w-full cursor-pointer">
-                Invites
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuSeparator />
           </>
         )}
