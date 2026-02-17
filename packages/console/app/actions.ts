@@ -122,8 +122,7 @@ export async function deleteOrganization(organizationId: string) {
 
   // 1. Cleanup all worlds in this organization (best effort)
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const worlds = await (sdk.worlds.list as any)({
+    const worlds = await sdk.worlds.list({
       page: 1,
       pageSize: 100,
       organizationId,
@@ -141,12 +140,13 @@ export async function deleteOrganization(organizationId: string) {
 
   // 2. Cleanup all service accounts in this organization (best effort)
   try {
-    const serviceAccounts =
-      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (sdk.organizations.serviceAccounts.list as any)(organizationId, {
+    const serviceAccounts = await sdk.organizations.serviceAccounts.list(
+      organizationId,
+      {
         page: 1,
         pageSize: 100,
-      });
+      },
+    );
     for (const sa of serviceAccounts) {
       try {
         await sdk.organizations.serviceAccounts.delete(organizationId, sa.id);
@@ -196,13 +196,10 @@ export async function rotateApiKey(organizationId: string) {
     throw new Error("Unauthorized");
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const serviceAccounts = await (sdk.organizations.serviceAccounts.list as any)(
-    organizationId,
-  );
+  const serviceAccounts =
+    await sdk.organizations.serviceAccounts.list(organizationId);
   await Promise.all(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    serviceAccounts.map((sa: any) =>
+    serviceAccounts.map((sa) =>
       sdk.organizations.serviceAccounts.delete(organizationId, sa.id),
     ),
   );
@@ -332,8 +329,7 @@ export async function listOrganizations() {
   try {
     // In local dev, we can just list all organizations from the mock DB
     // In production, this would be filtered to the user's memberships
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const organizations = await (sdk.organizations.list as any)();
+    const organizations = await sdk.organizations.list();
     return organizations;
   } catch (error) {
     console.error("Failed to list organizations:", error);
@@ -484,8 +480,7 @@ export async function listWorldLogs(
     if (!world) {
       throw new Error("World not found");
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const logs = await (sdk.worlds.listLogs as any)(world.id, { limit, level });
+    const logs = await sdk.worlds.listLogs(world.id, { limit, level });
     return { success: true, logs };
   } catch (error) {
     console.error("Failed to list world logs:", error);

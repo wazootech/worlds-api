@@ -80,7 +80,7 @@ export default async function WorldLayout({
   try {
     const [worldData, worldsData] = await Promise.all([
       sdk.worlds.get(worldId, { organizationId: actualOrgId }),
-      sdk.worlds.list(1, 100, { organizationId: actualOrgId }),
+      sdk.worlds.list({ page: 1, pageSize: 100, organizationId: actualOrgId }),
     ]);
     world = worldData;
     worlds = worldsData;

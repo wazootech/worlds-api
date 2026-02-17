@@ -40,8 +40,10 @@ export default async function ServiceAccountsPage(props: {
   try {
     serviceAccounts = await sdk.organizations.serviceAccounts.list(
       actualOrgId,
-      page,
-      pageSize,
+      {
+        page,
+        pageSize,
+      },
     );
   } catch (error) {
     console.error("Failed to list service accounts:", error);
