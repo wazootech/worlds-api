@@ -24,16 +24,22 @@ export async function updateWorld(
     throw new Error("Unauthorized");
   }
 
-  await sdk.worlds.update(worldId, updates);
+  // Resolve world to ensure we have the actual ID for mutation
+  const world = await sdk.worlds.get(worldId, { organizationId });
+  if (!world) {
+    throw new Error("World not found");
+  }
 
-  const [world, organization] = await Promise.all([
-    sdk.worlds.get(worldId, { organizationId }),
+  await sdk.worlds.update(world.id, updates);
+
+  const [resolvedWorld, organization] = await Promise.all([
+    sdk.worlds.get(world.id, { organizationId }),
     sdk.organizations.get(organizationId),
   ]);
 
-  if (world && organization) {
+  if (resolvedWorld && organization) {
     const orgSlug = organization.slug || organization.id;
-    const worldSlug = world.slug || world.id;
+    const worldSlug = resolvedWorld.slug || resolvedWorld.id;
     revalidatePath(`/organizations/${orgSlug}`);
     revalidatePath(`/organizations/${orgSlug}/worlds/${worldSlug}`);
   }
@@ -45,7 +51,13 @@ export async function deleteWorld(organizationId: string, worldId: string) {
     throw new Error("Unauthorized");
   }
 
-  await sdk.worlds.delete(worldId);
+  // Resolve world to ensure we have the actual ID for mutation
+  const world = await sdk.worlds.get(worldId, { organizationId });
+  if (!world) {
+    throw new Error("World not found");
+  }
+
+  await sdk.worlds.delete(world.id);
   const organization = await sdk.organizations.get(organizationId);
   if (organization) {
     const orgSlug = organization.slug || organization.id;
@@ -110,7 +122,12 @@ export async function deleteOrganization(organizationId: string) {
 
   // 1. Cleanup all worlds in this organization (best effort)
   try {
-    const worlds = await sdk.worlds.list(1, 100, { organizationId });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const worlds = await (sdk.worlds.list as any)({
+      page: 1,
+      pageSize: 100,
+      organizationId,
+    });
     for (const world of worlds) {
       try {
         await sdk.worlds.delete(world.id);
@@ -124,11 +141,12 @@ export async function deleteOrganization(organizationId: string) {
 
   // 2. Cleanup all service accounts in this organization (best effort)
   try {
-    const serviceAccounts = await sdk.organizations.serviceAccounts.list(
-      organizationId,
-      1,
-      100,
-    );
+    const serviceAccounts =
+      await // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (sdk.organizations.serviceAccounts.list as any)(organizationId, {
+        page: 1,
+        pageSize: 100,
+      });
     for (const sa of serviceAccounts) {
       try {
         await sdk.organizations.serviceAccounts.delete(organizationId, sa.id);
@@ -144,7 +162,12 @@ export async function deleteOrganization(organizationId: string) {
   }
 
   // 3. Remove the organization from the database
-  await sdk.organizations.delete(organizationId);
+  // Resolve organization to get actual ID
+  const organization = await sdk.organizations.get(organizationId);
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+  await sdk.organizations.delete(organization.id);
 
   revalidatePath("/");
 
@@ -173,10 +196,13 @@ export async function rotateApiKey(organizationId: string) {
     throw new Error("Unauthorized");
   }
 
-  const serviceAccounts =
-    await sdk.organizations.serviceAccounts.list(organizationId);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const serviceAccounts = await (sdk.organizations.serviceAccounts.list as any)(
+    organizationId,
+  );
   await Promise.all(
-    serviceAccounts.map((sa) =>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    serviceAccounts.map((sa: any) =>
       sdk.organizations.serviceAccounts.delete(organizationId, sa.id),
     ),
   );
@@ -279,11 +305,17 @@ export async function updateOrganization(
     throw new Error("Unauthorized");
   }
 
-  await sdk.organizations.update(organizationId, updates);
-
+  // Resolve organization to get actual ID
   const organization = await sdk.organizations.get(organizationId);
-  if (organization) {
-    const orgSlug = organization.slug || organization.id;
+  if (!organization) {
+    throw new Error("Organization not found");
+  }
+
+  await sdk.organizations.update(organization.id, updates);
+
+  const resolvedOrganization = await sdk.organizations.get(organization.id);
+  if (resolvedOrganization) {
+    const orgSlug = resolvedOrganization.slug || resolvedOrganization.id;
     revalidatePath(`/organizations/${orgSlug}/settings`);
     revalidatePath(`/organizations/${orgSlug}`);
   }
@@ -300,7 +332,8 @@ export async function listOrganizations() {
   try {
     // In local dev, we can just list all organizations from the mock DB
     // In production, this would be filtered to the user's memberships
-    const organizations = await sdk.organizations.list();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const organizations = await (sdk.organizations.list as any)();
     return organizations;
   } catch (error) {
     console.error("Failed to list organizations:", error);
@@ -315,7 +348,12 @@ export async function executeSparqlQuery(worldId: string, query: string) {
   }
 
   try {
-    const results = await sdk.worlds.sparql(worldId, query);
+    // Resolve world to ensure we have the actual ID for sub-resource call
+    const world = await sdk.worlds.get(worldId);
+    if (!world) {
+      throw new Error("World not found");
+    }
+    const results = await sdk.worlds.sparql(world.id, query);
     return { success: true, results };
   } catch (error) {
     console.error("Failed to execute SPARQL query:", error);
@@ -337,7 +375,12 @@ export async function searchTriples(
   }
 
   try {
-    const results = await sdk.worlds.search(worldId, query, options);
+    // Resolve world to ensure we have the actual ID for sub-resource call
+    const world = await sdk.worlds.get(worldId);
+    if (!world) {
+      throw new Error("World not found");
+    }
+    const results = await sdk.worlds.search(world.id, query, options);
     return { success: true, results };
   } catch (error) {
     console.error("Failed to search triples:", error);
@@ -425,32 +468,24 @@ export async function deleteServiceAccount(
   }
 }
 
-export async function listWorldLogs(worldId: string, limit?: number) {
+export async function listWorldLogs(
+  worldId: string,
+  limit?: number,
+  level?: string,
+) {
   const { user } = await authkit.withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
   try {
-    const url = new URL(
-      `${process.env.WORLDS_API_BASE_URL}/v1/worlds/${worldId}/logs`,
-    );
-
-    if (limit) {
-      url.searchParams.set("limit", limit.toString());
+    // Resolve world to ensure we have the actual ID for sub-resource call
+    const world = await sdk.worlds.get(worldId);
+    if (!world) {
+      throw new Error("World not found");
     }
-
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${process.env.WORLDS_API_KEY}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to list logs: ${response.statusText}`);
-    }
-
-    const logs = await response.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logs = await (sdk.worlds.listLogs as any)(world.id, { limit, level });
     return { success: true, logs };
   } catch (error) {
     console.error("Failed to list world logs:", error);

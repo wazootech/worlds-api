@@ -39,6 +39,19 @@ ORDER BY
 LIMIT
   ?;
 
+-- logsListByWorldAndLevel retrieves logs for a specific world and level, ordered by time descending.
+SELECT
+  *
+FROM
+  LOGS
+WHERE
+  world_id = ?
+  AND LEVEL = ?
+ORDER BY
+  timestamp DESC
+LIMIT
+  ?;
+
 -- logsListSince retrieves logs after a timestamp for streaming.
 SELECT
   *

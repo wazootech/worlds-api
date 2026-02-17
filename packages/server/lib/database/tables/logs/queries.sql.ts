@@ -31,6 +31,12 @@ export const logsListByWorld =
   "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?;";
 
 /**
+ * logsListByWorldAndLevel retrieves logs for a specific world and level, ordered by time descending.
+ */
+export const logsListByWorldAndLevel =
+  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\n  AND LEVEL = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?;";
+
+/**
  * logsListSince retrieves logs after a timestamp for streaming.
  */
 export const logsListSince =

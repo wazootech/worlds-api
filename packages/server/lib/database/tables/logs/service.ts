@@ -3,6 +3,7 @@ import {
   logsAdd,
   logsDeleteExpired,
   logsListByWorld,
+  logsListByWorldAndLevel,
   logsListSince,
 } from "./queries.sql.ts";
 import type { LogsTable, LogsTableInsert } from "./schema.ts";
@@ -24,10 +25,14 @@ export class LogsService {
     });
   }
 
-  async listByWorld(worldId: string, limit: number): Promise<LogsTable[]> {
+  async listByWorld(
+    worldId: string,
+    limit: number,
+    level?: string,
+  ): Promise<LogsTable[]> {
     const result = await this.db.execute({
-      sql: logsListByWorld,
-      args: [worldId, limit],
+      sql: level ? logsListByWorldAndLevel : logsListByWorld,
+      args: level ? [worldId, level.toUpperCase(), limit] : [worldId, limit],
     });
     return (result.rows as Record<string, unknown>[]).map((row) => ({
       id: row.id as string,

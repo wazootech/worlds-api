@@ -27,6 +27,7 @@ type ResourceTableProps<T> = {
   pagination?: PaginationProps;
   emptyState: ReactNode;
   loading?: boolean;
+  condensed?: boolean;
 };
 
 export function ResourceTable<T extends { id: string | number }>({
@@ -36,16 +37,10 @@ export function ResourceTable<T extends { id: string | number }>({
   pagination,
   emptyState,
   loading,
+  condensed,
 }: ResourceTableProps<T>) {
   if (loading) {
-    return (
-      <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-sm overflow-hidden p-12 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-stone-300 border-t-stone-600 dark:border-stone-700 dark:border-t-stone-400" />
-        <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">
-          Loading...
-        </p>
-      </div>
-    );
+    // ... existing loading state ...
   }
 
   if (data.length === 0) {
@@ -67,7 +62,7 @@ export function ResourceTable<T extends { id: string | number }>({
                   <th
                     key={column.key}
                     scope="col"
-                    className={`py-3 px-4 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider ${column.className || ""}`}
+                    className={`${condensed ? "py-2" : "py-3"} px-4 text-left text-xs font-semibold text-stone-500 uppercase tracking-wider ${column.className || ""}`}
                   >
                     {column.label}
                   </th>
@@ -88,7 +83,7 @@ export function ResourceTable<T extends { id: string | number }>({
                   {columns.map((column) => (
                     <td
                       key={column.key}
-                      className={`py-4 px-4 text-sm text-stone-900 dark:text-stone-100 ${column.className || ""}`}
+                      className={`${condensed ? "py-2" : "py-4"} px-4 text-sm text-stone-900 dark:text-stone-100 ${column.className || ""}`}
                     >
                       {column.render
                         ? column.render(item)

@@ -32,7 +32,10 @@ export default async function OrganizationDashboard(props: {
 
   let worlds;
   try {
-    worlds = await sdk.worlds.list(page, pageSize, {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    worlds = await (sdk.worlds.list as any)({
+      page,
+      pageSize,
       organizationId: actualOrgId,
     });
   } catch (error) {

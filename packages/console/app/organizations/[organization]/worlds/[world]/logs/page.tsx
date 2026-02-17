@@ -1,3 +1,4 @@
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { WorldLogsContent } from "@/components/world-logs-content";
 
 export const metadata = {
@@ -5,5 +6,9 @@ export const metadata = {
 };
 
 export default function WorldLogsPage() {
-  return <WorldLogsContent />;
+  return (
+    <NuqsAdapter>
+      <WorldLogsContent />
+    </NuqsAdapter>
+  );
 }

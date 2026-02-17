@@ -57,8 +57,6 @@ export default async function OrganizationLayout({
     notFound();
   }
 
-  const actualOrgId = organization.id;
-
   // Generate general SDK snippets for the account
   const apiKey = (user?.metadata?.testApiKey as string) || "YOUR_API_KEY";
 

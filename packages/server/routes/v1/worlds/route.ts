@@ -127,14 +127,8 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        // Resolve world by ID or slug
-        let rawWorld = await worldsService.getById(worldId);
-        if (!rawWorld && authorized.organizationId) {
-          rawWorld = await worldsService.getBySlug(
-            authorized.organizationId,
-            worldId,
-          );
-        }
+        // Resolve world by ID only
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -258,14 +252,8 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        // Resolve world by ID or slug
-        let rawWorld = await worldsService.getById(worldId);
-        if (!rawWorld && authorized.organizationId) {
-          rawWorld = await worldsService.getBySlug(
-            authorized.organizationId,
-            worldId,
-          );
-        }
+        // Resolve world by ID only
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -377,14 +365,8 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        // Resolve world by ID or slug
-        let rawWorld = await worldsService.getById(worldId);
-        if (!rawWorld && authorized.organizationId) {
-          rawWorld = await worldsService.getBySlug(
-            authorized.organizationId,
-            worldId,
-          );
-        }
+        // Resolve world by ID only
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");
@@ -474,14 +456,8 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        // Resolve world by ID or slug
-        let rawWorld = await worldsService.getById(worldId);
-        if (!rawWorld && authorized.organizationId) {
-          rawWorld = await worldsService.getBySlug(
-            authorized.organizationId,
-            worldId,
-          );
-        }
+        // Resolve world by ID only
+        const rawWorld = await worldsService.getById(worldId);
 
         if (!rawWorld || rawWorld.deleted_at != null) {
           return ErrorResponse.NotFound("World not found");

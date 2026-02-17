@@ -26,14 +26,14 @@ const sdk = new WorldsSdk({
   apiKey: "your-api-key",
 });
 
-// Run a SPARQL query
+// Run a SPARQL query (requires the world ID)
 const result = await sdk.worlds.sparql(
-  "my-knowledge-base",
+  "00000000-0000-0000-0000-000000000000",
   `
   SELECT ?s ?p ?o WHERE {
     ?s ?p ?o .
   } LIMIT 10
-`
+`,
 );
 
 console.log(result);

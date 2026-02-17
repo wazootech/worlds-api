@@ -292,11 +292,8 @@ export default (appContext: ServerContext) => {
           appContext.libsql.database,
         );
 
-        // Resolve organization
-        let organization = await organizationsService.find(organizationId);
-        if (!organization) {
-          organization = await organizationsService.findBySlug(organizationId);
-        }
+        // Resolve organization by ID
+        const organization = await organizationsService.find(organizationId);
 
         if (!organization) {
           return ErrorResponse.NotFound("Organization not found");
@@ -359,11 +356,8 @@ export default (appContext: ServerContext) => {
           appContext.libsql.database,
         );
 
-        // Resolve organization
-        let organization = await organizationsService.find(organizationId);
-        if (!organization) {
-          organization = await organizationsService.findBySlug(organizationId);
-        }
+        // Resolve organization by ID
+        const organization = await organizationsService.find(organizationId);
 
         if (!organization) {
           return ErrorResponse.NotFound("Organization not found");

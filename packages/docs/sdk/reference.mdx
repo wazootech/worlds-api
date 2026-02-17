@@ -25,6 +25,14 @@ Interface for managing functionality related to worlds.
 
 ### Methods
 
+#### `worlds.get`
+
+Retrieves a world's metadata.
+
+```typescript
+worlds.get(idOrSlug: string): Promise<WorldRecord | null>
+```
+
 #### `worlds.sparql`
 
 Executes a SPARQL query or update against a world.
@@ -42,14 +50,6 @@ worlds.search(worldId: string, query: string, options?: {
   limit?: number;
   offset?: number;
 }): Promise<SearchResult>
-```
-
-#### `worlds.get`
-
-Retrieves a world's metadata.
-
-```typescript
-worlds.get(worldId: string): Promise<WorldRecord | null>
 ```
 
 #### `worlds.update`

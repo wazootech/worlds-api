@@ -136,7 +136,8 @@ const sdk = new WorldsSdk({
   apiKey: "${apiKey}",
 });
 
-const world = await sdk.worlds.get("${worldIdSnippet}");
+// Resolve a world by its ID or slug.
+const world = await sdk.worlds.get("${worldSlug || world.id}");
 console.log("Connected to world:", world.label);`;
 
   const maskedApiKey =

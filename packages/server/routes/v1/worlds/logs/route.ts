@@ -55,6 +55,7 @@ export default (appContext: ServerContext) => {
 
         const url = new URL(ctx.request.url);
         const limitParam = url.searchParams.get("limit");
+        const level = url.searchParams.get("level")?.toLowerCase();
         const limit = limitParam
           ? Math.min(
             MAX_LIMIT,
@@ -62,7 +63,7 @@ export default (appContext: ServerContext) => {
           )
           : DEFAULT_LIMIT;
 
-        const logs = await logsService.listByWorld(worldId, limit);
+        const logs = await logsService.listByWorld(worldId, limit, level);
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(
