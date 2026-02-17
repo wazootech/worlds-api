@@ -63,16 +63,11 @@ export function UserMenu({
           </>
         )}
 
-        {accountId && (
-          <DropdownMenuItem asChild>
-            <Link
-              href={`/users/${accountId}`}
-              className="w-full cursor-pointer"
-            >
-              Account
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <Link href="/account" className="w-full cursor-pointer">
+            Account
+          </Link>
+        </DropdownMenuItem>
 
         <DropdownMenuItem
           onSelect={async () => {
