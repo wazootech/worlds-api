@@ -322,7 +322,7 @@ export function WorldLogsContent() {
                 {error}
               </p>
               <button
-                onClick={() => fetchLogs(limit, level)}
+                onClick={() => fetchLogs(pageSize, level)}
                 className="text-sm font-semibold text-red-800 dark:text-red-200 underline mt-2"
               >
                 Try again
