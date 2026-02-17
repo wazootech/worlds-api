@@ -323,7 +323,8 @@ export class Worlds {
   public async listLogs(
     worldId: string,
     options?: {
-      limit?: number;
+      page?: number;
+      pageSize?: number;
       level?: string;
     },
   ): Promise<Log[]> {
@@ -331,8 +332,12 @@ export class Worlds {
       `${this.options.baseUrl}/v1/worlds/${worldId}/logs`,
     );
 
-    if (options?.limit) {
-      url.searchParams.set("limit", options.limit.toString());
+    if (options?.page) {
+      url.searchParams.set("page", options.page.toString());
+    }
+
+    if (options?.pageSize) {
+      url.searchParams.set("pageSize", options.pageSize.toString());
     }
 
     if (options?.level) {

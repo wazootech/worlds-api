@@ -2,8 +2,7 @@ import type { Client } from "@libsql/client";
 import {
   logsAdd,
   logsDeleteExpired,
-  logsListByWorld,
-  logsListByWorldAndLevel,
+  logsList,
   logsListSince,
 } from "./queries.sql.ts";
 import type { LogsTable, LogsTableInsert } from "./schema.ts";
@@ -27,12 +26,15 @@ export class LogsService {
 
   async listByWorld(
     worldId: string,
-    limit: number,
+    page: number = 1,
+    pageSize: number = 50,
     level?: string,
   ): Promise<LogsTable[]> {
+    const offset = (page - 1) * pageSize;
+    const levelParam = level ? level.toUpperCase() : null;
     const result = await this.db.execute({
-      sql: level ? logsListByWorldAndLevel : logsListByWorld,
-      args: level ? [worldId, level.toUpperCase(), limit] : [worldId, limit],
+      sql: logsList,
+      args: [worldId, levelParam, levelParam, pageSize, offset],
     });
     return (result.rows as Record<string, unknown>[]).map((row) => ({
       id: row.id as string,

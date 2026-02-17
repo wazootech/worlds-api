@@ -115,7 +115,7 @@ function LogDetailDialog({
 export function WorldLogsContent() {
   const { world } = useWorld();
   const [logs, setLogs] = useState<Log[]>([]);
-  const [limit, setLimit] = useState(50);
+  const [pageSize, setPageSize] = useState(50);
   const [level, setLevel] = useQueryState(
     "level",
     parseAsString.withDefault("all"),
@@ -126,20 +126,57 @@ export function WorldLogsContent() {
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
   const fetchLogs = useCallback(
-    async (currentLimit: number, currentLevel: string) => {
+    async (currentPageSize: number, currentLevel: string) => {
       setLoading(true);
       setError(null);
       try {
-        const result = await listWorldLogs(
-          world.id,
-          currentLimit,
-          currentLevel === "all" ? undefined : currentLevel,
-        );
-        if (result.success && result.logs) {
-          setLogs(result.logs as Log[]);
-        } else {
-          setError(result.error || "Failed to fetch logs");
+        const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+        let allLogs: Log[] = [];
+        let page = 1;
+        let hasMore = true;
+        const maxPages = 10; // Safety limit: fetch at most 10 pages (~500 logs)
+
+        while (hasMore && page <= maxPages) {
+          const result = await listWorldLogs(
+            world.id,
+            page,
+            currentPageSize,
+            currentLevel === "all" ? undefined : currentLevel,
+          );
+
+          if (result.success && result.logs) {
+            const fetchedLogs = result.logs as Log[];
+            if (fetchedLogs.length === 0) {
+              hasMore = false;
+              break;
+            }
+
+            allLogs = [...allLogs, ...fetchedLogs];
+
+            // Check if the last log in the batch is older than 24 hours
+            const lastLogTimestamp =
+              fetchedLogs[fetchedLogs.length - 1].timestamp;
+            if (lastLogTimestamp < twentyFourHoursAgo) {
+              hasMore = false;
+            }
+
+            page++;
+
+            // If we got fewer logs than requested, there are no more
+            if (fetchedLogs.length < currentPageSize) {
+              hasMore = false;
+            }
+          } else {
+            setError(result.error || "Failed to fetch logs");
+            hasMore = false;
+          }
         }
+
+        // Filter to ensure all logs are within the 24-hour window
+        const filteredLogs = allLogs.filter(
+          (log) => log.timestamp >= twentyFourHoursAgo,
+        );
+        setLogs(filteredLogs);
       } catch (err) {
         setError("An unexpected error occurred while fetching logs");
         console.error(err);
@@ -151,12 +188,12 @@ export function WorldLogsContent() {
   );
 
   useEffect(() => {
-    fetchLogs(limit, level);
-  }, [fetchLogs, limit, level]);
+    fetchLogs(pageSize, level);
+  }, [fetchLogs, pageSize, level]);
 
   const handleRefresh = () => {
     startRefresh(() => {
-      fetchLogs(limit, level);
+      fetchLogs(pageSize, level);
     });
   };
 
@@ -236,7 +273,8 @@ export function WorldLogsContent() {
               </h1>
             </div>
             <p className="text-sm text-stone-500 dark:text-stone-400">
-              Recent activity and system events for this world.
+              Recent activity and system events for this world from the last 24
+              hours.
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -312,10 +350,10 @@ export function WorldLogsContent() {
             </div>
           }
           pagination={{
-            pageSize: limit,
+            pageSize: pageSize,
             hasMore: false,
             onPageChange: () => {},
-            onPageSizeChange: (size: number) => setLimit(size),
+            onPageSizeChange: (size: number) => setPageSize(size),
           }}
         />
 

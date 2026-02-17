@@ -466,7 +466,8 @@ export async function deleteServiceAccount(
 
 export async function listWorldLogs(
   worldId: string,
-  limit?: number,
+  page?: number,
+  pageSize?: number,
   level?: string,
 ) {
   const { user } = await authkit.withAuth();
@@ -480,7 +481,8 @@ export async function listWorldLogs(
     if (!world) {
       throw new Error("World not found");
     }
-    const logs = await sdk.worlds.listLogs(world.id, { limit, level });
+    const logs = await sdk.worlds.listLogs(world.id, { page, pageSize, level });
+
     return { success: true, logs };
   } catch (error) {
     console.error("Failed to list world logs:", error);

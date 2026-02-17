@@ -1,6 +1,7 @@
 {
   "name": "@wazoo/server",
-  "version": "0.0.4",
+  "version": "0.0.5",
+
   "exports": {
     ".": "./mod.ts",
     "./serve": "./main.ts",

@@ -131,7 +131,9 @@ export class WorldsCli {
     }
     const worlds = await this.sdk.worlds.list({
       page: parsed.page ? parseInt(parsed.page as string) : undefined,
-      pageSize: parsed.pageSize ? parseInt(parsed.pageSize as string) : undefined,
+      pageSize: parsed.pageSize
+        ? parseInt(parsed.pageSize as string)
+        : undefined,
       organizationId: parsed.organizationId,
     });
     console.log(JSON.stringify(worlds, null, 2));

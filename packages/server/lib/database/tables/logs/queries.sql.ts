@@ -25,16 +25,10 @@ export const logsAdd =
   "INSERT INTO\r\n  LOGS (\r\n    id,\r\n    world_id,\r\n    timestamp,\r\n    LEVEL,\r\n    message,\r\n    metadata\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?);";
 
 /**
- * logsListByWorld retrieves logs for a specific world, ordered by time descending.
+ * logsList retrieves logs for a specific world, with optional level filtering, ordered by time descending.
  */
-export const logsListByWorld =
-  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?;";
-
-/**
- * logsListByWorldAndLevel retrieves logs for a specific world and level, ordered by time descending.
- */
-export const logsListByWorldAndLevel =
-  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\n  AND LEVEL = ?\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?;";
+export const logsList =
+  "SELECT\r\n  *\r\nFROM\r\n  LOGS\r\nWHERE\r\n  world_id = ?\r\n  AND (? IS NULL OR LEVEL = ?)\r\nORDER BY\r\n  timestamp DESC\r\nLIMIT\r\n  ?\r\nOFFSET\r\n  ?;";
 
 /**
  * logsListSince retrieves logs after a timestamp for streaming.

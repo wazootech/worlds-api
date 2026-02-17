@@ -1,6 +1,7 @@
 {
   "name": "@wazoo/ai-sdk",
-  "version": "0.0.4",
+  "version": "0.0.5",
+
   "exports": {
     ".": "./mod.ts",
     "./tools/discover-schema": "./tools/discover-schema.ts",

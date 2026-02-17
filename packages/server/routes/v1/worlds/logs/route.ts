@@ -54,16 +54,24 @@ export default (appContext: ServerContext) => {
         const logsService = new LogsService(managed.database);
 
         const url = new URL(ctx.request.url);
-        const limitParam = url.searchParams.get("limit");
+        const pageParam = url.searchParams.get("page");
+        const pageSizeParam = url.searchParams.get("pageSize");
         const level = url.searchParams.get("level")?.toLowerCase();
-        const limit = limitParam
+
+        const page = pageParam ? Math.max(1, parseInt(pageParam, 10) || 1) : 1;
+        const pageSize = pageSizeParam
           ? Math.min(
             MAX_LIMIT,
-            Math.max(1, parseInt(limitParam, 10) || DEFAULT_LIMIT),
+            Math.max(1, parseInt(pageSizeParam, 10) || DEFAULT_LIMIT),
           )
           : DEFAULT_LIMIT;
 
-        const logs = await logsService.listByWorld(worldId, limit, level);
+        const logs = await logsService.listByWorld(
+          worldId,
+          page,
+          pageSize,
+          level,
+        );
 
         if (authorized.serviceAccountId) {
           const metricsService = new MetricsService(
