@@ -62,10 +62,18 @@ Deno.test("WorldsSdk - Worlds", async (t) => {
       label: "World 2",
     });
 
-    const page1 = await sdk.worlds.list(1, 1, { organizationId });
+    const page1 = await sdk.worlds.list({
+      page: 1,
+      pageSize: 1,
+      organizationId,
+    });
     assertEquals(page1.length, 1);
 
-    const page2 = await sdk.worlds.list(2, 1, { organizationId });
+    const page2 = await sdk.worlds.list({
+      page: 2,
+      pageSize: 1,
+      organizationId,
+    });
     assertEquals(page2.length, 1);
     assert(page1[0].id !== page2[0].id);
   });
@@ -195,7 +203,9 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
       description: "Test",
     });
     // List worlds for Organization A using admin override
-    const worldsA = await adminSdk.worlds.list(1, 20, {
+    const worldsA = await adminSdk.worlds.list({
+      page: 1,
+      pageSize: 20,
       organizationId: orgAId,
     });
     assertEquals(worldsA.length, 1);
@@ -203,7 +213,9 @@ Deno.test("WorldsSdk - Admin Organization Override", async (t) => {
     assertEquals(worldsA[0].organizationId, orgAId);
 
     // List worlds for Organization B using admin override
-    const worldsB = await adminSdk.worlds.list(1, 20, {
+    const worldsB = await adminSdk.worlds.list({
+      page: 1,
+      pageSize: 20,
       organizationId: orgBId,
     });
     assertEquals(worldsB.length, 1);

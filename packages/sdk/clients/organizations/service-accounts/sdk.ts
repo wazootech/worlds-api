@@ -24,9 +24,13 @@ export class ServiceAccounts {
    */
   public async list(
     organizationId: string,
-    page = 1,
-    pageSize = 20,
+    options?: {
+      page?: number;
+      pageSize?: number;
+    },
   ): Promise<ServiceAccount[]> {
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
     const url = new URL(
       `${this.options.baseUrl}/v1/organizations/${organizationId}/service-accounts`,
     );

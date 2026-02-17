@@ -26,10 +26,14 @@ export class Worlds {
    * list paginates all worlds from the Worlds API.
    */
   public async list(
-    page = 1,
-    pageSize = 20,
-    options?: { organizationId?: string },
+    options?: {
+      page?: number;
+      pageSize?: number;
+      organizationId?: string;
+    },
   ): Promise<World[]> {
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
     const url = new URL(`${this.options.baseUrl}/v1/worlds`);
     const organizationId = options?.organizationId;
     if (organizationId) {
@@ -55,10 +59,10 @@ export class Worlds {
    * get gets a world from the Worlds API.
    */
   public async get(
-    worldId: string,
+    idOrSlug: string,
     options?: { organizationId?: string },
   ): Promise<World | null> {
-    const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
+    const url = new URL(`${this.options.baseUrl}/v1/worlds/${idOrSlug}`);
     if (options?.organizationId) {
       url.searchParams.set("organizationId", options.organizationId);
     }
@@ -310,7 +314,6 @@ export class Worlds {
       throw new Error(`Failed to export world: ${errorMessage}`);
     }
 
-
     return await response.arrayBuffer();
   }
 
@@ -319,14 +322,21 @@ export class Worlds {
    */
   public async listLogs(
     worldId: string,
-    limit?: number,
+    options?: {
+      limit?: number;
+      level?: string;
+    },
   ): Promise<Log[]> {
     const url = new URL(
       `${this.options.baseUrl}/v1/worlds/${worldId}/logs`,
     );
 
-    if (limit) {
-      url.searchParams.set("limit", limit.toString());
+    if (options?.limit) {
+      url.searchParams.set("limit", options.limit.toString());
+    }
+
+    if (options?.level) {
+      url.searchParams.set("level", options.level);
     }
 
     const response = await this.fetch(url, {

@@ -28,9 +28,13 @@ export class Organizations {
    * list paginates organizations from the Worlds API.
    */
   public async list(
-    page = 1,
-    pageSize = 20,
+    options?: {
+      page?: number;
+      pageSize?: number;
+    },
   ): Promise<Organization[]> {
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
     const url = new URL(`${this.options.baseUrl}/v1/organizations`);
     url.searchParams.set("page", page.toString());
     url.searchParams.set("pageSize", pageSize.toString());
@@ -74,13 +78,13 @@ export class Organizations {
   }
 
   /**
-   * get retrieves an organization from the Worlds API.
+   * get gets an organization from the Worlds API.
    */
   public async get(
-    organizationId: string,
+    idOrSlug: string,
   ): Promise<Organization | null> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/organizations/${organizationId}`,
+      `${this.options.baseUrl}/v1/organizations/${idOrSlug}`,
     );
     const response = await this.fetch(
       url,

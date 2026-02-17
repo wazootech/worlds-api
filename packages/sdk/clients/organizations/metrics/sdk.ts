@@ -20,24 +20,26 @@ export class Metrics {
    */
   public async list(
     organizationId: string,
-    params?: MetricListParams,
+    options?: MetricListParams,
   ): Promise<Metric[]> {
     const url = new URL(
       `${this.options.baseUrl}/v1/organizations/${organizationId}/metrics`,
     );
-    if (params) {
-      if (params.page) url.searchParams.set("page", params.page.toString());
-      if (params.pageSize) {
-        url.searchParams.set("pageSize", params.pageSize.toString());
+    if (options) {
+      if (options.page) url.searchParams.set("page", options.page.toString());
+      if (options.pageSize) {
+        url.searchParams.set("pageSize", options.pageSize.toString());
       }
-      if (params.featureId) {
-        url.searchParams.set("featureId", params.featureId);
+      if (options.featureId) {
+        url.searchParams.set("featureId", options.featureId);
       }
-      if (params.serviceAccountId) {
-        url.searchParams.set("serviceAccountId", params.serviceAccountId);
+      if (options.serviceAccountId) {
+        url.searchParams.set("serviceAccountId", options.serviceAccountId);
       }
-      if (params.start) url.searchParams.set("start", params.start.toString());
-      if (params.end) url.searchParams.set("end", params.end.toString());
+      if (options.start) {
+        url.searchParams.set("start", options.start.toString());
+      }
+      if (options.end) url.searchParams.set("end", options.end.toString());
     }
 
     const response = await this.fetch(url, {

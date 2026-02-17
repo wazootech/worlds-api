@@ -49,10 +49,10 @@ Deno.test("WorldsSdk - Organizations", async (t) => {
       label: "Page 2",
     });
 
-    const page1 = await sdk.organizations.list(1, 1);
+    const page1 = await sdk.organizations.list({ page: 1, pageSize: 1 });
     assertEquals(page1.length, 1);
 
-    const page2 = await sdk.organizations.list(2, 1);
+    const page2 = await sdk.organizations.list({ page: 2, pageSize: 1 });
     assertEquals(page2.length, 1);
     assert(page1[0].id !== page2[0].id);
 
