@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 /**
- * ServiceAccount represents a service account in the Worlds API.
+ * ServiceAccount represents a service account for API access.
  */
 export interface ServiceAccount {
   id: string;
   organizationId: string;
-  apiKey: string;
-  label: string | null;
+  label: string;
   description: string | null;
+  apiKey?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -19,31 +19,19 @@ export interface ServiceAccount {
 export const serviceAccountSchema: z.ZodType<ServiceAccount> = z.object({
   id: z.string(),
   organizationId: z.string(),
-  apiKey: z.string(),
-  label: z.string().nullable(),
+  label: z.string(),
   description: z.string().nullable(),
+  apiKey: z.string().optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });
 
 /**
- * ServiceAccountCreated represents a newly created service account, including its API key.
- */
-export interface ServiceAccountCreated extends ServiceAccount {}
-
-/**
- * serviceAccountCreatedSchema is the Zod schema for ServiceAccountCreated.
- */
-export const serviceAccountCreatedSchema: z.ZodType<ServiceAccountCreated> =
-  serviceAccountSchema;
-
-/**
  * CreateServiceAccountParams represents the parameters for creating a service account.
  */
 export interface CreateServiceAccountParams {
-  id?: string;
-  label?: string | null;
-  description?: string | null;
+  label: string;
+  description?: string;
 }
 
 /**
@@ -52,17 +40,16 @@ export interface CreateServiceAccountParams {
 export const createServiceAccountParamsSchema: z.ZodType<
   CreateServiceAccountParams
 > = z.object({
-  id: z.string().optional(),
-  label: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  label: z.string(),
+  description: z.string().optional(),
 });
 
 /**
  * UpdateServiceAccountParams represents the parameters for updating a service account.
  */
 export interface UpdateServiceAccountParams {
-  label?: string | null;
-  description?: string | null;
+  label?: string;
+  description?: string;
 }
 
 /**
@@ -71,6 +58,6 @@ export interface UpdateServiceAccountParams {
 export const updateServiceAccountParamsSchema: z.ZodType<
   UpdateServiceAccountParams
 > = z.object({
-  label: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  label: z.string().optional(),
+  description: z.string().optional(),
 });

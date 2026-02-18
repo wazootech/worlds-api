@@ -10,22 +10,18 @@ import { createClient as createTursoClient } from "@tursodatabase/api";
 import { TursoDatabaseManager } from "#/lib/database/managers/api.ts";
 import { FileDatabaseManager } from "#/lib/database/managers/file.ts";
 
-import organizationsRouter from "./routes/v1/organizations/route.ts";
 import serviceAccountsRouter from "./routes/v1/organizations/service-accounts/route.ts";
 import worldsRouter from "./routes/v1/worlds/route.ts";
 import sparqlRouter from "./routes/v1/worlds/sparql/route.ts";
 import logsRouter from "./routes/v1/worlds/logs/route.ts";
 import searchRouter from "./routes/v1/worlds/search/route.ts";
-import metricsRouter from "./routes/v1/organizations/metrics/route.ts";
 
 const routes = [
-  organizationsRouter,
   serviceAccountsRouter,
   worldsRouter,
   sparqlRouter,
   logsRouter,
   searchRouter,
-  metricsRouter,
 ];
 
 /**

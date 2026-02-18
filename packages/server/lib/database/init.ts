@@ -1,5 +1,4 @@
 import type { Client } from "@libsql/client";
-import { organizationsTable } from "#/lib/database/tables/organizations/queries.sql.ts";
 import {
   worldsOrganizationIdIndex,
   worldsTable,
@@ -9,11 +8,6 @@ import {
   serviceAccountsOrganizationIdIndex,
   serviceAccountsTable,
 } from "#/lib/database/tables/service-accounts/queries.sql.ts";
-import { rateLimitsTable } from "#/lib/database/tables/rate-limits/queries.sql.ts";
-import {
-  metricsServiceAccountIdIndex,
-  metricsTable,
-} from "#/lib/database/tables/metrics/queries.sql.ts";
 import {
   chunksFtsDeleteTrigger,
   chunksFtsInsertTrigger,
@@ -38,17 +32,13 @@ import {
  */
 export async function initializeDatabase(client: Client): Promise<void> {
   // Create tables
-  await client.execute(organizationsTable);
   await client.execute(worldsTable);
   await client.execute(serviceAccountsTable);
-  await client.execute(rateLimitsTable);
-  await client.execute(metricsTable);
 
   // Create indexes
   await client.execute(worldsOrganizationIdIndex);
   await client.execute(serviceAccountsOrganizationIdIndex);
   await client.execute(serviceAccountsApiKeyIndex);
-  await client.execute(metricsServiceAccountIdIndex);
 }
 
 /**

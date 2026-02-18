@@ -7,7 +7,6 @@ import {
 } from "#/lib/testing/context.ts";
 import createRoute from "./route.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 
 Deno.test("World Search API routes", async (t) => {
   const testContext = await createTestContext();
@@ -236,53 +235,6 @@ Deno.test("World Search API routes", async (t) => {
       );
 
       assertEquals(resp.status, 403);
-    },
-  );
-
-  await t.step(
-    "GET /v1/worlds/:world/search with Service Account meters usage",
-    async () => {
-      const { id: orgId } = await createTestOrganization(testContext);
-      const { id: saId, apiKey: saKey } = await createTestServiceAccount(
-        testContext,
-        orgId,
-      );
-
-      const worldId = ulid();
-      const now = Date.now();
-      await worldsService.insert({
-        id: worldId,
-        organization_id: orgId,
-        slug: "search-metered-world-" + worldId,
-        label: "Metered World",
-        description: "Desc",
-        db_hostname: null,
-        db_token: null,
-        created_at: now,
-        updated_at: now,
-        deleted_at: null,
-      });
-      await testContext.libsql.manager.create(worldId);
-
-      const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/search?query=test`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${saKey}`,
-          },
-        }),
-      );
-
-      assertEquals(resp.status, 200);
-
-      // Verify Metric Recorded
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const metricsService = new MetricsService(testContext.libsql.database);
-      const metric = await metricsService.getLast(saId, "semantic_search");
-
-      assert(metric);
-      assertEquals(metric.quantity, 1);
     },
   );
 });

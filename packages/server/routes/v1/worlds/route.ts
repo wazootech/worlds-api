@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid/ulid";
 import { authorizeRequest } from "#/middleware/auth.ts";
-import { checkRateLimit } from "#/middleware/rate-limit.ts";
+
 import type { ServerContext } from "#/context.ts";
 import {
   createWorldParamsSchema,
@@ -16,7 +16,7 @@ import type {
   WorldTable,
 } from "#/lib/database/tables/worlds/schema.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
+
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
 import { handlePatch } from "#/lib/rdf-patch/rdf-patch.ts";
@@ -74,24 +74,6 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Forbidden();
         }
 
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_get",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_get",
-            quantity: 1,
-          });
-        }
-
         // Validate SQL result before returning
         // Check if deleted_at is null (service handles this but double checking)
         if (world.deleted_at != null) {
@@ -142,24 +124,6 @@ export default (appContext: ServerContext) => {
         }
 
         const actualId = rawWorld.id;
-
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_export",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_export",
-            quantity: 1,
-          });
-        }
 
         const managed = await appContext.libsql.manager.get(actualId);
         const logsService = new LogsService(managed.database);
@@ -324,17 +288,6 @@ export default (appContext: ServerContext) => {
           { insertions: quads, deletions: [] },
         ]);
 
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_import",
-            quantity: 1,
-          });
-        }
-
         const logsService = new LogsService(managed.database);
         await logsService.add({
           id: ulid(),
@@ -381,13 +334,6 @@ export default (appContext: ServerContext) => {
 
         const actualId = rawWorld.id;
 
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_update",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
         let body;
         try {
           body = await ctx.request.json();
@@ -413,17 +359,6 @@ export default (appContext: ServerContext) => {
           description: data.description,
           updated_at: updatedAt,
         });
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_update",
-            quantity: 1,
-          });
-        }
 
         const managed = await appContext.libsql.manager.get(actualId);
         const logsService = new LogsService(managed.database);
@@ -471,24 +406,6 @@ export default (appContext: ServerContext) => {
         }
 
         const actualId = rawWorld.id;
-
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_delete",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_delete",
-            quantity: 1,
-          });
-        }
 
         try {
           const managed = await appContext.libsql.manager.get(actualId);
@@ -539,24 +456,6 @@ export default (appContext: ServerContext) => {
         let organizationId = url.searchParams.get("organizationId");
         if (!authorized.admin && authorized.organizationId) {
           organizationId = authorized.organizationId;
-        }
-
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_list",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_list",
-            quantity: 1,
-          });
         }
 
         const pageString = url.searchParams.get("page") ?? "1";
@@ -649,13 +548,6 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.BadRequest("Organization ID required");
         }
 
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "worlds_create",
-        );
-        if (rateLimitRes) return rateLimitRes;
-
         const now = Date.now();
         const worldId = ulid();
         const slug = data.slug;
@@ -717,17 +609,6 @@ export default (appContext: ServerContext) => {
         };
 
         await worldsService.insert(world);
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "worlds_create",
-            quantity: 1,
-          });
-        }
 
         const managed = await appContext.libsql.manager.get(worldId);
         const logsService = new LogsService(managed.database);

@@ -7,8 +7,6 @@ import {
 import createRoute from "./route.ts";
 import { createServer } from "#/server.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
-import { ServiceAccountsService } from "#/lib/database/tables/service-accounts/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 
 Deno.test("Worlds API routes", async (t) => {
@@ -636,122 +634,6 @@ Deno.test("Admin Organization Override", async (t) => {
       const worldResult = await worldsService.getById(world.id);
       assert(worldResult);
       assertEquals(worldResult.organization_id, organizationC.id);
-    },
-  );
-});
-
-Deno.test("Worlds API routes - Metrics", async (t) => {
-  const testContext = await createTestContext();
-  const app = createRoute(testContext);
-  const worldsService = new WorldsService(testContext.libsql.database);
-
-  await t.step(
-    "GET /v1/worlds/:world with Service Account meters usage",
-    async () => {
-      // 1. Setup Organization and Service Account
-      const { id: orgId } = await createTestOrganization(testContext);
-      const saId = ulid();
-      const saKey = "sa-key-meter-worlds-get";
-      const saService = new ServiceAccountsService(
-        testContext.libsql.database,
-      );
-      await saService.add({
-        id: saId,
-        organization_id: orgId,
-        api_key: saKey,
-        label: "Metered SA",
-        description: null,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
-
-      // 2. Setup World
-      const worldId = ulid();
-      const now = Date.now();
-      await worldsService.insert({
-        id: worldId,
-        organization_id: orgId,
-        slug: "metered-world-" + worldId,
-        label: "Metered World",
-        description: "Desc",
-        db_hostname: null,
-        db_token: null,
-        created_at: now,
-        updated_at: now,
-        deleted_at: null,
-      });
-      await testContext.libsql.manager.create(worldId);
-
-      // 3. Perform GET with SA Key
-      const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}`, {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${saKey}`,
-          },
-        }),
-      );
-
-      assertEquals(resp.status, 200);
-
-      // 4. Verify Metric Recorded
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const metricsService = new MetricsService(testContext.libsql.database);
-      const metric = await metricsService.getLast(saId, "worlds_get");
-
-      assert(metric);
-      assertEquals(metric.quantity, 1);
-    },
-  );
-
-  await t.step(
-    "POST /v1/worlds with Service Account meters usage",
-    async () => {
-      // 1. Setup Organization and Service Account
-      const { id: orgId } = await createTestOrganization(testContext);
-      const saId = ulid();
-      const saKey = "sa-key-meter-worlds-create";
-      const saService = new ServiceAccountsService(
-        testContext.libsql.database,
-      );
-      await saService.add({
-        id: saId,
-        organization_id: orgId,
-        api_key: saKey,
-        label: "Metered SA",
-        description: null,
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
-
-      // 2. Perform POST with SA Key
-      const resp = await app.fetch(
-        new Request("http://localhost/v1/worlds", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${saKey}`,
-          },
-          body: JSON.stringify({
-            organizationId: orgId,
-            slug: ("new-metered-world-" + ulid()).toLowerCase(),
-            label: "New Metered World",
-            description: "Desc",
-          }),
-        }),
-      );
-
-      assertEquals(resp.status, 201);
-
-      // 3. Verify Metric Recorded
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const metricsService = new MetricsService(testContext.libsql.database);
-      const metric = await metricsService.getLast(saId, "worlds_create");
-
-      assert(metric);
-      assertEquals(metric.quantity, 1);
     },
   );
 });

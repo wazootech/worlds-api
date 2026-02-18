@@ -1,11 +1,11 @@
 import { Router } from "@fartlabs/rt";
 import { authorizeRequest } from "#/middleware/auth.ts";
-import { checkRateLimit } from "#/middleware/rate-limit.ts";
+
 import type { ServerContext } from "#/context.ts";
 import { limitParamSchema } from "@wazoo/sdk";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
+
 import { ChunksService } from "#/lib/database/tables/chunks/service.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { ulid } from "@std/ulid/ulid";
@@ -35,13 +35,6 @@ export default (appContext: ServerContext) => {
       ) {
         return ErrorResponse.Forbidden();
       }
-
-      const rateLimitRes = await checkRateLimit(
-        appContext,
-        authorized,
-        "semantic_search",
-      );
-      if (rateLimitRes) return rateLimitRes;
 
       const url = new URL(ctx.request.url);
       const query = url.searchParams.get("query");
@@ -78,20 +71,6 @@ export default (appContext: ServerContext) => {
           predicates,
           limit,
         });
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "semantic_search",
-            quantity: 1,
-            metadata: {
-              world_id: worldId,
-            },
-          });
-        }
 
         const managed = await appContext.libsql.manager.get(worldId);
         const logsService = new LogsService(managed.database);

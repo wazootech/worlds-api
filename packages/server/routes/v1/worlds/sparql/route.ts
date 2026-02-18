@@ -15,8 +15,6 @@ import type { Patch } from "#/lib/rdf-patch/rdf-patch.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 import { worldTableUpdateSchema } from "#/lib/database/tables/worlds/schema.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
-import { checkRateLimit } from "#/middleware/rate-limit.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
 
@@ -151,22 +149,6 @@ async function executeSparqlRequest(
 ): Promise<Response> {
   const { query } = await parseQuery(request);
 
-  // Determine feature ID for rate limiting and metering
-  let featureId: "sparql_describe" | "sparql_query" | "sparql_update" =
-    "sparql_query";
-  if (!query) {
-    featureId = "sparql_describe";
-  } else if (await isSparqlUpdate(query)) {
-    featureId = "sparql_update";
-  }
-
-  const rateLimitRes = await checkRateLimit(
-    appContext,
-    authorized,
-    featureId,
-  );
-  if (rateLimitRes) return rateLimitRes;
-
   // If no query, this should only happen for GET - return service description
   if (!query) {
     if (request.method === "GET") {
@@ -175,15 +157,6 @@ async function executeSparqlRequest(
       const serviceDescription = await generateServiceDescription(
         endpointUrl,
       );
-
-      if (authorized.serviceAccountId) {
-        const metricsService = new MetricsService(appContext.libsql.database);
-        metricsService.meter({
-          service_account_id: authorized.serviceAccountId,
-          feature_id: "sparql_describe",
-          quantity: 1,
-        });
-      }
 
       // Determine content type based on Accept header
       const contentType = acceptHeader?.includes("application/rdf+xml")
@@ -198,8 +171,7 @@ async function executeSparqlRequest(
     }
   }
 
-  // Check if this is an update query
-  const isUpdate = featureId === "sparql_update";
+  const isUpdate = await isSparqlUpdate(query);
 
   // Updates are only allowed via POST
   if (isUpdate && request.method !== "POST") {
@@ -319,15 +291,6 @@ async function executeSparqlRequest(
       deleted_at: world?.deleted_at ?? undefined,
     });
 
-    if (authorized.serviceAccountId) {
-      const metricsService = new MetricsService(appContext.libsql.database);
-      metricsService.meter({
-        service_account_id: authorized.serviceAccountId,
-        feature_id: "sparql_update",
-        quantity: 1,
-      });
-    }
-
     const managed = await appContext.libsql.manager.get(worldId);
     const logsService = new LogsService(managed.database);
     await logsService.add({
@@ -343,16 +306,6 @@ async function executeSparqlRequest(
 
     return new Response(null, {
       status: 204,
-    });
-  }
-
-  // Meter and log for queries
-  if (authorized.serviceAccountId) {
-    const metricsService = new MetricsService(appContext.libsql.database);
-    metricsService.meter({
-      service_account_id: authorized.serviceAccountId,
-      feature_id: "sparql_query",
-      quantity: 1,
     });
   }
 

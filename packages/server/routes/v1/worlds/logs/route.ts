@@ -1,12 +1,11 @@
 import { Router } from "@fartlabs/rt";
 
 import { authorizeRequest } from "#/middleware/auth.ts";
-import { checkRateLimit } from "#/middleware/rate-limit.ts";
+
 import type { ServerContext } from "#/context.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -25,12 +24,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.organizationId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "logs_list",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const worldsService = new WorldsService(appContext.libsql.database);
         const world = await worldsService.getById(worldId);
@@ -72,17 +65,6 @@ export default (appContext: ServerContext) => {
           pageSize,
           level,
         );
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "logs_list",
-            quantity: 1,
-          });
-        }
 
         return Response.json(
           logs.map((log) => ({

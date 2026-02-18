@@ -1,4 +1,4 @@
-import type { WorldsSdkOptions } from "#/options.ts";
+import type { WorldsSdkOptions } from "../../options.ts";
 import type {
   CreateWorldParams,
   ExecuteSparqlOutput,
@@ -8,7 +8,7 @@ import type {
   UpdateWorldParams,
   World,
 } from "./schema.ts";
-import { parseError } from "#/utils.ts";
+import { parseError } from "../../utils.ts";
 
 /**
  * Worlds is a TypeScript SDK for the Worlds API.

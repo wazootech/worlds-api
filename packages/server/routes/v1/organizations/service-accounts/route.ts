@@ -1,7 +1,7 @@
 import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid/ulid";
 import { authorizeRequest } from "#/middleware/auth.ts";
-import { checkRateLimit } from "#/middleware/rate-limit.ts";
+
 import type { ServerContext } from "#/context.ts";
 import { paginationParamsSchema } from "@wazoo/sdk";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
@@ -12,8 +12,6 @@ import {
   serviceAccountTableInsertSchema,
   updateServiceAccountSchema,
 } from "#/lib/database/tables/service-accounts/schema.ts";
-import { OrganizationsService } from "#/lib/database/tables/organizations/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 
 function requireOrgAccess(
   authorized: { admin: boolean; serviceAccountId?: string },
@@ -36,12 +34,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_list",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         if (!organizationId) {
@@ -58,14 +50,6 @@ export default (appContext: ServerContext) => {
         );
         if (!allowed) {
           return ErrorResponse.Forbidden();
-        }
-
-        const orgService = new OrganizationsService(
-          appContext.libsql.database,
-        );
-        const org = await orgService.find(organizationId);
-        if (!org) {
-          return ErrorResponse.NotFound("Organization not found");
         }
 
         const url = new URL(ctx.request.url);
@@ -85,17 +69,6 @@ export default (appContext: ServerContext) => {
           organizationId,
         );
         const rows = all.slice(offset, offset + pageSize);
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_list",
-            quantity: 1,
-          });
-        }
 
         return Response.json(
           rows.map((r: ServiceAccountTable) => ({
@@ -117,12 +90,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_create",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         if (!organizationId) {
@@ -139,14 +106,6 @@ export default (appContext: ServerContext) => {
         );
         if (!allowed) {
           return ErrorResponse.Forbidden();
-        }
-
-        const orgService = new OrganizationsService(
-          appContext.libsql.database,
-        );
-        const org = await orgService.find(organizationId);
-        if (!org) {
-          return ErrorResponse.NotFound("Organization not found");
         }
 
         let body: unknown;
@@ -174,17 +133,6 @@ export default (appContext: ServerContext) => {
         });
         await serviceAccountsService.add(insert);
 
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_create",
-            quantity: 1,
-          });
-        }
-
         return Response.json(
           {
             id: insert.id,
@@ -206,12 +154,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_get",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         const accountId = ctx.params?.pathname.groups.account;
@@ -240,17 +182,6 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.NotFound("Service account not found");
         }
 
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_get",
-            quantity: 1,
-          });
-        }
-
         return Response.json({
           id: serviceAccount.id,
           organizationId: serviceAccount.organization_id,
@@ -269,12 +200,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_update",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         const accountId = ctx.params?.pathname.groups.account;
@@ -324,17 +249,6 @@ export default (appContext: ServerContext) => {
           updated_at: now,
         });
 
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_update",
-            quantity: 1,
-          });
-        }
-
         return new Response(null, { status: 204 });
       },
     )
@@ -345,12 +259,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_delete",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         const accountId = ctx.params?.pathname.groups.account;
@@ -381,17 +289,6 @@ export default (appContext: ServerContext) => {
 
         await serviceAccountsService.remove(accountId);
 
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_delete",
-            quantity: 1,
-          });
-        }
-
         return new Response(null, { status: 204 });
       },
     )
@@ -402,12 +299,6 @@ export default (appContext: ServerContext) => {
         if (!authorized.admin && !authorized.serviceAccountId) {
           return ErrorResponse.Unauthorized();
         }
-        const rateLimitRes = await checkRateLimit(
-          appContext,
-          authorized,
-          "service_accounts_update",
-        );
-        if (rateLimitRes) return rateLimitRes;
 
         const organizationId = ctx.params?.pathname.groups.organization;
         const accountId = ctx.params?.pathname.groups.account;
@@ -438,17 +329,6 @@ export default (appContext: ServerContext) => {
 
         const newApiKey = ulid() + ulid();
         await serviceAccountsService.rotateKey(accountId, newApiKey);
-
-        if (authorized.serviceAccountId) {
-          const metricsService = new MetricsService(
-            appContext.libsql.database,
-          );
-          metricsService.meter({
-            service_account_id: authorized.serviceAccountId,
-            feature_id: "service_accounts_update",
-            quantity: 1,
-          });
-        }
 
         return Response.json({ apiKey: newApiKey });
       },

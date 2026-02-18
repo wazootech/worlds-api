@@ -9,8 +9,6 @@ import type { ServerContext } from "#/context.ts";
 import { generateBlobFromN3Store } from "#/lib/blob/n3.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
-import { ServiceAccountsService } from "#/lib/database/tables/service-accounts/service.ts";
-import { MetricsService } from "#/lib/database/tables/metrics/service.ts";
 import createRoute from "./route.ts";
 
 /**
@@ -315,68 +313,4 @@ Deno.test("SPARQL API routes - Error handling", async (t) => {
       assertEquals(res.status, 404);
     },
   );
-});
-
-Deno.test("SPARQL API routes - Metrics", async (t) => {
-  const testContext = await createTestContext();
-  const app = createRoute(testContext);
-
-  await t.step("SPARQL Query with Service Account meters usage", async () => {
-    // 1. Setup Organization and Service Account
-    const { id: orgId } = await createTestOrganization(testContext);
-    const saId = ulid();
-    const saKey = "sa-key-meter-sparql";
-    const saService = new ServiceAccountsService(testContext.libsql.database);
-    await saService.add({
-      id: saId,
-      organization_id: orgId,
-      api_key: saKey,
-      label: "Metered SA",
-      description: null,
-      created_at: Date.now(),
-      updated_at: Date.now(),
-    });
-
-    // 2. Setup World
-    const worldId = ulid();
-    const worldsService = new WorldsService(testContext.libsql.database);
-    await worldsService.insert({
-      id: worldId,
-      organization_id: orgId,
-      slug: "metered-world-" + worldId,
-      label: "Metered World",
-      description: "Desc",
-      db_hostname: null,
-      db_token: null,
-      created_at: Date.now(),
-      updated_at: Date.now(),
-      deleted_at: null,
-    });
-    await testContext.libsql.manager.create(worldId);
-
-    // 3. Perform SPARQL Query with SA Key
-    const query = encodeURIComponent("SELECT ?s WHERE { ?s ?p ?o }");
-    const req = new Request(
-      `http://localhost/v1/worlds/${worldId}/sparql?query=${query}`,
-      {
-        method: "POST",
-        headers: {
-          "Accept": "application/sparql-results+json",
-          "Authorization": `Bearer ${saKey}`,
-        },
-      },
-    );
-
-    const res = await app.fetch(req);
-    assertEquals(res.status, 200);
-
-    // 4. Verify Metric Recorded
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    const metricsService = new MetricsService(testContext.libsql.database);
-    const metric = await metricsService.getLast(saId, "sparql_query");
-
-    assert(metric);
-    assertEquals(metric.quantity, 1);
-  });
 });

@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS worlds (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
   deleted_at INTEGER,
-  FOREIGN KEY (organization_id) REFERENCES organizations(id),
   UNIQUE(organization_id, slug)
 );
 

@@ -2,7 +2,6 @@ import { createClient } from "@libsql/client";
 import { ulid } from "@std/ulid/ulid";
 import { initializeDatabase } from "#/lib/database/init.ts";
 import { MemoryDatabaseManager } from "#/lib/database/managers/memory.ts";
-import { OrganizationsService } from "#/lib/database/tables/organizations/service.ts";
 import type { Embeddings } from "#/lib/embeddings/embeddings.ts";
 import { ServiceAccountsService } from "#/lib/database/tables/service-accounts/service.ts";
 import type { ServerContext } from "#/context.ts";
@@ -41,26 +40,15 @@ export async function createTestContext(): Promise<ServerContext> {
 
 /**
  * createTestOrganization creates a test organization and returns its ID and the admin API key.
+ * Now that organization management is handles externally, this simply returns a new ID.
  */
-export async function createTestOrganization(
+export function createTestOrganization(
   context: ServerContext,
-  options?: { plan?: string },
+  _options?: { plan?: string },
 ): Promise<{ id: string; apiKey: string }> {
-  const service = new OrganizationsService(context.libsql.database);
   const id = ulid();
-  const now = Date.now();
-  await service.add({
-    id,
-    slug: "test-org-" + id,
-    label: "Test Org",
-    description: "Description",
-    plan: options?.plan ?? "free",
-    created_at: now,
-    updated_at: now,
-    deleted_at: null,
-  });
   // Return the admin API key for authentication, as org keys are no longer valid
-  return { id, apiKey: context.admin!.apiKey };
+  return Promise.resolve({ id, apiKey: context.admin!.apiKey });
 }
 
 /**
