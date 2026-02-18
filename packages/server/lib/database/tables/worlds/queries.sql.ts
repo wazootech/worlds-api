@@ -23,14 +23,14 @@ export const selectWorldById =
  * selectWorldBySlug is a query that finds a world by organization ID and slug.
  */
 export const selectWorldBySlug =
-  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id = ?\r\n  AND slug = ?\r\n  AND deleted_at IS NULL;";
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id IS ?\r\n  AND slug = ?\r\n  AND deleted_at IS NULL;";
 
 /**
  * selectWorldsByOrganizationId is a query that finds worlds by organization ID with
  * pagination (used in GET /v1/worlds).
  */
 export const selectWorldsByOrganizationId =
-  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id = ?\r\n  AND deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
+  "SELECT\r\n  id,\r\n  organization_id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  organization_id IS ?\r\n  AND deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
 
 /**
  * selectAllWorlds is a query that finds worlds without organization filtering.

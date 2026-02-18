@@ -634,7 +634,8 @@ export default (appContext: ServerContext) => {
           );
         }
         const data = result.data;
-        const organizationId = data.organizationId ?? authorized.organizationId;
+        const organizationId = data.organizationId ??
+          authorized.organizationId ?? null;
 
         if (
           !authorized.admin && organizationId !== authorized.organizationId
@@ -644,7 +645,7 @@ export default (appContext: ServerContext) => {
           );
         }
 
-        if (!organizationId) {
+        if (!authorized.admin && !organizationId) {
           return ErrorResponse.BadRequest("Organization ID required");
         }
 

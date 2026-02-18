@@ -1,5 +1,11 @@
 import { parseArgs } from "@std/cli/parse-args";
+import { Spinner } from "@std/cli/unstable-spinner";
 import { render } from "cfonts";
+import type { LanguageModel, ModelMessage } from "ai";
+import { stepCountIs, streamText } from "ai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createTools } from "@wazoo/ai-sdk";
 import type { RdfFormat, WorldsSdk } from "@wazoo/sdk";
 
 /**
@@ -284,4 +290,298 @@ export class WorldsCli {
   }
 
   // TODO: List recent logs using the logs endpoint.
+
+  public async chat(args: string[]) {
+    const parsed = parseArgs(args, {
+      boolean: ["help", "write"],
+      string: ["worldId", "userIri"],
+      alias: {
+        w: "worldId",
+        u: "userIri",
+        h: "help",
+      },
+    });
+
+    if (parsed.help) {
+      WorldsCli.logo();
+      console.log(
+        "Usage: worlds chat --worldId <id> [--write] [--userIri <iri>]",
+      );
+      console.log("");
+      console.log("Options:");
+      console.log("  -w, --worldId   World ID to chat in (required)");
+      console.log("  --write         Enable write operations");
+      console.log("  -u, --userIri   User IRI for provenance");
+      console.log("");
+      console.log("Environment:");
+      console.log(
+        "  GOOGLE_API_KEY      Use Google Gemini (gemini-2.5-flash)",
+      );
+      console.log(
+        "  ANTHROPIC_API_KEY   Use Anthropic Claude (claude-haiku-4-5)",
+      );
+      return;
+    }
+
+    if (!parsed.worldId) {
+      console.error(
+        "Usage: worlds chat --worldId <id> [--write] [--userIri <iri>]",
+      );
+      return;
+    }
+
+    const world = await this.sdk.worlds.get(parsed.worldId);
+    if (!world) {
+      console.error(`World "${parsed.worldId}" not found.`);
+      return;
+    }
+
+    // Resolve AI model.
+    const googleKey = Deno.env.get("GOOGLE_API_KEY");
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+
+    let model: LanguageModel | undefined;
+    if (googleKey) {
+      const google = createGoogleGenerativeAI({ apiKey: googleKey });
+      model = google("gemini-3-flash-preview");
+    }
+    if (anthropicKey) {
+      const anthropic = createAnthropic({ apiKey: anthropicKey });
+      model = anthropic("claude-haiku-4-5");
+    }
+    if (!model) {
+      console.error(
+        "Neither GOOGLE_API_KEY nor ANTHROPIC_API_KEY is set.",
+      );
+      Deno.exit(1);
+    }
+
+    // Set up tools.
+    const tools = createTools({
+      sdk: this.sdk,
+      sources: [
+        { id: parsed.worldId, write: parsed.write ?? false },
+      ],
+    });
+
+    // Set up conversation.
+    const messages: ModelMessage[] = [];
+
+    WorldsCli.logo();
+    console.log(
+      "%cWelcome to Worlds Chat.%c Type 'exit' to quit.",
+      "color: #10b981; font-weight: bold",
+      "color: #6b7280",
+    );
+    console.log(
+      "%cWorld:%c %s   %cWrite:%c %s",
+      "color: #6366f1; font-weight: bold",
+      "color: #e5e7eb",
+      parsed.worldId,
+      "color: #6366f1; font-weight: bold",
+      "color: #e5e7eb",
+      parsed.write ? "enabled" : "disabled",
+    );
+    console.log("");
+
+    // REPL loop.
+    while (true) {
+      const userInput = prompt(">");
+      if (!userInput) {
+        continue;
+      }
+
+      if (userInput.toLowerCase() === "exit") {
+        break;
+      }
+
+      messages.push({
+        role: "user",
+        content: [{ type: "text", text: userInput }],
+      });
+
+      const result = streamText({
+        model,
+        tools,
+        system:
+          "You are a helpful assistant that can query and manage a knowledge graph. " +
+          "Use the provided tools to search, query, and update the knowledge base. " +
+          `The available source ID is "${parsed.worldId}". Always use this exact ID when calling tools that require a source parameter. ` +
+          (parsed.userIri
+            ? `The current user IRI is ${parsed.userIri}. `
+            : "") +
+          "When the user asks a question, use the tools to find the answer. " +
+          "Be concise in your responses.",
+        stopWhen: stepCountIs(100),
+        messages,
+      });
+
+      // deno-lint-ignore no-explicit-any
+      const toolCalls = new Map<string, any>();
+      const startTime = Date.now();
+      let stepCount = 0;
+
+      console.log("\n%c✦ Assistant", "color: #f59e0b; font-weight: bold");
+
+      const spinner = new Spinner({
+        message: "Thinking...",
+        color: "yellow",
+      });
+      spinner.start();
+
+      try {
+        for await (const part of result.fullStream) {
+          switch (part.type) {
+            case "text-delta": {
+              spinner.stop();
+              if (part.text) {
+                await Deno.stdout.write(
+                  new TextEncoder().encode(
+                    `\x1b[38;2;245;158;11m${part.text}\x1b[0m`,
+                  ),
+                );
+              }
+              break;
+            }
+
+            case "tool-call": {
+              spinner.stop();
+              toolCalls.set(part.toolCallId, part);
+              stepCount++;
+              break;
+            }
+
+            case "tool-result": {
+              spinner.stop();
+              const call = toolCalls.get(part.toolCallId);
+              if (!call) break;
+
+              const partOutput = "output" in part
+                ? part.output as unknown
+                : part;
+              const callInput = "input" in call ? call.input as unknown : {};
+
+              // Format output for display.
+              let outputStr = "";
+              try {
+                if (typeof partOutput === "string") {
+                  outputStr = partOutput.length > 200
+                    ? `${partOutput.substring(0, 200)}...`
+                    : partOutput;
+                } else if (
+                  partOutput === null || partOutput === undefined
+                ) {
+                  outputStr = "null";
+                } else {
+                  const jsonStr = JSON.stringify(partOutput, null, 2);
+                  outputStr = jsonStr.length > 200
+                    ? `${jsonStr.substring(0, 200)}...`
+                    : jsonStr;
+                }
+              } catch {
+                outputStr = String(partOutput);
+              }
+
+              // Check if result looks like an error.
+              const outputStrLower = typeof partOutput === "string"
+                ? partOutput.toLowerCase()
+                : "";
+              const isError = partOutput instanceof Error ||
+                outputStrLower.includes("error") ||
+                outputStrLower.includes("failed");
+
+              // Format call detail for display.
+              let callDetail = "";
+              switch (call.toolName) {
+                case "executeSparql": {
+                  const input = callInput as { sparql?: string };
+                  const sparql = input.sparql?.trim() || "";
+                  callDetail = `executeSparql(\n${sparql}\n)`;
+                  break;
+                }
+                case "searchEntities": {
+                  const input = callInput as { query?: string };
+                  callDetail = `searchEntities("${input.query || ""}")`;
+                  break;
+                }
+                default: {
+                  const inputStr = JSON.stringify(callInput, null, 2);
+                  callDetail = `${call.toolName}(\n${inputStr}\n)`;
+                }
+              }
+
+              if (isError) {
+                let errorStr = "";
+                if (partOutput instanceof Error) {
+                  errorStr = partOutput.message;
+                } else if (
+                  typeof partOutput === "object" && partOutput !== null
+                ) {
+                  const errorObj = partOutput as {
+                    error?: string;
+                    message?: string;
+                  };
+                  errorStr = errorObj.error || errorObj.message ||
+                    JSON.stringify(partOutput);
+                } else {
+                  errorStr = outputStr;
+                }
+                console.log(
+                  `\n%c⚙%c ${callDetail} => %c${errorStr}`,
+                  "color: #64748b",
+                  "color: #94a3b8",
+                  "color: #ef4444; font-weight: bold",
+                );
+              } else {
+                console.log(
+                  `\n%c⚙%c ${callDetail} => %c${outputStr}`,
+                  "color: #64748b",
+                  "color: #94a3b8",
+                  "color: #10b981",
+                );
+              }
+              break;
+            }
+
+            default:
+              break;
+          }
+
+          if (
+            part.type === "tool-call" || part.type === "tool-result"
+          ) {
+            spinner.start();
+          }
+        }
+      } catch (error) {
+        spinner.stop();
+        console.error(
+          "\n%c[ERROR]%c Stream error: %c%s",
+          "color: #ef4444; font-weight: bold",
+          "color: #64748b",
+          "color: #fca5a5",
+          error instanceof Error ? error.message : String(error),
+        );
+        throw error;
+      }
+
+      spinner.stop();
+
+      const response = await result.response;
+      const duration = Date.now() - startTime;
+
+      console.log(
+        `\n%c[DEBUG]%c Completed in %c${duration}ms%c with %c${stepCount}%c step(s)`,
+        "color: #6366f1; font-weight: bold",
+        "color: #64748b",
+        "color: #10b981; font-weight: bold",
+        "color: #64748b",
+        "color: #10b981; font-weight: bold",
+        "color: #64748b",
+      );
+      console.log("");
+
+      messages.push(...response.messages as ModelMessage[]);
+    }
+  }
 }

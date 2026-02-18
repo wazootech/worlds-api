@@ -13,7 +13,6 @@ async function main() {
   }
 
   const [command, ...commandArgs] = Deno.args;
-
   switch (command) {
     case "create": {
       await cli.create(commandArgs);
@@ -59,6 +58,11 @@ async function main() {
       break;
     }
 
+    case "chat": {
+      await cli.chat(commandArgs);
+      break;
+    }
+
     default: {
       const parsedArgs = parseArgs(Deno.args, {
         boolean: "help",
@@ -90,6 +94,7 @@ function showHelp() {
   console.log("  sparql   Execute a SPARQL query");
   console.log("  import   Import data into a world");
   console.log("  export   Export data from a world");
+  console.log("  chat     Interactive AI chat with a world");
   console.log("");
   console.log("Environment Variables:");
   console.log("  WORLDS_API_KEY   Your API key");

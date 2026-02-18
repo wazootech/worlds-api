@@ -15,6 +15,8 @@
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/ulid@*": "1.0.0",
     "jsr:@std/ulid@1": "1.0.0",
+    "npm:@ai-sdk/anthropic@^3.0.45": "3.0.45_zod@4.3.6",
+    "npm:@ai-sdk/google@^3.0.29": "3.0.29_zod@4.3.6",
     "npm:@comunica/query-sparql-rdfjs-lite@^5.1.3": "5.1.3",
     "npm:@comunica/query-sparql-rdfjs-lite@latest": "5.1.3",
     "npm:@google/genai@^1.41.0": "1.41.0",
@@ -106,17 +108,42 @@
     }
   },
   "npm": {
+    "@ai-sdk/anthropic@3.0.45_zod@4.3.6": {
+      "integrity": "sha512-bpIS3RakSsaUhCRTIvL9bcVNeeUMDXWbndpYdXNeMJIIPcElTcvwktvla+JxIfbeK1AdQjB8ggYVChepeXPGwQ==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@ai-sdk/provider-utils@4.0.15_zod@4.3.6",
+        "zod"
+      ]
+    },
     "@ai-sdk/gateway@3.0.39_zod@4.3.6": {
       "integrity": "sha512-SeCZBAdDNbWpVUXiYgOAqis22p5MEYfrjRw0hiBa5hM+7sDGYQpMinUjkM8kbPXMkY+AhKLrHleBl+SuqpzlgA==",
       "dependencies": [
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@4.0.14_zod@4.3.6",
         "@vercel/oidc",
+        "zod"
+      ]
+    },
+    "@ai-sdk/google@3.0.29_zod@4.3.6": {
+      "integrity": "sha512-x0hcU10AA+i1ZUQHloGD5qXWsB+Y8qnxlmFUef6Ly4rB53MGVbQExkI9nOKiCO3mu2TGiiNoQMeKWSeQVLfRUA==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@ai-sdk/provider-utils@4.0.15_zod@4.3.6",
         "zod"
       ]
     },
     "@ai-sdk/provider-utils@4.0.14_zod@4.3.6": {
       "integrity": "sha512-7bzKd9lgiDeXM7O4U4nQ8iTxguAOkg8LZGD9AfDVZYjO5cKYRwBPwVjboFcVrxncRHu0tYxZtXZtiLKpG4pEng==",
+      "dependencies": [
+        "@ai-sdk/provider",
+        "@standard-schema/spec",
+        "eventsource-parser",
+        "zod"
+      ]
+    },
+    "@ai-sdk/provider-utils@4.0.15_zod@4.3.6": {
+      "integrity": "sha512-8XiKWbemmCbvNN0CLR9u3PQiet4gtEVIrX4zzLxnCj06AwsEDJwJVBbKrEI4t6qE8XRSIvU2irka0dcpziKW6w==",
       "dependencies": [
         "@ai-sdk/provider",
         "@standard-schema/spec",
@@ -3247,7 +3274,7 @@
       "dependencies": [
         "@ai-sdk/gateway",
         "@ai-sdk/provider",
-        "@ai-sdk/provider-utils",
+        "@ai-sdk/provider-utils@4.0.14_zod@4.3.6",
         "@opentelemetry/api",
         "zod"
       ]
@@ -4565,6 +4592,9 @@
       "packages/cli": {
         "dependencies": [
           "jsr:@std/cli@1.0.27",
+          "npm:@ai-sdk/anthropic@^3.0.45",
+          "npm:@ai-sdk/google@^3.0.29",
+          "npm:ai@^6.0.77",
           "npm:cfonts@^3.3.1"
         ]
       },

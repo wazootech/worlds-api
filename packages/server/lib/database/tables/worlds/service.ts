@@ -35,7 +35,7 @@ export class WorldsService {
   }
 
   async getBySlug(
-    organizationId: string,
+    organizationId: string | null,
     slug: string,
   ): Promise<WorldRow | null> {
     const result = await this.db.execute({
@@ -59,7 +59,7 @@ export class WorldsService {
   }
 
   async getByOrganizationId(
-    organizationId: string,
+    organizationId: string | null,
     limit: number,
     offset: number,
   ): Promise<WorldRow[]> {

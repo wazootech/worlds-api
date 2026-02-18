@@ -1,0 +1,56 @@
+@prefix ex: <http://example.org/solar-system/> .
+@prefix schema: <http://schema.org/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:Sun a schema:Star ;
+    rdfs:label "Sun" ;
+    schema:description "The star at the center of the Solar System." .
+
+ex:Mercury a ex:Planet ;
+    rdfs:label "Mercury" ;
+    schema:description "The smallest and innermost planet in the Solar System." ;
+    ex:order 1 ;
+    ex:orbits ex:Sun .
+
+ex:Venus a ex:Planet ;
+    rdfs:label "Venus" ;
+    schema:description "The second planet from the Sun and the hottest planet in our solar system." ;
+    ex:order 2 ;
+    ex:orbits ex:Sun .
+
+ex:Earth a ex:Planet ;
+    rdfs:label "Earth" ;
+    schema:description "The third planet from the Sun and the only astronomical object known to harbor life." ;
+    ex:order 3 ;
+    ex:orbits ex:Sun .
+
+ex:Mars a ex:Planet ;
+    rdfs:label "Mars" ;
+    schema:description "The fourth planet from the Sun and the second-smallest planet in the Solar System." ;
+    ex:order 4 ;
+    ex:orbits ex:Sun .
+
+ex:Jupiter a ex:Planet ;
+    rdfs:label "Jupiter" ;
+    schema:description "The fifth planet from the Sun and the largest in the Solar System." ;
+    ex:order 5 ;
+    ex:orbits ex:Sun .
+
+ex:Saturn a ex:Planet ;
+    rdfs:label "Saturn" ;
+    schema:description "The sixth planet from the Sun and the second-largest in the Solar System." ;
+    ex:order 6 ;
+    ex:orbits ex:Sun .
+
+ex:Uranus a ex:Planet ;
+    rdfs:label "Uranus" ;
+    schema:description "The seventh planet from the Sun and has the third-largest planetary radius." ;
+    ex:order 7 ;
+    ex:orbits ex:Sun .
+
+ex:Neptune a ex:Planet ;
+    rdfs:label "Neptune" ;
+    schema:description "The eighth and farthest-known Solar planet from the Sun." ;
+    ex:order 8 ;
+    ex:orbits ex:Sun .
