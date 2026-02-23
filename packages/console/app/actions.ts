@@ -116,16 +116,13 @@ export async function createWorld(
         apiKey: ADMIN_KEY,
       });
 
-      // Create Service Account
-      const sa = await adminSdk.serviceAccounts.create(organization.id, {
-        label: "Console SA",
-      });
+      const newApiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
       // Save to Org Metadata
       await orgMgmt.updateOrganization(organization.id, {
         metadata: {
           apiBaseUrl: DEFAULT_URL,
-          apiKey: sa.apiKey,
+          apiKey: newApiKey,
         },
       });
 
@@ -201,25 +198,7 @@ export async function deleteOrganization(organizationId: string) {
     console.warn("Failed to list worlds for cleanup (ignoring):", error);
   }
 
-  // 2. Cleanup all service accounts in this organization (best effort)
-  try {
-    const serviceAccounts = await sdk.serviceAccounts.list(organization.id, {
-      page: 1,
-      pageSize: 100,
-    });
-    for (const sa of serviceAccounts) {
-      try {
-        await sdk.serviceAccounts.delete(organization.id, sa.id);
-      } catch (e) {
-        console.error(`Failed to cleanup service account ${sa.id}:`, e);
-      }
-    }
-  } catch (error) {
-    console.warn(
-      "Failed to list service accounts for cleanup (ignoring):",
-      error,
-    );
-  }
+  // 2. Organization cleanup (service accounts no longer exist)
 
   // 3. Remove the organization via OrganizationManagement
   await orgMgmt.deleteOrganization(organization.id);
@@ -255,16 +234,15 @@ export async function rotateApiKey(organizationId: string) {
   if (!organization) throw new Error("Organization not found");
   const sdk = getSdkForOrg(organization);
 
-  // Service accounts still go through the SDK (server-managed)
-  const serviceAccounts = await sdk.serviceAccounts.list(organizationId);
-  await Promise.all(
-    serviceAccounts.map((sa) =>
-      sdk.serviceAccounts.delete(organizationId, sa.id),
-    ),
-  );
+  // Generate new key
+  const newApiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
-  const newServiceAccount = await sdk.serviceAccounts.create(organizationId, {
-    label: "Default",
+  // Update Organization Metadata
+  await orgMgmt.updateOrganization(organization.id, {
+    metadata: {
+      ...organization.metadata,
+      apiKey: newApiKey,
+    },
   });
 
   const workos = await authkit.getWorkOS();
@@ -275,7 +253,7 @@ export async function rotateApiKey(organizationId: string) {
       userId: user.id,
       metadata: {
         ...(user.metadata as unknown as Record<string, string | null>),
-        testApiKey: newServiceAccount.apiKey || "",
+        testApiKey: newApiKey,
       },
     });
   }
@@ -284,8 +262,9 @@ export async function rotateApiKey(organizationId: string) {
   if (organization) {
     const orgSlug = organization.externalId || organization.id;
     revalidatePath(`/organizations/${orgSlug}`);
+    revalidatePath(`/organizations/${orgSlug}/settings`);
   }
-  return newServiceAccount.apiKey || "";
+  return newApiKey;
 }
 
 export async function createOrganization(label: string, slug: string) {
@@ -331,17 +310,8 @@ export async function createOrganization(label: string, slug: string) {
       if (ADMIN_KEY) {
         const DEFAULT_URL =
           process.env.DEFAULT_API_URL || "http://localhost:8000";
-        const { WorldsSdk } = await import("@wazoo/sdk");
-        const adminSdk = new WorldsSdk({
-          baseUrl: DEFAULT_URL,
-          apiKey: ADMIN_KEY,
-        });
 
-        const sa = await adminSdk.serviceAccounts.create(organization.id, {
-          label: "Default",
-          description: "Auto-generated for testing",
-        });
-        apiKey = sa.apiKey || "";
+        apiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
         // Save metadata to organization
         await orgMgmt.updateOrganization(organization.id, {
@@ -518,88 +488,6 @@ export async function searchTriples(
       success: false,
       error: error instanceof Error ? error.message : "Failed to search",
     };
-  }
-}
-
-export async function updateServiceAccount(
-  organizationId: string,
-  serviceAccountId: string,
-  updates: { label?: string; description?: string },
-) {
-  const { user } = await authkit.withAuth();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
-  if (!organization) throw new Error("Organization not found");
-  const sdk = getSdkForOrg(organization);
-
-  await sdk.serviceAccounts.update(organizationId, serviceAccountId, updates);
-
-  if (organization) {
-    const orgSlug = organization.externalId || organization.id;
-    revalidatePath(
-      `/organizations/${orgSlug}/service-accounts/${serviceAccountId}`,
-    );
-    revalidatePath(
-      `/organizations/${orgSlug}/service-accounts/${serviceAccountId}/settings`,
-    );
-  }
-}
-
-export async function rotateServiceAccountKey(
-  organizationId: string,
-  serviceAccountId: string,
-) {
-  const { user } = await authkit.withAuth();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
-  if (!organization) throw new Error("Organization not found");
-  const sdk = getSdkForOrg(organization);
-
-  const result = await sdk.serviceAccounts.rotateKey(
-    organizationId,
-    serviceAccountId,
-  );
-
-  if (organization) {
-    const orgSlug = organization.externalId || organization.id;
-    revalidatePath(`/organizations/${orgSlug}/service-accounts`);
-    revalidatePath(
-      `/organizations/${orgSlug}/service-accounts/${serviceAccountId}`,
-    );
-    revalidatePath(
-      `/organizations/${orgSlug}/service-accounts/${serviceAccountId}/settings`,
-    );
-  }
-
-  return result;
-}
-
-export async function deleteServiceAccount(
-  organizationId: string,
-  serviceAccountId: string,
-) {
-  const { user } = await authkit.withAuth();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
-  if (!organization) throw new Error("Organization not found");
-  const sdk = getSdkForOrg(organization);
-
-  await sdk.serviceAccounts.delete(organizationId, serviceAccountId);
-  if (organization) {
-    const orgSlug = organization.externalId || organization.id;
-    revalidatePath(`/organizations/${orgSlug}/service-accounts`);
   }
 }
 

@@ -3,6 +3,7 @@
 import { useOrganization } from "@/components/organization-context";
 import { BasicDetailsForm } from "@/components/basic-details-form";
 import { DeleteOrganizationSection } from "@/components/delete-organization-section";
+import { ApiKeySection } from "@/components/api-key-section";
 
 export function OrganizationSettingsContent() {
   const { organization, user } = useOrganization();
@@ -34,6 +35,8 @@ export function OrganizationSettingsContent() {
               </p>
             </div>
           </div>
+
+          <ApiKeySection apiKey={organization.metadata?.apiKey} />
 
           <DeleteOrganizationSection userEmail={user.email} />
         </div>

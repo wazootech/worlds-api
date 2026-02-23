@@ -195,11 +195,6 @@ console.log("Connected to world:", world.label);`;
                   icon: <Globe className="w-4 h-4" />,
                 },
                 {
-                  label: "Service Accounts",
-                  href: `/organizations/${orgSlug}/service-accounts`,
-                  icon: <ShieldCheck className="w-4 h-4" />,
-                },
-                {
                   label: "Settings",
                   href: `/organizations/${orgSlug}/settings`,
                   icon: <Settings className="w-4 h-4" />,
