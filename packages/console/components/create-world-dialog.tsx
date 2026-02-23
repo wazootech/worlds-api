@@ -6,11 +6,11 @@ import { createWorld } from "@/app/actions";
 import { Plus, X } from "lucide-react";
 
 export function CreateWorldDialog({
-  organizationId,
+  organizationSlug,
   isOpen,
   onClose,
 }: {
-  organizationId: string;
+  organizationSlug: string;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -39,10 +39,10 @@ export function CreateWorldDialog({
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      const result = await createWorld(organizationId, label, slug);
+      const result = await createWorld(organizationSlug, label, slug);
       if (result.success && result.slug) {
         onClose();
-        router.push(`/organizations/${organizationId}/worlds/${result.slug}`);
+        router.push(`/organizations/${organizationSlug}/worlds/${result.slug}`);
       } else {
         alert(`Failed to create world: ${result.error}`);
       }

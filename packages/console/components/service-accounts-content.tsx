@@ -28,7 +28,7 @@ export function ServiceAccountsContent({
         </div>
 
         <ServiceAccountList
-          organizationSlug={organization.metadata.slug || organization.id}
+          organizationSlug={organization.externalId}
           initialData={serviceAccounts}
           initialPage={page}
           initialPageSize={pageSize}

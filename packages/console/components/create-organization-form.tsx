@@ -3,7 +3,7 @@
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createOrganization } from "@/app/actions";
-import { Building2, Plus, Sparkles } from "lucide-react";
+import { Building2, Info, Plus } from "lucide-react";
 
 export function CreateOrganizationForm() {
   const [isPending, startTransition] = useTransition();
@@ -18,7 +18,7 @@ export function CreateOrganizationForm() {
     return text
       .toLowerCase()
       .trim()
-      .replace(/[^\a-z0-9 -]/g, "")
+      .replace(/[^a-z0-9 -]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
   };
@@ -43,115 +43,98 @@ export function CreateOrganizationForm() {
   };
 
   return (
-    <main className="flex-1 flex items-center justify-center p-6 bg-stone-50 dark:bg-stone-950">
-      <div className="w-full max-w-xl">
-        <div className="relative overflow-hidden rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-2xl p-8 md:p-12">
-          {/* Background Decorative Element */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-stone-100 dark:bg-stone-800 rounded-full blur-3xl opacity-50 pointer-events-none" />
+    <div className="flex-1 w-full bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 min-h-[calc(100vh-64px)] font-sans flex justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-3xl">
+        {/* Header */}
+        <div className="border-b border-stone-200 dark:border-stone-800 pb-6 mb-8 flex items-start gap-4">
+          <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 shadow-sm">
+            <Building2 className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">
+              Create a new organization
+            </h1>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Organizations contain your project&apos;s worlds, data, and API
+              keys. Required fields are marked with an asterisk (*).
+            </p>
+          </div>
+        </div>
 
-          <div className="relative flex flex-col items-center text-center space-y-8">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-white ring-1 ring-stone-200 dark:ring-stone-700">
-              <Building2 className="h-10 w-10" />
+        {/* Form Section */}
+        <div className="space-y-6 max-w-2xl">
+          {/* Name and Slug Inputs */}
+          <div className="space-y-6">
+            <div className="space-y-2 w-full">
+              <label htmlFor="org-name" className="block text-sm font-semibold">
+                Organization name *
+              </label>
+              <input
+                id="org-name"
+                type="text"
+                placeholder="Acme Corp"
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                autoFocus
+                className="w-full rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-2.5 text-sm focus:border-stone-900 dark:focus:border-stone-100 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition-colors shadow-sm"
+              />
             </div>
 
-            <div className="space-y-3">
-              <h1 className="text-3xl font-bold tracking-tight text-stone-900 dark:text-white sm:text-4xl">
-                Ready to build?
-              </h1>
-              <p className="max-w-md mx-auto text-lg text-stone-500 dark:text-stone-400">
-                Give your organization a name to start creating worlds and
-                managing your API keys.
-              </p>
+            <div className="space-y-2 w-full">
+              <label htmlFor="org-slug" className="block text-sm font-semibold">
+                Organization slug *
+              </label>
+              <input
+                id="org-slug"
+                type="text"
+                placeholder="acme-corp"
+                value={slug}
+                onChange={(e) => {
+                  setSlug(slugify(e.target.value));
+                  setIsSlugEdited(true);
+                }}
+                className="w-full rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-2.5 text-sm focus:border-stone-900 dark:focus:border-stone-100 focus:outline-none focus:ring-1 focus:ring-stone-900 dark:focus:ring-stone-100 transition-colors shadow-sm font-mono"
+              />
             </div>
+          </div>
 
-            <div className="w-full space-y-4">
-              <div className="space-y-2">
-                <label
-                  htmlFor="org-name"
-                  className="block text-sm font-medium text-stone-700 dark:text-stone-300 text-left"
-                >
-                  Organization Name
-                </label>
-                <input
-                  id="org-name"
-                  type="text"
-                  placeholder="Acme Corp"
-                  value={name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 px-4 py-3 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-white transition-all text-left"
-                  autoFocus
-                />
-              </div>
+          <p className="text-sm text-stone-500 dark:text-stone-400 flex items-start sm:items-center gap-2">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 sm:mt-0 text-stone-400" />
+            <span>
+              Great organization names are short and memorable. The slug is used
+              in your API URLs.
+            </span>
+          </p>
 
-              <div className="space-y-2">
-                <label
-                  htmlFor="org-slug"
-                  className="block text-sm font-medium text-stone-700 dark:text-stone-300 text-left"
-                >
-                  Organization Slug
-                </label>
-                <div className="relative">
-                  <input
-                    id="org-slug"
-                    type="text"
-                    placeholder="acme-corp"
-                    value={slug}
-                    onChange={(e) => {
-                      setSlug(slugify(e.target.value));
-                      setIsSlugEdited(true);
-                    }}
-                    className="w-full rounded-xl border border-stone-200 dark:border-stone-800 bg-stone-50 dark:bg-stone-950 px-4 py-3 text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-stone-900 dark:focus:ring-white transition-all text-left"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-stone-500 uppercase">
-                    Lower-case and Hyphens
-                  </div>
-                </div>
-              </div>
+          {error && (
+            <div className="p-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-sm font-medium">
+              {error}
+            </div>
+          )}
 
-              {error && (
-                <div className="w-full p-4 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/20 text-left">
-                  <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                    {error}
-                  </p>
-                </div>
+          <hr className="border-stone-200 dark:border-stone-800 my-8" />
+
+          <div className="pt-2">
+            <button
+              onClick={handleCreate}
+              disabled={isPending || !name.trim() || !slug.trim()}
+              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-lg bg-stone-900 dark:bg-stone-100 px-6 py-2.5 text-sm font-semibold text-white dark:text-stone-900 shadow-sm transition-all hover:bg-stone-800 dark:hover:bg-white active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {isPending ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  <span>Creating organization...</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4" />
+                  <span>Create organization</span>
+                </>
               )}
-
-              <div className="w-full pt-2">
-                <button
-                  onClick={handleCreate}
-                  disabled={isPending || !name.trim() || !slug.trim()}
-                  className="group relative w-full overflow-hidden rounded-2xl bg-stone-900 dark:bg-white px-8 py-4 text-lg font-semibold text-white dark:text-stone-900 shadow-lg transition-all hover:scale-[1.02] hover:shadow-xl active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  <div className="relative flex items-center justify-center gap-2">
-                    {isPending ? (
-                      <>
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        <span>Creating Organization...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-5 w-5" />
-                        <span>Create Organization</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-6 pt-4 text-sm font-medium text-stone-400 dark:text-stone-500">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span>Unlimited Worlds</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                <span>Local-First API</span>
-              </div>
-            </div>
+            </button>
           </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

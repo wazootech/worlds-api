@@ -16,7 +16,8 @@ export default async function SettingsPage(props: { params: Promise<Params> }) {
   try {
     const { getOrganizationManagement } = await import("@/lib/auth");
     const orgMgmt = await getOrganizationManagement();
-    organization = await orgMgmt.getOrganization(organizationId);
+
+    organization = await orgMgmt.getOrganizationByExternalId(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

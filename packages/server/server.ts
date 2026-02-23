@@ -15,6 +15,7 @@ import sparqlRouter from "./routes/v1/worlds/sparql/route.ts";
 import logsRouter from "./routes/v1/worlds/logs/route.ts";
 import searchRouter from "./routes/v1/worlds/search/route.ts";
 
+// TODO: Worlds router should contain all sub-routers.
 const routes = [
   worldsRouter,
   sparqlRouter,

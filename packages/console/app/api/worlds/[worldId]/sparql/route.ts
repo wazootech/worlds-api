@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as authkit from "@/lib/auth";
-import { sdk } from "@/lib/sdk";
+import { getSdkForOrg } from "@/lib/org-sdk";
 
 export async function POST(
   req: NextRequest,
@@ -13,10 +13,38 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Resolve organization from user metadata
+  const orgId = user.metadata?.organizationId as string;
+  if (!orgId) {
+    return NextResponse.json(
+      { error: "No active organization" },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  const orgMgmt = await authkit.getOrganizationManagement();
+  const organization = await orgMgmt.getOrganization(orgId);
+  if (!organization) {
+    return NextResponse.json(
+      { error: "Organization not found" },
+      {
+        status: 404,
+      },
+    );
+  }
+  const sdk = getSdkForOrg(organization);
+
   const body = await req.text();
 
   try {
-    const result = await sdk.worlds.sparql(worldId, body);
+    // Resolve world to ensure we have the actual ID for sub-resource call
+    const world = await sdk.worlds.get(worldId);
+    if (!world) {
+      return NextResponse.json({ error: "World not found" }, { status: 404 });
+    }
+    const result = await sdk.worlds.sparql(world.id, body);
     console.log("SPARQL Result:", result);
     return NextResponse.json(result);
   } catch (error) {

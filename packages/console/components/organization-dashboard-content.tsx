@@ -47,6 +47,7 @@ export function OrganizationDashboardContent({
               maskedCodeSnippetHtml={maskedCodeSnippetHtml}
             />
             <CreateWorldButton
+              organizationSlug={organization.externalId}
               isOpen={isCreateOpen}
               onOpenChange={handleOpenChange}
             />
@@ -54,7 +55,7 @@ export function OrganizationDashboardContent({
         </div>
 
         <WorldList
-          organizationSlug={organization.metadata.slug || organization.id}
+          organizationSlug={organization.externalId}
           initialData={worlds}
           initialPage={page}
           initialPageSize={pageSize}

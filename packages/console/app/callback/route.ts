@@ -1,6 +1,5 @@
 import * as authkit from "@/lib/auth";
 import { AuthUser } from "@/lib/auth";
-import { sdk } from "@/lib/sdk";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
@@ -48,11 +47,42 @@ export async function GET(request: NextRequest) {
             slug: slug,
           });
 
-          // Create a default service account for the organization.
-          const serviceAccount = await sdk.serviceAccounts.create(newOrg.id, {
-            label: "Default",
-            description: "Auto-generated for testing",
-          });
+          // Create a default service account for the organization using Admin SDK
+          const ADMIN_KEY = process.env.ADMIN_API_KEY;
+          let apiKey = "";
+
+          if (ADMIN_KEY) {
+            const DEFAULT_URL =
+              process.env.DEFAULT_API_URL || "http://localhost:8000";
+            const { WorldsSdk } = await import("@wazoo/sdk");
+            const adminSdk = new WorldsSdk({
+              baseUrl: DEFAULT_URL,
+              apiKey: ADMIN_KEY,
+            });
+
+            const serviceAccount = await adminSdk.serviceAccounts.create(
+              newOrg.id,
+              {
+                label: "Default",
+                description: "Auto-generated for testing",
+              },
+            );
+            apiKey = serviceAccount.apiKey || "";
+
+            // Update org metadata
+            await orgMgmt.updateOrganization(newOrg.id, {
+              metadata: {
+                apiBaseUrl: DEFAULT_URL,
+                apiKey: apiKey,
+              },
+            });
+
+            try {
+              await orgMgmt.deploy(newOrg.id);
+            } catch (e) {
+              console.error("Failed to deploy newly created organization", e);
+            }
+          }
 
           // Update WorkOS user metadata.
           const workos = await authkit.getWorkOS();
@@ -60,7 +90,7 @@ export async function GET(request: NextRequest) {
             userId: data.user.id,
             metadata: {
               organizationId: newOrg.id,
-              testApiKey: serviceAccount.apiKey || null, // Ensure string or null
+              testApiKey: apiKey || null, // Ensure string or null
             },
           });
         } catch (error) {

@@ -23,16 +23,15 @@ export default async function Home(props: {
       | string
       | undefined;
     if (organizationId) {
+      let organizationToRedirect = null;
       try {
         const orgMgmt = await authkit.getOrganizationManagement();
-        const organization = await orgMgmt.getOrganization(organizationId);
-        if (organization) {
-          redirect(
-            `/organizations/${organization.metadata.slug || organization.id}`,
-          );
-        }
+        organizationToRedirect = await orgMgmt.getOrganization(organizationId);
       } catch (e) {
-        console.error("Failed to redirect to organization:", e);
+        console.error("Failed to fetch organization for early redirect:", e);
+      }
+      if (organizationToRedirect) {
+        redirect(`/organizations/${organizationToRedirect.externalId}`);
       }
     }
   }
@@ -214,7 +213,7 @@ export default async function Home(props: {
   }
 
   // Redirect to the actual organization dashboard using slug
-  redirect(`/organizations/${organization.metadata.slug || organization.id}`);
+  redirect(`/organizations/${organization.externalId}`);
 }
 
 function ErrorState({

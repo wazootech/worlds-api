@@ -5,15 +5,18 @@ import { useParams } from "next/navigation";
 import { CreateWorldDialog } from "./create-world-dialog";
 
 export function CreateWorldButton({
+  organizationSlug: propOrganizationSlug,
   isOpen: controlledIsOpen,
   onOpenChange,
 }: {
+  organizationSlug?: string;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 } = {}) {
-  const { organization: organizationId } = useParams() as {
+  const params = useParams() as {
     organization: string;
   };
+  const organizationSlug = propOrganizationSlug || params.organization;
   const [internalIsOpen, setInternalIsOpen] = useState(false);
 
   const isOpen = controlledIsOpen ?? internalIsOpen;
@@ -54,7 +57,7 @@ export function CreateWorldButton({
       </button>
 
       <CreateWorldDialog
-        organizationId={organizationId}
+        organizationSlug={organizationSlug}
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
       />

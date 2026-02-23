@@ -1,7 +1,7 @@
 import * as authkit from "@/lib/auth";
 import { codeToHtml } from "shiki";
 import { notFound, redirect } from "next/navigation";
-import { sdk } from "@/lib/sdk";
+import { getSdkForOrg } from "@/lib/org-sdk";
 import { PageHeader } from "@/components/page-header";
 import { Globe, Settings, LayoutGrid, ShieldCheck } from "lucide-react";
 import { WorldProvider } from "@/components/world-context";
@@ -17,12 +17,17 @@ export async function generateMetadata(props: {
   try {
     const { getOrganizationManagement } = await import("@/lib/auth");
     const orgMgmt = await getOrganizationManagement();
-    const organization = await orgMgmt.getOrganization(organizationSlug);
+    let organization;
+    if (organizationSlug.startsWith("org_")) {
+      organization = await orgMgmt.getOrganization(organizationSlug);
+    } else {
+      organization =
+        await orgMgmt.getOrganizationByExternalId(organizationSlug);
+    }
     if (!organization) return { title: "World" };
 
-    const world = await sdk.worlds.get(worldSlug, {
-      organizationId: organization.id,
-    });
+    const sdk = getSdkForOrg(organization);
+    const world = await sdk.worlds.get(worldSlug);
     if (!world) return { title: "World" };
 
     return {
@@ -56,29 +61,30 @@ export default async function WorldLayout({
   const isAdmin = !!user?.metadata?.admin;
 
   // Fetch organization
-  let organization;
-  try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
-    organization = await orgMgmt.getOrganization(organizationId);
-  } catch {
-    notFound();
-  }
+  const organization = await (async () => {
+    try {
+      const { getOrganizationManagement } = await import("@/lib/auth");
+      const orgMgmt = await getOrganizationManagement();
+      return await orgMgmt.getOrganizationByExternalId(organizationId);
+    } catch {
+      return null;
+    }
+  })();
 
   if (!organization) {
     notFound();
   }
 
-  const actualOrgId = organization.id;
-  const orgSlug = organization.metadata.slug || organization.id;
+  const orgSlug = organization.externalId || organization.id;
 
   // Fetch world and list
   let world;
   let worlds = [];
   try {
+    const sdk = getSdkForOrg(organization);
     const [worldData, worldsData] = await Promise.all([
-      sdk.worlds.get(worldId, { organizationId: actualOrgId }),
-      sdk.worlds.list({ page: 1, pageSize: 100, organizationId: actualOrgId }),
+      sdk.worlds.get(worldId),
+      sdk.worlds.list({ page: 1, pageSize: 100 }),
     ]);
     world = worldData;
     worlds = worldsData;
@@ -86,7 +92,7 @@ export default async function WorldLayout({
     notFound();
   }
 
-  if (!world || world.organizationId !== actualOrgId) {
+  if (!world) {
     notFound();
   }
 
@@ -95,8 +101,8 @@ export default async function WorldLayout({
   // Canonical redirect
   if (
     (organizationId === organization.id &&
-      organization.metadata.slug &&
-      organization.metadata.slug !== organization.id) ||
+      organization.externalId &&
+      organization.externalId !== organization.id) ||
     (worldId === world.id && world.slug && world.slug !== world.id)
   ) {
     redirect(`/organizations/${orgSlug}/worlds/${worldSlug}`);
@@ -131,6 +137,9 @@ export default async function WorldLayout({
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
+  baseUrl: "${organization.metadata?.apiBaseUrl || "http://localhost:8000"}",
+  apiKey: "${organization.metadata?.apiKey || "..."}",
+});
   apiKey: "${apiKey}",
 });
 
@@ -145,6 +154,9 @@ console.log("Connected to world:", world.label);`;
   const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
+  baseUrl: "${organization.metadata?.apiBaseUrl || "http://localhost:8000"}",
+  apiKey: "...",
+});
   apiKey: "${maskedApiKey}",
 });
 

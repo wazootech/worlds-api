@@ -31,10 +31,9 @@ export class WorldsCli {
   public async create(args: string[]) {
     const parsed = parseArgs(args, {
       boolean: ["help"],
-      string: ["label", "organizationId", "description", "slug"],
+      string: ["label", "description", "slug"],
       alias: {
         l: "label",
-        o: "organizationId",
         d: "description",
         s: "slug",
         h: "help",
@@ -44,14 +43,14 @@ export class WorldsCli {
     if (parsed.help) {
       WorldsCli.logo();
       console.log(
-        "Usage: worlds create --label <label> [--slug <slug>] [--organizationId <id>] [--description <desc>]",
+        "Usage: worlds create --label <label> [--slug <slug>] [--description <desc>]",
       );
       return;
     }
 
     if (!parsed.label) {
       console.error(
-        "Usage: worlds create --label <label> [--slug <slug>] [--organizationId <id>] [--description <desc>]",
+        "Usage: worlds create --label <label> [--slug <slug>] [--description <desc>]",
       );
       return;
     }
@@ -63,7 +62,6 @@ export class WorldsCli {
       );
 
     const world = await this.sdk.worlds.create({
-      organizationId: parsed.organizationId,
       slug,
       label: parsed.label,
       description: parsed.description,
@@ -124,14 +122,14 @@ export class WorldsCli {
   public async list(args: string[]) {
     const parsed = parseArgs(args, {
       boolean: ["help"],
-      string: ["organizationId", "page", "pageSize"],
-      alias: { o: "organizationId", p: "page", s: "pageSize", h: "help" },
+      string: ["page", "pageSize"],
+      alias: { p: "page", s: "pageSize", h: "help" },
     });
 
     if (parsed.help) {
       WorldsCli.logo();
       console.log(
-        "Usage: worlds list [--organizationId <id>] [--page <n>] [--pageSize <n>]",
+        "Usage: worlds list [--page <n>] [--pageSize <n>]",
       );
       return;
     }
@@ -140,7 +138,6 @@ export class WorldsCli {
       pageSize: parsed.pageSize
         ? parseInt(parsed.pageSize as string)
         : undefined,
-      organizationId: parsed.organizationId,
     });
     console.log(JSON.stringify(worlds, null, 2));
   }

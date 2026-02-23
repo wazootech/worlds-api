@@ -8,13 +8,14 @@ const isLocalDev = !process.env.WORKOS_CLIENT_ID;
 // ---------------------------------------------------------------------------
 // Local-only imports (lazy)
 // ---------------------------------------------------------------------------
-let _localUserManagement: import("./user-management").UserManagement | null =
-  null;
+let _localUserManagement:
+  | import("./workos/user-management").UserManagement
+  | null = null;
 
 async function getLocalUserManagement() {
   if (_localUserManagement) return _localUserManagement;
   const { LocalUserManagement } =
-    await import("./user-managers/local-user-management");
+    await import("./workos/local/local-user-management");
   _localUserManagement = new LocalUserManagement();
   return _localUserManagement;
 }
@@ -22,14 +23,14 @@ async function getLocalUserManagement() {
 // ---------------------------------------------------------------------------
 // Re-export AuthUser for convenience
 // ---------------------------------------------------------------------------
-export type { AuthUser } from "./user-management";
+export type { AuthUser } from "./workos/user-management";
 
 // ---------------------------------------------------------------------------
 // withAuth – returns the current user session
 // ---------------------------------------------------------------------------
 
 interface LocalWithAuthResult {
-  user: import("./user-management").AuthUser | null;
+  user: import("./workos/user-management").AuthUser | null;
 }
 
 export async function withAuth(): Promise<LocalWithAuthResult> {
@@ -135,10 +136,10 @@ export async function handleAuth(opts?: any): Promise<any> {
 // Organization management (polymorphic: local JSON vs WorkOS)
 // ---------------------------------------------------------------------------
 
-export type { AuthOrganization } from "./organization-management";
+export type { AuthOrganization } from "./workos/org-management";
 
 let _orgManagement:
-  | import("./organization-management").OrganizationManagement
+  | import("./workos/org-management").OrganizationManagement
   | null = null;
 
 export async function getOrganizationManagement() {
@@ -146,12 +147,19 @@ export async function getOrganizationManagement() {
 
   if (isLocalDev) {
     const { LocalOrganizationManagement } =
-      await import("./org-managers/local-org-management");
+      await import("./workos/local/local-org-management");
     _orgManagement = new LocalOrganizationManagement();
   } else {
     const { WorkOSOrganizationManagement } =
-      await import("./org-managers/workos-org-management");
-    _orgManagement = new WorkOSOrganizationManagement();
+      await import("./workos/workos-org-management");
+
+    let deployManager = null;
+    if (process.env.DENO_DEPLOY_TOKEN) {
+      const { DenoDeployManagement } =
+        await import("./deno-deploy/deno-deploy-management");
+      deployManager = new DenoDeployManagement();
+    }
+    _orgManagement = new WorkOSOrganizationManagement(deployManager);
   }
 
   return _orgManagement;

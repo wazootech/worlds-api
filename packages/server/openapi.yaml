@@ -125,9 +125,9 @@ components:
     SparqlResults:
       type: object
       oneOf:
-        - $ref: '#/components/schemas/SparqlSelectResults'
-        - $ref: '#/components/schemas/SparqlAskResults'
-        - $ref: '#/components/schemas/SparqlQuadsResults'
+        - $ref: "#/components/schemas/SparqlSelectResults"
+        - $ref: "#/components/schemas/SparqlAskResults"
+        - $ref: "#/components/schemas/SparqlQuadsResults"
 
     SparqlSelectResults:
       type: object
@@ -152,7 +152,7 @@ components:
               items:
                 type: object
                 additionalProperties:
-                  $ref: '#/components/schemas/SparqlValue'
+                  $ref: "#/components/schemas/SparqlValue"
 
     SparqlAskResults:
       type: object
@@ -185,7 +185,7 @@ components:
             quads:
               type: array
               items:
-                $ref: '#/components/schemas/SparqlQuad'
+                $ref: "#/components/schemas/SparqlQuad"
 
     SparqlValue:
       type: object
@@ -235,7 +235,7 @@ components:
             value:
               type: string
         object:
-          $ref: '#/components/schemas/SparqlValue'
+          $ref: "#/components/schemas/SparqlValue"
         graph:
           type: object
           properties:
@@ -275,16 +275,16 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: A list of worlds
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/World'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+                  $ref: "#/components/schemas/World"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
 
     post:
       summary: Create a world
@@ -293,24 +293,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateWorldParams'
+              $ref: "#/components/schemas/CreateWorldParams"
       responses:
-        '201':
+        "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/World'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
+                $ref: "#/components/schemas/World"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
           description: Conflict
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
   /worlds/{world}:
     parameters:
@@ -322,16 +322,16 @@ paths:
     get:
       summary: Get a world
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/World'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                $ref: "#/components/schemas/World"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
     put:
       summary: Update a world
@@ -340,26 +340,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateWorldParams'
+              $ref: "#/components/schemas/UpdateWorldParams"
       responses:
-        '204':
+        "204":
           description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
     delete:
       summary: Delete a world
       responses:
-        '204':
+        "204":
           description: No Content
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /worlds/{world}/export:
     get:
@@ -377,7 +377,7 @@ paths:
             enum: [turtle, n-quads, n-triples, n3]
             default: n-quads
       responses:
-        '200':
+        "200":
           description: Exported data
           content:
             text/turtle:
@@ -388,12 +388,12 @@ paths:
               schema: { type: string }
             text/n3:
               schema: { type: string }
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /worlds/{world}/import:
     post:
@@ -416,14 +416,14 @@ paths:
           text/n3:
             schema: { type: string }
       responses:
-        '204':
+        "204":
           description: No Content
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /worlds/{world}/logs:
     get:
@@ -450,18 +450,18 @@ paths:
             type: string
             enum: [info, warn, error, debug]
       responses:
-        '200':
+        "200":
           description: A list of logs
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Log'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/Log"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /worlds/{world}/search:
     get:
@@ -496,20 +496,20 @@ paths:
             maximum: 100
             default: 20
       responses:
-        '200':
+        "200":
           description: Search results
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TripleSearchResult'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                  $ref: "#/components/schemas/TripleSearchResult"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /worlds/{world}/sparql:
     get:
@@ -537,24 +537,24 @@ paths:
             items:
               type: string
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/sparql-results+json:
               schema:
-                $ref: '#/components/schemas/SparqlResults'
+                $ref: "#/components/schemas/SparqlResults"
             text/turtle:
               description: SPARQL Service Description
               schema: { type: string }
             application/rdf+xml:
               description: SPARQL Service Description
               schema: { type: string }
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
     post:
       summary: Execute SPARQL query or update
@@ -585,20 +585,20 @@ paths:
           application/sparql-update:
             schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Success
           content:
             application/sparql-results+json:
               schema:
-                $ref: '#/components/schemas/SparqlResults'
-        '204':
+                $ref: "#/components/schemas/SparqlResults"
+        "204":
           description: Update success
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   responses:
@@ -607,16 +607,16 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Unauthorized
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"
     NotFound:
       description: Not Found
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: "#/components/schemas/Error"

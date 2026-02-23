@@ -1,6 +1,6 @@
 import * as authkit from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
-import { sdk } from "@/lib/sdk";
+import { getSdkForOrg } from "@/lib/org-sdk";
 import type { Metadata } from "next";
 import { ServiceAccountSettings } from "@/components/service-account-settings";
 
@@ -15,9 +15,11 @@ export async function generateMetadata(props: {
   try {
     const { getOrganizationManagement } = await import("@/lib/auth");
     const orgMgmt = await getOrganizationManagement();
-    const organization = await orgMgmt.getOrganization(organizationSlug);
+    const organization =
+      await orgMgmt.getOrganizationByExternalId(organizationSlug);
     if (!organization) return { title: "Settings | Service Account" };
 
+    const sdk = getSdkForOrg(organization);
     const sa = await sdk.serviceAccounts.get(organization.id, serviceAccountId);
 
     if (!sa) {
@@ -52,13 +54,14 @@ export default async function ServiceAccountSettingsPage(props: {
   const orgMgmt = await getOrganizationManagement();
 
   const organization = await orgMgmt
-    .getOrganization(organizationSlug)
+    .getOrganizationByExternalId(organizationSlug)
     .catch(() => null);
 
   if (!organization) {
     notFound();
   }
 
+  const sdk = getSdkForOrg(organization);
   const sa = await sdk.serviceAccounts
     .get(organization.id, serviceAccountId)
     .catch(() => null);
@@ -67,7 +70,7 @@ export default async function ServiceAccountSettingsPage(props: {
     notFound();
   }
 
-  const orgSlug = organization.metadata.slug || organization.id;
+  const orgSlug = organization.externalId || organization.id;
 
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

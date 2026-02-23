@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import { rotateApiKey } from "@/app/actions";
 
 export function ApiKeySection({ apiKey: initialApiKey }: { apiKey?: string }) {
-  const { organizationId } = useParams() as { organizationId: string };
+  const { organization: organizationId } = useParams() as {
+    organization: string;
+  };
   const [apiKey, setApiKey] = useState(initialApiKey ?? "");
   const [showKey, setShowKey] = useState(false);
   const [isCopied, setIsCopied] = useState(false);

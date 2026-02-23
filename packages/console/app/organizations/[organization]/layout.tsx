@@ -13,7 +13,8 @@ export async function generateMetadata(props: {
   const { organization: organizationId } = await props.params;
   try {
     const orgMgmt = await authkit.getOrganizationManagement();
-    const organization = await orgMgmt.getOrganization(organizationId);
+    const organization =
+      await orgMgmt.getOrganizationByExternalId(organizationId);
     return {
       title: {
         template: `%s | ${organization?.name || "Organization"}`,
@@ -48,7 +49,7 @@ export default async function OrganizationLayout({
   const orgMgmt = await authkit.getOrganizationManagement();
   let organization;
   try {
-    organization = await orgMgmt.getOrganization(organizationId);
+    organization = await orgMgmt.getOrganizationByExternalId(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();
@@ -59,21 +60,25 @@ export default async function OrganizationLayout({
   }
 
   // Generate general SDK snippets for the account
-  const apiKey = (user?.metadata?.testApiKey as string) || "YOUR_API_KEY";
+  const apiKey =
+    organization.metadata?.apiKey ||
+    (user?.metadata?.testApiKey as string) ||
+    "YOUR_API_KEY";
 
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+import { getSdkForOrg } from "@/lib/wazoo-sdk";
 
-const sdk = new WorldsSdk({
-  baseUrl: "https://api.wazoo.dev",
-  apiKey: "${apiKey}"
-});
-
-const worlds = await sdk.worlds.list();
-console.log("My worlds:", worlds.length);`;
+try {
+  const sdk = getSdkForOrg(organization);
+  const worlds = await sdk.worlds.list();
+  console.log("My worlds:", worlds.length);
+} catch (error) {
+  console.error("Failed to list worlds:", error);
+}`;
 
   const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
-
-const sdk = new WorldsSdk({
+  apiKey: "...",
+});
   baseUrl: "https://api.wazoo.dev",
   apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 });

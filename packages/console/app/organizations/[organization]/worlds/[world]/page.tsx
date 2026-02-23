@@ -1,6 +1,6 @@
 import { WorldOverviewContent } from "@/components/world-overview-content";
 import type { Metadata } from "next";
-import { sdk } from "@/lib/sdk";
+import { getSdkForOrg } from "@/lib/org-sdk";
 
 export async function generateMetadata(props: {
   params: Promise<{ organization: string; world: string }>;
@@ -11,15 +11,20 @@ export async function generateMetadata(props: {
   try {
     const { getOrganizationManagement } = await import("@/lib/auth");
     const orgMgmt = await getOrganizationManagement();
-    const organization = await orgMgmt.getOrganization(organizationSlug);
+    let organization;
+    if (organizationSlug.startsWith("org_")) {
+      organization = await orgMgmt.getOrganization(organizationSlug);
+    } else {
+      organization =
+        await orgMgmt.getOrganizationByExternalId(organizationSlug);
+    }
     if (!organization) return { title: "World Overview" };
 
-    const world = await sdk.worlds.get(worldSlug, {
-      organizationId: organization.id,
-    });
+    const sdk = getSdkForOrg(organization);
+    const world = await sdk.worlds.get(worldSlug);
     if (!world) return { title: "World Overview" };
 
-    const orgSlug = organization.metadata.slug || organization.id;
+    const orgSlug = organization.externalId || organization.id;
     const worldSlugTitle = world.slug || world.id;
 
     return {

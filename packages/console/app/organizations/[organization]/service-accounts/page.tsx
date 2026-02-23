@@ -1,5 +1,6 @@
 import { ServiceAccountsContent } from "@/components/service-accounts-content";
-import { sdk } from "@/lib/sdk";
+import * as authkit from "@/lib/auth";
+import { getSdkForOrg } from "@/lib/org-sdk";
 import type { ServiceAccount } from "@wazoo/sdk";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -24,9 +25,8 @@ export default async function ServiceAccountsPage(props: {
   // Fetch organization (verify organization existence)
   let organization;
   try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
-    organization = await orgMgmt.getOrganization(organizationId);
+    const orgMgmt = await authkit.getOrganizationManagement();
+    organization = await orgMgmt.getOrganizationByExternalId(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();
@@ -40,9 +40,10 @@ export default async function ServiceAccountsPage(props: {
 
   let serviceAccounts: ServiceAccount[] = [];
   try {
+    const sdk = getSdkForOrg(organization);
     serviceAccounts = await sdk.serviceAccounts.list(actualOrgId, {
-      page,
-      pageSize,
+      page: 1,
+      pageSize: 100,
     });
   } catch (error) {
     console.error("Failed to list service accounts:", error);

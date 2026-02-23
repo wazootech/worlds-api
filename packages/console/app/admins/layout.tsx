@@ -1,7 +1,7 @@
 import * as authkit from "@/lib/auth";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import React from "react";
-import { sdk } from "@/lib/sdk";
+
 import { PageHeader } from "@/components/page-header";
 
 export default async function AdminLayout({

@@ -96,15 +96,30 @@ export function OrganizationSwitcher({
 
   const currentOrg = organizationId
     ? organizations.find(
-        (o) => o.id === organizationId || o.metadata.slug === organizationId,
+        (o) => o.id === organizationId || o.externalId === organizationId,
       )
     : organizations[0];
 
-  const handleSelect = (idOrSlug: string) => {
-    localStorage.setItem(LAST_ORG_KEY, idOrSlug);
-    setLastOrgId(idOrSlug);
-    startTransition(() => {
-      router.push(`/organizations/${idOrSlug}`);
+  const handleSelect = (slug: string) => {
+    localStorage.setItem(LAST_ORG_KEY, slug);
+    setLastOrgId(slug);
+
+    // Find the org id to update user metadata if needed
+    const selectedOrg = organizations.find(
+      (o) => o.id === slug || o.externalId === slug,
+    );
+
+    startTransition(async () => {
+      // Proactively update the user's active organization in local dev
+      if (selectedOrg) {
+        try {
+          const { selectOrganizationAction } = await import("@/app/actions");
+          await selectOrganizationAction(selectedOrg.id);
+        } catch (e) {
+          console.error("Failed to sync active organization:", e);
+        }
+      }
+      router.push(`/organizations/${slug}`);
     });
   };
 
@@ -151,9 +166,7 @@ export function OrganizationSwitcher({
           {currentOrg && (
             <DropdownMenuItem
               className="flex items-center justify-between group"
-              onClick={() =>
-                handleSelect(currentOrg.metadata.slug || currentOrg.id)
-              }
+              onClick={() => handleSelect(currentOrg.externalId)}
             >
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-stone-400" />
@@ -180,7 +193,7 @@ export function OrganizationSwitcher({
               .map((org) => (
                 <DropdownMenuItem
                   key={org.id}
-                  onClick={() => handleSelect(org.metadata.slug || org.id)}
+                  onClick={() => handleSelect(org.externalId)}
                   className="flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-2">

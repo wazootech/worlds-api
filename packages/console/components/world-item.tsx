@@ -21,7 +21,8 @@ export function WorldItem({
     e.preventDefault();
     e.stopPropagation();
 
-    const targetUrl = `/organizations/${organizationId}/worlds/${world.id}?lounge=true`;
+    const worldSlug = world.slug || world.id;
+    const targetUrl = `/organizations/${organizationId}/worlds/${worldSlug}?lounge=true`;
 
     // Use View Transition API if available
     if (typeof document !== "undefined" && "startViewTransition" in document) {
@@ -57,7 +58,7 @@ export function WorldItem({
                 title={world.label || world.id}
               >
                 <Link
-                  href={`/organizations/${organizationId}/worlds/${world.id}`}
+                  href={`/organizations/${organizationId}/worlds/${world.slug || world.id}`}
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
                   {world.label || world.id}
