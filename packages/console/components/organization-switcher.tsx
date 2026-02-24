@@ -96,7 +96,7 @@ export function OrganizationSwitcher({
 
   const currentOrg = organizationId
     ? organizations.find(
-        (o) => o.id === organizationId || o.externalId === organizationId,
+        (o) => o.id === organizationId || o.slug === organizationId,
       )
     : organizations[0];
 
@@ -106,7 +106,7 @@ export function OrganizationSwitcher({
 
     // Find the org id to update user metadata if needed
     const selectedOrg = organizations.find(
-      (o) => o.id === slug || o.externalId === slug,
+      (o) => o.id === slug || o.slug === slug,
     );
 
     startTransition(async () => {
@@ -166,7 +166,7 @@ export function OrganizationSwitcher({
           {currentOrg && (
             <DropdownMenuItem
               className="flex items-center justify-between group"
-              onClick={() => handleSelect(currentOrg.externalId)}
+              onClick={() => handleSelect(currentOrg.slug)}
             >
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-stone-400" />
@@ -193,7 +193,7 @@ export function OrganizationSwitcher({
               .map((org) => (
                 <DropdownMenuItem
                   key={org.id}
-                  onClick={() => handleSelect(org.externalId)}
+                  onClick={() => handleSelect(org.slug)}
                   className="flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-2">

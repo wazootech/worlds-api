@@ -19,7 +19,7 @@ export default async function Home(props: {
   const isAdmin = !!userInfo?.user?.metadata?.admin;
 
   if (userInfo.user && !isCreatingNew) {
-    const organizationId = userInfo.user.metadata?.organizationId as
+    const organizationId = userInfo.user.metadata?.activeOrganizationId as
       | string
       | undefined;
     if (organizationId) {
@@ -31,7 +31,7 @@ export default async function Home(props: {
         console.error("Failed to fetch organization for early redirect:", e);
       }
       if (organizationToRedirect) {
-        redirect(`/organizations/${organizationToRedirect.externalId}`);
+        redirect(`/organizations/${organizationToRedirect.slug}`);
       }
     }
   }
@@ -191,7 +191,7 @@ export default async function Home(props: {
   let organization = null;
   if (!isCreatingNew) {
     try {
-      const organizationId = userInfo.user.metadata?.organizationId as
+      const organizationId = userInfo.user.metadata?.activeOrganizationId as
         | string
         | undefined;
       if (organizationId) {
@@ -213,7 +213,7 @@ export default async function Home(props: {
   }
 
   // Redirect to the actual organization dashboard using slug
-  redirect(`/organizations/${organization.externalId}`);
+  redirect(`/organizations/${organization.slug}`);
 }
 
 function ErrorState({

@@ -13,8 +13,7 @@ export async function generateMetadata(props: {
   const { organization: organizationId } = await props.params;
   try {
     const workos = await getWorkOS();
-    const organization =
-      await workos.getOrganizationByExternalId(organizationId);
+    const organization = await workos.getOrganizationBySlug(organizationId);
     return {
       title: {
         template: `%s | ${organization?.name || "Organization"}`,
@@ -49,7 +48,7 @@ export default async function OrganizationLayout({
   const workos = await getWorkOS();
   let organization;
   try {
-    organization = await workos.getOrganizationByExternalId(organizationId);
+    organization = await workos.getOrganizationBySlug(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();
@@ -60,15 +59,10 @@ export default async function OrganizationLayout({
   }
 
   // Generate general SDK snippets for the account
-  const apiKey =
-    organization.metadata?.apiKey ||
-    (user?.metadata?.testApiKey as string) ||
-    "YOUR_API_KEY";
+  const apiKey = organization.metadata?.apiKey || "YOUR_API_KEY";
 
   const apiUrl =
-    (organization.metadata?.apiBaseUrl as string) ||
-    (organization.metadata?.deploymentUrl as string) ||
-    "http://localhost:8000";
+    (organization.metadata?.apiBaseUrl as string) || "http://localhost:8000";
 
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 

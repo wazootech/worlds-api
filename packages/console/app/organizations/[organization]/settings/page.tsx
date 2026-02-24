@@ -17,7 +17,7 @@ export default async function SettingsPage(props: { params: Promise<Params> }) {
   try {
     const workos = await getWorkOS();
 
-    organization = await workos.getOrganizationByExternalId(organizationId);
+    organization = await workos.getOrganizationBySlug(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

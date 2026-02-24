@@ -1,13 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { withAuth, getWorkOS, signOut, type AuthUser } from "@/lib/auth";
+import {
+  withAuth,
+  getWorkOS,
+  signOut,
+  deployWorldApi,
+  type AuthUser,
+} from "@/lib/auth";
 
 import { getSdkForOrg } from "@/lib/org-sdk";
 
 async function getActiveOrgId(user: AuthUser) {
-  // Always prefer metadata.organizationId if it exists
-  return user.metadata?.organizationId as string | undefined;
+  return user.metadata?.activeOrganizationId as string | undefined;
 }
 
 export async function signOutAction() {
@@ -40,7 +45,7 @@ export async function updateWorld(
   const [resolvedWorld] = await Promise.all([sdk.worlds.get(world.id)]);
 
   if (resolvedWorld && organization) {
-    const orgSlug = organization.externalId || organization.id;
+    const orgSlug = organization.slug || organization.id;
     const worldSlug = resolvedWorld.slug || resolvedWorld.id;
     revalidatePath(`/organizations/${orgSlug}`);
     revalidatePath(`/organizations/${orgSlug}/worlds/${worldSlug}`);
@@ -67,7 +72,7 @@ export async function deleteWorld(organizationId: string, worldId: string) {
   await sdk.worlds.delete(world.id);
   // Re-fetch organization to ensure we have the slug (since we might have just used ID above? No, we have the object)
   if (organization) {
-    const orgSlug = organization.externalId || organization.id;
+    const orgSlug = organization.slug || organization.id;
     revalidatePath(`/organizations/${orgSlug}`);
   }
 }
@@ -90,7 +95,7 @@ export async function createWorld(
     let organization = await workos.getOrganization(organizationId);
     if (!organization) {
       // Fallback to checking by externalId (slug)
-      organization = await workos.getOrganizationByExternalId(organizationId);
+      organization = await workos.getOrganizationBySlug(organizationId);
     }
 
     if (!organization) {
@@ -136,7 +141,7 @@ export async function createWorld(
     const sdk = getSdkForOrg(organization);
 
     const actualOrgId = organization.id;
-    const orgSlug = organization.externalId || organization.id;
+    const orgSlug = organization.slug || organization.id;
 
     console.log("Creating new world...", {
       organizationId: actualOrgId,
@@ -211,9 +216,8 @@ export async function deleteOrganization(organizationId: string) {
     await workos.updateUser({
       userId: user.id,
       metadata: {
-        ...(user.metadata as unknown as Record<string, string | null>),
-        organizationId: "",
-        testApiKey: "",
+        ...user.metadata,
+        activeOrganizationId: "",
       },
     });
   }
@@ -243,20 +247,9 @@ export async function rotateApiKey(organizationId: string) {
     },
   });
 
-  const activeOrgId = await getActiveOrgId(user);
-  if (activeOrgId === organizationId) {
-    await workos.updateUser({
-      userId: user.id,
-      metadata: {
-        ...(user.metadata as unknown as Record<string, string | null>),
-        testApiKey: newApiKey,
-      },
-    });
-  }
-
   revalidatePath(`/organizations/${organizationId}`);
   if (organization) {
-    const orgSlug = organization.externalId || organization.id;
+    const orgSlug = organization.slug || organization.id;
     revalidatePath(`/organizations/${orgSlug}`);
     revalidatePath(`/organizations/${orgSlug}/settings`);
   }
@@ -287,13 +280,10 @@ export async function createOrganization(label: string, slug: string) {
 
     if (isLocalDev) {
       apiKey = `sk_local_${Math.random().toString(36).substring(2, 15)}`;
-      let apiBaseUrl = "http://localhost:8001";
-      try {
-        const deployment = await workos.deploy(organization.id);
-        apiBaseUrl = deployment.url;
-      } catch (error) {
-        console.error("Failed to allocate local deployment", error);
-      }
+
+      // Strictly allocate deployment (fails if port allocation fails)
+      const deployment = await deployWorldApi(organization.id);
+      const apiBaseUrl = deployment.url;
 
       await workos.updateOrganization(organization.id, {
         metadata: {
@@ -318,22 +308,21 @@ export async function createOrganization(label: string, slug: string) {
         });
 
         try {
-          await workos.deploy(organization.id);
+          await deployWorldApi(organization.id);
         } catch (error) {
           console.error("Failed to deploy newly created organization", error);
         }
       }
     }
 
-    // 3. Update local user metadata with the NEW organizationId and testApiKey.
+    // 3. Update local user metadata with the new activeOrganizationId.
     const targetUser = await workos.getUser(user.id);
 
     await workos.updateUser({
       userId: user.id,
       metadata: {
-        ...(targetUser.metadata as unknown as Record<string, string | null>),
-        organizationId: organizationId,
-        testApiKey: apiKey,
+        ...targetUser.metadata,
+        activeOrganizationId: organizationId,
       },
     });
 
@@ -371,7 +360,7 @@ export async function updateOrganization(
 
   const resolvedOrganization = await workos.getOrganization(organization.id);
   if (resolvedOrganization) {
-    const orgSlug = resolvedOrganization.externalId || resolvedOrganization.id;
+    const orgSlug = resolvedOrganization.slug || resolvedOrganization.id;
     revalidatePath(`/organizations/${orgSlug}/settings`);
     revalidatePath(`/organizations/${orgSlug}`);
   }
@@ -394,14 +383,13 @@ export async function selectOrganizationAction(organizationId: string) {
   await workos.updateUser({
     userId: user.id,
     metadata: {
-      ...(user.metadata as unknown as Record<string, string | null>),
-      organizationId: organization.id,
-      testApiKey: organization.metadata?.apiKey || "",
+      ...user.metadata,
+      activeOrganizationId: organization.id,
     },
   });
 
   revalidatePath("/");
-  const orgSlug = organization.externalId || organization.id;
+  const orgSlug = organization.slug || organization.id;
   revalidatePath(`/organizations/${orgSlug}`);
 }
 
@@ -531,9 +519,9 @@ export async function deployOrganizationAction(organizationId: string) {
   const organization = await workos.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
 
-  const deployment = await workos.deploy(organization.id);
+  const deployment = await deployWorldApi(organization.id);
 
-  const orgSlug = organization.externalId || organization.id;
+  const orgSlug = organization.slug || organization.id;
   revalidatePath(`/organizations/${orgSlug}`);
   revalidatePath(`/organizations/${organization.id}`);
 

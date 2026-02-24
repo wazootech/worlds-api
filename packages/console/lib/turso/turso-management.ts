@@ -61,7 +61,7 @@ export interface TursoManagement {
 
 type TursoClient = ReturnType<typeof createTursoClient>;
 
-export class TursoManagementImpl implements TursoManagement {
+export class RemoteTursoManagement implements TursoManagement {
   private readonly client: TursoClient;
 
   constructor(private readonly config: { token: string; org: string }) {

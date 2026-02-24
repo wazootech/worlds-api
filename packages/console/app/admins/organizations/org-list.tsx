@@ -45,7 +45,7 @@ export function OrgList({
     {
       key: "slug",
       label: "Slug",
-      render: (org) => org.externalId,
+      render: (org) => org.slug,
     },
     {
       key: "createdAt",
@@ -61,9 +61,7 @@ export function OrgList({
     <ResourceTable
       columns={columns}
       data={organizations}
-      onRowClick={(org) =>
-        router.push(`/organizations/${org.externalId || org.id}`)
-      }
+      onRowClick={(org) => router.push(`/organizations/${org.slug || org.id}`)}
       pagination={{
         hasMore,
         hasPrevious,

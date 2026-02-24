@@ -50,7 +50,7 @@ export default async function AdminsPage({
     paginatedOrganizations.map(async (user) => {
       let organization: import("@/lib/auth").AuthOrganization | null = null;
       try {
-        const organizationId = user.metadata?.organizationId as
+        const organizationId = user.metadata?.activeOrganizationId as
           | string
           | undefined;
         if (organizationId) {

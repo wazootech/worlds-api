@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import type { Deploy, DeployManagement } from "../deploy-management";
-import type { AuthOrganization } from "../../workos/management";
+import type { AuthOrganization } from "../../workos/workos-management";
 
 const PROCESS_PREFIX = "worlds";
 

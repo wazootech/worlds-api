@@ -13,7 +13,7 @@ export async function POST(
     }
 
     // Resolve organization from user metadata
-    const orgId = user.metadata?.organizationId as string;
+    const orgId = user.metadata?.activeOrganizationId as string;
     if (!orgId) {
       return NextResponse.json(
         { error: "No active organization" },

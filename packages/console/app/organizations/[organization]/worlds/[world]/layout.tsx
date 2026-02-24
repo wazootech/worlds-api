@@ -20,7 +20,7 @@ export async function generateMetadata(props: {
     if (organizationSlug.startsWith("org_")) {
       organization = await workos.getOrganization(organizationSlug);
     } else {
-      organization = await workos.getOrganizationByExternalId(organizationSlug);
+      organization = await workos.getOrganizationBySlug(organizationSlug);
     }
     if (!organization) return { title: "World" };
 
@@ -62,7 +62,7 @@ export default async function WorldLayout({
   const organization = await (async () => {
     try {
       const workos = await getWorkOS();
-      return await workos.getOrganizationByExternalId(organizationId);
+      return await workos.getOrganizationBySlug(organizationId);
     } catch {
       return null;
     }
@@ -72,7 +72,7 @@ export default async function WorldLayout({
     notFound();
   }
 
-  const orgSlug = organization.externalId || organization.id;
+  const orgSlug = organization.slug || organization.id;
 
   // Fetch world and list
   let world;
@@ -98,8 +98,8 @@ export default async function WorldLayout({
   // Canonical redirect
   if (
     (organizationId === organization.id &&
-      organization.externalId &&
-      organization.externalId !== organization.id) ||
+      organization.slug &&
+      organization.slug !== organization.id) ||
     (worldId === world.id && world.slug && world.slug !== world.id)
   ) {
     redirect(`/organizations/${orgSlug}/worlds/${worldSlug}`);
@@ -130,14 +130,9 @@ export default async function WorldLayout({
 
   // Snippets
   const apiUrl =
-    (organization.metadata?.apiBaseUrl as string) ||
-    (organization.metadata?.deploymentUrl as string) ||
-    "http://localhost:8000";
+    (organization.metadata?.apiBaseUrl as string) || "http://localhost:8000";
 
-  const apiKey =
-    (organization.metadata?.apiKey as string) ||
-    (user?.metadata?.testApiKey as string) ||
-    "YOUR_API_KEY";
+  const apiKey = (organization.metadata?.apiKey as string) || "YOUR_API_KEY";
 
   const worldIdSnippet = world.slug || world.id;
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";

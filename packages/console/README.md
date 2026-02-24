@@ -17,6 +17,9 @@ experience:
 - **[Tailwind CSS](https://tailwindcss.com)**: Utility-first CSS framework for
   rapid UI development.
 - **[Nuqs](https://nuqs.47ng.com)**: Type-safe search params state management.
+- **Local-first by design**: Polymorphic architecture that works seamlessly
+  with a local implementation of WorkOS features, enabling a self-hostable
+  subset of functionality for offline development and faster feedback loops.
 
 ## Getting Started
 

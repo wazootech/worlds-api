@@ -1,4 +1,4 @@
-import { handleAuth, getWorkOS, type AuthUser } from "@/lib/auth";
+import { handleAuth, getWorkOS, deployWorldApi, type AuthUser } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
             });
 
             try {
-              await workos.deploy(newOrg.id);
+              await deployWorldApi(newOrg.id);
             } catch (e) {
               console.error("Failed to deploy newly created organization", e);
             }
@@ -87,8 +87,7 @@ export async function GET(request: NextRequest) {
           await workos.updateUser({
             userId: data.user.id,
             metadata: {
-              organizationId: newOrg.id,
-              testApiKey: apiKey || null, // Ensure string or null
+              activeOrganizationId: newOrg.id,
             },
           });
         } catch (error) {

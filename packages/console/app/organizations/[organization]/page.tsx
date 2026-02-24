@@ -23,7 +23,7 @@ export default async function OrganizationDashboard(props: {
   try {
     const workos = await getWorkOS();
 
-    organization = await workos.getOrganizationByExternalId(organizationSlug);
+    organization = await workos.getOrganizationBySlug(organizationSlug);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

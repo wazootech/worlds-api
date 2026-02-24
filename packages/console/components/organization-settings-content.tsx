@@ -31,7 +31,7 @@ export function OrganizationSettingsContent() {
               </h2>
               <BasicDetailsForm
                 initialLabel={organization.name}
-                initialSlug={organization.externalId}
+                initialSlug={organization.slug}
               />
             </div>
             <div className="bg-stone-50 dark:bg-stone-950/50 px-6 py-4 border-t border-stone-200 dark:border-stone-800">

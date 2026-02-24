@@ -47,6 +47,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
+    "get-port": "^7.1.0",
     "lucide-react": "^0.562.0",
     "nanoid": "^5.1.6",
     "next": "16.1.1",

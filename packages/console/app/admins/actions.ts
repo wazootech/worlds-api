@@ -100,7 +100,7 @@ export async function deleteUserAction(userId: string) {
   try {
     // Get the target user to find their associated organization
     const targetUser = await workos.getUser(userId);
-    const organizationId = targetUser.metadata?.organizationId as
+    const organizationId = targetUser.metadata?.activeOrganizationId as
       | string
       | undefined;
 

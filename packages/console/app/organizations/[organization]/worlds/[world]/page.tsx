@@ -15,7 +15,7 @@ export async function generateMetadata(props: {
     if (organizationSlug.startsWith("org_")) {
       organization = await workos.getOrganization(organizationSlug);
     } else {
-      organization = await workos.getOrganizationByExternalId(organizationSlug);
+      organization = await workos.getOrganizationBySlug(organizationSlug);
     }
     if (!organization) return { title: "World Overview" };
 
@@ -23,7 +23,7 @@ export async function generateMetadata(props: {
     const world = await sdk.worlds.get(worldSlug);
     if (!world) return { title: "World Overview" };
 
-    const orgSlug = organization.externalId || organization.id;
+    const orgSlug = organization.slug || organization.id;
     const worldSlugTitle = world.slug || world.id;
 
     return {

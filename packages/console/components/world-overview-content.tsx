@@ -7,9 +7,7 @@ export function WorldOverviewContent() {
   const { world, organization, codeSnippet, maskedCodeSnippetHtml } =
     useWorld();
 
-  const apiUrl =
-    (organization.metadata?.apiBaseUrl as string) ||
-    (organization.metadata?.deploymentUrl as string);
+  const apiUrl = organization.metadata?.apiBaseUrl;
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       <WorldDetails

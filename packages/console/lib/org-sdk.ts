@@ -1,5 +1,5 @@
 import { WorldsSdk } from "@wazoo/sdk";
-import type { AuthOrganization } from "./workos/management";
+import type { AuthOrganization } from "./workos/workos-management";
 
 // Cache SDK instances per org to avoid recreating on every request
 const sdkCache = new Map<string, WorldsSdk>();
