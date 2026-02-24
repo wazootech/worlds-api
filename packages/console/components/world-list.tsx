@@ -38,8 +38,9 @@ export function WorldList({
     e.preventDefault();
     e.stopPropagation();
 
-    const worldSlug = slug || worldId;
-    const targetUrl = `/organizations/${organizationSlug}/worlds/${worldSlug}?lounge=true`;
+    const worldSlug = slug;
+    if (!worldSlug) throw new Error("World is missing a slug");
+    const targetUrl = `/${organizationSlug}/${worldSlug}?lounge=true`;
 
     if (typeof document !== "undefined" && "startViewTransition" in document) {
       document.startViewTransition(() => {
@@ -77,7 +78,7 @@ export function WorldList({
       label: "World Name",
       render: (world) => (
         <Link
-          href={`/organizations/${organizationSlug}/worlds/${world.slug || world.id}`}
+          href={`/${organizationSlug}/${world.slug}`}
           className="font-medium text-stone-900 dark:text-stone-100 hover:text-primary transition-colors block"
         >
           {world.label || "Untitled World"}
@@ -110,7 +111,7 @@ export function WorldList({
       className: "text-right",
       render: (world) => (
         <Link
-          href={`/organizations/${organizationSlug}/worlds/${world.slug || world.id}`}
+          href={`/${organizationSlug}/${world.slug}`}
           className="text-primary hover:text-primary-dark dark:hover:text-primary-light text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity"
         >
           Manage &rarr;
@@ -123,11 +124,10 @@ export function WorldList({
     <ResourceTable
       columns={columns}
       data={initialData}
-      onRowClick={(world) =>
-        router.push(
-          `/organizations/${organizationSlug}/worlds/${world.slug || world.id}`,
-        )
-      }
+      onRowClick={(world) => {
+        if (!world.slug) throw new Error("World is missing a slug");
+        router.push(`/${organizationSlug}/${world.slug}`);
+      }}
       pagination={{
         currentPage: page,
         pageSize: pageSize,

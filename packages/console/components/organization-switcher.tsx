@@ -119,7 +119,7 @@ export function OrganizationSwitcher({
           console.error("Failed to sync active organization:", e);
         }
       }
-      router.push(`/organizations/${slug}`);
+      router.push(`/${slug}`);
     });
   };
 
@@ -166,7 +166,11 @@ export function OrganizationSwitcher({
           {currentOrg && (
             <DropdownMenuItem
               className="flex items-center justify-between group"
-              onClick={() => handleSelect(currentOrg.slug)}
+              onClick={() => {
+                if (!currentOrg.slug)
+                  throw new Error("Organization is missing a slug");
+                handleSelect(currentOrg.slug);
+              }}
             >
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-stone-400" />
@@ -193,7 +197,11 @@ export function OrganizationSwitcher({
               .map((org) => (
                 <DropdownMenuItem
                   key={org.id}
-                  onClick={() => handleSelect(org.slug)}
+                  onClick={() => {
+                    if (!org.slug)
+                      throw new Error("Organization is missing a slug");
+                    handleSelect(org.slug);
+                  }}
                   className="flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-2">

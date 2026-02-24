@@ -44,10 +44,13 @@ export async function updateWorld(
   const [resolvedWorld] = await Promise.all([sdk.worlds.get(world.id)]);
 
   if (resolvedWorld && organization) {
-    const orgSlug = organization.slug || organization.id;
-    const worldSlug = resolvedWorld.slug || resolvedWorld.id;
-    revalidatePath(`/organizations/${orgSlug}`);
-    revalidatePath(`/organizations/${orgSlug}/worlds/${worldSlug}`);
+    const orgSlug = organization.slug;
+    const worldSlug = resolvedWorld.slug;
+    if (!orgSlug || !worldSlug) {
+      throw new Error("Organization or World is missing a slug");
+    }
+    revalidatePath(`/${orgSlug}`);
+    revalidatePath(`/${orgSlug}/${worldSlug}`);
   }
 }
 
@@ -71,8 +74,9 @@ export async function deleteWorld(organizationId: string, worldId: string) {
   await sdk.worlds.delete(world.id);
   // Re-fetch organization to ensure we have the slug (since we might have just used ID above? No, we have the object)
   if (organization) {
-    const orgSlug = organization.slug || organization.id;
-    revalidatePath(`/organizations/${orgSlug}`);
+    const orgSlug = organization.slug;
+    if (!orgSlug) throw new Error("Organization is missing a slug");
+    revalidatePath(`/${orgSlug}`);
   }
 }
 
@@ -140,7 +144,8 @@ export async function createWorld(
     const sdk = getSdkForOrg(organization);
 
     const actualOrgId = organization.id;
-    const orgSlug = organization.slug || organization.id;
+    const orgSlug = organization.slug;
+    if (!orgSlug) throw new Error("Organization is missing a slug");
 
     console.log("Creating new world...", {
       organizationId: actualOrgId,
@@ -157,8 +162,8 @@ export async function createWorld(
     // Artificial delay to allow for eventual consistency in DB
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    revalidatePath(`/organizations/${actualOrgId}`);
-    revalidatePath(`/organizations/${orgSlug}`);
+    revalidatePath(`/${actualOrgId}`);
+    revalidatePath(`/${orgSlug}`);
 
     return { success: true, worldId: world.id, slug: world.slug };
   } catch (error) {
@@ -246,11 +251,12 @@ export async function rotateApiKey(organizationId: string) {
     },
   });
 
-  revalidatePath(`/organizations/${organizationId}`);
+  revalidatePath(`/${organizationId}`);
   if (organization) {
-    const orgSlug = organization.slug || organization.id;
-    revalidatePath(`/organizations/${orgSlug}`);
-    revalidatePath(`/organizations/${orgSlug}/settings`);
+    const orgSlug = organization.slug;
+    if (!orgSlug) throw new Error("Organization is missing a slug");
+    revalidatePath(`/${orgSlug}`);
+    revalidatePath(`/${orgSlug}/~/settings`);
   }
   return newApiKey;
 }
@@ -284,8 +290,8 @@ export async function createOrganization(label: string, slug: string) {
       },
     });
 
-    revalidatePath(`/organizations/${organizationId}`);
-    revalidatePath(`/organizations/${slug}`);
+    revalidatePath(`/${organizationId}`);
+    revalidatePath(`/${slug}`);
     revalidatePath("/");
     return { success: true, organizationId, slug };
   } catch (error) {
@@ -318,9 +324,10 @@ export async function updateOrganization(
 
   const resolvedOrganization = await workos.getOrganization(organization.id);
   if (resolvedOrganization) {
-    const orgSlug = resolvedOrganization.slug || resolvedOrganization.id;
-    revalidatePath(`/organizations/${orgSlug}/settings`);
-    revalidatePath(`/organizations/${orgSlug}`);
+    const orgSlug = resolvedOrganization.slug;
+    if (!orgSlug) throw new Error("Organization is missing a slug");
+    revalidatePath(`/${orgSlug}/~/settings`);
+    revalidatePath(`/${orgSlug}`);
   }
 
   revalidatePath(`/`);
@@ -346,8 +353,9 @@ export async function selectOrganizationAction(organizationId: string) {
   });
 
   revalidatePath("/");
-  const orgSlug = organization.slug || organization.id;
-  revalidatePath(`/organizations/${orgSlug}`);
+  const orgSlug = organization.slug;
+  if (!orgSlug) throw new Error("Organization is missing a slug");
+  revalidatePath(`/${orgSlug}`);
 }
 
 export async function listOrganizations() {

@@ -31,8 +31,8 @@ export async function generateMetadata(props: {
 
     return {
       title: {
-        template: `%s | ${world.slug || world.id || "World"} | Wazoo`,
-        default: `${world.slug || world.id || "World"} | Wazoo`,
+        template: `%s | ${world.slug || "World"} | Wazoo`,
+        default: `${world.slug || "World"} | Wazoo`,
       },
     };
   } catch {
@@ -73,7 +73,8 @@ export default async function WorldLayout({
     notFound();
   }
 
-  const orgSlug = organization.slug || organization.id;
+  const orgSlug = organization.slug;
+  if (!orgSlug) notFound();
 
   // Fetch world and list
   let world;
@@ -94,7 +95,8 @@ export default async function WorldLayout({
     notFound();
   }
 
-  const worldSlug = world.slug || world.id;
+  const worldSlug = world.slug;
+  if (!worldSlug) notFound();
 
   // Canonical redirect
   if (
@@ -103,29 +105,29 @@ export default async function WorldLayout({
       organization.slug !== organization.id) ||
     (worldId === world.id && world.slug && world.slug !== world.id)
   ) {
-    redirect(`/organizations/${orgSlug}/worlds/${worldSlug}`);
+    redirect(`/${orgSlug}/${worldSlug}`);
   }
 
   const tabs = [
     {
       label: "Overview",
-      href: `/organizations/${orgSlug}/worlds/${worldSlug}`,
+      href: `/${orgSlug}/${worldSlug}`,
     },
     {
       label: "SPARQL",
-      href: `/organizations/${orgSlug}/worlds/${worldSlug}/sparql`,
+      href: `/${orgSlug}/${worldSlug}/sparql`,
     },
     {
       label: "Search",
-      href: `/organizations/${orgSlug}/worlds/${worldSlug}/search`,
+      href: `/${orgSlug}/${worldSlug}/search`,
     },
     {
       label: "Logs",
-      href: `/organizations/${orgSlug}/worlds/${worldSlug}/logs`,
+      href: `/${orgSlug}/${worldSlug}/logs`,
     },
     {
       label: "Settings",
-      href: `/organizations/${orgSlug}/worlds/${worldSlug}/settings`,
+      href: `/${orgSlug}/${worldSlug}/settings`,
     },
   ];
 
@@ -135,7 +137,8 @@ export default async function WorldLayout({
 
   const apiKey = (organization.metadata?.apiKey as string) || "YOUR_API_KEY";
 
-  const worldIdSnippet = world.slug || world.id;
+  const worldIdSnippet = world.slug;
+  if (!worldIdSnippet) throw new Error("World is missing a slug");
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
@@ -186,32 +189,37 @@ console.log("Connected to world:", world.label);`;
           resource={[
             {
               label: "Worlds",
-              href: `/organizations/${orgSlug}`,
+              href: `/${orgSlug}`,
               icon: <LayoutGrid className="w-3 h-3 text-stone-500" />,
               menuItems: [
                 {
                   label: "Worlds",
-                  href: `/organizations/${orgSlug}`,
+                  href: `/${orgSlug}`,
                   icon: <Globe className="w-4 h-4" />,
                 },
                 {
                   label: "Settings",
-                  href: `/organizations/${orgSlug}/settings`,
+                  href: `/${orgSlug}/~/settings`,
                   icon: <Settings className="w-4 h-4" />,
                 },
               ],
             },
             {
               label: world.label,
-              href: `/organizations/${orgSlug}/worlds/${worldSlug}`,
+              href: `/${orgSlug}/${worldSlug}`,
               icon: <Globe className="w-3 h-3 text-stone-500" />,
-              menuItems: worlds.map((w) => ({
-                label: w.label || w.slug || w.id,
-                href: `/organizations/${orgSlug}/worlds/${w.slug || w.id}`,
-                icon: <Globe className="w-4 h-4" />,
-              })),
+              menuItems: worlds
+                .map((w) => {
+                  if (!w.slug) return null;
+                  return {
+                    label: w.label || w.slug,
+                    href: `/${orgSlug}/${w.slug}`,
+                    icon: <Globe className="w-4 h-4" />,
+                  };
+                })
+                .filter((i): i is NonNullable<typeof i> => i !== null),
               resourceType: "World",
-              createHref: `/organizations/${orgSlug}?create=world`,
+              createHref: `/${orgSlug}?create=world`,
             },
           ]}
           tabs={tabs}

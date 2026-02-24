@@ -9,40 +9,32 @@ export function OrganizationHeader() {
   const { organization, user, isAdmin } = useOrganization();
   const pathname = usePathname();
   const segment = useSelectedLayoutSegment();
-  const orgSlug = organization.slug || organization.id;
+  const orgSlug = organization.slug;
+  if (!orgSlug) throw new Error("Organization is missing a slug");
 
-  // Check if we are on a world-specific page
-  // Pattern: /organizations/[org]/worlds/[world]...
-  const isWorldPage = pathname?.includes(`/organizations/${orgSlug}/worlds/`);
-
-  if (isWorldPage) {
+  // Organization layout is a parent of World layout.
+  // If the segment is not null (org home) or '~' (org settings), we are in a world sub-route.
+  if (segment !== null && segment !== "~") {
     return null;
   }
 
-  // Determine current section for the dropdown label
-  let currentLabel = "Worlds";
-  let currentIcon = <LayoutGrid className="w-3 h-3 text-stone-500" />;
-
-  if (segment === "service-accounts") {
-    currentLabel = "Service Accounts";
-    currentIcon = <ShieldCheck className="w-3 h-3 text-stone-500" />;
-  } else if (segment === "settings") {
-    currentLabel = "Settings";
-    currentIcon = <Settings className="w-3 h-3 text-stone-500" />;
-  } else {
-    // Default to Worlds (Overview)
-    currentIcon = <LayoutGrid className="w-3 h-3 text-stone-500" />;
-  }
+  const isSettings = segment === "~";
+  const currentLabel = isSettings ? "Settings" : "Worlds";
+  const currentIcon = isSettings ? (
+    <Settings className="w-3 h-3 text-stone-500" />
+  ) : (
+    <LayoutGrid className="w-3 h-3 text-stone-500" />
+  );
 
   const menuItems = [
     {
       label: "Worlds",
-      href: `/organizations/${orgSlug}`,
+      href: `/${orgSlug}`,
       icon: <Globe className="w-4 h-4" />,
     },
     {
       label: "Settings",
-      href: `/organizations/${orgSlug}/settings`,
+      href: `/${orgSlug}/~/settings`,
       icon: <Settings className="w-4 h-4" />,
     },
   ];
@@ -53,13 +45,13 @@ export function OrganizationHeader() {
       isAdmin={isAdmin}
       resource={{
         label: currentLabel,
-        href: `/organizations/${orgSlug}/${segment || ""}`,
+        href: isSettings ? `/${orgSlug}/~/settings` : `/${orgSlug}`,
         icon: currentIcon,
         menuItems: menuItems,
       }}
       tabs={[
-        { label: "Worlds", href: `/organizations/${orgSlug}` },
-        { label: "Settings", href: `/organizations/${orgSlug}/settings` },
+        { label: "Worlds", href: `/${orgSlug}` },
+        { label: "Settings", href: `/${orgSlug}/~/settings` },
       ]}
     />
   );

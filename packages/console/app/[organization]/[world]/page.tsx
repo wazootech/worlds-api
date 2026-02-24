@@ -23,12 +23,12 @@ export async function generateMetadata(props: {
     const world = await sdk.worlds.get(worldSlug);
     if (!world) return { title: "World Overview" };
 
-    const orgSlug = organization.slug || organization.id;
-    const worldSlugTitle = world.slug || world.id;
+    const orgSlug = organization.slug;
+    const worldSlugTitle = world.slug;
 
     return {
       title: {
-        absolute: `${worldSlugTitle} | ${orgSlug} | Wazoo`,
+        absolute: `${worldSlugTitle || "World"} | ${orgSlug || "Org"} | Wazoo`,
       },
     };
   } catch {

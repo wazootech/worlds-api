@@ -214,7 +214,7 @@ export default async function Home(props: {
   }
 
   // Redirect to the actual organization dashboard using slug
-  redirect(`/organizations/${organization.slug}`);
+  redirect(`/${organization.slug}`);
 }
 
 function ErrorState({
