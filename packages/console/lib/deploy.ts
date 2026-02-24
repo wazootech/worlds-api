@@ -13,17 +13,18 @@ export function buildDeployEnvVars(
   overrides?: Record<string, string>,
 ): Record<string, string> {
   const envVars: Record<string, string> = {
-    ADMIN_API_KEY: (org.metadata?.apiKey as string) || "default-key",
-    LIBSQL_URL:
-      (org.metadata?.libsqlUrl as string) || `file:./worlds_${org.id}.db`,
-    LIBSQL_AUTH_TOKEN: (org.metadata?.libsqlAuthToken as string) || "",
+    ADMIN_API_KEY: org.metadata?.apiKey || "default-key",
+    LIBSQL_URL: org.metadata?.libsqlUrl || `file:./worlds_${org.id}.db`,
+    LIBSQL_AUTH_TOKEN: org.metadata?.libsqlAuthToken || "",
     ...overrides,
   };
 
-  if (org.metadata?.tursoApiToken)
-    envVars.TURSO_API_TOKEN = org.metadata.tursoApiToken as string;
-  if (org.metadata?.tursoOrg)
-    envVars.TURSO_ORG = org.metadata.tursoOrg as string;
+  if (org.metadata?.tursoApiToken) {
+    envVars.TURSO_API_TOKEN = org.metadata.tursoApiToken;
+  }
+  if (org.metadata?.tursoOrg) {
+    envVars.TURSO_ORG = org.metadata.tursoOrg;
+  }
 
   // Pass along server-side secrets
   if (process.env.GOOGLE_API_KEY)
@@ -81,14 +82,14 @@ export async function deployOrganization(
   if (!org) throw new Error(`Organization not found: ${orgId}`);
 
   // For local dev: skip remote orgs
-  const apiBaseUrl = org.metadata?.apiBaseUrl as string | undefined;
+  const apiBaseUrl = org.metadata?.apiBaseUrl;
   const isRemote =
-    apiBaseUrl &&
+    !!apiBaseUrl &&
     !apiBaseUrl.startsWith("http://localhost") &&
     !apiBaseUrl.startsWith("http://127.0.0.1");
 
-  if (isRemote) {
-    return { url: apiBaseUrl as string };
+  if (isRemote && apiBaseUrl) {
+    return { url: apiBaseUrl };
   }
 
   // Auto-provision Turso database if available
