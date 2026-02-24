@@ -40,7 +40,9 @@ export class RemoteWorkOSManagement implements WorkOSManagement {
     userId: string;
     metadata?: AuthUser["metadata"];
   }): Promise<AuthUser> {
-    return this.workos.userManagement.updateUser(opts as any);
+    return this.workos.userManagement.updateUser(
+      opts as { userId: string; metadata?: Record<string, string | null> },
+    );
   }
 
   async deleteUser(userId: string): Promise<void> {

@@ -1,4 +1,9 @@
-import { handleAuth, getWorkOS, deployWorldApi, type AuthUser } from "@/lib/auth";
+import {
+  handleAuth,
+  getWorkOS,
+  deployWorldApi,
+  type AuthUser,
+} from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 

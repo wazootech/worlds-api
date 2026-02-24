@@ -8,16 +8,21 @@ import type { TursoManagement } from "./turso/turso-management";
 /**
  * Build the environment variables map for a deployed server instance.
  */
-export function buildDeployEnvVars(
-  org: AuthOrganization,
-  overrides?: Record<string, string>,
-): Record<string, string> {
+export function buildDeployEnvVars(opts: {
+  org: AuthOrganization;
+  port?: string;
+  libsqlUrl?: string;
+}): Record<string, string> {
+  const { org, port, libsqlUrl } = opts;
   const envVars: Record<string, string> = {
-    ADMIN_API_KEY: org.metadata?.apiKey || "default-key",
-    LIBSQL_URL: org.metadata?.libsqlUrl || `file:./worlds_${org.id}.db`,
+    ADMIN_API_KEY: org.metadata?.apiKey || "",
+    LIBSQL_URL: libsqlUrl || org.metadata?.libsqlUrl || "",
     LIBSQL_AUTH_TOKEN: org.metadata?.libsqlAuthToken || "",
-    ...overrides,
   };
+
+  if (port) {
+    envVars.PORT = port;
+  }
 
   if (org.metadata?.tursoApiToken) {
     envVars.TURSO_API_TOKEN = org.metadata.tursoApiToken;
@@ -70,7 +75,7 @@ async function provisionTursoIfNeeded(
  *  1. Looks up the org
  *  2. Auto-provisions a Turso database if needed
  *  3. Builds env vars and calls the deploy manager
- *  4. Persists updated metadata
+ *  4. Updates org metadata with the actual deployment URL
  */
 export async function deployOrganization(
   orgId: string,
@@ -81,46 +86,59 @@ export async function deployOrganization(
   const org = await workos.getOrganization(orgId);
   if (!org) throw new Error(`Organization not found: ${orgId}`);
 
-  // For local dev: skip remote orgs
-  const apiBaseUrl = org.metadata?.apiBaseUrl;
-  const isRemote =
-    !!apiBaseUrl &&
-    !apiBaseUrl.startsWith("http://localhost") &&
-    !apiBaseUrl.startsWith("http://127.0.0.1");
-
-  if (isRemote && apiBaseUrl) {
-    return { url: apiBaseUrl };
-  }
-
   // Auto-provision Turso database if available
   await provisionTursoIfNeeded(org, workos, tursoManager);
 
-  // If the org already has a URL, re-deploy with current env vars
-  if (apiBaseUrl && !isRemote) {
-    const port = new URL(apiBaseUrl).port || "80";
-    const envVars = buildDeployEnvVars(org, { PORT: port });
-    await deployManager.deploy(org.id, envVars);
-    return { url: apiBaseUrl };
+  // Determine local SQLite fallback if no remote DB exists
+  const localDbUrl = `file:./worlds_${org.id}.db`;
+  const libsqlUrl = org.metadata?.libsqlUrl || localDbUrl;
+
+  const currentApiUrl = org.metadata?.apiBaseUrl;
+  const isLocal =
+    !currentApiUrl ||
+    currentApiUrl.startsWith("http://localhost") ||
+    currentApiUrl.startsWith("http://127.0.0.1");
+
+  let port: string | undefined;
+
+  if (isLocal) {
+    // Allocate an available port (local dev only)
+    // Exclude ports already assigned to other orgs in workos.json
+    const { data: allOrgs } = await workos.listOrganizations({ limit: 100 });
+    const usedPorts = allOrgs
+      .map((o) => o.metadata?.apiBaseUrl)
+      .filter((u): u is string => !!u && u.startsWith("http://localhost"))
+      .map((u) => {
+        try {
+          return parseInt(new URL(u).port, 10);
+        } catch {
+          return NaN;
+        }
+      })
+      .filter((p) => !isNaN(p));
+
+    const getPort = (await import("get-port")).default;
+    const allocatedPort = await getPort({
+      port: currentApiUrl ? parseInt(new URL(currentApiUrl).port, 10) : 8001,
+      exclude: usedPorts,
+    });
+    port = allocatedPort.toString();
   }
 
-  // Allocate an available port (local dev only)
-  // Exclude ports already assigned to other orgs in workos.json
-  const { data: allOrgs } = await workos.listOrganizations({ limit: 100 });
-  const usedPorts = allOrgs
-    .map((o) => o.metadata?.apiBaseUrl as string | undefined)
-    .filter((u): u is string => !!u && u.startsWith("http://localhost"))
-    .map((u) => parseInt(new URL(u).port, 10))
-    .filter((p) => !isNaN(p));
+  const envVars = buildDeployEnvVars({
+    org,
+    port,
+    libsqlUrl,
+  });
 
-  const getPort = (await import("get-port")).default;
-  const port = await getPort({ port: 8001, exclude: usedPorts });
-  const url = `http://localhost:${port}`;
+  const deployment = await deployManager.deploy(org.id, envVars);
 
-  org.metadata = { ...org.metadata, apiBaseUrl: url };
+  // Update org metadata with the actual deployment result
+  org.metadata = {
+    ...org.metadata,
+    apiBaseUrl: deployment.url,
+  };
   await workos.updateOrganization(org.id, { metadata: org.metadata });
 
-  const envVars = buildDeployEnvVars(org, { PORT: port.toString() });
-  await deployManager.deploy(org.id, envVars);
-
-  return { url };
+  return { url: deployment.url };
 }
