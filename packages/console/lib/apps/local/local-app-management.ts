@@ -1,54 +1,35 @@
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
-import type { Deploy, DeployManagement } from "../deploy-management";
+import type { ManagedApp, AppManagement } from "../app-management";
 import type { AuthOrganization } from "../../workos/workos-management";
 
 const PROCESS_PREFIX = "worlds";
 
-function processName(orgId: string) {
-  return `${PROCESS_PREFIX}-${orgId}`;
+function processName(appId: string) {
+  return `${PROCESS_PREFIX}-${appId}`;
 }
 
-// ── LocalDeployManagement ──────────────────────────────────────────────────
-
-export class LocalDeployManagement implements DeployManagement {
-  private static instance: LocalDeployManagement | null = null;
+export class LocalAppManagement implements AppManagement {
+  private static instance: LocalAppManagement | null = null;
   private processes = new Map<string, ChildProcess>();
   private ports = new Map<string, string>();
 
-  static getInstance(): LocalDeployManagement {
-    if (!LocalDeployManagement.instance) {
-      LocalDeployManagement.instance = new LocalDeployManagement();
+  static getInstance(): LocalAppManagement {
+    if (!LocalAppManagement.instance) {
+      LocalAppManagement.instance = new LocalAppManagement();
     }
-    return LocalDeployManagement.instance;
+    return LocalAppManagement.instance;
   }
 
-  async deploy(
-    orgId: string,
+  async createApp(
+    appId: string,
     envVars: Record<string, string>,
-  ): Promise<Deploy> {
-    const name = processName(orgId);
-
-    // If already running, return existing deployment info
-    const existing = this.processes.get(name);
-    if (existing && existing.exitCode === null) {
-      const port = envVars.PORT || "80";
-      const url = `http://localhost:${port}`;
-      const now = new Date().toISOString();
-      return {
-        id: name,
-        orgId,
-        url,
-        status: "running",
-        createdAt: now,
-        updatedAt: now,
-      };
-    }
-
+  ): Promise<ManagedApp> {
+    const name = processName(appId);
     const port = envVars.PORT || "80";
     const serverDir = path.resolve(process.cwd(), "..", "server");
 
-    console.log(`[local-deploy] Starting ${name} on port ${port}...`);
+    console.log(`[local-app] Starting ${name} on port ${port}...`);
     const child = spawn(
       "deno",
       ["serve", "-A", "--env", "--port", port, "main.ts"],
@@ -67,19 +48,19 @@ export class LocalDeployManagement implements DeployManagement {
     });
 
     child.on("exit", (code) => {
-      console.log(`[local-deploy] ${name} exited with code ${code}`);
+      console.log(`[local-app] ${name} exited with code ${code}`);
       this.processes.delete(name);
-      this.ports.delete(orgId);
+      this.ports.delete(appId);
     });
 
     this.processes.set(name, child);
-    this.ports.set(orgId, port);
+    this.ports.set(appId, port);
 
     const url = `http://localhost:${port}`;
     const now = new Date().toISOString();
     return {
-      id: name,
-      orgId,
+      id: appId,
+      slug: appId,
       url,
       status: "running",
       createdAt: now,
@@ -87,19 +68,19 @@ export class LocalDeployManagement implements DeployManagement {
     };
   }
 
-  async getDeployment(orgId: string): Promise<Deploy | null> {
-    const name = processName(orgId);
+  async getApp(appId: string): Promise<ManagedApp | null> {
+    const name = processName(appId);
     const child = this.processes.get(name);
 
     if (!child || child.exitCode !== null) return null;
 
     const now = new Date().toISOString();
-    const port = this.ports.get(orgId) || "80";
+    const port = this.ports.get(appId) || "80";
     const url = `http://localhost:${port}`;
 
     return {
-      id: name,
-      orgId,
+      id: appId,
+      slug: appId,
       url,
       status: "running",
       createdAt: now,
@@ -107,14 +88,14 @@ export class LocalDeployManagement implements DeployManagement {
     };
   }
 
-  async stop(orgId: string): Promise<void> {
-    const name = processName(orgId);
+  async deleteApp(appId: string): Promise<void> {
+    const name = processName(appId);
     const child = this.processes.get(name);
     if (child) {
-      console.log(`[local-deploy] Stopping ${name}...`);
+      console.log(`[local-app] Stopping ${name}...`);
       child.kill("SIGTERM");
       this.processes.delete(name);
-      this.ports.delete(orgId);
+      this.ports.delete(appId);
     }
   }
 
@@ -123,9 +104,7 @@ export class LocalDeployManagement implements DeployManagement {
    * Called from instrumentation.ts on Next.js startup.
    */
   async bootAll(orgs: AuthOrganization[]): Promise<void> {
-    console.log(
-      `[local-deploy] Booting ${orgs.length} local organization(s)...`,
-    );
+    console.log(`[local-app] Booting ${orgs.length} local organization(s)...`);
     for (const org of orgs) {
       try {
         const apiBaseUrl = org.metadata?.apiBaseUrl as string | undefined;
@@ -136,14 +115,14 @@ export class LocalDeployManagement implements DeployManagement {
 
         if (isRemote) {
           console.log(
-            `[local-deploy] Skipping ${org.id} — points to remote API (${apiBaseUrl}).`,
+            `[local-app] Skipping ${org.id} — points to remote API (${apiBaseUrl}).`,
           );
           continue;
         }
 
         if (!apiBaseUrl) {
           console.warn(
-            `[local-deploy] Skipping ${org.id} — no apiBaseUrl assigned.`,
+            `[local-app] Skipping ${org.id} — no apiBaseUrl assigned.`,
           );
           continue;
         }
@@ -153,12 +132,11 @@ export class LocalDeployManagement implements DeployManagement {
 
         if (!port) {
           console.warn(
-            `[local-deploy] Skipping ${org.id} — no port could be parsed.`,
+            `[local-app] Skipping ${org.id} — no port could be parsed.`,
           );
           continue;
         }
 
-        // Store data in packages/console/data to keep server stateless locally
         const dataDir = path.resolve(process.cwd(), "data", org.id);
 
         const envVars: Record<string, string> = {
@@ -185,36 +163,27 @@ export class LocalDeployManagement implements DeployManagement {
           envVars.GOOGLE_EMBEDDINGS_MODEL = process.env.GOOGLE_EMBEDDINGS_MODEL;
         }
 
-        await this.deploy(org.id, envVars);
+        await this.createApp(org.id, envVars);
       } catch (e) {
-        console.error(`[local-deploy] Failed to boot org ${org.id}:`, e);
+        console.error(`[local-app] Failed to boot org ${org.id}:`, e);
       }
     }
-    console.log("[local-deploy] All organizations booted.");
+    console.log("[local-app] All organizations booted.");
   }
 
-  /**
-   * Kill all managed child processes.
-   * Called on SIGINT/SIGTERM during shutdown.
-   */
   shutdownAll(): void {
     console.log(
-      `\n[local-deploy] Shutting down ${this.processes.size} server(s)...`,
+      `\n[local-app] Shutting down ${this.processes.size} server(s)...`,
     );
     for (const [name, child] of this.processes.entries()) {
-      console.log(`[local-deploy] Killing ${name}`);
+      console.log(`[local-app] Killing ${name}`);
       child.kill("SIGTERM");
     }
     this.processes.clear();
     this.ports.clear();
-    console.log("[local-deploy] Shutdown complete.");
+    console.log("[local-app] Shutdown complete.");
   }
 
-  /**
-   * Register SIGINT/SIGTERM handlers to clean up child processes.
-   * Called from instrumentation.ts — kept here so process.on/process.exit
-   * are never statically visible to the Edge Runtime bundler.
-   */
   registerShutdownHooks(): void {
     const shutdown = () => {
       this.shutdownAll();

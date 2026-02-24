@@ -6,7 +6,6 @@ import {
   getWorkOS,
   provisionOrganization,
   teardownOrganization,
-  deployWorldApi,
 } from "@/lib/platform";
 
 import { getSdkForOrg } from "@/lib/org-sdk";
@@ -468,25 +467,6 @@ export async function listWorldLogs(
       error: error instanceof Error ? error.message : "Failed to list logs",
     };
   }
-}
-
-export async function deployOrganizationAction(organizationId: string) {
-  const { user } = await withAuth();
-  if (!user) {
-    throw new Error("Unauthorized");
-  }
-
-  const workos = await getWorkOS();
-  const organization = await workos.getOrganization(organizationId);
-  if (!organization) throw new Error("Organization not found");
-
-  const deployment = await deployWorldApi(organization.id);
-
-  const orgSlug = organization.slug || organization.id;
-  revalidatePath(`/organizations/${orgSlug}`);
-  revalidatePath(`/organizations/${organization.id}`);
-
-  return { success: true, url: deployment.url };
 }
 
 export async function pingEndpointAction(url: string): Promise<boolean> {

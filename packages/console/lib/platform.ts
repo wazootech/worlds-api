@@ -2,7 +2,7 @@ import type {
   AuthOrganization,
   WorkOSManagement,
 } from "./workos/workos-management";
-import type { DeployManagement } from "./deploy/deploy-management";
+import type { AppManagement } from "./apps/app-management";
 import type { TursoManagement } from "./turso/turso-management";
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -17,7 +17,7 @@ export const isLocalDev = !process.env.WORKOS_CLIENT_ID;
 // ═══════════════════════════════════════════════════════════════════════════
 
 let _workos: WorkOSManagement | null = null;
-let _deploy: DeployManagement | null = null;
+let _appManager: AppManagement | null = null;
 let _turso: TursoManagement | null = null;
 let _initialized = false;
 
@@ -33,15 +33,14 @@ async function ensureManagers() {
     });
   }
 
-  // Deploy – local Deno serve by default, remote Deno Deploy when token is set
+  // Apps – local Deno serve by default, remote Deno Deploy when token is set
   if (isLocalDev) {
-    const { LocalDeployManagement } =
-      await import("./deploy/local/local-deploy-management");
-    _deploy = LocalDeployManagement.getInstance();
+    const { LocalAppManagement } =
+      await import("./apps/local/local-app-management");
+    _appManager = LocalAppManagement.getInstance();
   } else if (process.env.DENO_DEPLOY_TOKEN) {
-    const { DenoDeployManagement } =
-      await import("./deploy/deno-deploy-management");
-    _deploy = new DenoDeployManagement();
+    const { DenoAppManagement } = await import("./apps/deno-app-management");
+    _appManager = new DenoAppManagement();
   }
 
   _initialized = true;
@@ -99,14 +98,9 @@ export async function provisionOrganization(
   org.metadata = { ...org.metadata, apiKey };
   await workos.updateOrganization(orgId, { metadata: org.metadata });
 
-  // 3. Deploy (includes Turso provisioning + metadata update)
-  if (!_deploy) throw new Error("Deployment management not configured");
-  const { url } = await deployOrganizationInternal(
-    org,
-    workos,
-    _deploy,
-    _turso,
-  );
+  // 3. Provision App (includes code deployment)
+  if (!_appManager) throw new Error("App management not configured");
+  const { url } = await provisionAppInternal(org, workos, _appManager, _turso);
 
   return { url, apiKey };
 }
@@ -126,14 +120,17 @@ export async function provisionOrganization(
 export async function teardownOrganization(orgId: string): Promise<void> {
   await ensureManagers();
 
-  if (_deploy) {
+  const workos = await getWorkOS();
+  const org = await workos.getOrganization(orgId);
+
+  if (_appManager && org) {
     try {
-      await _deploy.stop(orgId);
+      const appId = org.metadata?.denoDeployAppId || org.id;
+      if (appId) {
+        await _appManager.deleteApp(appId as string);
+      }
     } catch (error) {
-      console.error(
-        `[platform] Failed to stop deployment for org ${orgId}:`,
-        error,
-      );
+      console.error(`[platform] Failed to delete app for org ${orgId}:`, error);
     }
   }
 
@@ -147,27 +144,6 @@ export async function teardownOrganization(orgId: string): Promise<void> {
       );
     }
   }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// deployWorldApi
-// ═══════════════════════════════════════════════════════════════════════════
-
-/**
- * Re-deploys an already-provisioned organization's server.
- * Unlike provisionOrganization, this does NOT generate a new API key.
- * Used for manual re-deploy actions from the UI.
- */
-export async function deployWorldApi(orgId: string): Promise<{ url: string }> {
-  await ensureManagers();
-  const workos = await getWorkOS();
-
-  if (!_deploy) throw new Error("Deployment management not configured");
-
-  const org = await workos.getOrganization(orgId);
-  if (!org) throw new Error(`Organization not found: ${orgId}`);
-
-  return deployOrganizationInternal(org, workos, _deploy, _turso);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -236,16 +212,16 @@ async function provisionTursoIfNeeded(
 }
 
 /**
- * Core deployment orchestration:
+ * Core provisioning orchestration:
  *  1. Auto-provisions a Turso database if needed
  *  2. Allocates a local port (if local dev)
- *  3. Builds env vars and calls the deploy manager
- *  4. Updates org metadata with the deployment URL
+ *  3. Builds env vars and calls the app manager to create/deploy
+ *  4. Updates org metadata with the app identifier and URL
  */
-async function deployOrganizationInternal(
+async function provisionAppInternal(
   org: AuthOrganization,
   workos: WorkOSManagement,
-  deployManager: DeployManagement,
+  appManager: AppManagement,
   turso?: TursoManagement | null,
 ): Promise<{ url: string }> {
   // Auto-provision Turso database if available
@@ -287,11 +263,31 @@ async function deployOrganizationInternal(
   }
 
   const envVars = buildDeployEnvVars({ org, port, libsqlUrl });
-  const deployment = await deployManager.deploy(org.id, envVars);
 
-  // Update org metadata with the actual deployment URL
-  org.metadata = { ...org.metadata, apiBaseUrl: deployment.url };
-  await workos.updateOrganization(org.id, { metadata: org.metadata });
+  // If app already exists, we skip creation logic per user preference
+  let appId = org.metadata?.denoDeployAppId as string;
+  let url = org.metadata?.apiBaseUrl as string;
 
-  return { url: deployment.url };
+  if (!appId) {
+    const slug = isLocalDev
+      ? org.id
+      : `worlds-api-${Math.random().toString(36).slice(2, 6)}`;
+    const app = await appManager.createApp(slug, envVars);
+    appId = app.id;
+    url = app.url;
+
+    // Update org metadata with the new app info
+    org.metadata = {
+      ...org.metadata,
+      denoDeployAppId: appId,
+      apiBaseUrl: url,
+    };
+    await workos.updateOrganization(org.id, { metadata: org.metadata });
+  } else {
+    console.log(
+      `[platform] App ${appId} already provisioned for org ${org.id}`,
+    );
+  }
+
+  return { url };
 }

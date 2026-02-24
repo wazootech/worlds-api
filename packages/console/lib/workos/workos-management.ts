@@ -19,14 +19,16 @@ export interface AuthOrganization {
   updatedAt: string;
   slug: string;
   metadata?: {
+    // Safe for user visibility.
     apiBaseUrl?: string;
     apiKey?: string;
+
+    // Sensitive: security risk if exposed!
     libsqlUrl?: string;
     libsqlAuthToken?: string;
     tursoApiToken?: string;
     tursoOrg?: string;
     denoDeployAppId?: string;
-    denoDeployAppSlug?: string;
   };
 }
 

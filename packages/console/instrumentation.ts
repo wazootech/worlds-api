@@ -17,21 +17,21 @@ export async function register() {
   // Only run on the Node.js runtime (not Edge)
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  const { LocalDeployManagement } =
-    await import("./lib/deploy/local/local-deploy-management");
+  const { LocalAppManagement } =
+    await import("./lib/apps/local/local-app-management");
   const { LocalWorkOSManagement } =
     await import("./lib/workos/local/local-management");
 
-  const deployManager = LocalDeployManagement.getInstance();
+  const appManager = LocalAppManagement.getInstance();
   const orgManager = new LocalWorkOSManagement();
   const { data: orgs } = await orgManager.listOrganizations();
 
   if (orgs.length > 0) {
-    await deployManager.bootAll(orgs);
+    await appManager.bootAll(orgs);
   } else {
-    console.log("[local-deploy] No local organizations found. Skipping boot.");
+    console.log("[local-app] No local organizations found. Skipping boot.");
   }
 
   // Register shutdown hooks from within the Node-only module
-  deployManager.registerShutdownHooks();
+  appManager.registerShutdownHooks();
 }
