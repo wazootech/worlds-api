@@ -1,4 +1,4 @@
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS } from "@/lib/auth";
 import { AdminList } from "./admin-list";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -12,7 +12,7 @@ export default async function AdminsPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; after?: string }>;
 }) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return null;
   }
@@ -24,16 +24,16 @@ export default async function AdminsPage({
   );
   const after = params.after as string | undefined;
 
-  const workos = await authkit.getWorkOS();
+  const workos = await getWorkOS();
 
-  type WorkOSUser = Awaited<ReturnType<typeof workos.userManagement.getUser>>;
+  type WorkOSUser = Awaited<ReturnType<typeof workos.getUser>>;
 
   // Fetch only the current page using WorkOS cursor pagination
   let paginatedOrganizations: WorkOSUser[] = [];
   let nextCursor: string | undefined;
   let hasMore = false;
   try {
-    const response = await workos.userManagement.listUsers({
+    const response = await workos.listUsers({
       limit: pageSize,
       ...(after ? { after } : {}),
     });
@@ -54,8 +54,8 @@ export default async function AdminsPage({
           | string
           | undefined;
         if (organizationId) {
-          const orgMgmt = await authkit.getOrganizationManagement();
-          organization = await orgMgmt.getOrganization(organizationId);
+          const workos = await getWorkOS();
+          organization = await workos.getOrganization(organizationId);
         }
       } catch (error) {
         // Log error but continue - some organizations may not be initialized

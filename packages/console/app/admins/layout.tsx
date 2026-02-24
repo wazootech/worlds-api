@@ -1,4 +1,4 @@
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import React from "react";
 
@@ -9,7 +9,7 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
 
   if (!user) {
     notFound();
@@ -17,8 +17,8 @@ export default async function AdminLayout({
 
   let currentUser = user;
   if (currentUser) {
-    const workos = await authkit.getWorkOS();
-    currentUser = await workos.userManagement.getUser(currentUser.id);
+    const workos = await getWorkOS();
+    currentUser = await workos.getUser(currentUser.id);
   }
 
   if (!currentUser || !currentUser.metadata?.admin) {

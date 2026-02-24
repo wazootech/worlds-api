@@ -1,3 +1,4 @@
+import { getWorkOS } from "@/lib/auth";
 import { OrganizationDashboardContent } from "@/components/organization-dashboard-content";
 import { getSdkForOrg } from "@/lib/org-sdk";
 import type { World } from "@wazoo/sdk";
@@ -20,10 +21,9 @@ export default async function OrganizationDashboard(props: {
 
   let organization;
   try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
+    const workos = await getWorkOS();
 
-    organization = await orgMgmt.getOrganizationByExternalId(organizationSlug);
+    organization = await workos.getOrganizationByExternalId(organizationSlug);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

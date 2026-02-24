@@ -1,5 +1,4 @@
-import * as authkit from "@/lib/auth";
-import { AuthUser } from "@/lib/auth";
+import { handleAuth, getWorkOS, type AuthUser } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
@@ -15,7 +14,7 @@ export async function GET(request: NextRequest) {
   // Create a handler with the return path
 
   return await (
-    await authkit.handleAuth({
+    await handleAuth({
       returnPathname: returnPath,
       onSuccess: async (data: { user: AuthUser }) => {
         if (!data.user) {
@@ -23,11 +22,11 @@ export async function GET(request: NextRequest) {
         }
 
         try {
-          const orgMgmt = await authkit.getOrganizationManagement();
+          const workos = await getWorkOS();
 
           // Skip if user already has an organization.
           try {
-            const existingOrganization = await orgMgmt.getOrganization(
+            const existingOrganization = await workos.getOrganization(
               data.user.id,
             );
             if (existingOrganization) {
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
             ? data.user.firstName.toLowerCase().replace(/\s+/g, "-")
             : data.user.id; // Fallback to ID if no name
 
-          const newOrg = await orgMgmt.createOrganization({
+          const newOrg = await workos.createOrganization({
             name: `${data.user.firstName || "User"}'s Org`,
             slug: slug,
           });
@@ -70,7 +69,7 @@ export async function GET(request: NextRequest) {
             apiKey = serviceAccount.apiKey || "";
 
             // Update org metadata
-            await orgMgmt.updateOrganization(newOrg.id, {
+            await workos.updateOrganization(newOrg.id, {
               metadata: {
                 apiBaseUrl: DEFAULT_URL,
                 apiKey: apiKey,
@@ -78,15 +77,14 @@ export async function GET(request: NextRequest) {
             });
 
             try {
-              await orgMgmt.deploy(newOrg.id);
+              await workos.deploy(newOrg.id);
             } catch (e) {
               console.error("Failed to deploy newly created organization", e);
             }
           }
 
           // Update WorkOS user metadata.
-          const workos = await authkit.getWorkOS();
-          await workos.userManagement.updateUser({
+          await workos.updateUser({
             userId: data.user.id,
             metadata: {
               organizationId: newOrg.id,

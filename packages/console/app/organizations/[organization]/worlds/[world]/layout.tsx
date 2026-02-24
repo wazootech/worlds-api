@@ -1,4 +1,4 @@
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS, getSignInUrl } from "@/lib/auth";
 import { codeToHtml } from "shiki";
 import { notFound, redirect } from "next/navigation";
 import { getSdkForOrg } from "@/lib/org-sdk";
@@ -15,14 +15,12 @@ export async function generateMetadata(props: {
   const { organization: organizationSlug, world: worldSlug } =
     await props.params;
   try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
+    const workos = await getWorkOS();
     let organization;
     if (organizationSlug.startsWith("org_")) {
-      organization = await orgMgmt.getOrganization(organizationSlug);
+      organization = await workos.getOrganization(organizationSlug);
     } else {
-      organization =
-        await orgMgmt.getOrganizationByExternalId(organizationSlug);
+      organization = await workos.getOrganizationByExternalId(organizationSlug);
     }
     if (!organization) return { title: "World" };
 
@@ -51,10 +49,10 @@ export default async function WorldLayout({
   params: Promise<Params>;
 }) {
   const { organization: organizationId, world: worldId } = await params;
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
 
   if (!user) {
-    const signInUrl = await authkit.getSignInUrl();
+    const signInUrl = await getSignInUrl();
     redirect(signInUrl);
   }
 
@@ -63,9 +61,8 @@ export default async function WorldLayout({
   // Fetch organization
   const organization = await (async () => {
     try {
-      const { getOrganizationManagement } = await import("@/lib/auth");
-      const orgMgmt = await getOrganizationManagement();
-      return await orgMgmt.getOrganizationByExternalId(organizationId);
+      const workos = await getWorkOS();
+      return await workos.getOrganizationByExternalId(organizationId);
     } catch {
       return null;
     }

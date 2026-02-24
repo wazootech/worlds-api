@@ -1,17 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS, signOut, type AuthUser } from "@/lib/auth";
 
 import { getSdkForOrg } from "@/lib/org-sdk";
 
-async function getActiveOrgId(user: authkit.AuthUser) {
+async function getActiveOrgId(user: AuthUser) {
   // Always prefer metadata.organizationId if it exists
   return user.metadata?.organizationId as string | undefined;
 }
 
 export async function signOutAction() {
-  await authkit.signOut();
+  await signOut();
 }
 
 export async function updateWorld(
@@ -19,13 +19,13 @@ export async function updateWorld(
   worldId: string,
   updates: { label?: string; slug?: string; description?: string },
 ) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
   const sdk = getSdkForOrg(organization);
 
@@ -48,13 +48,13 @@ export async function updateWorld(
 }
 
 export async function deleteWorld(organizationId: string, worldId: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
   const sdk = getSdkForOrg(organization);
 
@@ -78,19 +78,19 @@ export async function createWorld(
   slug: string,
 ) {
   try {
-    const { user } = await authkit.withAuth();
+    const { user } = await withAuth();
     if (!user) {
       throw new Error("Unauthorized");
     }
 
     // Resolve organization via OrganizationManagement
-    const orgMgmt = await authkit.getOrganizationManagement();
+    const workos = await getWorkOS();
 
     // The frontend might pass either an internal ID or an external slug
-    let organization = await orgMgmt.getOrganization(organizationId);
+    let organization = await workos.getOrganization(organizationId);
     if (!organization) {
       // Fallback to checking by externalId (slug)
-      organization = await orgMgmt.getOrganizationByExternalId(organizationId);
+      organization = await workos.getOrganizationByExternalId(organizationId);
     }
 
     if (!organization) {
@@ -119,7 +119,7 @@ export async function createWorld(
       const newApiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
       // Save to Org Metadata
-      await orgMgmt.updateOrganization(organization.id, {
+      await workos.updateOrganization(organization.id, {
         metadata: {
           apiBaseUrl: DEFAULT_URL,
           apiKey: newApiKey,
@@ -127,7 +127,7 @@ export async function createWorld(
       });
 
       // Reload organization
-      const updatedOrg = await orgMgmt.getOrganization(organization.id);
+      const updatedOrg = await workos.getOrganization(organization.id);
       if (updatedOrg) {
         Object.assign(organization, updatedOrg);
       }
@@ -167,13 +167,13 @@ export async function createWorld(
 }
 
 export async function deleteOrganization(organizationId: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
 
   if (!organization) {
     throw new Error("Organization not found");
@@ -201,15 +201,14 @@ export async function deleteOrganization(organizationId: string) {
   // 2. Organization cleanup (service accounts no longer exist)
 
   // 3. Remove the organization via OrganizationManagement
-  await orgMgmt.deleteOrganization(organization.id);
+  await workos.deleteOrganization(organization.id);
 
   revalidatePath("/");
 
   // 4. If this was the active organization, clear it from metadata
   const activeOrgId = await getActiveOrgId(user);
   if (activeOrgId === organizationId) {
-    const workos = await authkit.getWorkOS();
-    await workos.userManagement.updateUser({
+    await workos.updateUser({
       userId: user.id,
       metadata: {
         ...(user.metadata as unknown as Record<string, string | null>),
@@ -219,36 +218,34 @@ export async function deleteOrganization(organizationId: string) {
     });
   }
 
-  await authkit.signOut();
+  await signOut();
   return { success: true };
 }
 
 export async function rotateApiKey(organizationId: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
 
   // Generate new key
   const newApiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
   // Update Organization Metadata
-  await orgMgmt.updateOrganization(organization.id, {
+  await workos.updateOrganization(organization.id, {
     metadata: {
       ...organization.metadata,
       apiKey: newApiKey,
     },
   });
 
-  const workos = await authkit.getWorkOS();
-
   const activeOrgId = await getActiveOrgId(user);
   if (activeOrgId === organizationId) {
-    await workos.userManagement.updateUser({
+    await workos.updateUser({
       userId: user.id,
       metadata: {
         ...(user.metadata as unknown as Record<string, string | null>),
@@ -267,15 +264,15 @@ export async function rotateApiKey(organizationId: string) {
 }
 
 export async function createOrganization(label: string, slug: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return { success: false, error: "Unauthorized" };
   }
 
   try {
     // 1. Create the organization via OrganizationManagement
-    const orgMgmt = await authkit.getOrganizationManagement();
-    const organization = await orgMgmt.createOrganization({
+    const workos = await getWorkOS();
+    const organization = await workos.createOrganization({
       name: label,
       slug,
     });
@@ -292,13 +289,13 @@ export async function createOrganization(label: string, slug: string) {
       apiKey = `sk_local_${Math.random().toString(36).substring(2, 15)}`;
       let apiBaseUrl = "http://localhost:8001";
       try {
-        const deployment = await orgMgmt.deploy(organization.id);
+        const deployment = await workos.deploy(organization.id);
         apiBaseUrl = deployment.url;
       } catch (error) {
         console.error("Failed to allocate local deployment", error);
       }
 
-      await orgMgmt.updateOrganization(organization.id, {
+      await workos.updateOrganization(organization.id, {
         metadata: {
           apiBaseUrl: apiBaseUrl,
           apiKey: apiKey,
@@ -313,7 +310,7 @@ export async function createOrganization(label: string, slug: string) {
         apiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
 
         // Save metadata to organization
-        await orgMgmt.updateOrganization(organization.id, {
+        await workos.updateOrganization(organization.id, {
           metadata: {
             apiBaseUrl: DEFAULT_URL,
             apiKey: apiKey,
@@ -321,7 +318,7 @@ export async function createOrganization(label: string, slug: string) {
         });
 
         try {
-          await orgMgmt.deploy(organization.id);
+          await workos.deploy(organization.id);
         } catch (error) {
           console.error("Failed to deploy newly created organization", error);
         }
@@ -329,10 +326,9 @@ export async function createOrganization(label: string, slug: string) {
     }
 
     // 3. Update local user metadata with the NEW organizationId and testApiKey.
-    const workos = await authkit.getWorkOS();
-    const targetUser = await workos.userManagement.getUser(user.id);
+    const targetUser = await workos.getUser(user.id);
 
-    await workos.userManagement.updateUser({
+    await workos.updateUser({
       userId: user.id,
       metadata: {
         ...(targetUser.metadata as unknown as Record<string, string | null>),
@@ -357,23 +353,23 @@ export async function updateOrganization(
   organizationId: string,
   updates: { label?: string; slug?: string },
 ) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) {
     throw new Error("Organization not found");
   }
 
-  await orgMgmt.updateOrganization(organization.id, {
+  await workos.updateOrganization(organization.id, {
     name: updates.label,
     slug: updates.slug,
   });
 
-  const resolvedOrganization = await orgMgmt.getOrganization(organization.id);
+  const resolvedOrganization = await workos.getOrganization(organization.id);
   if (resolvedOrganization) {
     const orgSlug = resolvedOrganization.externalId || resolvedOrganization.id;
     revalidatePath(`/organizations/${orgSlug}/settings`);
@@ -384,19 +380,18 @@ export async function updateOrganization(
 }
 
 export async function selectOrganizationAction(organizationId: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) {
     throw new Error("Organization not found");
   }
 
-  const workos = await authkit.getWorkOS();
-  await workos.userManagement.updateUser({
+  await workos.updateUser({
     userId: user.id,
     metadata: {
       ...(user.metadata as unknown as Record<string, string | null>),
@@ -411,14 +406,14 @@ export async function selectOrganizationAction(organizationId: string) {
 }
 
 export async function listOrganizations() {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return [];
   }
 
   try {
-    const orgMgmt = await authkit.getOrganizationManagement();
-    const result = await orgMgmt.listOrganizations();
+    const workos = await getWorkOS();
+    const result = await workos.listOrganizations();
     return result.data;
   } catch (error) {
     console.error("Failed to list organizations:", error);
@@ -427,16 +422,16 @@ export async function listOrganizations() {
 }
 
 export async function executeSparqlQuery(worldId: string, query: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
   try {
-    const orgMgmt = await authkit.getOrganizationManagement();
+    const workos = await getWorkOS();
     const activeOrgId = await getActiveOrgId(user);
     if (!activeOrgId) throw new Error("No active organization");
-    const organization = await orgMgmt.getOrganization(activeOrgId);
+    const organization = await workos.getOrganization(activeOrgId);
     if (!organization) throw new Error("Organization not found");
     const sdk = getSdkForOrg(organization);
 
@@ -461,16 +456,16 @@ export async function searchTriples(
   query: string,
   options?: { limit?: number; subjects?: string[]; predicates?: string[] },
 ) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
   try {
-    const orgMgmt = await authkit.getOrganizationManagement();
+    const workos = await getWorkOS();
     const activeOrgId = await getActiveOrgId(user);
     if (!activeOrgId) throw new Error("No active organization");
-    const organization = await orgMgmt.getOrganization(activeOrgId);
+    const organization = await workos.getOrganization(activeOrgId);
     if (!organization) throw new Error("Organization not found");
     const sdk = getSdkForOrg(organization);
 
@@ -496,16 +491,16 @@ export async function listWorldLogs(
   pageSize?: number,
   level?: string,
 ) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
   try {
-    const orgMgmt = await authkit.getOrganizationManagement();
+    const workos = await getWorkOS();
     const activeOrgId = await getActiveOrgId(user);
     if (!activeOrgId) throw new Error("No active organization");
-    const organization = await orgMgmt.getOrganization(activeOrgId);
+    const organization = await workos.getOrganization(activeOrgId);
     if (!organization) throw new Error("Organization not found");
     const sdk = getSdkForOrg(organization);
 
@@ -527,16 +522,16 @@ export async function listWorldLogs(
 }
 
 export async function deployOrganizationAction(organizationId: string) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     throw new Error("Unauthorized");
   }
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  const organization = await orgMgmt.getOrganization(organizationId);
+  const workos = await getWorkOS();
+  const organization = await workos.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
 
-  const deployment = await orgMgmt.deploy(organization.id);
+  const deployment = await workos.deploy(organization.id);
 
   const orgSlug = organization.externalId || organization.id;
   revalidatePath(`/organizations/${orgSlug}`);
@@ -546,7 +541,7 @@ export async function deployOrganizationAction(organizationId: string) {
 }
 
 export async function pingEndpointAction(url: string): Promise<boolean> {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return false;
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { WorkOSManagement } from "./workos/management";
 
 // ---------------------------------------------------------------------------
 // Detect mode: use WorkOS when credentials are present and not in local mode
@@ -6,31 +7,74 @@ import { NextResponse } from "next/server";
 const isLocalDev = !process.env.WORKOS_CLIENT_ID;
 
 // ---------------------------------------------------------------------------
-// Local-only imports (lazy)
+// Cached Management Instance
 // ---------------------------------------------------------------------------
-let _localUserManagement:
-  | import("./workos/user-management").UserManagement
-  | null = null;
+let _workosManagement: WorkOSManagement | null = null;
 
-async function getLocalUserManagement() {
-  if (_localUserManagement) return _localUserManagement;
-  const { LocalUserManagement } =
-    await import("./workos/local/local-user-management");
-  _localUserManagement = new LocalUserManagement();
-  return _localUserManagement;
+// ---------------------------------------------------------------------------
+// Turso Management – lazy helper
+// ---------------------------------------------------------------------------
+
+async function getTursoManager() {
+  if (process.env.TURSO_API_TOKEN && process.env.TURSO_ORG) {
+    const { TursoManagementImpl } = await import("./turso/turso-management");
+    return new TursoManagementImpl({
+      token: process.env.TURSO_API_TOKEN,
+      org: process.env.TURSO_ORG,
+    });
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
-// Re-export AuthUser for convenience
+// Re-export AuthUser & AuthOrganization for convenience
 // ---------------------------------------------------------------------------
-export type { AuthUser } from "./workos/user-management";
+export type { AuthUser, AuthOrganization } from "./workos/management";
+
+// ---------------------------------------------------------------------------
+// getWorkOS – Core Singleton Accessor
+// ---------------------------------------------------------------------------
+
+export async function getWorkOS(
+  opts: { skipCache?: boolean } = {},
+): Promise<WorkOSManagement> {
+  if (_workosManagement && !opts.skipCache) {
+    return _workosManagement;
+  }
+
+  if (isLocalDev) {
+    const { LocalWorkOSManagementImpl } =
+      await import("./workos/local/local-management");
+    const { LocalDeployManagement } =
+      await import("./deno-deploy/local/local-deploy-management");
+    const deployManager = LocalDeployManagement.getInstance();
+    const tursoManager = await getTursoManager();
+    _workosManagement = new LocalWorkOSManagementImpl(
+      deployManager,
+      tursoManager,
+    );
+  } else {
+    const { WorkOSManagementImpl } = await import("./workos/workos-management");
+
+    let deployManager = null;
+    if (process.env.DENO_DEPLOY_TOKEN) {
+      const { DenoDeployManagement } =
+        await import("./deno-deploy/deno-deploy-management");
+      deployManager = new DenoDeployManagement();
+    }
+    const tursoManager = await getTursoManager();
+    _workosManagement = new WorkOSManagementImpl(deployManager, tursoManager);
+  }
+
+  return _workosManagement;
+}
 
 // ---------------------------------------------------------------------------
 // withAuth – returns the current user session
 // ---------------------------------------------------------------------------
 
 interface LocalWithAuthResult {
-  user: import("./workos/user-management").AuthUser | null;
+  user: import("./workos/management").AuthUser | null;
 }
 
 export async function withAuth(): Promise<LocalWithAuthResult> {
@@ -39,8 +83,8 @@ export async function withAuth(): Promise<LocalWithAuthResult> {
     return workos.withAuth();
   }
 
-  const userManagement = await getLocalUserManagement();
-  return { user: await userManagement.getUser("local-dev") };
+  const workos = await getWorkOS();
+  return { user: await workos.getUser("local-dev") };
 }
 
 // ---------------------------------------------------------------------------
@@ -86,21 +130,6 @@ export async function getSignUpUrl(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// getWorkOS
-// ---------------------------------------------------------------------------
-
-export async function getWorkOS() {
-  if (!isLocalDev) {
-    const workos = await import("@workos-inc/authkit-nextjs");
-    return workos.getWorkOS();
-  }
-
-  return {
-    userManagement: await getLocalUserManagement(),
-  };
-}
-
-// ---------------------------------------------------------------------------
 // signOut
 // ---------------------------------------------------------------------------
 
@@ -130,40 +159,4 @@ export async function handleAuth(opts?: any): Promise<any> {
       new URL(returnPathname, "http://localhost:3000"),
     );
   };
-}
-
-// ---------------------------------------------------------------------------
-// Organization management (polymorphic: local JSON vs WorkOS)
-// ---------------------------------------------------------------------------
-
-export type { AuthOrganization } from "./workos/org-management";
-
-let _orgManagement:
-  | import("./workos/org-management").OrganizationManagement
-  | null = null;
-
-export async function getOrganizationManagement() {
-  if (_orgManagement) return _orgManagement;
-
-  if (isLocalDev) {
-    const { LocalOrganizationManagement } =
-      await import("./workos/local/local-org-management");
-    const { LocalDeployManagement } =
-      await import("./deno-deploy/local/local-deploy-management");
-    const deployManager = LocalDeployManagement.getInstance();
-    _orgManagement = new LocalOrganizationManagement(deployManager);
-  } else {
-    const { WorkOSOrganizationManagement } =
-      await import("./workos/workos-org-management");
-
-    let deployManager = null;
-    if (process.env.DENO_DEPLOY_TOKEN) {
-      const { DenoDeployManagement } =
-        await import("./deno-deploy/deno-deploy-management");
-      deployManager = new DenoDeployManagement();
-    }
-    _orgManagement = new WorkOSOrganizationManagement(deployManager);
-  }
-
-  return _orgManagement;
 }

@@ -1,6 +1,6 @@
 import { OrganizationProvider } from "@/components/organization-context";
 import { OrganizationHeader } from "@/components/organization-header";
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS, getSignInUrl } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import { codeToHtml } from "shiki";
 import type { Metadata } from "next";
@@ -12,9 +12,9 @@ export async function generateMetadata(props: {
 }): Promise<Metadata> {
   const { organization: organizationId } = await props.params;
   try {
-    const orgMgmt = await authkit.getOrganizationManagement();
+    const workos = await getWorkOS();
     const organization =
-      await orgMgmt.getOrganizationByExternalId(organizationId);
+      await workos.getOrganizationByExternalId(organizationId);
     return {
       title: {
         template: `%s | ${organization?.name || "Organization"}`,
@@ -36,20 +36,20 @@ export default async function OrganizationLayout({
   params: Promise<Params>;
 }) {
   const { organization: organizationId } = await params;
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
 
   if (!user) {
-    const signInUrl = await authkit.getSignInUrl();
+    const signInUrl = await getSignInUrl();
     redirect(signInUrl);
   }
 
   const isAdmin = !!user?.metadata?.admin;
 
   // Fetch organization via OrganizationManagement
-  const orgMgmt = await authkit.getOrganizationManagement();
+  const workos = await getWorkOS();
   let organization;
   try {
-    organization = await orgMgmt.getOrganizationByExternalId(organizationId);
+    organization = await workos.getOrganizationByExternalId(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

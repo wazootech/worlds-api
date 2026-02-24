@@ -1,14 +1,41 @@
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  profilePictureUrl?: string | null;
+  metadata?: {
+    organizationId?: string | null;
+    testApiKey?: string | null;
+    admin?: string | null;
+  };
+}
+
+export interface UserManagement {
+  getUser(userId: string): Promise<AuthUser>;
+
+  updateUser(opts: {
+    userId: string;
+    metadata?: AuthUser["metadata"];
+  }): Promise<AuthUser>;
+
+  deleteUser(userId: string): Promise<void>;
+
+  listUsers(opts?: Record<string, unknown>): Promise<{
+    data: AuthUser[];
+    listMetadata?: { after?: string };
+  }>;
+}
+
 export interface AuthOrganization {
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
-  externalId: string; // The organization slug.
+  externalId: string; // The organization slug
   metadata?: {
     apiBaseUrl?: string;
     apiKey?: string;
-    deploymentUrl?: string;
-    port?: number;
     [key: string]: unknown;
   };
 }
@@ -34,8 +61,6 @@ export interface OrganizationManagement {
     metadata?: {
       apiBaseUrl?: string;
       apiKey?: string;
-      deploymentUrl?: string;
-      port?: number;
       [key: string]: unknown;
     };
   }): Promise<AuthOrganization>;
@@ -45,3 +70,6 @@ export interface OrganizationManagement {
   ): Promise<AuthOrganization>;
   deleteOrganization(orgId: string): Promise<void>;
 }
+
+export interface WorkOSManagement
+  extends UserManagement, OrganizationManagement {}

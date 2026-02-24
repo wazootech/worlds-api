@@ -1,3 +1,4 @@
+import { getWorkOS } from "@/lib/auth";
 import { WorldOverviewContent } from "@/components/world-overview-content";
 import type { Metadata } from "next";
 import { getSdkForOrg } from "@/lib/org-sdk";
@@ -9,14 +10,12 @@ export async function generateMetadata(props: {
     await props.params;
 
   try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
+    const workos = await getWorkOS();
     let organization;
     if (organizationSlug.startsWith("org_")) {
-      organization = await orgMgmt.getOrganization(organizationSlug);
+      organization = await workos.getOrganization(organizationSlug);
     } else {
-      organization =
-        await orgMgmt.getOrganizationByExternalId(organizationSlug);
+      organization = await workos.getOrganizationByExternalId(organizationSlug);
     }
     if (!organization) return { title: "World Overview" };
 

@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getSdkForOrg } from "@/lib/org-sdk";
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ worldId: string }> },
 ) {
   try {
-    const { user } = await authkit.withAuth();
+    const { user } = await withAuth();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -23,8 +23,8 @@ export async function POST(
       );
     }
 
-    const orgMgmt = await authkit.getOrganizationManagement();
-    const organization = await orgMgmt.getOrganization(orgId);
+    const workos = await getWorkOS();
+    const organization = await workos.getOrganization(orgId);
     if (!organization) {
       return NextResponse.json(
         { error: "Organization not found" },

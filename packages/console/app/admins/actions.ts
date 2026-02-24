@@ -1,17 +1,17 @@
 "use server";
 
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 export async function toggleAdminAction(userId: string, isAdmin: boolean) {
   // Verify the current user is an admin
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = await authkit.getWorkOS();
-  const currentUser = await workos.userManagement.getUser(user.id);
+  const workos = await getWorkOS();
+  const currentUser = await workos.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
     return {
@@ -30,7 +30,7 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
 
   try {
     // Get the user first to preserve existing metadata
-    const targetUser = await workos.userManagement.getUser(userId);
+    const targetUser = await workos.getUser(userId);
 
     // Update the user's metadata, preserving existing metadata
     // WorkOS updateUser takes a single object parameter
@@ -53,7 +53,7 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
     }
     // If setting to false, we don't include the admin key, effectively removing it
 
-    await workos.userManagement.updateUser({
+    await workos.updateUser({
       userId,
       metadata: updatedMetadata,
     });
@@ -74,13 +74,13 @@ export async function toggleAdminAction(userId: string, isAdmin: boolean) {
 
 export async function deleteUserAction(userId: string) {
   // Verify the current user is an admin
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const workos = await authkit.getWorkOS();
-  const currentUser = await workos.userManagement.getUser(user.id);
+  const workos = await getWorkOS();
+  const currentUser = await workos.getUser(user.id);
 
   if (!currentUser || !currentUser.metadata?.admin) {
     return {
@@ -99,7 +99,7 @@ export async function deleteUserAction(userId: string) {
 
   try {
     // Get the target user to find their associated organization
-    const targetUser = await workos.userManagement.getUser(userId);
+    const targetUser = await workos.getUser(userId);
     const organizationId = targetUser.metadata?.organizationId as
       | string
       | undefined;
@@ -107,8 +107,8 @@ export async function deleteUserAction(userId: string) {
     // 1. Delete associated organization if it exists
     if (organizationId) {
       try {
-        const orgMgmt = await authkit.getOrganizationManagement();
-        await orgMgmt.deleteOrganization(organizationId);
+        const workos = await getWorkOS();
+        await workos.deleteOrganization(organizationId);
       } catch (error) {
         console.error(
           `Failed to delete organization ${organizationId} for user ${userId}:`,
@@ -119,7 +119,7 @@ export async function deleteUserAction(userId: string) {
     }
 
     // 2. Delete from WorkOS
-    await workos.userManagement.deleteUser(userId);
+    await workos.deleteUser(userId);
 
     revalidatePath("/admins");
     return { success: true };

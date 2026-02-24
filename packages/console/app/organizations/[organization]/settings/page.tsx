@@ -1,3 +1,4 @@
+import { getWorkOS } from "@/lib/auth";
 import { OrganizationSettingsContent } from "@/components/organization-settings-content";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -14,10 +15,9 @@ export default async function SettingsPage(props: { params: Promise<Params> }) {
   // Fetch organization (verify organization existence)
   let organization;
   try {
-    const { getOrganizationManagement } = await import("@/lib/auth");
-    const orgMgmt = await getOrganizationManagement();
+    const workos = await getWorkOS();
 
-    organization = await orgMgmt.getOrganizationByExternalId(organizationId);
+    organization = await workos.getOrganizationByExternalId(organizationId);
   } catch (error) {
     console.error("Failed to fetch organization:", error);
     notFound();

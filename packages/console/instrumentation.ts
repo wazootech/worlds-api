@@ -19,11 +19,11 @@ export async function register() {
 
   const { LocalDeployManagement } =
     await import("./lib/deno-deploy/local/local-deploy-management");
-  const { LocalOrganizationManagement } =
-    await import("./lib/workos/local/local-org-management");
+  const { LocalWorkOSManagementImpl } =
+    await import("./lib/workos/local/local-management");
 
   const deployManager = LocalDeployManagement.getInstance();
-  const orgManager = new LocalOrganizationManagement();
+  const orgManager = new LocalWorkOSManagementImpl(deployManager);
   const { data: orgs } = await orgManager.listOrganizations();
 
   if (orgs.length > 0) {

@@ -1,4 +1,4 @@
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS, type AuthOrganization } from "@/lib/auth";
 import { OrgList } from "./org-list";
 import { Metadata } from "next";
 import { Suspense } from "react";
@@ -12,7 +12,7 @@ export default async function OrganizationsPage({
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string; after?: string }>;
 }) {
-  const { user } = await authkit.withAuth();
+  const { user } = await withAuth();
   if (!user) {
     return null;
   }
@@ -24,8 +24,8 @@ export default async function OrganizationsPage({
   );
   const after = params.after as string | undefined;
 
-  const orgMgmt = await authkit.getOrganizationManagement();
-  let paginatedOrganizations: authkit.AuthOrganization[] = [];
+  const workos = await getWorkOS();
+  let paginatedOrganizations: AuthOrganization[] = [];
   let nextCursor: string | undefined;
   let hasMore = false;
 
@@ -37,7 +37,7 @@ export default async function OrganizationsPage({
       listOptions.after = after;
     }
 
-    const response = await orgMgmt.listOrganizations(listOptions);
+    const response = await workos.listOrganizations(listOptions);
     paginatedOrganizations = response.data;
     nextCursor = response.listMetadata?.after;
     hasMore = !!nextCursor;

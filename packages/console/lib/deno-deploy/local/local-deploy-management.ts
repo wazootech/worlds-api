@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import type { Deploy, DeployManagement } from "../deploy-management";
-import type { AuthOrganization } from "../../workos/org-management";
+import type { AuthOrganization } from "../../workos/management";
 
 const PROCESS_PREFIX = "worlds";
 
@@ -151,6 +151,7 @@ export class LocalDeployManagement implements DeployManagement {
           LIBSQL_URL:
             (org.metadata?.libsqlUrl as string) ||
             `file:${path.join(dataDir, "worlds.db")}`,
+          LIBSQL_AUTH_TOKEN: (org.metadata?.libsqlAuthToken as string) || "",
           WORLDS_BASE_DIR: path.join(dataDir, "worlds"),
         };
 
@@ -159,6 +160,12 @@ export class LocalDeployManagement implements DeployManagement {
         }
         if (org.metadata?.tursoOrg) {
           envVars.TURSO_ORG = org.metadata.tursoOrg as string;
+        }
+        if (process.env.GOOGLE_API_KEY) {
+          envVars.GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+        }
+        if (process.env.GOOGLE_EMBEDDINGS_MODEL) {
+          envVars.GOOGLE_EMBEDDINGS_MODEL = process.env.GOOGLE_EMBEDDINGS_MODEL;
         }
 
         await this.deploy(org.id, envVars);

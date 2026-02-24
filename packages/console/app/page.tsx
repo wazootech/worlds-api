@@ -1,4 +1,4 @@
-import * as authkit from "@/lib/auth";
+import { withAuth, getWorkOS, getSignInUrl, getSignUpUrl } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
 
 import { redirect } from "next/navigation";
@@ -15,7 +15,7 @@ export default async function Home(props: {
 }) {
   const searchParams = await props.searchParams;
   const isCreatingNew = searchParams.new === "true";
-  const userInfo = await authkit.withAuth();
+  const userInfo = await withAuth();
   const isAdmin = !!userInfo?.user?.metadata?.admin;
 
   if (userInfo.user && !isCreatingNew) {
@@ -23,10 +23,10 @@ export default async function Home(props: {
       | string
       | undefined;
     if (organizationId) {
-      let organizationToRedirect = null;
+      let organizationToRedirect;
       try {
-        const orgMgmt = await authkit.getOrganizationManagement();
-        organizationToRedirect = await orgMgmt.getOrganization(organizationId);
+        const workos = await getWorkOS();
+        organizationToRedirect = await workos.getOrganization(organizationId);
       } catch (e) {
         console.error("Failed to fetch organization for early redirect:", e);
       }
@@ -39,8 +39,8 @@ export default async function Home(props: {
   if (!userInfo.user?.id) {
     // WorkOS mode: user is not signed in — show landing page
     if (process.env.WORKOS_CLIENT_ID) {
-      const signInUrl = await authkit.getSignInUrl();
-      const signUpUrl = await authkit.getSignUpUrl();
+      const signInUrl = await getSignInUrl();
+      const signUpUrl = await getSignUpUrl();
 
       return (
         <>
@@ -195,8 +195,8 @@ export default async function Home(props: {
         | string
         | undefined;
       if (organizationId) {
-        const orgMgmt = await authkit.getOrganizationManagement();
-        organization = await orgMgmt.getOrganization(organizationId);
+        const workos = await getWorkOS();
+        organization = await workos.getOrganization(organizationId);
       }
     } catch (error) {
       console.error("Failed to fetch organization:", error);
