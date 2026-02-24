@@ -9,6 +9,7 @@ import { initializeDatabase } from "#/lib/database/init.ts";
 import { createClient as createTursoClient } from "@tursodatabase/api";
 import { TursoDatabaseManager } from "#/lib/database/managers/api.ts";
 import { FileDatabaseManager } from "#/lib/database/managers/file.ts";
+import { dirname } from "@std/path";
 
 import worldsRouter from "./routes/v1/worlds/route.ts";
 import sparqlRouter from "./routes/v1/worlds/sparql/route.ts";
@@ -47,6 +48,7 @@ export interface ServerContextConfig {
     GOOGLE_API_KEY?: string;
     GOOGLE_EMBEDDINGS_MODEL?: string;
     ADMIN_API_KEY?: string;
+    WORLDS_BASE_DIR?: string;
   };
 }
 
@@ -62,6 +64,11 @@ export async function createServerContext(
 
   // TODO: Set up Embedded Replicas config.
 
+  if (config.env.LIBSQL_URL?.startsWith("file:")) {
+    const dbPath = config.env.LIBSQL_URL.slice(5); // Remove "file:"
+    await Deno.mkdir(dirname(dbPath), { recursive: true });
+  }
+
   // Resolve database strategy based on environment variables.
   const database = createClient({
     url: config.env.LIBSQL_URL!,
@@ -70,22 +77,6 @@ export async function createServerContext(
 
   // Initialize database tables.
   await initializeDatabase(database);
-
-  // Resolve database manager strategy based on environment variables.
-  let manager: DatabaseManager;
-  if (config.env.TURSO_API_TOKEN) {
-    if (!config.env.TURSO_ORG) {
-      throw new Error("TURSO_ORG is required when TURSO_API_TOKEN is set");
-    }
-
-    const tursoClient = createTursoClient({
-      token: config.env.TURSO_API_TOKEN,
-      org: config.env.TURSO_ORG,
-    });
-    manager = new TursoDatabaseManager(database, tursoClient);
-  } else {
-    manager = new FileDatabaseManager(database, "./worlds");
-  }
 
   // Resolve embeddings strategy based on environment variables.
   let embeddings: Embeddings;
@@ -104,6 +95,30 @@ export async function createServerContext(
       "#/lib/embeddings/use.ts"
     );
     embeddings = new UniversalSentenceEncoderEmbeddings();
+  }
+
+  // Resolve database manager strategy based on environment variables.
+  let manager: DatabaseManager;
+  if (config.env.TURSO_API_TOKEN) {
+    if (!config.env.TURSO_ORG) {
+      throw new Error("TURSO_ORG is required when TURSO_API_TOKEN is set");
+    }
+
+    const tursoClient = createTursoClient({
+      token: config.env.TURSO_API_TOKEN,
+      org: config.env.TURSO_ORG,
+    });
+    manager = new TursoDatabaseManager(
+      database,
+      tursoClient,
+      embeddings.dimensions,
+    );
+  } else {
+    manager = new FileDatabaseManager(
+      database,
+      config.env.WORLDS_BASE_DIR ?? "./worlds",
+      embeddings.dimensions,
+    );
   }
 
   return {

@@ -3,7 +3,7 @@ import { codeToHtml } from "shiki";
 import { notFound, redirect } from "next/navigation";
 import { getSdkForOrg } from "@/lib/org-sdk";
 import { PageHeader } from "@/components/page-header";
-import { Globe, Settings, LayoutGrid, ShieldCheck } from "lucide-react";
+import { Globe, Settings, LayoutGrid } from "lucide-react";
 import { WorldProvider } from "@/components/world-context";
 import type { Metadata } from "next";
 
@@ -132,34 +132,41 @@ export default async function WorldLayout({
   ];
 
   // Snippets
-  const apiKey = (user?.metadata?.testApiKey as string) || "YOUR_API_KEY";
-  const worldIdSnippet = world.id;
+  const apiUrl =
+    (organization.metadata?.apiBaseUrl as string) ||
+    (organization.metadata?.deploymentUrl as string) ||
+    "http://localhost:8000";
+
+  const apiKey =
+    (organization.metadata?.apiKey as string) ||
+    (user?.metadata?.testApiKey as string) ||
+    "YOUR_API_KEY";
+
+  const worldIdSnippet = world.slug || world.id;
   const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
-  baseUrl: "${organization.metadata?.apiBaseUrl || "http://localhost:8000"}",
-  apiKey: "${organization.metadata?.apiKey || "..."}",
-});
-  apiKey: "${apiKey}",
+  baseUrl: "${apiUrl}",
+  apiKey: "${apiKey}"
 });
 
 // Resolve a world by its ID or slug.
-const world = await sdk.worlds.get("${worldSlug || world.id}");
+const world = await sdk.worlds.get("${worldIdSnippet}");
 console.log("Connected to world:", world.label);`;
 
   const maskedApiKey =
     apiKey === "YOUR_API_KEY"
       ? "YOUR_API_KEY"
       : apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
+
   const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
 
 const sdk = new WorldsSdk({
-  baseUrl: "${organization.metadata?.apiBaseUrl || "http://localhost:8000"}",
-  apiKey: "...",
-});
-  apiKey: "${maskedApiKey}",
+  baseUrl: "${apiUrl}",
+  apiKey: "${maskedApiKey}"
 });
 
+// Resolve a world by its ID or slug.
 const world = await sdk.worlds.get("${worldIdSnippet}");
 console.log("Connected to world:", world.label);`;
 

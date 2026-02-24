@@ -10,12 +10,13 @@ export class DenoDeployManagement implements DeployManagement {
     });
   }
 
-  async getDeployment(orgId: string): Promise<Deploy | null> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getDeployment(_orgId: string): Promise<Deploy | null> {
     // In a full implementation we would query the Deno Deploy API or our DB mapping
     return null;
   }
 
-  async deployOrganization(
+  async deploy(
     _orgId: string,
     envVars: Record<string, string>,
   ): Promise<Deploy> {

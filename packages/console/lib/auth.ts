@@ -148,7 +148,10 @@ export async function getOrganizationManagement() {
   if (isLocalDev) {
     const { LocalOrganizationManagement } =
       await import("./workos/local/local-org-management");
-    _orgManagement = new LocalOrganizationManagement();
+    const { LocalDeployManagement } =
+      await import("./deno-deploy/local/local-deploy-management");
+    const deployManager = LocalDeployManagement.getInstance();
+    _orgManagement = new LocalOrganizationManagement(deployManager);
   } else {
     const { WorkOSOrganizationManagement } =
       await import("./workos/workos-org-management");

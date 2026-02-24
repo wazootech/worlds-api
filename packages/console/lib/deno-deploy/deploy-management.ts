@@ -12,10 +12,7 @@ export interface DeployManagement {
    * Deploys the server for the given organization.
    * If a deployment already exists and is running, it may return the existing one or restart it.
    */
-  deployOrganization(
-    orgId: string,
-    envVars: Record<string, string>,
-  ): Promise<Deploy>;
+  deploy(orgId: string, envVars: Record<string, string>): Promise<Deploy>;
 
   /**
    * Retrieves the current deployment for the given organization.

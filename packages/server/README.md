@@ -19,6 +19,35 @@ operations and vector embeddings.
 - **Persistence**: Backed by [LibSQL](https://github.com/libsql/libsql) for
   reliable data storage.
 
+## Local Database Structure
+
+When running locally with the `FileDatabaseManager`, the server organizes data
+using a two-tier SQLite structure:
+
+- **Main Database** (`data/<org_id>/worlds.db`): Stores the control plane data,
+  including the registry of all worlds managed by this server instance.
+- **World Databases** (`data/<org_id>/worlds/<world_id>.db`): A dedicated SQLite
+  file for each world, containing its specific triples, blobs, logs, and vector
+  indexes.
+
+By default, the local deployment orchestrator places these files in the
+**Console** directory to keep the API server completely stateless during dev.
+
+Example directory layout for an organization `wazoo`:
+
+```text
+packages/console/
+└── data/
+    └── wazoo/                 # SQLite storage for 'wazoo' (auto-generated)
+        ├── worlds.db          # Main server database 
+        └── worlds/            # Base directory for world-specific databases
+            ├── 01JJB2RQX3P5K9F6.db
+            └── 01JJB2RQY7H2M1N4.db
+```
+
+This isolation ensures that world-specific operations (like SPARQL updates or
+log rotation) do not affect the main server registry or other worlds.
+
 ## Getting Started
 
 ### Prerequisites

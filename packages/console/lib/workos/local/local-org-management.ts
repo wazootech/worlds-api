@@ -4,8 +4,9 @@ import type {
   AuthOrganization,
   OrganizationManagement,
 } from "../org-management";
+import type { DeployManagement } from "../../deno-deploy/deploy-management";
 
-const STATE_FILE = path.join(process.cwd(), "local-state.json");
+const STATE_FILE = path.join(process.cwd(), "data", "workos.json");
 
 function generateId(): string {
   return `org_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -19,26 +20,63 @@ function slugify(name: string): string {
 }
 
 export class LocalOrganizationManagement implements OrganizationManagement {
+  constructor(private readonly deployManager: DeployManagement | null = null) {}
+
   async deploy(orgId: string): Promise<{ url: string; port?: number }> {
     const orgs = await this.load();
     const org = orgs.find((o) => o.id === orgId);
     if (!org) throw new Error(`Organization not found: ${orgId}`);
 
-    if (org.metadata?.deploymentUrl) {
-      return {
-        url: org.metadata.deploymentUrl,
-        port:
-          org.metadata.port ??
-          parseInt(new URL(org.metadata.deploymentUrl).port || "80", 10),
-      };
+    const apiBaseUrl = org.metadata?.apiBaseUrl as string | undefined;
+    const isRemote =
+      apiBaseUrl &&
+      !apiBaseUrl.startsWith("http://localhost") &&
+      !apiBaseUrl.startsWith("http://127.0.0.1");
+
+    // If it points to a remote API, just return the remote API URL directly without attempting to deploy locally
+    if (isRemote) {
+      return { url: apiBaseUrl as string };
     }
 
+    // If already deployed, return existing info
+    if (org.metadata?.apiBaseUrl && !isRemote) {
+      const port = parseInt(
+        new URL(org.metadata.apiBaseUrl as string).port || "80",
+        10,
+      );
+
+      // If we have a deploy manager, ensure the process is actually running
+      if (this.deployManager) {
+        const envVars: Record<string, string> = {
+          ADMIN_API_KEY:
+            (org.metadata?.apiKey as string) || "default-local-key",
+          PORT: port.toString(),
+          LIBSQL_URL:
+            (org.metadata?.libsqlUrl as string) || `file:./worlds_${org.id}.db`,
+        };
+        if (org.metadata?.tursoApiToken) {
+          envVars.TURSO_API_TOKEN = org.metadata.tursoApiToken as string;
+        }
+        if (org.metadata?.tursoOrg) {
+          envVars.TURSO_ORG = org.metadata.tursoOrg as string;
+        }
+        await this.deployManager.deploy(org.id, envVars);
+      }
+
+      return { url: org.metadata.apiBaseUrl as string, port };
+    }
+
+    // Assign a new port
     const maxPort = orgs.reduce((max, o) => {
-      if (o.metadata?.port) return Math.max(max, o.metadata.port as number);
-      if (o.metadata?.deploymentUrl) {
+      if (
+        o.metadata?.apiBaseUrl &&
+        !(o.metadata?.apiBaseUrl as string).startsWith("http://localhost")
+      )
+        return max;
+      if (o.metadata?.apiBaseUrl) {
         try {
           const port = parseInt(
-            new URL(o.metadata.deploymentUrl as string).port,
+            new URL(o.metadata.apiBaseUrl as string).port,
             10,
           );
           return Math.max(max, port || 0);
@@ -50,8 +88,27 @@ export class LocalOrganizationManagement implements OrganizationManagement {
     const port = maxPort + 1;
     const url = `http://localhost:${port}`;
 
-    org.metadata = { ...org.metadata, deploymentUrl: url, port };
+    delete org.metadata?.deploymentUrl;
+    delete org.metadata?.port;
+    org.metadata = { ...org.metadata, apiBaseUrl: url };
     await this.updateOrganization(org.id, { metadata: org.metadata });
+
+    // Start the server process if we have a deploy manager
+    if (this.deployManager) {
+      const envVars: Record<string, string> = {
+        ADMIN_API_KEY: (org.metadata?.apiKey as string) || "default-local-key",
+        PORT: port.toString(),
+        LIBSQL_URL:
+          (org.metadata?.libsqlUrl as string) || `file:./worlds_${org.id}.db`,
+      };
+      if (org.metadata?.tursoApiToken) {
+        envVars.TURSO_API_TOKEN = org.metadata.tursoApiToken as string;
+      }
+      if (org.metadata?.tursoOrg) {
+        envVars.TURSO_ORG = org.metadata.tursoOrg as string;
+      }
+      await this.deployManager.deploy(org.id, envVars);
+    }
 
     return { url, port };
   }
@@ -91,8 +148,63 @@ export class LocalOrganizationManagement implements OrganizationManagement {
     return orgs.find((o) => o.externalId === externalId) ?? null;
   }
 
-  async listOrganizations(): Promise<AuthOrganization[]> {
-    return this.load();
+  async listOrganizations(options?: {
+    limit?: number;
+    before?: string;
+    after?: string;
+    order?: "asc" | "desc";
+  }): Promise<{
+    data: AuthOrganization[];
+    listMetadata?: { before?: string; after?: string };
+  }> {
+    let orgs = await this.load();
+
+    if (options?.order === "desc") {
+      orgs.reverse();
+    }
+
+    if (options?.after) {
+      const index = orgs.findIndex((o) => o.id === options.after);
+      if (index !== -1) {
+        orgs = orgs.slice(index + 1);
+      }
+    }
+
+    if (options?.before) {
+      const index = orgs.findIndex((o) => o.id === options.before);
+      if (index !== -1) {
+        orgs = orgs.slice(0, index);
+      }
+    }
+
+    const limit = options?.limit ?? 10;
+    const paginatedOrgs = orgs.slice(0, limit);
+
+    let after: string | undefined;
+    let before: string | undefined;
+
+    if (paginatedOrgs.length > 0) {
+      const allOrgs = await this.load();
+      if (options?.order === "desc") allOrgs.reverse();
+
+      const lastItem = paginatedOrgs[paginatedOrgs.length - 1];
+      const firstItem = paginatedOrgs[0];
+
+      const lastIndexInAll = allOrgs.findIndex((o) => o.id === lastItem.id);
+      if (lastIndexInAll < allOrgs.length - 1) {
+        after = lastItem.id;
+      }
+
+      const firstIndexInAll = allOrgs.findIndex((o) => o.id === firstItem.id);
+      if (firstIndexInAll > 0) {
+        before = firstItem.id;
+      }
+    }
+
+    return {
+      data: paginatedOrgs,
+      listMetadata: { before, after },
+    };
   }
 
   async createOrganization(data: {

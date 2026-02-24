@@ -7,39 +7,52 @@ import type {
 } from "#/lib/database/manager.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 
+import { initializeWorldDatabase } from "#/lib/database/init.ts";
+
 /**
  * FileDatabaseManager implements DatabaseManager using local files.
  */
 export class FileDatabaseManager implements DatabaseManager {
+  private readonly initialized = new Set<string>();
+
   public constructor(
     private readonly database: Client,
     private readonly baseDir: string,
+    private readonly dimensions: number,
   ) {}
 
   public async create(id: string): Promise<ManagedDatabase> {
     const path = join(this.baseDir, `${id}.db`);
     await Deno.mkdir(this.baseDir, { recursive: true });
-    const url = `file:${path}`;
-    return {
-      database: createClient({ url }),
-      url,
-    };
+    return this.getManagedDatabase(id, `file:${path}`);
   }
 
   public async get(id: string): Promise<ManagedDatabase> {
     const worldsService = new WorldsService(this.database);
     const world = await worldsService.getById(id);
-    if (world?.db_hostname) {
-      return {
-        database: createClient({ url: world.db_hostname }),
-        url: world.db_hostname,
-      };
+    let url = world?.db_hostname;
+
+    if (!url) {
+      const path = join(this.baseDir, `${id}.db`);
+      url = `file:${path}`;
     }
 
-    const path = join(this.baseDir, `${id}.db`);
-    const url = `file:${path}`;
+    return this.getManagedDatabase(id, url);
+  }
+
+  private async getManagedDatabase(
+    id: string,
+    url: string,
+  ): Promise<ManagedDatabase> {
+    const client = createClient({ url });
+
+    if (!this.initialized.has(id)) {
+      await initializeWorldDatabase(client, this.dimensions);
+      this.initialized.add(id);
+    }
+
     return {
-      database: createClient({ url }),
+      database: client,
       url,
     };
   }

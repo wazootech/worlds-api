@@ -27,9 +27,14 @@ export default async function AdminLayout({
 
   const isAdmin = true;
 
+  const tabs = [
+    { label: "Users", href: "/admins" },
+    { label: "Organizations", href: "/admins/organizations" },
+  ];
+
   return (
     <>
-      <PageHeader user={user} isAdmin={isAdmin} />
+      <PageHeader user={user} isAdmin={isAdmin} tabs={tabs} />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 w-full min-w-0">
         {children}
       </div>

@@ -19,7 +19,15 @@ export interface OrganizationManagement {
   getOrganizationByExternalId(
     externalId: string,
   ): Promise<AuthOrganization | null>;
-  listOrganizations(): Promise<AuthOrganization[]>;
+  listOrganizations(options?: {
+    limit?: number;
+    before?: string;
+    after?: string;
+    order?: "asc" | "desc";
+  }): Promise<{
+    data: AuthOrganization[];
+    listMetadata?: { before?: string; after?: string };
+  }>;
   createOrganization(data: {
     name: string;
     slug: string;

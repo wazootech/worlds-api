@@ -23,7 +23,7 @@ export class WorkOSOrganizationManagement implements OrganizationManagement {
     }
 
     const apiKey = (org.metadata?.apiKey as string) || "default-key";
-    const deployment = await this.deployManager.deployOrganization(org.id, {
+    const deployment = await this.deployManager.deploy(org.id, {
       ADMIN_API_KEY: apiKey,
     });
 
@@ -60,11 +60,22 @@ export class WorkOSOrganizationManagement implements OrganizationManagement {
     }
   }
 
-  async listOrganizations(): Promise<AuthOrganization[]> {
+  async listOrganizations(options?: {
+    limit?: number;
+    before?: string;
+    after?: string;
+    order?: "asc" | "desc";
+  }): Promise<{
+    data: AuthOrganization[];
+    listMetadata?: { before?: string; after?: string };
+  }> {
     const { WorkOS } = await import("@workos-inc/node");
     const workos = new WorkOS(process.env.WORKOS_API_KEY!);
-    const result = await workos.organizations.listOrganizations();
-    return result.data.map(mapWorkOSOrg);
+    const result = await workos.organizations.listOrganizations(options);
+    return {
+      data: result.data.map(mapWorkOSOrg),
+      listMetadata: result.listMetadata,
+    };
   }
 
   async createOrganization(data: {

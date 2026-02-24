@@ -2,7 +2,7 @@ import { AuthUser, UserManagement } from "@/lib/workos/user-management";
 import fs from "fs/promises";
 import path from "path";
 
-const STATE_FILE = path.join(process.cwd(), "local-state.json");
+const STATE_FILE = path.join(process.cwd(), "data", "workos.json");
 
 const DEFAULT_USER: AuthUser = {
   id: process.env.LOCAL_USER_ID || "local-dev-user",

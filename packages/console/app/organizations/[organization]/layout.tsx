@@ -65,22 +65,31 @@ export default async function OrganizationLayout({
     (user?.metadata?.testApiKey as string) ||
     "YOUR_API_KEY";
 
-  const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
-import { getSdkForOrg } from "@/lib/wazoo-sdk";
+  const apiUrl =
+    (organization.metadata?.apiBaseUrl as string) ||
+    (organization.metadata?.deploymentUrl as string) ||
+    "http://localhost:8000";
 
-try {
-  const sdk = getSdkForOrg(organization);
-  const worlds = await sdk.worlds.list();
-  console.log("My worlds:", worlds.length);
-} catch (error) {
-  console.error("Failed to list worlds:", error);
-}`;
+  const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+
+const sdk = new WorldsSdk({
+  baseUrl: "${apiUrl}",
+  apiKey: "${apiKey}"
+});
+
+const worlds = await sdk.worlds.list();
+console.log("My worlds:", worlds.length);`;
+
+  const maskedApiKey =
+    apiKey === "YOUR_API_KEY"
+      ? "YOUR_API_KEY"
+      : apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
 
   const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
-  apiKey: "...",
-});
-  baseUrl: "https://api.wazoo.dev",
-  apiKey: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+const sdk = new WorldsSdk({
+  baseUrl: "${apiUrl}",
+  apiKey: "${maskedApiKey}"
 });
 
 const worlds = await sdk.worlds.list();

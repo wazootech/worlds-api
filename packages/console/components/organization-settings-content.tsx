@@ -4,6 +4,7 @@ import { useOrganization } from "@/components/organization-context";
 import { BasicDetailsForm } from "@/components/basic-details-form";
 import { DeleteOrganizationSection } from "@/components/delete-organization-section";
 import { ApiKeySection } from "@/components/api-key-section";
+import { LiveEndpointStatus } from "@/components/live-endpoint-status";
 
 export function OrganizationSettingsContent() {
   const { organization, user } = useOrganization();
@@ -11,10 +12,15 @@ export function OrganizationSettingsContent() {
   return (
     <main>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
+        <div className="mb-6 flex flex-col">
           <h1 className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
             Organization Settings
           </h1>
+          {(organization.metadata?.apiBaseUrl as string) && (
+            <LiveEndpointStatus
+              url={organization.metadata?.apiBaseUrl as string}
+            />
+          )}
         </div>
 
         <div className="space-y-6">

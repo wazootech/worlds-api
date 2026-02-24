@@ -111,7 +111,7 @@ export async function createWorld(
         process.env.DEFAULT_API_URL || "http://localhost:8000";
 
       const { WorldsSdk } = await import("@wazoo/sdk");
-      const adminSdk = new WorldsSdk({
+      new WorldsSdk({
         baseUrl: DEFAULT_URL,
         apiKey: ADMIN_KEY,
       });
@@ -232,7 +232,6 @@ export async function rotateApiKey(organizationId: string) {
   const orgMgmt = await authkit.getOrganizationManagement();
   const organization = await orgMgmt.getOrganization(organizationId);
   if (!organization) throw new Error("Organization not found");
-  const sdk = getSdkForOrg(organization);
 
   // Generate new key
   const newApiKey = `sk_live_${Math.random().toString(36).substring(2, 15)}`;
@@ -291,17 +290,17 @@ export async function createOrganization(label: string, slug: string) {
 
     if (isLocalDev) {
       apiKey = `sk_local_${Math.random().toString(36).substring(2, 15)}`;
-      let deploymentUrl = "http://localhost:8001";
+      let apiBaseUrl = "http://localhost:8001";
       try {
         const deployment = await orgMgmt.deploy(organization.id);
-        deploymentUrl = deployment.url;
+        apiBaseUrl = deployment.url;
       } catch (error) {
         console.error("Failed to allocate local deployment", error);
       }
 
       await orgMgmt.updateOrganization(organization.id, {
         metadata: {
-          apiBaseUrl: deploymentUrl,
+          apiBaseUrl: apiBaseUrl,
           apiKey: apiKey,
         },
       });
@@ -419,8 +418,8 @@ export async function listOrganizations() {
 
   try {
     const orgMgmt = await authkit.getOrganizationManagement();
-    const organizations = await orgMgmt.listOrganizations();
-    return organizations;
+    const result = await orgMgmt.listOrganizations();
+    return result.data;
   } catch (error) {
     console.error("Failed to list organizations:", error);
     return [];
@@ -544,4 +543,29 @@ export async function deployOrganizationAction(organizationId: string) {
   revalidatePath(`/organizations/${organization.id}`);
 
   return { success: true, url: deployment.url };
+}
+
+export async function pingEndpointAction(url: string): Promise<boolean> {
+  const { user } = await authkit.withAuth();
+  if (!user) {
+    return false;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+    // Attempt a HEAD request first, fallback to GET if needed, but since we simply want to know if it's there
+    await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+    });
+
+    // Any successful connection is 'alive', even if it returns a 404/500 code.
+    // fetch only throws an error for network failures like connection refused.
+    clearTimeout(timeoutId);
+    return true;
+  } catch {
+    return false;
+  }
 }

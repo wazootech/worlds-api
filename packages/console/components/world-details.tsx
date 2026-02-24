@@ -8,17 +8,20 @@ import { PixelPlanet } from "@/components/pixel-planet/pixel-planet";
 import { PlanetDialog } from "@/components/pixel-planet/planet-dialog";
 import { getSeedFromId } from "@/components/pixel-planet/lib/seed-utils";
 import { ComingSoonPlaceholder } from "@/components/coming-soon-placeholder";
+import { LiveEndpointStatus } from "@/components/live-endpoint-status";
 
 export function WorldDetails({
   world,
   organizationId,
   codeSnippet,
   maskedCodeSnippetHtml,
+  apiUrl,
 }: {
   world: World;
   organizationId: string;
   codeSnippet: string;
   maskedCodeSnippetHtml: string;
+  apiUrl?: string;
 }) {
   const [isCopied, setIsCopied] = useState(false);
   const [isAccountCopied, setIsAccountCopied] = useState(false);
@@ -109,14 +112,15 @@ export function WorldDetails({
                     </svg>
                   )}
                 </div>
-                <span className="text-stone-300 dark:text-stone-700">•</span>
-                <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                  </span>
-                  Active
-                </span>
+
+                {apiUrl && (
+                  <>
+                    <span className="text-stone-300 dark:text-stone-700 mx-1">
+                      •
+                    </span>
+                    <LiveEndpointStatus url={apiUrl} />
+                  </>
+                )}
               </div>
             </div>
 

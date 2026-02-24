@@ -11,6 +11,7 @@ const serverContext: ServerContext = await createServerContext({
     TURSO_ORG: Deno.env.get("TURSO_ORG"),
     GOOGLE_API_KEY: Deno.env.get("GOOGLE_API_KEY")!,
     GOOGLE_EMBEDDINGS_MODEL: Deno.env.get("GOOGLE_EMBEDDINGS_MODEL")!,
+    WORLDS_BASE_DIR: Deno.env.get("WORLDS_BASE_DIR"),
   },
 });
 
