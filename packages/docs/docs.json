@@ -17,8 +17,8 @@
             "group": "Getting Started",
             "pages": [
               "index",
-              "quickstart",
-              "authentication"
+              "getting-started/quickstart",
+              "getting-started/authentication"
             ]
           },
           {
@@ -26,7 +26,7 @@
             "pages": [
               "architecture/overview",
               "architecture/resource-hierarchy",
-              "paper"
+              "architecture/paper"
             ]
           },
           {
