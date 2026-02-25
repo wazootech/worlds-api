@@ -1,4 +1,4 @@
-import { withAuth, type AuthOrganization } from "@/lib/auth";
+import { withAuth, type WorkOSOrganization } from "@/lib/auth";
 import { getWorkOS } from "@/lib/platform";
 import { OrgList } from "./org-list";
 import { Metadata } from "next";
@@ -26,7 +26,7 @@ export default async function OrganizationsPage({
   const after = params.after as string | undefined;
 
   const workos = await getWorkOS();
-  let paginatedOrganizations: AuthOrganization[] = [];
+  let paginatedOrganizations: WorkOSOrganization[] = [];
   let nextCursor: string | undefined;
   let hasMore = false;
 

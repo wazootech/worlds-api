@@ -30,7 +30,7 @@ export default async function AdminsPage({
   type WorkOSUser = Awaited<ReturnType<typeof workos.getUser>>;
 
   // Fetch only the current page using WorkOS cursor pagination
-  let paginatedOrganizations: WorkOSUser[] = [];
+  let paginatedUsers: WorkOSUser[] = [];
   let nextCursor: string | undefined;
   let hasMore = false;
   try {
@@ -39,7 +39,7 @@ export default async function AdminsPage({
       ...(after ? { after } : {}),
     });
 
-    paginatedOrganizations = response.data;
+    paginatedUsers = response.data;
     nextCursor = response.listMetadata?.after;
     hasMore = !!nextCursor;
   } catch (e) {
@@ -48,8 +48,8 @@ export default async function AdminsPage({
 
   // Fetch organizations for each user concurrently.
   const organizationsWithUsers = await Promise.all(
-    paginatedOrganizations.map(async (user) => {
-      let organization: import("@/lib/auth").AuthOrganization | null = null;
+    paginatedUsers.map(async (user) => {
+      let organization: import("@/lib/auth").WorkOSOrganization | null = null;
       try {
         const organizationId = user.metadata?.activeOrganizationId as
           | string

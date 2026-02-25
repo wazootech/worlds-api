@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AuthUser } from "@/lib/auth";
+import type { WorkOSUser } from "@/lib/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,7 +16,7 @@ export function UserMenu({
   onSignOut,
   isAdmin,
 }: {
-  user?: AuthUser | null;
+  user: WorkOSUser | null;
   onSignOut: () => Promise<void>;
   isAdmin?: boolean;
 }) {

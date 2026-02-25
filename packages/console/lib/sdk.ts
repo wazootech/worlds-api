@@ -1,7 +1,7 @@
 import { WorldsSdk } from "@wazoo/worlds-sdk";
-import type { AuthOrganization } from "./workos/workos-manager";
+import type { WorkOSOrganization } from "./workos/workos-manager";
 
-export function getSdkForOrg(org: AuthOrganization): WorldsSdk {
+export function getSdkForOrg(org: WorkOSOrganization): WorldsSdk {
   const baseUrl = org.metadata?.apiBaseUrl;
   const apiKey = org.metadata?.apiKey;
 

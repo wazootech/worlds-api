@@ -1,13 +1,13 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from "react";
-import type { AuthUser, AuthOrganization } from "@/lib/auth";
+import type { WorkOSUser, WorkOSOrganization } from "@/lib/auth";
 
 export interface OrganizationContextType {
-  organization: AuthOrganization;
+  organization: WorkOSOrganization;
   apiKey: string;
   isAdmin: boolean;
-  user: AuthUser;
+  user: WorkOSUser | null;
   codeSnippet: string;
   maskedCodeSnippetHtml: string;
 }

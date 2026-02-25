@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
 import { deleteUserAction, toggleAdminAction } from "./actions";
-import type { AuthOrganization } from "@/lib/auth";
+import type { WorkOSOrganization } from "@/lib/auth";
 import type { WorkOSUser } from "./types";
 import { MoreVertical, Trash2, UserMinus, UserPlus } from "lucide-react";
 import {
@@ -28,13 +28,13 @@ import { ResourceTable, Column } from "@/components/resource-table";
 type AdminItem = {
   id: string; // for ResourceTable key
   user: WorkOSUser;
-  organization: AuthOrganization | null;
+  organization: WorkOSOrganization | null;
 };
 
 type AdminListProps = {
   organizations: Array<{
     user: WorkOSUser;
-    organization: AuthOrganization | null;
+    organization: WorkOSOrganization | null;
   }>;
   pageSize: number;
   nextCursor?: string;

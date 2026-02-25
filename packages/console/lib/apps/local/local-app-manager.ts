@@ -1,7 +1,7 @@
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 import type { ManagedApp, AppManager } from "../app-manager";
-import type { AuthOrganization } from "../../workos/workos-manager";
+import type { WorkOSOrganization } from "../../workos/workos-manager";
 
 const PROCESS_PREFIX = "worlds";
 
@@ -95,7 +95,7 @@ export class LocalAppManager implements AppManager {
    * Start Deno server processes for all local organizations.
    * Called from instrumentation.ts on Next.js startup.
    */
-  async bootAll(orgs: AuthOrganization[]): Promise<void> {
+  async bootAll(orgs: WorkOSOrganization[]): Promise<void> {
     console.log(`[local-app] Booting ${orgs.length} local organization(s)...`);
     for (const org of orgs) {
       try {

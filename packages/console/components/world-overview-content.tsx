@@ -7,12 +7,12 @@ export function WorldOverviewContent() {
   const { world, organization, codeSnippet, maskedCodeSnippetHtml } =
     useWorld();
 
-  const apiUrl = organization.metadata?.apiBaseUrl;
+  const apiUrl = organization?.metadata?.apiBaseUrl;
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
       <WorldDetails
         world={world}
-        organizationId={organization.id}
+        organizationId={organization?.id || ""}
         codeSnippet={codeSnippet}
         maskedCodeSnippetHtml={maskedCodeSnippetHtml}
         apiUrl={apiUrl}

@@ -1,11 +1,11 @@
 import { WorkOS, Organization } from "@workos-inc/node";
 import type {
-  AuthUser,
-  AuthOrganization,
+  WorkOSUser,
+  WorkOSOrganization,
   WorkOSManager,
 } from "./workos-manager";
 
-function mapWorkOSOrg(org: Organization): AuthOrganization {
+function mapWorkOSOrg(org: Organization): WorkOSOrganization {
   if (!org.externalId) {
     throw new Error("Organization externalId is missing");
   }
@@ -32,16 +32,16 @@ export class RemoteWorkOSManager implements WorkOSManager {
   }
 
   // User Management
-  async getUser(userId: string): Promise<AuthUser> {
+  async getUser(userId: string): Promise<WorkOSUser> {
     return this.workos.userManagement.getUser(userId);
   }
 
   async updateUser(
     userId: string,
     data: {
-      metadata?: AuthUser["metadata"];
+      metadata?: WorkOSUser["metadata"];
     },
-  ): Promise<AuthUser> {
+  ): Promise<WorkOSUser> {
     return this.workos.userManagement.updateUser({
       userId,
       metadata: data.metadata as Record<string, string | null>,
@@ -58,14 +58,14 @@ export class RemoteWorkOSManager implements WorkOSManager {
     after?: string;
     order?: "asc" | "desc";
   }): Promise<{
-    data: AuthUser[];
+    data: WorkOSUser[];
     listMetadata?: { before?: string; after?: string };
   }> {
     return this.workos.userManagement.listUsers(opts);
   }
 
   // Organization Management
-  async getOrganization(orgId: string): Promise<AuthOrganization | null> {
+  async getOrganization(orgId: string): Promise<WorkOSOrganization | null> {
     try {
       const org = await this.workos.organizations.getOrganization(orgId);
       return mapWorkOSOrg(org);
@@ -74,7 +74,9 @@ export class RemoteWorkOSManager implements WorkOSManager {
     }
   }
 
-  async getOrganizationBySlug(slug: string): Promise<AuthOrganization | null> {
+  async getOrganizationBySlug(
+    slug: string,
+  ): Promise<WorkOSOrganization | null> {
     try {
       const org =
         await this.workos.organizations.getOrganizationByExternalId(slug);
@@ -90,7 +92,7 @@ export class RemoteWorkOSManager implements WorkOSManager {
     after?: string;
     order?: "asc" | "desc";
   }): Promise<{
-    data: AuthOrganization[];
+    data: WorkOSOrganization[];
     listMetadata?: { before?: string; after?: string };
   }> {
     const result = await this.workos.organizations.listOrganizations(options);
@@ -103,8 +105,8 @@ export class RemoteWorkOSManager implements WorkOSManager {
   async createOrganization(data: {
     name: string;
     slug: string;
-    metadata?: AuthOrganization["metadata"];
-  }): Promise<AuthOrganization> {
+    metadata?: WorkOSOrganization["metadata"];
+  }): Promise<WorkOSOrganization> {
     const org = await this.workos.organizations.createOrganization({
       name: data.name,
       externalId: data.slug,
@@ -119,9 +121,9 @@ export class RemoteWorkOSManager implements WorkOSManager {
     data: {
       name?: string;
       slug?: string;
-      metadata?: AuthOrganization["metadata"];
+      metadata?: WorkOSOrganization["metadata"];
     },
-  ): Promise<AuthOrganization> {
+  ): Promise<WorkOSOrganization> {
     const org = await this.workos.organizations.updateOrganization({
       organization: orgId,
       name: data.name,
@@ -133,5 +135,31 @@ export class RemoteWorkOSManager implements WorkOSManager {
 
   async deleteOrganization(orgId: string): Promise<void> {
     await this.workos.organizations.deleteOrganization(orgId);
+  }
+
+  // Membership Management
+  async createOrganizationMembership(data: {
+    organizationId: string;
+    userId: string;
+    role?: string;
+  }): Promise<void> {
+    await this.workos.userManagement.createOrganizationMembership({
+      organizationId: data.organizationId,
+      userId: data.userId,
+      roleSlug: data.role,
+    });
+  }
+
+  async listOrganizationMemberships(opts: {
+    userId: string;
+  }): Promise<{ data: { organizationId: string }[] }> {
+    const result = await this.workos.userManagement.listOrganizationMemberships(
+      {
+        userId: opts.userId,
+      },
+    );
+    return {
+      data: result.data.map((m) => ({ organizationId: m.organizationId })),
+    };
   }
 }

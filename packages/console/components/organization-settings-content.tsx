@@ -44,7 +44,7 @@ export function OrganizationSettingsContent() {
 
           <ApiKeySection apiKey={organization.metadata?.apiKey} />
 
-          <DeleteOrganizationSection userEmail={user.email} />
+          <DeleteOrganizationSection userEmail={user?.email || ""} />
         </div>
       </div>
     </main>

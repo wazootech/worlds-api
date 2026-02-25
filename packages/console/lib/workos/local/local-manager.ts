@@ -1,14 +1,14 @@
 import fs from "fs/promises";
 import path from "path";
 import type {
-  AuthUser,
-  AuthOrganization,
+  WorkOSUser,
+  WorkOSOrganization,
   WorkOSManager,
 } from "../workos-manager";
 
 const STATE_FILE = path.join(process.cwd(), "data", "workos.json");
 
-const DEFAULT_USER: AuthUser = {
+const DEFAULT_USER: WorkOSUser = {
   id: process.env.LOCAL_USER_ID || "admin",
   email: process.env.LOCAL_USER_EMAIL || "admin@wazoo.dev",
   firstName: process.env.LOCAL_USER_FIRST_NAME || "System",
@@ -16,6 +16,19 @@ const DEFAULT_USER: AuthUser = {
   profilePictureUrl: null,
   metadata: { admin: "true" },
 };
+
+interface WorkOSMembership {
+  organizationId: string;
+  userId: string;
+  role?: string;
+  createdAt: string;
+}
+
+interface State {
+  user: WorkOSUser;
+  organizations: WorkOSOrganization[];
+  memberships: WorkOSMembership[];
+}
 
 function generateId(): string {
   return `org_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -35,15 +48,16 @@ export class LocalWorkOSManager implements WorkOSManager {
     } catch {
       await fs.writeFile(
         STATE_FILE,
-        JSON.stringify({ user: DEFAULT_USER, organizations: [] }, null, 2),
+        JSON.stringify(
+          { user: DEFAULT_USER, organizations: [], memberships: [] },
+          null,
+          2,
+        ),
       );
     }
   }
 
-  private async readState(): Promise<{
-    user: AuthUser;
-    organizations: AuthOrganization[];
-  }> {
+  private async readState(): Promise<State> {
     await this.ensureStateFile();
     try {
       const data = await fs.readFile(STATE_FILE, "utf-8");
@@ -53,21 +67,18 @@ export class LocalWorkOSManager implements WorkOSManager {
         "Failed to read local-state.json, falling back to default:",
         error,
       );
-      return { user: { ...DEFAULT_USER }, organizations: [] };
+      return { user: { ...DEFAULT_USER }, organizations: [], memberships: [] };
     }
   }
 
-  private async writeState(state: {
-    user: AuthUser;
-    organizations: AuthOrganization[];
-  }): Promise<void> {
+  private async writeState(state: State): Promise<void> {
     await fs.writeFile(STATE_FILE, JSON.stringify(state, null, 2), "utf-8");
   }
 
   // --- User Management ---
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getUser(userId?: string): Promise<AuthUser> {
+  async getUser(userId?: string): Promise<WorkOSUser> {
     const state = await this.readState();
     return state.user;
   }
@@ -75,12 +86,12 @@ export class LocalWorkOSManager implements WorkOSManager {
   async updateUser(
     userId: string,
     data: {
-      metadata?: AuthUser["metadata"];
+      metadata?: WorkOSUser["metadata"];
     },
-  ): Promise<AuthUser> {
+  ): Promise<WorkOSUser> {
     const state = await this.readState();
     const user = state.user;
-    const updatedUser: AuthUser = {
+    const updatedUser: WorkOSUser = {
       ...user,
       metadata: { ...(user.metadata || {}), ...data.metadata },
     };
@@ -98,7 +109,7 @@ export class LocalWorkOSManager implements WorkOSManager {
   }
 
   async listUsers(): Promise<{
-    data: AuthUser[];
+    data: WorkOSUser[];
     listMetadata?: { before?: string; after?: string };
   }> {
     const state = await this.readState();
@@ -110,14 +121,16 @@ export class LocalWorkOSManager implements WorkOSManager {
 
   // --- Organization Management ---
 
-  async getOrganization(orgId: string): Promise<AuthOrganization | null> {
+  async getOrganization(orgId: string): Promise<WorkOSOrganization | null> {
     const state = await this.readState();
     const orgs = state.organizations || [];
     const org = orgs.find((o) => o.id === orgId) ?? null;
     return org;
   }
 
-  async getOrganizationBySlug(slug: string): Promise<AuthOrganization | null> {
+  async getOrganizationBySlug(
+    slug: string,
+  ): Promise<WorkOSOrganization | null> {
     const state = await this.readState();
     const orgs = state.organizations || [];
     return orgs.find((o) => o.slug === slug) ?? null;
@@ -129,7 +142,7 @@ export class LocalWorkOSManager implements WorkOSManager {
     after?: string;
     order?: "asc" | "desc";
   }): Promise<{
-    data: AuthOrganization[];
+    data: WorkOSOrganization[];
     listMetadata?: { before?: string; after?: string };
   }> {
     const state = await this.readState();
@@ -186,16 +199,12 @@ export class LocalWorkOSManager implements WorkOSManager {
   async createOrganization(data: {
     name: string;
     slug: string;
-    metadata?: {
-      apiBaseUrl?: string;
-      apiKey?: string;
-      [key: string]: string | undefined;
-    };
-  }): Promise<AuthOrganization> {
+    metadata?: WorkOSOrganization["metadata"];
+  }): Promise<WorkOSOrganization> {
     const state = await this.readState();
     const orgs = state.organizations || [];
     const now = new Date().toISOString();
-    const org: AuthOrganization = {
+    const org: WorkOSOrganization = {
       id: generateId(),
       name: data.name,
       createdAt: now,
@@ -207,6 +216,16 @@ export class LocalWorkOSManager implements WorkOSManager {
     orgs.push(org);
 
     state.organizations = orgs;
+
+    // Auto-create membership for the current user
+    const memberships = state.memberships || [];
+    memberships.push({
+      organizationId: org.id,
+      userId: state.user.id,
+      createdAt: now,
+    });
+    state.memberships = memberships;
+
     await this.writeState(state);
 
     return org;
@@ -214,8 +233,12 @@ export class LocalWorkOSManager implements WorkOSManager {
 
   async updateOrganization(
     orgId: string,
-    data: { name?: string; slug?: string; metadata?: Record<string, unknown> },
-  ): Promise<AuthOrganization> {
+    data: {
+      name?: string;
+      slug?: string;
+      metadata?: WorkOSOrganization["metadata"];
+    },
+  ): Promise<WorkOSOrganization> {
     const state = await this.readState();
     const orgs = state.organizations || [];
     const idx = orgs.findIndex((o) => o.id === orgId || o.slug === orgId);
@@ -241,9 +264,59 @@ export class LocalWorkOSManager implements WorkOSManager {
     const idx = orgs.findIndex((o) => o.id === orgId || o.slug === orgId);
     if (idx === -1) throw new Error(`Organization not found: ${orgId}`);
 
+    const organization = orgs[idx];
     orgs.splice(idx, 1);
+
+    // Cleanup memberships
+    state.memberships = (state.memberships || []).filter(
+      (m) => m.organizationId !== organization.id,
+    );
+
     state.organizations = orgs;
     await this.writeState(state);
+  }
+
+  // Membership Management
+  async createOrganizationMembership(data: {
+    organizationId: string;
+    userId: string;
+    role?: string;
+  }): Promise<void> {
+    const state = await this.readState();
+    const memberships = state.memberships || [];
+
+    // Check if membership already exists
+    const exists = memberships.some(
+      (m) =>
+        m.organizationId === data.organizationId && m.userId === data.userId,
+    );
+
+    if (!exists) {
+      memberships.push({
+        organizationId: data.organizationId,
+        userId: data.userId,
+        role: data.role,
+        createdAt: new Date().toISOString(),
+      });
+      state.memberships = memberships;
+      await this.writeState(state);
+    }
+
+    console.log(
+      `[local-workos] Created membership for user ${data.userId} in org ${data.organizationId}`,
+    );
+  }
+
+  async listOrganizationMemberships(opts: {
+    userId: string;
+  }): Promise<{ data: { organizationId: string }[] }> {
+    const state = await this.readState();
+    const memberships = (state.memberships || []).filter(
+      (m) => m.userId === opts.userId,
+    );
+    return {
+      data: memberships.map((m) => ({ organizationId: m.organizationId })),
+    };
   }
 }
 

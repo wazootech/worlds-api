@@ -1,4 +1,9 @@
-import { handleAuth, type AuthUser } from "@/lib/auth";
+import {
+  handleAuth,
+  type WorkOSUser,
+  GUEST_MODE_COOKIE,
+  CLAIMABLE_ORG_COOKIE,
+} from "@/lib/auth";
 import { getWorkOS, provisionOrganization } from "@/lib/platform";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
@@ -17,7 +22,7 @@ export async function GET(request: NextRequest) {
   return await (
     await handleAuth({
       returnPathname: returnPath,
-      onSuccess: async (data: { user: AuthUser }) => {
+      onSuccess: async (data: { user: WorkOSUser }) => {
         if (!data.user) {
           return;
         }
@@ -25,7 +30,36 @@ export async function GET(request: NextRequest) {
         try {
           const workos = await getWorkOS();
 
-          // Skip if user already has an organization.
+          // 1. Check if user is claiming a guest organization
+          const claimableOrgId = cookieStore.get(CLAIMABLE_ORG_COOKIE)?.value;
+
+          if (claimableOrgId) {
+            console.log(
+              `[callback] User ${data.user.id} is claiming org ${claimableOrgId}`,
+            );
+
+            // Add user to the existing organization
+            await workos.createOrganizationMembership({
+              organizationId: claimableOrgId,
+              userId: data.user.id,
+            });
+
+            // Update user's active organization and grant admin status
+            await workos.updateUser(data.user.id, {
+              metadata: {
+                activeOrganizationId: claimableOrgId,
+                admin: "true",
+              },
+            });
+
+            // Clear guest cookies
+            cookieStore.delete(GUEST_MODE_COOKIE);
+            cookieStore.delete(CLAIMABLE_ORG_COOKIE);
+
+            return;
+          }
+
+          // 2. Normal flow: Skip if user already has an organization.
           try {
             const existingOrganization = await workos.getOrganization(
               data.user.id,
@@ -54,10 +88,11 @@ export async function GET(request: NextRequest) {
             console.error("Failed to provision newly created organization", e);
           }
 
-          // Update WorkOS user metadata.
+          // Update WorkOS user metadata with active organization and admin status.
           await workos.updateUser(data.user.id, {
             metadata: {
               activeOrganizationId: newOrg.id,
+              admin: "true",
             },
           });
         } catch (error) {

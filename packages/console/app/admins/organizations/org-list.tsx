@@ -2,11 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { parseAsInteger, parseAsString, useQueryState } from "nuqs";
-import type { AuthOrganization } from "@/lib/auth";
+import type { WorkOSOrganization } from "@/lib/auth";
 import { ResourceTable, Column } from "@/components/resource-table";
 
 type OrgListProps = {
-  organizations: AuthOrganization[];
+  organizations: WorkOSOrganization[];
   pageSize: number;
   nextCursor?: string;
   hasMore: boolean;
@@ -27,7 +27,7 @@ export function OrgList({
     parseAsInteger.withDefault(initialPageSize),
   );
 
-  const columns: Column<AuthOrganization>[] = [
+  const columns: Column<WorkOSOrganization>[] = [
     {
       key: "name",
       label: "Name",

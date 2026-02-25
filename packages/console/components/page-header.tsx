@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import Image from "next/image";
 import { UserMenu } from "./user-menu";
 import { signOutAction } from "@/app/actions";
-import { AuthUser } from "@/lib/auth";
+import type { WorkOSUser } from "@/lib/auth";
 import {
   OrganizationSwitcher,
   ResourceBreadcrumb,
@@ -17,7 +17,7 @@ export function PageHeader({
   resource,
   tabs,
 }: {
-  user?: AuthUser | null;
+  user: WorkOSUser | null;
   children?: ReactNode;
   isAdmin?: boolean;
   resource?: ResourceBreadcrumb | ResourceBreadcrumb[];

@@ -1,12 +1,12 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from "react";
-import type { AuthOrganization } from "@/lib/auth";
+import type { WorkOSOrganization } from "@/lib/auth";
 import type { World } from "@wazoo/worlds-sdk";
 
 export interface WorldContextType {
   world: World;
-  organization: AuthOrganization;
+  organization: WorkOSOrganization | null;
   apiKey: string;
   codeSnippet: string;
   maskedCodeSnippetHtml: string;

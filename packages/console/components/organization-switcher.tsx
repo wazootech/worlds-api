@@ -24,7 +24,7 @@ export interface ResourceBreadcrumb {
   createHref?: string;
 }
 import { listOrganizations } from "@/app/actions";
-import type { AuthOrganization } from "@/lib/auth";
+import type { WorkOSOrganization } from "@/lib/auth";
 
 export interface ResourceMenuItem {
   label: string;
@@ -43,7 +43,7 @@ export function OrganizationSwitcher({
     organization?: string;
   };
   const router = useRouter();
-  const [organizations, setOrganizations] = useState<AuthOrganization[]>([]);
+  const [organizations, setOrganizations] = useState<WorkOSOrganization[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();

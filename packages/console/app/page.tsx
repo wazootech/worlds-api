@@ -3,6 +3,7 @@ import { getWorkOS } from "@/lib/platform";
 import { PageHeader } from "@/components/page-header";
 
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 import { CreateOrganizationForm } from "@/components/create-organization-form";
 import { Metadata } from "next";
@@ -119,6 +120,45 @@ export default async function Home(props: {
                     >
                       Create an account
                     </a>
+                    <div className="relative pt-4">
+                      <div
+                        className="absolute inset-0 flex items-center"
+                        aria-hidden="true"
+                      >
+                        <div className="w-full border-t border-stone-200 dark:border-stone-800" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white dark:bg-stone-900 px-2 text-stone-500">
+                          Or try it out
+                        </span>
+                      </div>
+                    </div>
+                    <Link
+                      href="/demo"
+                      className="group relative w-full flex items-center justify-center overflow-hidden rounded-2xl bg-amber-500 dark:bg-amber-600 px-8 py-4 text-lg font-semibold text-white shadow-lg transition-all hover:scale-[1.02] hover:bg-amber-400 dark:hover:bg-amber-500 active:scale-[0.98]"
+                    >
+                      <span className="relative flex items-center gap-2">
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        Try Live Demo
+                      </span>
+                    </Link>
                   </div>
 
                   {/* Feature Badges */}

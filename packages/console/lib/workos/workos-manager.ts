@@ -1,6 +1,6 @@
 // ── Shared Types ───────────────────────────────────────────────────────────
 
-export interface AuthUser {
+export interface WorkOSUser {
   id: string;
   email: string;
   firstName: string | null;
@@ -12,7 +12,7 @@ export interface AuthUser {
   };
 }
 
-export interface AuthOrganization {
+export interface WorkOSOrganization {
   id: string;
   name: string;
   createdAt: string;
@@ -36,13 +36,13 @@ export interface AuthOrganization {
 
 export interface WorkOSManager {
   // User Management
-  getUser(userId: string): Promise<AuthUser>;
+  getUser(userId: string): Promise<WorkOSUser>;
   updateUser(
     userId: string,
     data: {
-      metadata?: AuthUser["metadata"];
+      metadata?: WorkOSUser["metadata"];
     },
-  ): Promise<AuthUser>;
+  ): Promise<WorkOSUser>;
   deleteUser(userId: string): Promise<void>;
   listUsers(opts?: {
     limit?: number;
@@ -50,34 +50,45 @@ export interface WorkOSManager {
     after?: string;
     order?: "asc" | "desc";
   }): Promise<{
-    data: AuthUser[];
+    data: WorkOSUser[];
     listMetadata?: { before?: string; after?: string };
   }>;
 
   // Organization Management
-  getOrganization(orgId: string): Promise<AuthOrganization | null>;
-  getOrganizationBySlug(slug: string): Promise<AuthOrganization | null>;
+  getOrganization(orgId: string): Promise<WorkOSOrganization | null>;
+  getOrganizationBySlug(slug: string): Promise<WorkOSOrganization | null>;
   listOrganizations(options?: {
     limit?: number;
     before?: string;
     after?: string;
     order?: "asc" | "desc";
   }): Promise<{
-    data: AuthOrganization[];
+    data: WorkOSOrganization[];
     listMetadata?: { before?: string; after?: string };
   }>;
   createOrganization(data: {
     name: string;
     slug: string;
-    metadata?: AuthOrganization["metadata"];
-  }): Promise<AuthOrganization>;
+    metadata?: WorkOSOrganization["metadata"];
+  }): Promise<WorkOSOrganization>;
   updateOrganization(
     orgId: string,
     data: {
       name?: string;
       slug?: string;
-      metadata?: AuthOrganization["metadata"];
+      metadata?: WorkOSOrganization["metadata"];
     },
-  ): Promise<AuthOrganization>;
+  ): Promise<WorkOSOrganization>;
   deleteOrganization(orgId: string): Promise<void>;
+
+  // Membership Management
+  createOrganizationMembership(data: {
+    organizationId: string;
+    userId: string;
+    role?: string;
+  }): Promise<void>;
+
+  listOrganizationMemberships(opts: {
+    userId: string;
+  }): Promise<{ data: { organizationId: string }[] }>;
 }

@@ -1,4 +1,7 @@
-import type { AuthOrganization, WorkOSManager } from "./workos/workos-manager";
+import type {
+  WorkOSOrganization,
+  WorkOSManager,
+} from "./workos/workos-manager";
 import type { AppManager } from "./apps/app-manager";
 import type { TursoManager } from "./turso/turso-manager";
 
@@ -57,6 +60,10 @@ export async function getApps(): Promise<AppManager> {
     const { DenoAppManager } = await import("./apps/deno-app-manager");
     _appManager = new DenoAppManager();
   } else {
+    throw new Error("App management not configured");
+  }
+
+  if (!_appManager) {
     throw new Error("App management not configured");
   }
 
@@ -165,7 +172,7 @@ export async function teardownOrganization(orgId: string): Promise<void> {
  * Used by both local (deno serve) and remote (Deno Deploy) environments.
  */
 function buildDeployEnvVars(opts: {
-  org: AuthOrganization;
+  org: WorkOSOrganization;
   port?: string;
   libsqlUrl?: string;
 }): Record<string, string> {
@@ -196,7 +203,7 @@ function buildDeployEnvVars(opts: {
  * been configured yet. Mutates org.metadata and persists the update.
  */
 async function provisionTursoIfNeeded(
-  org: AuthOrganization,
+  org: WorkOSOrganization,
   workos: WorkOSManager,
   turso: TursoManager | null | undefined,
 ): Promise<void> {
@@ -229,7 +236,7 @@ async function provisionTursoIfNeeded(
  *  4. Updates org metadata with the app identifier and URL
  */
 async function provisionAppInternal(
-  org: AuthOrganization,
+  org: WorkOSOrganization,
 ): Promise<{ url: string }> {
   const [workos, appManager, turso] = await Promise.all([
     getWorkOS(),

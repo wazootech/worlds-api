@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { withAuth, signOut, type AuthUser } from "@/lib/auth";
+import { withAuth, signOut, type WorkOSUser } from "@/lib/auth";
 import {
   getWorkOS,
   provisionOrganization,
@@ -10,7 +10,7 @@ import {
 
 import { getSdkForOrg } from "@/lib/sdk";
 
-async function getActiveOrgId(user: AuthUser) {
+async function getActiveOrgId(user: WorkOSUser) {
   return user.metadata?.activeOrganizationId as string | undefined;
 }
 

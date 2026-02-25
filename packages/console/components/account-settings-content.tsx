@@ -1,8 +1,8 @@
 "use client";
 
-import { AuthUser } from "@/lib/auth";
+import type { WorkOSUser } from "@/lib/auth";
 
-export function AccountSettingsContent({ user }: { user: AuthUser | null }) {
+export function AccountSettingsContent({ user }: { user: WorkOSUser | null }) {
   if (!user) return null;
 
   return (
