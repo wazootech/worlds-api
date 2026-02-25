@@ -115,7 +115,7 @@ export async function createWorld(
       const DEFAULT_URL =
         process.env.DEFAULT_API_URL || "http://localhost:8000";
 
-      const { WorldsSdk } = await import("@wazoo/sdk");
+      const { WorldsSdk } = await import("@wazoo/worlds-sdk");
       new WorldsSdk({
         baseUrl: DEFAULT_URL,
         apiKey: ADMIN_KEY,

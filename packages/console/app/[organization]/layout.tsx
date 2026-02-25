@@ -65,7 +65,7 @@ export default async function OrganizationLayout({
   const apiUrl =
     (organization.metadata?.apiBaseUrl as string) || "http://localhost:8000";
 
-  const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+  const codeSnippet = `import { WorldsSdk } from "@wazoo/worlds-sdk";
 
 const sdk = new WorldsSdk({
   baseUrl: "${apiUrl}",
@@ -80,7 +80,7 @@ console.log("My worlds:", worlds.length);`;
       ? "YOUR_API_KEY"
       : apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
 
-  const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+  const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/worlds-sdk";
 
 const sdk = new WorldsSdk({
   baseUrl: "${apiUrl}",

@@ -1,5 +1,51 @@
-import type { ExecuteSparqlOutput, SparqlBinding } from "@wazoo/sdk";
+import type {
+  ExecuteSparqlOutput,
+  SparqlBinding,
+  SparqlValue,
+} from "@wazoo/worlds-sdk";
 import { Loader2Icon } from "lucide-react";
+
+function renderSparqlValue(value: SparqlValue): React.ReactNode {
+  if (value.type === "uri") {
+    return (
+      <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+        {value.value}
+      </span>
+    );
+  }
+
+  if (value.type === "triple") {
+    return (
+      <span className="flex items-center gap-1 opacity-90 border border-stone-200 dark:border-stone-700 px-1 rounded bg-stone-50 dark:bg-stone-900/50">
+        <span className="text-stone-400">{"<<"}</span>
+        {renderSparqlValue(value.value.subject)}
+        <span className="mx-0.5" />
+        {renderSparqlValue(value.value.predicate)}
+        <span className="mx-0.5" />
+        {renderSparqlValue(value.value.object)}
+        <span className="text-stone-400">{">>"}</span>
+      </span>
+    );
+  }
+
+  return <span>{value.value}</span>;
+}
+
+function getSparqlValueString(value: SparqlValue): string {
+  if (
+    value.type === "uri" ||
+    value.type === "bnode" ||
+    value.type === "literal"
+  ) {
+    return value.value;
+  }
+  if (value.type === "triple") {
+    return `<<${getSparqlValueString(value.value.subject)} ${getSparqlValueString(
+      value.value.predicate,
+    )} ${getSparqlValueString(value.value.object)}>>`;
+  }
+  return "";
+}
 
 interface SparqlResultsDisplayProps {
   results: ExecuteSparqlOutput | { message: string } | null;
@@ -146,16 +192,10 @@ export function SparqlResultsDisplay({
                         className={`${
                           compact ? "px-3 py-2" : "px-4 py-2"
                         } text-stone-900 dark:text-stone-100 whitespace-nowrap max-w-xs truncate`}
-                        title={cell?.value || ""}
+                        title={cell ? getSparqlValueString(cell) : ""}
                       >
                         {cell ? (
-                          cell.type === "uri" ? (
-                            <span className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-                              {cell.value}
-                            </span>
-                          ) : (
-                            <span>{cell.value}</span>
-                          )
+                          renderSparqlValue(cell)
                         ) : (
                           <span className="text-stone-400 opacity-50">-</span>
                         )}

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode } from "react";
 import type { AuthOrganization } from "@/lib/auth";
-import type { World } from "@wazoo/sdk";
+import type { World } from "@wazoo/worlds-sdk";
 
 export interface WorldContextType {
   world: World;

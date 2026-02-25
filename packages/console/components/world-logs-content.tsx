@@ -24,7 +24,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { JSONCodeBlock } from "@/components/json-code-block";
-import type { Log } from "@wazoo/sdk";
+import type { Log } from "@wazoo/worlds-sdk";
 
 function LogDetailDialog({
   log,

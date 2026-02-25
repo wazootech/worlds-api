@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition } from "react";
-import { World } from "@wazoo/sdk";
+import { World } from "@wazoo/worlds-sdk";
 import { ResourceTable, Column } from "./resource-table";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useRouter } from "next/navigation";

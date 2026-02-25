@@ -3,7 +3,7 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import type { ExecuteSparqlOutput } from "@wazoo/sdk";
+import type { ExecuteSparqlOutput } from "@wazoo/worlds-sdk";
 import { formatSparqlResultsForCopy } from "@/lib/sparql-utils";
 
 interface SparqlResultCopyButtonProps {

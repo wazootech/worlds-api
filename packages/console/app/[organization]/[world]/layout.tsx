@@ -137,7 +137,7 @@ export default async function WorldLayout({
 
   const worldIdSnippet = world.slug;
   if (!worldIdSnippet) throw new Error("World is missing a slug");
-  const codeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+  const codeSnippet = `import { WorldsSdk } from "@wazoo/worlds-sdk";
 
 const sdk = new WorldsSdk({
   baseUrl: "${apiUrl}",
@@ -153,7 +153,7 @@ console.log("Connected to world:", world.label);`;
       ? "YOUR_API_KEY"
       : apiKey.slice(0, 4) + "..." + apiKey.slice(-4);
 
-  const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/sdk";
+  const maskedCodeSnippet = `import { WorldsSdk } from "@wazoo/worlds-sdk";
 
 const sdk = new WorldsSdk({
   baseUrl: "${apiUrl}",

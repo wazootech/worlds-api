@@ -1,7 +1,7 @@
 import { getWorkOS } from "@/lib/platform";
 import { OrganizationDashboardContent } from "@/components/organization-dashboard-content";
 import { getSdkForOrg } from "@/lib/sdk";
-import type { World } from "@wazoo/sdk";
+import type { World } from "@wazoo/worlds-sdk";
 import { notFound } from "next/navigation";
 
 type Params = { organization: string };
@@ -33,8 +33,6 @@ export default async function OrganizationDashboard(props: {
     notFound();
   }
 
-  const actualOrgId = organization.id;
-
   let worlds: World[] = [];
   // Resolve organization first
   // organization is already fetched above
@@ -44,7 +42,6 @@ export default async function OrganizationDashboard(props: {
     worlds = await sdk.worlds.list({
       page,
       pageSize,
-      organizationId: actualOrgId,
     });
   } catch (error) {
     console.error("Failed to list worlds:", error);

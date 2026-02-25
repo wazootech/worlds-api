@@ -64,7 +64,9 @@ function ConnectSdkDialog({
   const [installTab, setInstallTab] = useState<"npm" | "deno">("npm");
 
   const installCommand =
-    installTab === "npm" ? "npx jsr add @wazoo/sdk" : "deno add jsr:@wazoo/sdk";
+    installTab === "npm"
+      ? "npx jsr add @wazoo/worlds-sdk"
+      : "deno add jsr:@wazoo/worlds-sdk";
 
   const copyToClipboard = (text: string, setCopied: (v: boolean) => void) => {
     navigator.clipboard.writeText(text);
@@ -105,9 +107,9 @@ function ConnectSdkDialog({
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary dark:text-primary-light hover:underline cursor-pointer"
-                  href="https://jsr.io/@wazoo/sdk"
+                  href="https://jsr.io/@wazoo/worlds-sdk"
                 >
-                  jsr.io/@wazoo/sdk
+                  jsr.io/@wazoo/worlds-sdk
                 </a>{" "}
                 for more details.
               </span>

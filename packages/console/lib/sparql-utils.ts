@@ -1,4 +1,4 @@
-import type { ExecuteSparqlOutput } from "@wazoo/sdk";
+import type { ExecuteSparqlOutput } from "@wazoo/worlds-sdk";
 
 /**
  * Formats SPARQL results as text for copying.

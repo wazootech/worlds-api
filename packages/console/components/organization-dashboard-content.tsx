@@ -4,7 +4,7 @@ import { useOrganization } from "@/components/organization-context";
 import { ConnectSdkButton } from "@/components/connect-sdk";
 import { CreateWorldButton } from "@/components/create-world-button";
 import { WorldList } from "@/components/world-list";
-import type { World } from "@wazoo/sdk";
+import type { World } from "@wazoo/worlds-sdk";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export function OrganizationDashboardContent({

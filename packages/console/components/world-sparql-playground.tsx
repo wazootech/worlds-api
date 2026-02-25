@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ExecuteSparqlOutput } from "@wazoo/sdk";
+import type { ExecuteSparqlOutput } from "@wazoo/worlds-sdk";
 import { useQueryState } from "nuqs";
 import { SparqlEditor } from "@/components/sparql-editor";
 import { SparqlResultsDisplay } from "@/components/sparql-results-display";

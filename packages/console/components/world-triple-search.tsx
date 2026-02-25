@@ -2,7 +2,7 @@
 
 import { useQueryState, parseAsString, parseAsInteger } from "nuqs";
 import { useState } from "react";
-import type { ExecuteSparqlOutput } from "@wazoo/sdk";
+import type { ExecuteSparqlOutput } from "@wazoo/worlds-sdk";
 import { SparqlResultsDisplay } from "@/components/sparql-results-display";
 import { SparqlResultCopyButton } from "@/components/sparql-result-copy-button";
 import { searchTriples } from "@/app/actions";

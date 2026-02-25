@@ -1,4 +1,4 @@
-import { WorldsSdk } from "@wazoo/sdk";
+import { WorldsSdk } from "@wazoo/worlds-sdk";
 import type { AuthOrganization } from "./workos/workos-manager";
 
 export function getSdkForOrg(org: AuthOrganization): WorldsSdk {

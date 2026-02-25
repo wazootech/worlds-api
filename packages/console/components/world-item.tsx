@@ -3,7 +3,7 @@
 import { startTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { World } from "@wazoo/sdk";
+import type { World } from "@wazoo/worlds-sdk";
 
 import { PixelPlanet } from "./pixel-planet/pixel-planet";
 import { getSeedFromId } from "./pixel-planet/lib/seed-utils";

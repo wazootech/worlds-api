@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { parseAsBoolean, useQueryState } from "nuqs";
-import type { World } from "@wazoo/sdk";
+import type { World } from "@wazoo/worlds-sdk";
 import { ConnectSdkButton } from "@/components/connect-sdk";
 import { PixelPlanet } from "@/components/pixel-planet/pixel-planet";
 import { PlanetDialog } from "@/components/pixel-planet/planet-dialog";
