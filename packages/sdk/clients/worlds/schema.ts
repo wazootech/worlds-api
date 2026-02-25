@@ -98,6 +98,7 @@ export const updateWorldParamsSchema: z.ZodType<UpdateWorldParams> = z.object({
 
 /**
  * SparqlValue represents a value in a SPARQL result.
+ * Supports SPARQL 1.1 types and SPARQL 1.2 (RDF-star) triple terms.
  */
 export type SparqlValue =
   | {
@@ -113,30 +114,85 @@ export type SparqlValue =
     value: string;
     "xml:lang"?: string;
     datatype?: string;
+  }
+  | {
+    type: "triple";
+    value: {
+      subject: SparqlValue;
+      predicate: SparqlValue;
+      object: SparqlValue;
+    };
   };
 
 /**
  * sparqlValueSchema is the Zod schema for SparqlValue.
+ * Uses z.lazy for recursive triple term support.
  */
-export const sparqlValueSchema: z.ZodType<SparqlValue> = z.discriminatedUnion(
-  "type",
-  [
-    z.object({
-      type: z.literal("uri"),
-      value: z.string(),
-    }),
-    z.object({
-      type: z.literal("bnode"),
-      value: z.string(),
-    }),
-    z.object({
-      type: z.literal("literal"),
-      value: z.string(),
-      "xml:lang": z.string().optional(),
-      datatype: z.string().optional(),
-    }),
-  ],
+export const sparqlValueSchema: z.ZodType<SparqlValue> = z.lazy(() =>
+  z.discriminatedUnion(
+    "type",
+    [
+      z.object({
+        type: z.literal("uri"),
+        value: z.string(),
+      }),
+      z.object({
+        type: z.literal("bnode"),
+        value: z.string(),
+      }),
+      z.object({
+        type: z.literal("literal"),
+        value: z.string(),
+        "xml:lang": z.string().optional(),
+        datatype: z.string().optional(),
+      }),
+      z.object({
+        type: z.literal("triple"),
+        value: z.object({
+          subject: sparqlValueSchema,
+          predicate: sparqlValueSchema,
+          object: sparqlValueSchema,
+        }),
+      }),
+    ],
+  )
 );
+
+/**
+ * SparqlServiceDescription represents a SPARQL 1.1 Service Description.
+ * This is typically returned in RDF format, but this schema defines a
+ * structured representation for use in SDKs and APIs.
+ */
+export interface SparqlServiceDescription {
+  endpoint: string;
+  supportedLanguages: string[];
+  features: string[];
+  resultFormats: string[];
+  defaultDataset?: {
+    graphs: Array<{
+      uri?: string;
+      isDefault: boolean;
+    }>;
+  };
+}
+
+/**
+ * sparqlServiceDescriptionSchema is the Zod schema for SparqlServiceDescription.
+ */
+export const sparqlServiceDescriptionSchema: z.ZodType<
+  SparqlServiceDescription
+> = z.object({
+  endpoint: z.string().url(),
+  supportedLanguages: z.array(z.string()),
+  features: z.array(z.string()),
+  resultFormats: z.array(z.string()),
+  defaultDataset: z.object({
+    graphs: z.array(z.object({
+      uri: z.string().url().optional(),
+      isDefault: z.boolean(),
+    })),
+  }).optional(),
+});
 
 /**
  * SparqlBinding represents a single result binding.

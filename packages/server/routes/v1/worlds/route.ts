@@ -10,6 +10,13 @@ import {
   worldSchema,
 } from "@wazoo/sdk";
 import { Parser, Store, Writer } from "n3";
+import {
+  DEFAULT_SERIALIZATION,
+  getSerializationByContentType,
+  getSerializationByFormat,
+  negotiateSerialization,
+  SERIALIZATIONS,
+} from "#/lib/rdf/serialization.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 import type {
   WorldRow,
@@ -20,16 +27,6 @@ import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
 import { handlePatch } from "#/lib/rdf-patch/rdf-patch.ts";
-
-const SERIALIZATIONS: Record<string, { contentType: string; format: string }> =
-  {
-    "turtle": { contentType: "text/turtle", format: "Turtle" },
-    "n-quads": { contentType: "application/n-quads", format: "N-Quads" },
-    "n-triples": { contentType: "application/n-triples", format: "N-Triples" },
-    "n3": { contentType: "text/n3", format: "N3" },
-  };
-
-const DEFAULT_SERIALIZATION = SERIALIZATIONS["n-quads"];
 
 export default (appContext: ServerContext) => {
   const worldsService = new WorldsService(appContext.libsql.database);
@@ -113,16 +110,22 @@ export default (appContext: ServerContext) => {
         if (world instanceof Response) return world;
 
         const url = new URL(ctx.request.url);
-        const formatParam = url.searchParams.get("format")?.toLowerCase();
-        const serialization = (formatParam && SERIALIZATIONS[formatParam]) ||
-          DEFAULT_SERIALIZATION;
+        const formatParam = url.searchParams.get("format");
 
-        if (formatParam && !SERIALIZATIONS[formatParam]) {
-          return ErrorResponse.BadRequest(
-            `Unsupported format: ${formatParam}. Supported: ${
-              Object.keys(SERIALIZATIONS).join(", ")
-            }`,
-          );
+        let serialization = DEFAULT_SERIALIZATION;
+        if (formatParam) {
+          const s = getSerializationByFormat(formatParam);
+          if (!s) {
+            return ErrorResponse.BadRequest(
+              `Unsupported format: ${formatParam}. Supported: ${
+                Object.keys(SERIALIZATIONS).join(", ")
+              }`,
+            );
+          }
+          serialization = s;
+        } else {
+          // If no format parameter, use content negotiation
+          serialization = negotiateSerialization(ctx.request, "n-quads");
         }
 
         const managed = await appContext.libsql.manager.get(world.id);
@@ -181,13 +184,9 @@ export default (appContext: ServerContext) => {
         if (world instanceof Response) return world;
 
         const contentType = ctx.request.headers.get("Content-Type") || "";
-        let format = "N-Quads";
-        for (const s of Object.values(SERIALIZATIONS)) {
-          if (contentType.includes(s.contentType)) {
-            format = s.format;
-            break;
-          }
-        }
+        const serialization = getSerializationByContentType(contentType) ??
+          DEFAULT_SERIALIZATION;
+        const format = serialization.format;
 
         const body = await ctx.request.text();
         const parser = new Parser({ format });

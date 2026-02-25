@@ -108,4 +108,39 @@ Deno.test("Worlds API routes", async (t) => {
     assertEquals(world.label, "New World");
     assertEquals(world.organizationId, null);
   });
+
+  await t.step(
+    "GET /v1/worlds/:world/export - Content Negotiation (Turtle)",
+    async () => {
+      const { apiKey } = await createTestOrganization(testContext);
+      const worldId = ulid();
+      const now = Date.now();
+      await worldsService.insert({
+        id: worldId,
+        slug: "export-world-" + worldId,
+        label: "Export World",
+        description: null,
+        db_hostname: null,
+        db_token: null,
+        created_at: now,
+        updated_at: now,
+        deleted_at: null,
+      });
+      await testContext.libsql.manager.create(worldId);
+
+      // Request with Turtle Accept header
+      const resp = await app.fetch(
+        new Request(`http://localhost/v1/worlds/${worldId}/export`, {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Accept": "text/turtle",
+          },
+        }),
+      );
+
+      assertEquals(resp.status, 200);
+      assertEquals(resp.headers.get("Content-Type"), "text/turtle");
+    },
+  );
 });

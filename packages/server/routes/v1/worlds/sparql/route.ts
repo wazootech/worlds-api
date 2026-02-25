@@ -3,6 +3,7 @@ import { DataFactory, Writer } from "n3";
 import { ulid } from "@std/ulid/ulid";
 import { Router } from "@fartlabs/rt";
 import { type AuthorizedRequest, authorizeRequest } from "#/middleware/auth.ts";
+import { negotiateSerialization } from "#/lib/rdf/serialization.ts";
 import type { ServerContext } from "#/context.ts";
 import type { DatasetParams } from "#/lib/blob/sparql.ts";
 import { sparql } from "#/lib/blob/sparql.ts";
@@ -95,11 +96,15 @@ async function parseQuery(
 }
 
 /**
- * Generates SPARQL Service Description in RDF format
+ * Generates SPARQL Service Description in RDF format.
+ * Includes support for SPARQL 1.1 and 1.2 (RDF-star) features.
  */
-function generateServiceDescription(endpointUrl: string): Promise<string> {
+function generateServiceDescription(
+  endpointUrl: string,
+  format: string,
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const writer = new Writer({ format: "Turtle" });
+    const writer = new Writer({ format });
 
     // SPARQL Service Description vocabulary
     const sd = "http://www.w3.org/ns/sparql-service-description#";
@@ -117,21 +122,38 @@ function generateServiceDescription(endpointUrl: string): Promise<string> {
     const jsonFormat = namedNode(
       "http://www.w3.org/ns/formats/SPARQL_Results_JSON",
     );
+    const turtleFormat = namedNode(
+      "http://www.w3.org/ns/formats/Turtle",
+    );
     writer.addQuad(quad(endpoint, supportedFormat, jsonFormat));
+    writer.addQuad(quad(endpoint, supportedFormat, turtleFormat));
 
     // Advertise supported languages
     const supportedLanguage = namedNode(`${sd}supportedLanguage`);
     const sparql11Query = namedNode(`${sd}SPARQL11Query`);
     const sparql11Update = namedNode(`${sd}SPARQL11Update`);
+    const sparql12Query = namedNode(`${sd}SPARQL12Query`);
+    const sparql12Update = namedNode(`${sd}SPARQL12Update`);
     writer.addQuad(quad(endpoint, supportedLanguage, sparql11Query));
     writer.addQuad(quad(endpoint, supportedLanguage, sparql11Update));
+    writer.addQuad(quad(endpoint, supportedLanguage, sparql12Query));
+    writer.addQuad(quad(endpoint, supportedLanguage, sparql12Update));
+
+    // Advertise features (including future-proof ones)
+    const feature = namedNode(`${sd}feature`);
+    const unionDefaultGraph = namedNode(`${sd}UnionDefaultGraph`);
+    const dereferencesURIs = namedNode(`${sd}DereferencesURIs`);
+    const tripleTerms = namedNode(
+      "http://www.w3.org/ns/sparql-service-description#TripleTerms",
+    );
+    writer.addQuad(quad(endpoint, feature, unionDefaultGraph));
+    writer.addQuad(quad(endpoint, feature, dereferencesURIs));
+    writer.addQuad(quad(endpoint, feature, tripleTerms));
 
     writer.end((error: Error | null, result: string | undefined) => {
       if (error) {
         reject(error);
       } else {
-        // If RDF/XML is requested, convert (for now, just return Turtle)
-        // Full RDF/XML conversion would require additional library
         resolve(result as string);
       }
     });
@@ -153,18 +175,15 @@ async function executeSparqlRequest(
   if (!query) {
     if (request.method === "GET") {
       const endpointUrl = new URL(request.url).toString();
-      const acceptHeader = request.headers.get("accept");
+      const serialization = negotiateSerialization(request);
+
       const serviceDescription = await generateServiceDescription(
         endpointUrl,
+        serialization.format,
       );
 
-      // Determine content type based on Accept header
-      const contentType = acceptHeader?.includes("application/rdf+xml")
-        ? "application/rdf+xml"
-        : "text/turtle";
-
       return new Response(serviceDescription, {
-        headers: { "Content-Type": contentType },
+        headers: { "Content-Type": serialization.contentType },
       });
     } else {
       return ErrorResponse.BadRequest("Query or update required");
