@@ -1,7 +1,7 @@
 import type { Tool } from "ai";
 import { tool } from "ai";
 import { z } from "zod";
-import { type TripleSearchResult, tripleSearchResultSchema } from "@wazoo/sdk";
+import { type TripleSearchResult, tripleSearchResultSchema } from "@wazoo/worlds-sdk";
 import type { CreateToolsOptions } from "#/options.ts";
 
 /**

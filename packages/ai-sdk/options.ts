@@ -1,4 +1,4 @@
-import type { Source, WorldsSdk } from "@wazoo/sdk";
+import type { Source, WorldsSdk } from "@wazoo/worlds-sdk";
 
 /**
  * CreateToolsOptions is the options for the createTools function.

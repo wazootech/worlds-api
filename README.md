@@ -1,7 +1,7 @@
 # Worlds Platform™
 
-[![JSR](https://jsr.io/badges/@wazoo/sdk)](https://jsr.io/@wazoo/sdk)
-[![JSR score](https://jsr.io/badges/@wazoo/sdk/score)](https://jsr.io/@wazoo/sdk/score)
+[![JSR](https://jsr.io/badges/@wazoo/worlds-sdk)](https://jsr.io/@wazoo/worlds-sdk)
+[![JSR score](https://jsr.io/badges/@wazoo/worlds-sdk/score)](https://jsr.io/@wazoo/worlds-sdk/score)
 
 **Worlds Platform™** is a REST API designed to manage, query, update, and reason
 over [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge
@@ -22,7 +22,7 @@ You can use the Worlds SDK to interact with your knowledge bases
 programmatically.
 
 ```typescript
-import { WorldsSdk } from "@wazoo/sdk";
+import { WorldsSdk } from "@wazoo/worlds-sdk";
 
 // Initialize the client.
 const sdk = new WorldsSdk({

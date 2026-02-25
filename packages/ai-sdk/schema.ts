@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { Source } from "@wazoo/sdk";
+import type { Source } from "@wazoo/worlds-sdk";
 
 export type { Source };
 

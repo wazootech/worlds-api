@@ -6,7 +6,7 @@ import {
   executeSparqlOutputSchema,
   isSparqlUpdate,
   type Source,
-} from "@wazoo/sdk";
+} from "@wazoo/worlds-sdk";
 import type { CreateToolsOptions } from "#/options.ts";
 
 // Re-export the output schema and type from the SDK.
