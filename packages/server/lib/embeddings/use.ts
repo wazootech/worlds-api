@@ -30,8 +30,8 @@ export class UniversalSentenceEncoderEmbeddings implements Embeddings {
     await tf.ready();
 
     // Load the Universal Sentence Encoder model from local files
-    const modelUrl = import.meta.resolve("../../models/use/model.json");
-    const vocabUrl = import.meta.resolve("../../models/use/vocab.json");
+    const modelUrl = import.meta.resolve("#/models/use/model.json");
+    const vocabUrl = import.meta.resolve("#/models/use/vocab.json");
 
     try {
       this.model = await use.load({
