@@ -1,4 +1,4 @@
-import type { GoogleGenAI } from "@google/genai";
+import { embed, type EmbeddingModel } from "ai";
 import type { Embeddings } from "#/lib/embeddings/embeddings.ts";
 
 /**
@@ -6,14 +6,9 @@ import type { Embeddings } from "#/lib/embeddings/embeddings.ts";
  */
 export interface GeminiEmbeddingsOptions {
   /**
-   * client is the GoogleGenAI client.
-   */
-  client: GoogleGenAI;
-
-  /**
    * model is the model to use for embedding.
    */
-  model: string;
+  model: EmbeddingModel<string>;
 
   /**
    * dimensions is the dimensionality of the vector embeddings.
@@ -22,7 +17,7 @@ export interface GeminiEmbeddingsOptions {
 }
 
 /**
- * GeminiEmbeddings generates vector embeddings using Google GenAI.
+ * GeminiEmbeddings generates vector embeddings using Vercel AI SDK with Google provider.
  */
 export class GeminiEmbeddings implements Embeddings {
   public constructor(private readonly options: GeminiEmbeddingsOptions) {}
@@ -38,17 +33,11 @@ export class GeminiEmbeddings implements Embeddings {
    * embed generates a vector embedding for a given text.
    */
   public async embed(text: string): Promise<number[]> {
-    const response = await this.options.client.models.embedContent({
+    const { embedding } = await embed({
       model: this.options.model,
-      contents: [text],
-      config: { outputDimensionality: this.options.dimensions },
+      value: text,
     });
 
-    const embedding = response.embeddings?.[0];
-    if (!embedding?.values) {
-      throw new Error("Failed to generate embedding");
-    }
-
-    return embedding.values;
+    return embedding;
   }
 }

@@ -61,7 +61,7 @@ Deno.test("ChunksService", async (t) => {
       subject: "s",
       predicate: "p",
       text: "This is a test chunk about apples.",
-      vector: new Uint8Array(new Float32Array(1536).fill(0).buffer),
+      vector: new Uint8Array(new Float32Array(768).fill(0).buffer),
     });
 
     const results = await chunksService.search({

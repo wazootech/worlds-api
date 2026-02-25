@@ -15,12 +15,12 @@ export async function createTestContext(): Promise<ServerContext> {
   await initializeDatabase(client);
 
   const mockEmbeddings: Embeddings = {
-    dimensions: 1536,
+    dimensions: 768,
     embed: (texts: string | string[]) => {
       if (Array.isArray(texts)) {
-        return Promise.resolve(Array(texts.length).fill(Array(1536).fill(0)));
+        return Promise.resolve(Array(texts.length).fill(Array(768).fill(0)));
       }
-      return Promise.resolve(Array(1536).fill(0));
+      return Promise.resolve(Array(768).fill(0));
     },
   };
 

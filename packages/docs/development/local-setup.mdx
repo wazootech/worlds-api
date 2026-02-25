@@ -69,3 +69,51 @@ LOCAL_USER_LAST_NAME="Admin"
 ```
 
 These values are used to initialize the `data/workos.json` file if it doesn't already exist.
+
+## Configuration Reference
+
+Here's a list of environment variables you can set for local development:
+
+| Variable                  | Description                                                       |
+| :------------------------ | :---------------------------------------------------------------- |
+| `LOCAL_USER_ID`           | (Optional) User ID for the mock local user.                       |
+| `LOCAL_USER_EMAIL`        | (Optional) Email for the mock local user.                         |
+| `LOCAL_USER_FIRST_NAME`   | (Optional) First name for the mock local user.                    |
+| `LOCAL_USER_LAST_NAME`    | (Optional) Last name for the mock local user.                     |
+| `GOOGLE_API_KEY`          | (Optional) For high-quality Gemini embeddings.                    |
+| `OLLAMA_BASE_URL`         | (Optional) Ollama API URL (defaults to `http://127.0.0.1:11434`). |
+| `OLLAMA_EMBEDDINGS_MODEL` | (Optional) Ollama model (defaults to `nomic-embed-text`).         |
+
+## Local embeddings with Ollama
+
+By default, the Worlds Platform™ uses **Ollama** for local embeddings. This ensures your data never leaves your machine.
+
+> [!TIP]
+> You can also use **Google Gemini** for embeddings in local development by adding a `GOOGLE_API_KEY` to your environment. See [Configuration Reference](/hosting/configuration) for details.
+
+<Steps>
+<Step title="Install Ollama">
+
+Download and install Ollama from [ollama.com](https://ollama.com).
+
+</Step>
+<Step title="Pull Embedding Model">
+
+The platform defaults to `nomic-embed-text`. Pull it to your local machine:
+
+```bash
+ollama pull nomic-embed-text
+```
+
+</Step>
+<Step title="Configuration">
+
+The World API server will automatically attempt to connect to the local Ollama instance at `http://127.0.0.1:11434`. You can override this in your environment:
+
+```dotenv
+OLLAMA_BASE_URL="http://your-ollama-host:11434"
+OLLAMA_EMBEDDINGS_MODEL="nomic-embed-text"
+```
+
+</Step>
+</Steps>

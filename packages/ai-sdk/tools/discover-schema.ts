@@ -188,6 +188,13 @@ export async function discoverSchema(
         const ranges = new Set<string>();
 
         for (const binding of output.results.bindings) {
+          // Skip RDF-star triple terms for schema discovery. These are used for
+          // data annotations (metadata about statements) and are N/A for
+          // discovering standard class and property IRIs/labels.
+          if (binding.p.type === "triple" || binding.o.type === "triple") {
+            continue;
+          }
+
           const p = binding.p.value;
           const o = binding.o.value;
 

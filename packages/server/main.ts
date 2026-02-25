@@ -9,8 +9,10 @@ const serverContext: ServerContext = await createServerContext({
     LIBSQL_AUTH_TOKEN: Deno.env.get("LIBSQL_AUTH_TOKEN")!,
     TURSO_API_TOKEN: Deno.env.get("TURSO_API_TOKEN"),
     TURSO_ORG: Deno.env.get("TURSO_ORG"),
-    GOOGLE_API_KEY: Deno.env.get("GOOGLE_API_KEY")!,
-    GOOGLE_EMBEDDINGS_MODEL: Deno.env.get("GOOGLE_EMBEDDINGS_MODEL")!,
+    GOOGLE_API_KEY: Deno.env.get("GOOGLE_API_KEY"),
+    GOOGLE_EMBEDDINGS_MODEL: Deno.env.get("GOOGLE_EMBEDDINGS_MODEL"),
+    OLLAMA_BASE_URL: Deno.env.get("OLLAMA_BASE_URL"),
+    OLLAMA_EMBEDDINGS_MODEL: Deno.env.get("OLLAMA_EMBEDDINGS_MODEL"),
     WORLDS_BASE_DIR: Deno.env.get("WORLDS_BASE_DIR"),
   },
 });

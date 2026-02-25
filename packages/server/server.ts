@@ -2,9 +2,11 @@ import type { ServerContext } from "#/context.ts";
 import type { DatabaseManager } from "#/lib/database/manager.ts";
 import { Router } from "@fartlabs/rt";
 import { createClient } from "@libsql/client";
-import { GoogleGenAI } from "@google/genai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOllama } from "ollama-ai-provider";
 import type { Embeddings } from "#/lib/embeddings/embeddings.ts";
 import { GeminiEmbeddings } from "#/lib/embeddings/gemini.ts";
+import { OllamaEmbeddings } from "#/lib/embeddings/ollama.ts";
 import { initializeDatabase } from "#/lib/database/init.ts";
 import { createClient as createTursoClient } from "@tursodatabase/api";
 import { TursoDatabaseManager } from "#/lib/database/managers/api.ts";
@@ -47,6 +49,8 @@ export interface ServerContextConfig {
     TURSO_ORG?: string;
     GOOGLE_API_KEY?: string;
     GOOGLE_EMBEDDINGS_MODEL?: string;
+    OLLAMA_BASE_URL?: string;
+    OLLAMA_EMBEDDINGS_MODEL?: string;
     ADMIN_API_KEY?: string;
     WORLDS_BASE_DIR?: string;
   };
@@ -81,20 +85,26 @@ export async function createServerContext(
   // Resolve embeddings strategy based on environment variables.
   let embeddings: Embeddings;
   if (config.env.GOOGLE_API_KEY) {
-    const genai = new GoogleGenAI({ apiKey: config.env.GOOGLE_API_KEY });
+    const google = createGoogleGenerativeAI({
+      apiKey: config.env.GOOGLE_API_KEY,
+    });
     embeddings = new GeminiEmbeddings({
-      client: genai,
+      model: google.embedding(
+        config.env.GOOGLE_EMBEDDINGS_MODEL ?? "text-embedding-004",
+        { outputDimensionality: 768 },
+      ),
       dimensions: 768,
-
-      // https://ai.google.dev/gemini-api/docs/embeddings#model-versions
-      model: config.env.GOOGLE_EMBEDDINGS_MODEL ??
-        "models/gemini-embedding-001",
     });
   } else {
-    const { UniversalSentenceEncoderEmbeddings } = await import(
-      "#/lib/embeddings/use.ts"
-    );
-    embeddings = new UniversalSentenceEncoderEmbeddings();
+    const ollama = createOllama({
+      baseURL: config.env.OLLAMA_BASE_URL,
+    });
+    embeddings = new OllamaEmbeddings({
+      model: ollama.embedding(
+        config.env.OLLAMA_EMBEDDINGS_MODEL ?? "nomic-embed-text",
+      ),
+      dimensions: 768,
+    });
   }
 
   // Resolve database manager strategy based on environment variables.
