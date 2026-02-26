@@ -1,6 +1,10 @@
 import { Sandbox, Client } from "@deno/sandbox";
 import type { ManagedApp, AppManager } from "./app-manager";
 
+interface DenoAppUpdate {
+  envs?: Record<string, string>;
+}
+
 export class DenoAppManager implements AppManager {
   private client: Client;
 
@@ -19,47 +23,74 @@ export class DenoAppManager implements AppManager {
       throw new Error("DENO_DEPLOY_TOKEN is not set");
     }
 
-    console.log(`[App] Creating App ${slug} on Deno Deploy...`);
+    console.log(`[AppManager:Deno] Creating App ${slug} on Deno Deploy...`);
     const app = await this.client.apps.create({
       slug,
     });
 
-    console.log(`[App] Initializing Sandbox for deployment...`);
-    await using sandbox = await Sandbox.create({ token });
+    try {
+      console.log(`[AppManager:Deno] Initializing Sandbox for deployment...`);
+      await using sandbox = await Sandbox.create({
+        token,
+      });
 
-    console.log(`[App] Cloning repository into Sandbox...`);
-    const cloneResult =
-      await sandbox.sh`git clone https://github.com/wazootech/worlds.git /src`;
-    if (!cloneResult.status.success) {
-      throw new Error("Failed to clone repository: " + cloneResult.stderrText);
+      console.log(
+        `[AppManager:Deno] Deploying application to ${app.slug}...`,
+      );
+      const build = await sandbox.deno.deploy(app.slug, {
+        production: true,
+        build: {
+          // Use the direct JSR entrypoint as suggested in the memo
+          entrypoint: "jsr:@wazoo/worlds-server",
+        },
+      });
+
+      // Wait for the build and deployment revision to complete (with 2min timeout)
+      await Promise.race([
+        build.done,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Deployment timed out")), 120_000),
+        ),
+      ]);
+      console.log(`[AppManager:Deno] Deployed revision successfully.`);
+
+      // Inject environment variables into the app
+      if (Object.keys(envVars).length > 0) {
+        console.log(
+          `[AppManager:Deno] Injecting environment variables into ${app.slug}...`,
+        );
+        await this.client.apps.update(app.id, {
+          envs: envVars,
+        } as DenoAppUpdate as any);
+      }
+
+      const now = new Date().toISOString();
+      return {
+        id: app.id,
+        slug: app.slug,
+        url: `https://${app.slug}.deno.dev`,
+        status: "running",
+        createdAt: app.created_at,
+        updatedAt: now,
+      };
+    } catch (error) {
+      console.error(
+        `[AppManager:Deno] Failed to provision app ${slug} (ID: ${app.id}):`,
+        error,
+      );
+      
+      // Clean up the partially created app to avoid "zombie" resources
+      try {
+        console.log(`[AppManager:Deno] Cleaning up failed app ${app.id}...`);
+        await this.client.apps.delete(app.id);
+      } catch (cleanupError) {
+        console.error(
+          `[AppManager:Deno] Failed to cleanup app ${app.id}:`,
+          cleanupError,
+        );
+      }
+      throw error;
     }
-
-    console.log(`[App] Setting environment variables...`);
-    for (const [key, value] of Object.entries(envVars)) {
-      await sandbox.env.set(key, value);
-    }
-
-    console.log(`[App] Deploying application from Sandbox to ${app.slug}...`);
-    const build = await sandbox.deploy(app.slug, {
-      path: "/src",
-      build: {
-        entrypoint: "packages/server/main.ts",
-      },
-    });
-
-    // Wait for the build and deployment revision to complete
-    await build.done;
-    console.log(`[App] Deployed revision successfully.`);
-
-    const now = new Date().toISOString();
-    return {
-      id: app.id,
-      slug: app.slug,
-      url: `https://${app.slug}.deno.dev`,
-      status: "running",
-      createdAt: app.created_at,
-      updatedAt: now,
-    };
   }
 
   async getApp(appId: string): Promise<ManagedApp | null> {
@@ -76,13 +107,13 @@ export class DenoAppManager implements AppManager {
         updatedAt: app.updated_at,
       };
     } catch (error) {
-      console.error(`[App] Failed to fetch app ${appId}:`, error);
+      console.error(`[AppManager:Deno] Failed to fetch app ${appId}:`, error);
       return null;
     }
   }
 
   async deleteApp(appId: string): Promise<void> {
-    console.log(`[App] Deleting app ${appId} (Deno Deploy)`);
-    // Placeholder: Sandbox SDK apps.get(id).delete() or similar
+    console.log(`[AppManager:Deno] Deleting app ${appId} (Deno Deploy)...`);
+    await this.client.apps.delete(appId);
   }
 }

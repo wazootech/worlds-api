@@ -36,6 +36,7 @@
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
+    "@std/async": "npm:@jsr/std__async@^1.2.0",
     "@tursodatabase/api": "^1.9.2",
     "@types/three": "^0.182.0",
     "@uiw/react-textarea-code-editor": "^3.1.1",

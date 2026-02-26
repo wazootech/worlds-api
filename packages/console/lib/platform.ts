@@ -1,3 +1,4 @@
+import { retry } from "@std/async/retry";
 import type {
   WorkOSOrganization,
   WorkOSManager,
@@ -147,7 +148,7 @@ export async function teardownOrganization(orgId: string): Promise<void> {
         await appManager.deleteApp(appId as string);
       }
     } catch (error) {
-      console.error(`[platform] Failed to delete app for org ${orgId}:`, error);
+      console.error(`[Platform] Failed to delete app for org ${orgId}:`, error);
     }
   }
 
@@ -156,7 +157,7 @@ export async function teardownOrganization(orgId: string): Promise<void> {
       await turso.deleteDatabase(orgId);
     } catch (error) {
       console.error(
-        `[platform] Failed to delete Turso database for org ${orgId}:`,
+        `[Platform] Failed to delete Turso database for org ${orgId}:`,
         error,
       );
     }
@@ -218,11 +219,11 @@ async function provisionTursoIfNeeded(
     };
     await workos.updateOrganization(org.id, { metadata: org.metadata });
     console.log(
-      `[platform] Provisioned Turso database for org ${org.id}: ${db.url}`,
+      `[Platform] Provisioned Turso database for org ${org.id}: ${db.url}`,
     );
   } catch (error) {
     console.error(
-      `[platform] Failed to provision Turso database for org ${org.id}:`,
+      `[Platform] Failed to provision Turso database for org ${org.id}:`,
       error,
     );
   }
@@ -289,10 +290,33 @@ async function provisionAppInternal(
   let url = org.metadata?.apiBaseUrl as string;
 
   if (!appId) {
-    const slug = isLocalDev
-      ? org.slug
-      : `${org.slug}-${Math.random().toString(36).slice(2, 6)}`;
-    const app = await appManager.createApp(slug, envVars);
+    const app = await retry(
+      async () => {
+        const slug = isLocalDev
+          ? org.slug
+          : `${org.slug}-${Math.random().toString(36).slice(2, 6)}`;
+
+        try {
+          return await appManager.createApp(slug, envVars);
+        } catch (error: any) {
+          const isConflict =
+            error?.status === 409 ||
+            error?.message?.includes("409") ||
+            error?.message?.includes("already exists");
+
+          if (isConflict) {
+            console.warn(`[Platform] Slug collision for ${slug}, retrying...`);
+            throw error; // Rethrow to trigger retry
+          }
+          throw error; // Rethrow other errors
+        }
+      },
+      {
+        maxAttempts: 3,
+        minTimeout: 0, // Retry immediately for collisions
+      },
+    );
+
     appId = app.id;
     url = app.url;
 
@@ -305,7 +329,7 @@ async function provisionAppInternal(
     await workos.updateOrganization(org.id, { metadata: org.metadata });
   } else {
     console.log(
-      `[platform] App ${appId} already provisioned for org ${org.id}`,
+      `[Platform] App ${appId} already provisioned for org ${org.id}`,
     );
   }
 

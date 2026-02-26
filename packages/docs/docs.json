@@ -71,6 +71,7 @@
             "pages": [
               "internal/routes",
               "internal/ai-sdk",
+              "internal/deno-app-management",
               "internal/rdf-sparql",
               "internal/embeddings-search",
               "internal/logging"
