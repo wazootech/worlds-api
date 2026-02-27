@@ -66,7 +66,6 @@ export default (appContext: ServerContext) => {
         return Response.json(
           logs.map((log) => ({
             id: log.id,
-            worldId: log.world_id,
             timestamp: log.timestamp,
             level: log.level,
             message: log.message,

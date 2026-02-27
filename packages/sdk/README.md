@@ -24,7 +24,7 @@ const sdk = new WorldsSdk({
 });
 
 // Interact with worlds, organizations, and invites.
-const world = await sdk.worlds.get("my-world-id-or-slug");
+const world = await sdk.worlds.get("my-world-id");
 ```
 
 ## Features

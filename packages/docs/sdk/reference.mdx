@@ -30,7 +30,7 @@ Interface for managing functionality related to worlds.
 Retrieves a world's metadata.
 
 ```typescript
-worlds.get(idOrSlug: string): Promise<WorldRecord | null>
+worlds.get(id: string): Promise<WorldRecord | null>
 ```
 
 #### `worlds.sparql`
@@ -60,7 +60,7 @@ worlds.search(worldId: string, query?: string, options?: {
 Updates a world's metadata.
 
 ```typescript
-worlds.update(worldId: string, data: Partial<WorldRecord>): Promise<void>
+worlds.update(id: string, data: Partial<WorldRecord>): Promise<void>
 ```
 
 #### `worlds.delete`
@@ -68,5 +68,5 @@ worlds.update(worldId: string, data: Partial<WorldRecord>): Promise<void>
 Deletes a world.
 
 ```typescript
-worlds.delete(worldId: string): Promise<void>
+worlds.delete(id: string): Promise<void>
 ```

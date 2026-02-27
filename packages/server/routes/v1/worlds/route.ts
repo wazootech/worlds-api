@@ -1,7 +1,7 @@
 import { STATUS_CODE } from "@std/http/status";
 import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid/ulid";
-import { type AuthorizedRequest, authorizeRequest } from "#/middleware/auth.ts";
+import { authorizeRequest } from "#/middleware/auth.ts";
 
 import type { ServerContext } from "#/context.ts";
 import {
@@ -33,36 +33,6 @@ import { handleETagRequest } from "#/lib/http/etag.ts";
 export default (appContext: ServerContext) => {
   const worldsService = new WorldsService(appContext.libsql.database);
 
-  /**
-   * resolveWorld resolves a world by ID or slug and checks authorization.
-   * Returns the world row if successful, or a Response if an error occurs.
-   */
-  async function resolveWorld(
-    worldIdOrSlug: string,
-    authorized: AuthorizedRequest,
-  ): Promise<WorldRow | Response> {
-    // Resolve world by ID first
-    let world = await worldsService.getById(worldIdOrSlug);
-
-    if (!world) {
-      // If not found by ID, try finding by slug
-      // We pass null for organizationId because slugs are now globally unique
-      world = await worldsService.getBySlug(worldIdOrSlug);
-    }
-
-    if (!world || world.deleted_at != null) {
-      return ErrorResponse.NotFound("World not found");
-    }
-
-    // Authorization check
-    if (!authorized.admin) {
-      // Return 404 to hide existence
-      return ErrorResponse.NotFound("World not found");
-    }
-
-    return world;
-  }
-
   return new Router()
     .get(
       "/v1/worlds/:world",
@@ -77,8 +47,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await resolveWorld(worldParam, authorized);
-        if (world instanceof Response) return world;
+        const world = await worldsService.getById(worldParam);
+        if (!world || world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         // Map to SDK record and validate against SDK schema
         const record = worldSchema.parse({
@@ -108,8 +80,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await resolveWorld(worldParam, authorized);
-        if (world instanceof Response) return world;
+        const world = await worldsService.getById(worldParam);
+        if (!world || world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         const url = new URL(ctx.request.url);
         const formatParam = url.searchParams.get("format");
@@ -181,8 +155,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await resolveWorld(worldParam, authorized);
-        if (world instanceof Response) return world;
+        const world = await worldsService.getById(worldParam);
+        if (!world || world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         const contentType = ctx.request.headers.get("Content-Type") || "";
         const serialization = getSerializationByContentType(contentType) ??
@@ -355,8 +331,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await resolveWorld(worldParam, authorized);
-        if (world instanceof Response) return world;
+        const world = await worldsService.getById(worldParam);
+        if (!world || world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         let body: unknown;
         try {
@@ -396,8 +374,10 @@ export default (appContext: ServerContext) => {
           return ErrorResponse.Unauthorized();
         }
 
-        const world = await resolveWorld(worldParam, authorized);
-        if (world instanceof Response) return world;
+        const world = await worldsService.getById(worldParam);
+        if (!world || world.deleted_at != null) {
+          return ErrorResponse.NotFound("World not found");
+        }
 
         // Perform soft delete
         await worldsService.update(world.id, {

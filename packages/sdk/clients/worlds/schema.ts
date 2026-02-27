@@ -380,7 +380,6 @@ export const worldIdsParamSchema: z.ZodType<string[]> = z.array(
  */
 export interface Log {
   id: string;
-  worldId: string;
   timestamp: number;
   level: "info" | "warn" | "error" | "debug";
   message: string;
@@ -392,7 +391,6 @@ export interface Log {
  */
 export const logSchema: z.ZodType<Log> = z.object({
   id: z.string(),
-  worldId: z.string(),
   timestamp: z.number(),
   level: z.enum(["info", "warn", "error", "debug"]),
   message: z.string(),

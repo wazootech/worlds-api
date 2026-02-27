@@ -76,8 +76,6 @@ components:
       properties:
         id:
           type: string
-        worldId:
-          type: string
         timestamp:
           type: number
         level:
@@ -90,7 +88,6 @@ components:
           nullable: true
       required:
         - id
-        - worldId
         - timestamp
         - level
         - message
@@ -322,9 +319,7 @@ paths:
 
   /worlds/{world}:
     parameters:
-      - name: world
-        in: path
-        required: true
+        description: The World ID.
         schema:
           type: string
     get:

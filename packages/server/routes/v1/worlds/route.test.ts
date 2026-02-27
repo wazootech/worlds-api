@@ -46,45 +46,6 @@ Deno.test("Worlds API routes", async (t) => {
     },
   );
 
-  await t.step(
-    "GET /v1/worlds/:world returns world metadata by slug",
-    async () => {
-      const { apiKey } = await createTestOrganization(testContext);
-      const worldId = ulid();
-      const slug = "test-world-slug-" + worldId;
-      const now = Date.now();
-      await worldsService.insert({
-        id: worldId,
-        slug: slug,
-        label: "Slug World",
-        description: "Test Description",
-        db_hostname: null,
-        db_token: null,
-        created_at: now,
-        updated_at: now,
-        deleted_at: null,
-      });
-      await testContext.libsql.manager.create(worldId);
-
-      const resp = await app.fetch(
-        new Request(
-          `http://localhost/v1/worlds/${slug}`,
-          {
-            method: "GET",
-            headers: {
-              "Authorization": `Bearer ${apiKey}`,
-            },
-          },
-        ),
-      );
-
-      assertEquals(resp.status, 200);
-      const world = await resp.json();
-      assertEquals(world.id, worldId);
-      assertEquals(world.slug, slug);
-    },
-  );
-
   await t.step("POST /v1/worlds creates a new world (Admin Only)", async () => {
     const { apiKey } = await createTestOrganization(testContext);
 

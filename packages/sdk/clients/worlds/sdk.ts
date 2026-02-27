@@ -54,9 +54,9 @@ export class Worlds {
    * get gets a world from the Worlds API.
    */
   public async get(
-    idOrSlug: string,
+    id: string,
   ): Promise<World | null> {
-    const url = new URL(`${this.options.baseUrl}/v1/worlds/${idOrSlug}`);
+    const url = new URL(`${this.options.baseUrl}/v1/worlds/${id}`);
 
     const response = await this.fetch(
       url,
@@ -107,10 +107,10 @@ export class Worlds {
    * update updates a world in the Worlds API.
    */
   public async update(
-    worldId: string,
+    id: string,
     data: UpdateWorldParams,
   ): Promise<void> {
-    const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
+    const url = new URL(`${this.options.baseUrl}/v1/worlds/${id}`);
 
     const response = await this.fetch(
       url,
@@ -133,9 +133,9 @@ export class Worlds {
    * delete deletes a world from the Worlds API.
    */
   public async delete(
-    worldId: string,
+    id: string,
   ): Promise<void> {
-    const url = new URL(`${this.options.baseUrl}/v1/worlds/${worldId}`);
+    const url = new URL(`${this.options.baseUrl}/v1/worlds/${id}`);
 
     const response = await this.fetch(
       url,
@@ -159,7 +159,7 @@ export class Worlds {
    * @see https://www.w3.org/TR/sparql11-protocol/
    */
   public async sparql(
-    worldId: string,
+    id: string,
     query: string,
     options?: {
       defaultGraphUris?: string[];
@@ -167,7 +167,7 @@ export class Worlds {
     },
   ): Promise<ExecuteSparqlOutput> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/worlds/${worldId}/sparql`,
+      `${this.options.baseUrl}/v1/worlds/${id}/sparql`,
     );
 
     if (options?.defaultGraphUris) {
@@ -210,7 +210,7 @@ export class Worlds {
    * search searches a world.
    */
   public async search(
-    worldId: string,
+    id: string,
     query: string,
     options?: {
       limit?: number;
@@ -220,7 +220,7 @@ export class Worlds {
     },
   ): Promise<TripleSearchResult[]> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/worlds/${worldId}/search`,
+      `${this.options.baseUrl}/v1/worlds/${id}/search`,
     );
 
     url.searchParams.set("query", query);
@@ -264,14 +264,14 @@ export class Worlds {
    * import imports data into a world.
    */
   public async import(
-    worldId: string,
+    id: string,
     data: string | ArrayBuffer,
     options?: {
       format?: RdfFormat;
     },
   ): Promise<void> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/worlds/${worldId}/import`,
+      `${this.options.baseUrl}/v1/worlds/${id}/import`,
     );
 
     const contentType = options?.format === "turtle"
@@ -307,11 +307,11 @@ export class Worlds {
    * ```
    */
   public async export(
-    worldId: string,
+    id: string,
     options?: { format?: RdfFormat },
   ): Promise<ArrayBuffer> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/worlds/${worldId}/export`,
+      `${this.options.baseUrl}/v1/worlds/${id}/export`,
     );
     if (options?.format) {
       url.searchParams.set("format", options.format);
@@ -335,7 +335,7 @@ export class Worlds {
    * listLogs lists the logs for a world.
    */
   public async listLogs(
-    worldId: string,
+    id: string,
     options?: {
       page?: number;
       pageSize?: number;
@@ -343,7 +343,7 @@ export class Worlds {
     },
   ): Promise<Log[]> {
     const url = new URL(
-      `${this.options.baseUrl}/v1/worlds/${worldId}/logs`,
+      `${this.options.baseUrl}/v1/worlds/${id}/logs`,
     );
 
     if (options?.page) {
