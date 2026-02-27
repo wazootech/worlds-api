@@ -82,6 +82,31 @@ console.log(result);
 // }
 ```
 
+### AI SDK tools
+
+The Worlds Platform™ AI SDK provides first-class support for LLM tool-calling.
+
+```typescript
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { WorldsSdk } from "@wazoo/worlds-sdk";
+import { createTools } from "@wazoo/worlds-ai-sdk";
+
+const sdk = new WorldsSdk({
+  baseUrl: "http://localhost:8000",
+  apiKey: "your-api-key",
+});
+
+const { text } = await generateText({
+  model: openai("gpt-4o"),
+  tools: createTools({
+    sdk,
+    sources: [{ id: "my-knowledge-base" }],
+  }),
+  prompt: "Find all people in the knowledge base and describe them.",
+});
+```
+
 ## Development
 
 Contributions are welcome! Please open an issue or submit a pull request.

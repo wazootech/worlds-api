@@ -18,6 +18,38 @@ SDK, LangChain, etc.):
 - **searchEntities**: Vector-based semantic search for entities within a world.
 - **generateIri**: Utility for generating valid IRIs for new entities based on
   descriptions.
+- **disambiguateEntities**: (Coming soon) Utility for mapping natural language
+  entities to existing IRIs.
+- **validateRdf**: (Coming soon) Utility for validating generated RDF against a
+  world.
+
+## Usage
+
+The tools are designed to work seamlessly with the
+[Vercel AI SDK](https://sdk.ai/docs/ai-sdk-core/tools-and-tool-calling).
+
+```typescript
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
+import { WorldsSdk } from "@wazoo/worlds-sdk";
+import { createTools } from "@wazoo/worlds-ai-sdk";
+
+const sdk = new WorldsSdk({
+  apiKey: process.env.WORLDS_API_KEY,
+  baseUrl: "https://api.worlds.dev",
+});
+
+const tools = createTools({
+  sdk,
+  sources: [{ id: "my-world-id" }],
+});
+
+const { text } = await generateText({
+  model: openai("gpt-4o"),
+  tools,
+  prompt: "Find all people in the knowledge base and describe them.",
+});
+```
 
 ## Reference
 
