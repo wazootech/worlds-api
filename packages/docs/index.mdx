@@ -18,47 +18,71 @@ description: "Manage, query, and reason over SPARQL-compatible knowledge bases a
 
 ## Overview
 
-**Worlds API™** is a managed neuro-symbolic infrastructure layer designed to query and reason over [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge bases at the edge. We place malleable, high-precision knowledge within arm's reach of your **agentic workflows** and **autonomous assistants**.
+**Worlds API™** is a managed neuro-symbolic infrastructure layer for querying and reasoning over [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge bases at the edge. Place malleable, high-precision knowledge within arm's reach of your **agentic workflows** and **autonomous assistants**.
 
-We operate on the concept of **Worlds**—isolated, queryable knowledge bases that your agents can interact with.
+Operate on the concept of **Worlds**—isolated, queryable knowledge bases for your agents.
 
-## Modular design
+## Modular Design
 
-The Worlds Platform™ is highly modularized to support everything from **local-first** development to **cloud-native** production environments. This is achieved through a **hot-swappable architecture** using **polymorphism** for dependency injection, ensuring that you can pivot between deployment strategies without changing your application logic.
+The Worlds Platform™ supports everything from **local-first** development to **cloud-native** production.
 
-- **Local-First**: Run the API Server and Console entirely on your machine with SQLite for zero-latency development.
-- **Hybrid**: Mix and match components, like using a local Console with a remote Turso-backed API.
-- **Cloud-Native**: Deploy to the edge with Deno Deploy and Turso for a globally distributed, scalable intelligence layer.
+- **Local-First**: Run the API Server and Console entirely on your machine.
+- **Hybrid**: Mix and match components, like a local Console with a remote Turso-backed API.
+- **Cloud-Native**: Deploy to the edge with Deno Deploy and Turso for global intelligence.
 
-This modularity cultivates a rich technical ecosystem that serves as the foundation for powerful AI-driven features.
-
-## Key features
+## Key Features
 
 <CardGroup cols={2}>
-  <Card title="SPARQL Support" icon="database" href="/concepts/sparql">
-    Full support for standard SPARQL queries and updates, powered by N3.
+  <Card title="Query with SPARQL" icon="database" href="/engine/sparql">
+    Use standard SPARQL queries and updates, powered by N3.
   </Card>
-  <Card title="Hybrid Search" icon="magnifying-glass" href="/concepts/search">
-    Semantic intuition (Vector) combined with keyword precision (FTS) and graph
-    filtering.
+  <Card
+    title="Intuitive Hybrid Search"
+    icon="magnifying-glass"
+    href="/engine/search"
+  >
+    Combine semantic intuition (Vector) with keyword precision (FTS).
   </Card>
-  <Card title="Edge Native" icon="bolt" href="/concepts/worlds">
-    Designed for high-performance edge environments.
+  <Card title="Scale at the Edge" icon="bolt" href="/engine/worlds">
+    Deploy on high-performance edge environments.
   </Card>
-  <Card title="TypeScript SDK" icon="code" href="/sdk/overview">
-    Fully typed SDK for easy integration into your applications.
+  <Card
+    title="Integrate with TypeScript"
+    icon="code"
+    href="/toolchain/sdk/overview"
+  >
+    Leverage a fully typed SDK for rapid integration.
   </Card>
 </CardGroup>
 
-## Getting started
+## Discover by Use Case
 
-To get started with Worlds API, you'll need an API key. You can generate one in the [Console](https://console.wazoo.dev).
+Build real-world applications with Worlds.
 
 <CardGroup cols={2}>
-  <Card title="Quickstart" icon="rocket" href="/quickstart">
+  <Card
+    title="Model Social Graphs"
+    icon="share-nodes"
+    href="/blueprints/social-graphs"
+  >
+    Define flexible relationships and query "Friends of Friends".
+  </Card>
+  <Card
+    title="Build Personal Search"
+    icon="fingerprint"
+    href="/blueprints/personal-search"
+  >
+    Create a private, air-gapped semantic search engine.
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/vision/quickstart">
     Create your first World and run a query in under 5 minutes.
   </Card>
-  <Card title="Authentication" icon="key" href="/authentication">
-    Learn how to authenticate your requests.
+  <Card title="Authentication" icon="key" href="/vision/authentication">
+    Secure your requests and manage API keys.
   </Card>
 </CardGroup>

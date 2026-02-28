@@ -1,0 +1,47 @@
+---
+title: "The Connector Strategy"
+description: "Transforming raw data sources into semantic Worlds."
+---
+
+In a traditional database, you "insert" data. In the **Worlds Ecosystem**, you **connect** data.
+
+The Connector Strategy is our approach to turning fragmented, unstructured, or siloed information into a cohesive, high-precision world model. Instead of treating ingestion as a one-time migration, we treat it as an ongoing stream of semantic state.
+
+## Sources vs. Statements
+
+Most platforms stop at "POSTing" data. Worlds encourages a tiered ingestion strategy:
+
+1.  **Direct Statements**: Using the [Smarql API](/schema/sparql-update) to surgically insert individual triples.
+2.  **Batch Import**: Loading entire TTL or JSON-LD files via the [Import API](/reference/server/api/worlds/import).
+3.  **Managed Connectors**: High-level scripts or tasks that bridge external APIs (Github, Notion, Slack) into RDF Triples.
+
+## The Semantic Bridge
+
+A "Connector" in Worlds is any process that performs the following three steps:
+
+### 1. Extraction (The Scraper)
+
+Pulling raw data from an external source. This could be a Github Commit, a Notion Page, or a localized JSON file.
+
+### 2. Triplification (The Mapper)
+
+This is where the "Neuro-Symbolic" magic happens. Using an LLM or a predefined schema, raw data is mapped to **RDF Triples**.
+
+- _Raw_: `{ "author": "Ethan", "text": "Hello" }`
+- _Triple_: `[User:Ethan] [says] ["Hello"]`
+
+### 3. Ingestion (The Sync)
+
+The resulting triples are pushed to a specific World ID. Using the [CLI Tasks](/toolchain/cli/tasks), you can automate this process to run on a schedule or trigger on specific events.
+
+## Why use Connectors?
+
+- **Real-time Resonance**: Your agents react to real-world changes (e.g., a new document added to Notion) instantly.
+- **Interoperability**: Data from a Slack thread and a Github Repo can live in the same "World," allowing your agent to reason across silos.
+- **Persistence**: Unlike raw RAG chunks, connected data is structured, allowing for complex queries like: _"Show me all Github contributors who have also commented in the #dev Slack channel."_
+
+---
+
+## Next Steps
+
+Learn how to automate these connectors using the **[CLI Reference](/toolchain/cli/index)** or start building your own using the **[TypeScript SDK](/toolchain/sdk/index)**.

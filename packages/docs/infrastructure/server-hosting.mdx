@@ -1,0 +1,35 @@
+---
+title: "Server Self-Hosting"
+description: "How to host a standalone instance of the Worlds API Server."
+---
+
+If you want to host a single World instance without the full Management Console, you can deploy the `packages/server` directly to any Deno-compatible environment.
+
+### Prerequisites
+
+- **Deno Runtime**: Ensure [Deno](https://deno.land) is installed.
+- **Storage**: A libSQL-compatible database (Local file or Turso).
+- **AI Provider**: (Optional) OpenRouter or a local Ollama instance.
+
+### Quick Start
+
+```bash
+# Set required environment variables
+export LIBSQL_URL="file:worlds.db"
+export WORLDS_API_KEY="your-secret-key"
+
+# Run the server
+deno task start
+```
+
+### Environment Configuration
+
+| Variable             | Purpose                                                 |
+| :------------------- | :------------------------------------------------------ |
+| `WORLDS_API_KEY`     | The Root Admin Key for the server.                      |
+| `LIBSQL_URL`         | Connection string (e.g., `libsql://...` or `file:...`). |
+| `OPENROUTER_API_KEY` | (Optional) For high-quality cloud embeddings.           |
+| `OLLAMA_BASE_URL`    | (Optional) For local/private embeddings.                |
+
+> [!NOTE]
+> Standalone servers do not support automatic multi-tenancy. For multi-org orchestration, use the [Management Console](/infrastructure/console-hosting).

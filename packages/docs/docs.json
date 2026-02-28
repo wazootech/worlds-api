@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Worlds API",
+  "name": "Worlds Docs",
   "colors": {
     "primary": "#D97706",
     "light": "#F59E0B",
@@ -11,124 +11,75 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Ecosystem",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Vision & Arrival",
             "pages": [
               "index",
-              "getting-started/quickstart",
-              "getting-started/authentication"
+              "vision/malleable-knowledge",
+              "vision/connectors",
+              "vision/visualization",
+              "vision/edge-story",
+              "vision/overview",
+              "vision/quickstart",
+              "vision/authentication"
             ]
           },
           {
-            "group": "Architecture",
+            "group": "The Engine",
             "pages": [
-              "architecture/overview",
-              "architecture/resource-hierarchy",
-              "architecture/paper"
+              "engine/architecture",
+              "engine/worlds",
+              "engine/sparql",
+              "engine/search"
             ]
           },
           {
-            "group": "Hosting",
+            "group": "The Toolchain",
             "pages": [
-              "hosting/production",
-              "hosting/configuration"
+              "toolchain/cli/index",
+              "toolchain/cli/setup",
+              "toolchain/cli/persistence",
+              "toolchain/cli/tasks",
+              "toolchain/sdk/index",
+              "toolchain/sdk/overview",
+              "toolchain/sdk/reference",
+              "toolchain/ai-sdk"
             ]
           },
           {
-            "group": "Development",
+            "group": "Infrastructure",
             "pages": [
-              "development/local-setup",
-              "development/local-persistence",
-              "development/tasks"
+              "infrastructure/server-hosting",
+              "infrastructure/console-hosting",
+              "infrastructure/configuration",
+              "infrastructure/data-privacy"
             ]
           },
           {
-            "group": "Core Concepts",
+            "group": "Blueprints (Outcomes)",
             "pages": [
-              "concepts/worlds",
-              "concepts/sparql",
-              "concepts/search"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Internal",
-        "groups": [
-          {
-            "group": "System Design",
-            "pages": [
-              "internal/design",
-              "internal/request-flow",
-              "internal/database-layer",
-              "internal/resource-pattern"
+              "blueprints/social-graphs",
+              "blueprints/personal-search"
             ]
           },
           {
-            "group": "Implementation",
+            "group": "Schema (The Blueprint)",
             "pages": [
-              "internal/routes",
-              "internal/ai-sdk",
-              "internal/deno-app-management",
-              "internal/rdf-sparql",
-              "internal/embeddings-search",
-              "internal/logging"
-            ]
-          },
-
-          {
-            "group": "Maintenance",
-            "pages": [
-              "internal/testing",
-              "internal/checklist"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "API Reference",
-        "groups": [
-          {
-            "group": "Worlds",
-            "pages": [
-              "api-reference/worlds/list",
-              "api-reference/worlds/get",
-              "api-reference/worlds/create",
-              "api-reference/worlds/update",
-              "api-reference/worlds/delete"
+              "schema/worlds-list",
+              "schema/worlds-get",
+              "schema/worlds-create",
+              "schema/worlds-update",
+              "schema/worlds-delete",
+              "schema/sparql-query",
+              "schema/sparql-update"
             ]
           },
           {
-            "group": "SPARQL",
+            "group": "Roadmap",
             "pages": [
-              "api-reference/sparql/query",
-              "api-reference/sparql/update"
-            ]
-          },
-          {
-            "group": "Search",
-            "pages": [
-              "api-reference/search/search"
-            ]
-          },
-          {
-            "group": "Policy",
-            "pages": [
-              "reference/rate-limits"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "SDKs",
-        "groups": [
-          {
-            "group": "TypeScript SDK",
-            "pages": [
-              "sdk/overview",
-              "sdk/reference"
+              "roadmap/future-work"
             ]
           }
         ]
@@ -145,14 +96,14 @@
     }
   },
   "logo": {
-    "light": "/images/wazoo.svg",
-    "dark": "/images/wazoo.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "https://github.com/EthanThatOneKid/worlds-api/issues"
+        "type": "github",
+        "href": "https://github.com/wazootech/worlds"
       }
     ],
     "primary": {
