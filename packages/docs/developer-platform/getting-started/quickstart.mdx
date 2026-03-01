@@ -1,0 +1,61 @@
+---
+title: "Quickstart"
+description: "Start building with the Worlds Platform in under 5 minutes"
+---
+
+The fastest way to experience neuro-symbolic knowledge is through the **Worlds Management Console**. No code required.
+
+## Get Started
+
+Follow these steps to create your first World and run a semantic search.
+
+<Steps>
+  <Step title="Create an Account">
+    Visit [console.wazoo.dev](https://console.wazoo.dev) and sign up. You'll be prompted to create your first **Organization** to begin.
+  </Step>
+
+<Step title="Provision a World">
+  In your organization dashboard under **My Worlds**, click on **"Create
+  World"**. - Give it a name (e.g., "My First World"). - Click **Create**. Your
+  World will be provisioned instantly.
+</Step>
+
+  <Step title="Add Knowledge">
+    Select your world and navigate to the **SPARQL** tab. Paste the following triples into the editor to define a simple concept:
+
+    ```sparql
+    INSERT DATA {
+      <http://example.org/ethan> <http://schema.org/name> "Ethan" .
+      <http://example.org/ethan> <http://schema.org/jobTitle> "Software Engineer" .
+    }
+    ```
+    Click **Execute**.
+
+  </Step>
+
+  <Step title="Run a Semantic Search">
+    Head over to the **Search** tab. Type a natural language question like:
+    
+    > "Find the software engineer"
+
+    The Worlds Platform uses its underlying vector embeddings to find the most relevant nodes. Click **Search Triples** to see the results.
+
+  </Step>
+</Steps>
+
+## Next Steps
+
+Now that you've experienced Worlds via the UI, you're ready to integrate it into your own applications.
+
+<CardGroup cols={2}>
+  <Card
+    title="Programmatic Access"
+    icon="code"
+    href="/api-integrations/sdk-overview"
+  >
+    Learn how to use the TypeScript SDK to automate your Worlds.
+  </Card>
+  <Card title="Core Concepts" icon="brain" href="/developer-platform/concepts/worlds">
+    Understand the architecture of polymorphic Worlds.
+  </Card>
+</CardGroup>

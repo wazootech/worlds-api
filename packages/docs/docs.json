@@ -11,75 +11,97 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Ecosystem",
+        "tab": "Developer Platform",
+        "icon": "book-open",
         "groups": [
           {
-            "group": "Vision & Arrival",
+            "group": "Getting Started",
             "pages": [
-              "index",
-              "vision/malleable-knowledge",
-              "vision/connectors",
-              "vision/visualization",
-              "vision/edge-story",
-              "vision/overview",
-              "vision/quickstart",
-              "vision/authentication"
+              "developer-platform/getting-started/index",
+              "developer-platform/getting-started/quickstart"
             ]
           },
           {
-            "group": "The Engine",
+            "group": "Concepts & Architecture",
             "pages": [
-              "engine/architecture",
-              "engine/worlds",
-              "engine/sparql",
-              "engine/search"
-            ]
-          },
-          {
-            "group": "The Toolchain",
-            "pages": [
-              "toolchain/cli/index",
-              "toolchain/cli/setup",
-              "toolchain/cli/persistence",
-              "toolchain/cli/tasks",
-              "toolchain/sdk/index",
-              "toolchain/sdk/overview",
-              "toolchain/sdk/reference",
-              "toolchain/ai-sdk"
+              "developer-platform/concepts/overview",
+              "developer-platform/concepts/malleable-knowledge",
+              "developer-platform/concepts/architecture",
+              "developer-platform/concepts/worlds",
+              "developer-platform/concepts/connectors",
+              "developer-platform/concepts/data-privacy"
             ]
           },
           {
             "group": "Infrastructure",
             "pages": [
-              "infrastructure/server-hosting",
-              "infrastructure/console-hosting",
-              "infrastructure/configuration",
-              "infrastructure/data-privacy"
+              "developer-platform/infrastructure/server-hosting",
+              "developer-platform/infrastructure/local-setup",
+              "developer-platform/infrastructure/configuration",
+              "developer-platform/infrastructure/whitepaper"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Integrations",
+        "icon": "plug",
+        "groups": [
+          {
+            "group": "Native SDKs",
+            "pages": [
+              "api-integrations/sdk-overview",
+              "api-integrations/sdk"
             ]
           },
           {
-            "group": "Blueprints (Outcomes)",
+            "group": "Frameworks",
             "pages": [
-              "blueprints/social-graphs",
-              "blueprints/personal-search"
+              "api-integrations/frameworks/ai-sdk",
+              "api-integrations/frameworks/vercel-ai",
+              "api-integrations/frameworks/langchain",
+              "api-integrations/frameworks/openai"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "icon": "code",
+        "groups": [
+          {
+            "group": "API Basics",
+            "pages": [
+              "api-reference/basics/authentication",
+              "api-reference/basics/search",
+              "api-reference/basics/sparql",
+              "api-reference/basics/sparql-query",
+              "api-reference/basics/sparql-update"
             ]
           },
           {
-            "group": "Schema (The Blueprint)",
+            "group": "World Operations",
             "pages": [
-              "schema/worlds-list",
-              "schema/worlds-get",
-              "schema/worlds-create",
-              "schema/worlds-update",
-              "schema/worlds-delete",
-              "schema/sparql-query",
-              "schema/sparql-update"
+              "api-reference/worlds/worlds-list",
+              "api-reference/worlds/worlds-create",
+              "api-reference/worlds/worlds-get",
+              "api-reference/worlds/worlds-update",
+              "api-reference/worlds/worlds-delete"
             ]
-          },
+          }
+        ]
+      },
+      {
+        "tab": "Cookbook",
+        "icon": "hat-chef",
+        "groups": [
           {
-            "group": "Roadmap",
+            "group": "Guides",
             "pages": [
-              "roadmap/future-work"
+              "cookbook/social-graphs",
+              "cookbook/personal-search",
+              "cookbook/cli-tasks",
+              "cookbook/vibe-coding"
             ]
           }
         ]

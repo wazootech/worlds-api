@@ -1,0 +1,46 @@
+---
+title: "The Edge Story"
+description: "Why high-precision intelligence belongs at the Edge."
+---
+
+Worlds API is designed with an **Edge-First** philosophy. By leveraging the power of **Deno** and **Turso**, we move the symbolic reasoning layer as close to your users (and agents) as physically possible.
+
+## The Latency of Intelligence
+
+In a traditional architecture, an AI agent often has to perform multiple round-trips:
+
+1.  **Agent -> LLM**: Probability extraction.
+2.  **Agent -> Database (Centralized)**: Fact retrieval.
+3.  **Agent -> SDK**: Logic processing.
+
+When your database is centralized in a single region (e.g., `us-east-1`), an agent running in Europe or Asia suffers hundreds of milliseconds of latency on every knowledge lookup. In a multi-step agentic loop, this latency compounds, making autonomous assistants feel slow and "laggy."
+
+## The World at the Edge
+
+By deploying Worlds at the edge, we achieve **Global Resonance**:
+
+### 1. Zero-Latency Knowledge
+
+Using **Turso**, we replicate your World's symbolic state to edge regions globally. When an agent in Tokyo queries a World, it hits a local replica. Knowledge retrieval happens in milliseconds, not hundreds.
+
+### 2. Deno Native
+
+The Worlds API Server is built on **Deno**, the most performant runtime for edge compute. This allows for near-instant cold starts and highly efficient handling of concurrent SPARQL queries.
+
+### 3. Isolated Reasoning
+
+Each World is an isolated primitive. You can deploy specific knowledge bases to specific regions based on where your agents are operating, ensuring data residency and performance are optimized.
+
+## Architecture Checklist
+
+To get the most out of the Edge Story, follows these best practices:
+
+- **Deploy to Deno Deploy**: Use our managed or self-hosted edge templates.
+- **Use Turso Remote**: Connect your API Server to a Turso database with global replication enabled.
+- **Local-First Sync**: Develop locally with a local SQLite file, then push to the edge with a single CLI task.
+
+---
+
+## Next Steps
+
+Ready to deploy your first edge-native World? Head over to the **[API Server Hosting Guide](/developer-platform/infrastructure/server-hosting)** to see our deployment blueprints.

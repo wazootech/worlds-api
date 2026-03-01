@@ -1,6 +1,6 @@
 # Worlds API Documentation
 
-This repository contains the official documentation for the **Worlds API™**,
+This repository contains the official documentation for the **Worlds API**,
 built with [Mintlify](https://mintlify.com).
 
 ## Overview

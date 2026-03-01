@@ -1,0 +1,32 @@
+---
+title: "How Your Data is Stored"
+description: "Transparency regarding data residency and privacy in the Worlds Platform."
+---
+
+We believe in data transparency. This guide explains exactly where your information lives depending on your deployment mode.
+
+### Local Development (Ollama/SQLite)
+
+In local development mode, **no data ever leaves your machine**.
+
+- **Metadata**: Stored in a local `.db` file in your repository.
+- **Embeddings**: Generated via **Ollama** running on your local GPU/CPU.
+- **Privacy**: 100% private and air-gapped.
+
+### Standalone Server (Self-Hosted)
+
+When you self-host a Worlds API Server:
+
+- **Metadata**: Stored in your specified `LIBSQL_URL` (could be local or a private Turso instance).
+- **Embeddings**: If using **OpenRouter**, text snippets are sent to their API for vectorization. If using **Ollama**, it remains private.
+
+### Managed Platform (Console)
+
+When using the full Management Console:
+
+- **Auth Data**: Managed by **WorkOS** (SSO/AuthKit).
+- **Orchestrated Worlds**: Each world gets its own dedicated **Turso** database and **Deno Deploy** worker.
+- **Data Residency**: You can choose your Turso/Deno regions during organization setup to ensure data proximity.
+
+> [!IMPORTANT]
+> The Worlds Platform does not "phone home" or collect telemetry from self-hosted instances. Your data is your own.

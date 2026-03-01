@@ -1,0 +1,48 @@
+---
+title: "The Visualizer"
+description: "Representing and interacting with the Symbolic State."
+---
+
+While the Worlds API is local-first and headless by default, the **Symbolic State** of a World is inherently spatial. Visualizing the relationships (triples) within a World is critical for debugging agentic reasoning and understanding the "shape" of your knowledge base.
+
+## The Mental Model
+
+In Worlds, your data isn't a table; it's a **Directed Graph**.
+
+- **Nodes**: Subjects and Objects (Entities).
+- **Edges**: Predicates (Relationships).
+
+## Visualizing via the Console
+
+The fastest way to see your World is through the **Worlds Management Console**.
+
+- **Graph Explorer**: A force-directed graph view where you can click nodes to expand their relationships.
+- **Query Inspector**: Visualize the results of [SPARQL Select](/api-reference/basics/sparql-query) queries as interactive tables or JSON-LD trees.
+
+## Custom Visualization (SDK)
+
+If you are building a custom UI or agentic dashboard, you can use the [TypeScript SDK](/getting-started/sdk-index) to pull graph data and feed it into modern visualization libraries.
+
+### 1. D3.js / Force-Directed Graphs
+
+Perfect for large-scale social graphs or complex supply chains. You can map `Subject -> Object` as link pairs.
+
+### 2. React-Flow / Cytoscape
+
+Ideal for "Chain of Thought" or memory block visualization, where entities are represented as nodes in a controllable canvas.
+
+### 3. Kinopio-Style Spatial Thinking
+
+Inspired by tools like **Kinopio**, you can treat Worlds as a "Spatial Canvas" where an agent organizes its thoughts as cards and connections.
+
+## Why Visualize?
+
+1.  **Hallucination Debugging**: If an agent reaches a wrong conclusion, visualizing the "path" it took through the graph can reveal missing or incorrect triples.
+2.  **Breadth Discovery**: Seeing the density of connections helps you identify "Knowledge Hubs" (nodes with many predicates) that might be over-weighted in RAG context.
+3.  **Audit Trails**: Show human operators exactly which facts were used to generate an agent's response.
+
+---
+
+## Next Steps
+
+Check out the **[Management Console Guide](/cookbook/console-hosting)** to see the built-in visualizer in action, or start building your own using our **[SPARQL Reference](/api-reference/basics/sparql)**.
