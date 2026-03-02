@@ -27,21 +27,21 @@ Common tasks can be run from the root of the repository:
 
 Adding knowledge (often referred to as "memories" in agentic contexts) to the Worlds ecosystem can be achieved through multiple entry points, depending on your environment and use case.
 
-### 1. Management Console
+### Management Console
 
 The easiest way to ingest data during development is through the **Console UI**.
 
 - **Batch Upload**: Drag and drop JSON-LD or Turtle files directly into a World.
 - **Manual Entry**: Edit triples directly in the Graph Explorer for precise knowledge management.
 
-### 2. Remote & Local API
+### Remote & Local API
 
 For programmatic ingestion, use the REST API endpoints. This is the primary method for production applications.
 
 - **`POST /v1/worlds/{id}/statements`**: Add individual or batches of RDF statements.
 - **`POST /v1/worlds/{id}/import`**: Import entire datasets for initialization.
 
-### 3. CLI Ingestion
+### CLI Ingestion
 
 The CLI can be used for local-first automation and CI/CD pipelines.
 

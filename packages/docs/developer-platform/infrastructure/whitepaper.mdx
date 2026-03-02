@@ -79,18 +79,13 @@ with 100% accuracy, acting as an extension of your own mind.
 
 We adhere to core philosophical pillars to guide technical decisions:
 
-- **Bring Your Own Brain (BYOB)**: The API is agnostic to the intelligence
-  layer. Whether using OpenAI, Anthropic, or local models, the "World" acts as a
-  detachable hippocampus.
-- **Calm Technology**: Developer tooling should be invisible. We target
-  "Zero-Config" experiences where complex graph management is abstracted away.
-- **Edge-First**: Knowledge must be retrieved in milliseconds. The architecture
-  is designed for distributed runtimes (Deno Deploy, Cloudflare Workers).
-- **Malleable Knowledge**: Data is not static. "Worlds" are designed to be
-  forked, merged, and mutated by agents in real-time.
-- **The "Small Web"**: A future where users maintain autonomy, control their
-  data, and operate in an interoperable ecosystem built on open standards (RDF)
-  and universal protocols (MCP) rather than proprietary locks.
+- **Bring Your Own Brain (BYOB)**: The API is agnostic to the intelligence layer. Whether using OpenAI, Anthropic, or local models, the "World" acts as a detachable hippocampus.
+- **Calm Technology**: Developer tooling should be invisible. We target "Zero-Config" experiences where complex graph management is abstracted away.
+- **Edge-First**: Knowledge must be retrieved in milliseconds. The architecture is designed for distributed runtimes (Deno Deploy, Cloudflare Workers).
+- **Malleable Knowledge**: Data is not static. "Worlds" are designed to be forked, merged, and mutated by agents in real-time.
+- **The Local-First Manifesto**: A commitment to high-privacy, durable, and private knowledge management. Users maintain 100% ownership and copyright of their markdown and RDF files.
+- **Secure Cloud-Bridging**: While maintaining local-first integrity, Worlds provides the secure infrastructure required to bridge local vaults with managed cloud-based environments. This helps developers navigate how data safely flows between open-source, offline setups and enterprise-SaaS architectures via scoped API keys and strict tenant isolation.
+- **The "Small Web"**: A future where users maintain autonomy, control their data, and operate in an interoperable ecosystem built on permissive open-source standards (Apache 2.0) rather than proprietary locks.
 
 ---
 
@@ -150,14 +145,14 @@ graph LR
 
 ### Component breakdown
 
-1. **The SDK**: A canonical TypeScript client that handles authentication and
-   type-safe API requests. It acts as the bridge between "neural" code (LLMs)
-   and "symbolic" data.
-2. **The Server**: A minimal Deno-based HTTP server handling SPARQL execution
-   and graph management.
-3. **Forward-Sync Search Store**: A proprietary mechanism that replicates RDF
-   data patches into optimized search stores, enabling full-text and semantic
-   search over structured triples.
+- **The SDK**: A canonical TypeScript client that handles authentication and
+  type-safe API requests. It acts as the bridge between "neural" code (LLMs)
+  and "symbolic" data.
+- **The Server**: A minimal Deno-based HTTP server handling SPARQL execution
+  and graph management.
+- **Forward-Sync Search Store**: A proprietary mechanism that replicates RDF
+  data patches into optimized search stores, enabling full-text and semantic
+  search over structured triples.
 
 ---
 
@@ -206,12 +201,9 @@ index research (maintaining optimal performance for any triple pattern):
 We utilize **Reciprocal Rank Fusion (RRF)** to combine results from distinct
 indices into a single, unified relevance ranking:
 
-1. **Semantic Search (Vector Index)**: Captures conceptual meaning using
-   high-dimensional embeddings (1536-dim).
-2. **Keyword Search (FTS5)**: Provides exact term matching using the BM25
-   ranking algorithm.
-3. **Graph Context**: Restricts search results based on structural RDF
-   relationships (subject/predicate filters).
+- **Semantic Search (Vector Index)**: Captures conceptual meaning using high-dimensional embeddings (1536-dim).
+- **Keyword Search (FTS5)**: Provides exact term matching using the BM25 ranking algorithm.
+- **Graph Context**: Restricts search results based on structural RDF relationships (subject/predicate filters).
 
 The fusion algorithm follows the industry-standard RRF formula:
 
@@ -253,17 +245,17 @@ While RRF provides a strong initial ranking, complex knowledge graphs often
 contain ambiguous entities or near-identical triples. To ensure 100% reasoning
 integrity, we support two downstream refinement strategies:
 
-1. **Reranking**: Higher-latency cross-encoder models can be used to rerank the
-   top-K results from the hybrid search, providing a more nuanced semantic
-   alignment before the data reaches the agent's context.
-2. **Human-In-The-Loop (HITL)**: When the system identifies low-confidence
-   matches or multiple conflicting entities, the "Malleable" nature of Worlds
-   allows the UI to present disambiguation prompts to the user.
-3. **Outcome-Based Determinism**: By utilizing reification in Context Graphs,
-   relationships become first-class entities. If a structural anomaly is
-   detected during traversal, the system triggers an intervention. This shifts
-   the focus of trust from eliminating uncertainty to managing it through
-   rigorous, auditable verification.
+### Reranking
+
+Higher-latency cross-encoder models can be used to rerank the top-K results from the hybrid search, providing a more nuanced semantic alignment before the data reaches the agent's context.
+
+### Human-In-The-Loop (HITL)
+
+When the system identifies low-confidence matches or multiple conflicting entities, the "Malleable" nature of Worlds allows the UI to present disambiguation prompts to the user.
+
+### Outcome-Based Determinism
+
+By utilizing reification in Context Graphs, relationships become first-class entities. If a structural anomaly is detected during traversal, the system triggers an intervention. This shifts the focus of trust from eliminating uncertainty to managing it through rigorous, auditable verification.
 
 ---
 
@@ -287,14 +279,14 @@ The SDK provides drop-in tools for the Vercel AI SDK and other agent frameworks:
 ### Standardized Interoperability (MCP) & Plugins
 
 Worlds is designed to be **Agent-Ready** from the first request. We embrace
-the **Model Context Protocol (MCP)** as the "USB-C for AI integrations." By
-operating as a dedicated Context Layer, Worlds allows host applications
-(like Claude Code or Cursor) to securely interface with private knowledge graphs
-without raw, unfettered access.
+the **Model Context Protocol (MCP)** as an interoperable standard. By
+operating as a dedicated Context Layer, Worlds allows host applications—such as
+contextual coding agents—to securely interface with private knowledge graphs
+and autonomously index raw SDK source code without hallucinations.
 
 Furthermore, we provide official plugins and extensions for popular agent
 harnesses, including **Claude Code plugins** and **Gemini CLI extensions**,
-enabling developers to bootstrap memory-augmented agents in seconds.
+enabling developers to bootstrap memory-augmented agents with resilient cross-session memory in seconds.
 
 ### The invisible SPARQL agent
 

@@ -32,7 +32,7 @@
             ]
           },
           {
-            "group": "Concepts & Architecture",
+            "group": "Core Concepts",
             "pages": [
               "developer-platform/concepts/index",
               "developer-platform/concepts/entities",

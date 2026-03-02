@@ -16,7 +16,7 @@ The **Worlds SDK** is the most powerful way to interact with your knowledge grap
 
 ## Feature Highlights
 
-### 1. Type-Safe SPARQL
+### Type-Safe SPARQL
 
 The SDK handles the plumbing of SPARQL requests, including authentication and response parsing, while keeping your queries type-safe.
 
@@ -31,7 +31,7 @@ const result = await sdk.worlds.sparql(
 );
 ```
 
-### 2. Hybrid Search
+### Hybrid Search
 
 Combine vector similarity with full-text search. This is ideal for finding information when you only have a vague concept or a natural language question.
 
@@ -39,7 +39,7 @@ Combine vector similarity with full-text search. This is ideal for finding infor
 const searchResults = await sdk.worlds.search(worldId, "conceptual question");
 ```
 
-### 3. AI Tool-Calling
+### AI Tool-Calling
 
 The SDK exposes your Worlds as tools that adhere to the standard [AI SDK tool interface](https://ai-sdk.dev/docs/foundations/tools), making them directly compatible with various LLM orchestrators (like Vercel AI SDK, LangChain, and others) to allow agents to "read and write" to the graph.
 
