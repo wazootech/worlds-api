@@ -5,14 +5,36 @@ info:
   description: API for managing and querying RDF-based "worlds".
 
 servers:
-  - url: /v1
-    description: V1 API
+  - url: https://api.wazoo.dev/v1
+    description: Production API
+  - url: http://localhost:3000/v1
+    description: Local API
 
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
 
   schemas:
     World:
@@ -25,9 +47,6 @@ components:
         label:
           type: string
         description:
-          type: string
-          nullable: true
-        organizationId:
           type: string
           nullable: true
         createdAt:
@@ -47,6 +66,8 @@ components:
     CreateWorldParams:
       type: object
       properties:
+        id:
+          type: string
         slug:
           type: string
         label:
@@ -54,8 +75,6 @@ components:
         description:
           type: string
           nullable: true
-        organizationId:
-          type: string
       required:
         - slug
         - label
@@ -114,8 +133,6 @@ components:
           type: number
         worldId:
           type: string
-        organizationId:
-          type: string
       required:
         - subject
         - predicate
@@ -123,7 +140,6 @@ components:
         - score
 
     SparqlResults:
-      type: object
       oneOf:
         - $ref: "#/components/schemas/SparqlSelectResults"
         - $ref: "#/components/schemas/SparqlAskResults"
@@ -189,8 +205,13 @@ components:
 
     SparqlValue:
       type: object
+      description: A SPARQL value (URI, Blank Node, or Literal)
       discriminator:
         propertyName: type
+      oneOf:
+        - $ref: "#/components/schemas/SparqlUriValue"
+        - $ref: "#/components/schemas/SparqlBnodeValue"
+        - $ref: "#/components/schemas/SparqlLiteralValue"
       properties:
         type:
           type: string
@@ -200,20 +221,40 @@ components:
       required:
         - type
         - value
-      oneOf:
-        - properties:
-            type:
-              const: uri
-        - properties:
-            type:
-              const: bnode
-        - properties:
-            type:
-              const: literal
-            xml:lang:
-              type: string
-            datatype:
-              type: string
+
+    SparqlUriValue:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [uri]
+        value:
+          type: string
+      required: [type, value]
+
+    SparqlBnodeValue:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [bnode]
+        value:
+          type: string
+      required: [type, value]
+
+    SparqlLiteralValue:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [literal]
+        value:
+          type: string
+        xml:lang:
+          type: string
+        datatype:
+          type: string
+      required: [type, value]
 
     SparqlQuad:
       type: object
@@ -231,7 +272,7 @@ components:
           properties:
             type:
               type: string
-              const: uri
+              enum: [uri]
             value:
               type: string
         object:
@@ -489,6 +530,12 @@ paths:
             type: array
             items:
               type: string
+        - name: types
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
         - name: limit
           in: query
           schema:
@@ -513,7 +560,8 @@ paths:
 
   /worlds/{world}/sparql:
     get:
-      summary: Execute SPARQL query or get service description
+      summary: SPARQL Query / Service Description
+      description: Executes a SPARQL 1.1 Query or retrieves the Service Description if no query is provided.
       parameters:
         - name: world
           in: path
@@ -522,16 +570,19 @@ paths:
             type: string
         - name: query
           in: query
+          description: SPARQL query to execute.
           schema:
             type: string
         - name: default-graph-uri
           in: query
+          description: Default graph URIs.
           schema:
             type: array
             items:
               type: string
         - name: named-graph-uri
           in: query
+          description: Named graph URIs.
           schema:
             type: array
             items:
@@ -540,15 +591,18 @@ paths:
         "200":
           description: Success
           content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SparqlResults"
             application/sparql-results+json:
               schema:
                 $ref: "#/components/schemas/SparqlResults"
             text/turtle:
-              description: SPARQL Service Description
-              schema: { type: string }
+              schema:
+                type: string
             application/rdf+xml:
-              description: SPARQL Service Description
-              schema: { type: string }
+              schema:
+                type: string
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -557,7 +611,8 @@ paths:
           $ref: "#/components/responses/NotFound"
 
     post:
-      summary: Execute SPARQL query or update
+      summary: SPARQL Query / Update
+      description: Executes a SPARQL 1.1 Query or Update.
       parameters:
         - name: world
           in: path
@@ -599,24 +654,3 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
-
-components:
-  responses:
-    BadRequest:
-      description: Bad Request
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    NotFound:
-      description: Not Found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"

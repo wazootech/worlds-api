@@ -83,25 +83,31 @@
       {
         "tab": "API Reference",
         "icon": "code",
+        "openapi": ["openapi.yaml"],
         "groups": [
           {
             "group": "API Basics",
             "pages": [
               "api-reference/basics/authentication",
               "api-reference/basics/search",
-              "api-reference/basics/sparql",
-              "api-reference/basics/sparql-query",
-              "api-reference/basics/sparql-update"
+              "api-reference/basics/sparql"
             ]
           },
           {
-            "group": "World Operations",
+            "group": "Endpoints",
+            "expanded": false,
             "pages": [
-              "api-reference/worlds/worlds-list",
-              "api-reference/worlds/worlds-create",
-              "api-reference/worlds/worlds-get",
-              "api-reference/worlds/worlds-update",
-              "api-reference/worlds/worlds-delete"
+              "GET /worlds",
+              "POST /worlds",
+              "GET /worlds/{world}",
+              "PUT /worlds/{world}",
+              "DELETE /worlds/{world}",
+              "GET /worlds/{world}/search",
+              "GET /worlds/{world}/sparql",
+              "POST /worlds/{world}/sparql",
+              "GET /worlds/{world}/logs",
+              "GET /worlds/{world}/export",
+              "POST /worlds/{world}/import"
             ]
           }
         ]
