@@ -3,83 +3,92 @@ title: "Introduction"
 description: "Manage, query, and reason over SPARQL-compatible knowledge bases at the edge."
 ---
 
-<Frame>
-  <img
-    className="block dark:hidden"
-    src="/images/wazoo.svg"
-    alt="Worlds API hero image light"
-  />
-  <img
-    className="hidden dark:block"
-    src="/images/wazoo.svg"
-    alt="Worlds API hero image dark"
-  />
-</Frame>
+## Documentation Index
+
+<Card title="llms.txt" icon="robot" href="/llms.txt">
+  Fetch the complete documentation index for AI discovery. Use this file to
+  provide broad context to your agents.
+</Card>
 
 ## Overview
 
-**Worlds API** is a managed neuro-symbolic infrastructure layer for querying and reasoning over [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge bases at the edge. Place malleable, high-precision knowledge within arm's reach of your **agentic workflows** and **autonomous assistants**.
+**Worlds API** is the foundational **Neuro-Symbolic Context Stack**. It provides the infrastructure to build AI agents with a persistent, mutable, and logically traceable memory—a detachable hippocampus for the next generation of autonomous assistants.
 
-Operate on the concept of **Worlds**—isolated, queryable knowledge bases for your agents.
+By fusing **Statistical Intuition** (Neural/Vector) with **Logical Precision** (Symbolic/RDF), Worlds API enables agents to navigate a verified map of reality rather than just predicting the next token.
 
-## Modular design
+## How it works (at a glance)
 
-The Worlds Platform supports everything from **local-first** development to **cloud-native** production.
+Worlds API transforms how agents retain and use knowledge through a structured 4-step pipeline:
 
-- **Local-First**: Run the API Server and Console entirely on your machine.
-- **Hybrid**: Mix and match components, like a local Console with remote Worlds APIs deployed on Deno Deploy.
-- **Cloud-Native**: Deploy to the edge with Deno Deploy and Turso for global intelligence.
+- **Ingest**: Sync and extract facts from text, files, and external connectors.
+- **Structure**: Materialize "Malleable Knowledge" into a logically consistent RDF graph.
+- **Reason**: Execute complex symbolic traversals via **SPARQL** to discover non-obvious relationships.
+- **Query**: Retrieve high-precision context using **Hybrid Search** (Vector similarity + Keyword precision + Graph filters).
 
-## Key features
+---
+
+## One Stack, Four Modules
+
+Position your agents on a foundation of structured intelligence.
 
 <CardGroup cols={2}>
   <Card
-    title="Query with SPARQL"
-    icon="database"
-    href="/api-reference/basics/sparql"
+    title="Agent Memory"
+    icon="brain-circuit"
+    href="/developer-platform/concepts/malleable-knowledge"
   >
-    Use standard SPARQL queries and updates, powered by N3.
+    Learned user context and profiles that handle temporal changes,
+    forgetfulness, and real-time evolution.
   </Card>
   <Card
-    title="Hybrid search"
+    title="Content Extraction"
+    icon="wand-magic-sparkles"
+    href="/developer-platform/concepts/connectors"
+  >
+    Transform messy data streams into deterministic triples using the Worlds
+    high-performance ingestion engine.
+  </Card>
+  <Card
+    title="Knowledge Graphs"
+    icon="diagram-project"
+    href="/api-reference/basics/sparql-query"
+  >
+    The unique Worlds moat: 100% auditable symbolic reasoning powered by N3 and
+    SPARQL at the edge.
+  </Card>
+  <Card
+    title="Managed RAG"
     icon="magnifying-glass"
     href="/api-reference/basics/search"
   >
-    Combine semantic intuition (vector) with keyword precision (FTS).
-  </Card>
-  <Card
-    title="Scale at the Edge"
-    icon="bolt"
-    href="/developer-platform/concepts/worlds"
-  >
-    Deploy on high-performance edge environments.
-  </Card>
-  <Card
-    title="Integrate with TypeScript"
-    icon="code"
-    href="/api-integrations/sdk-overview"
-  >
-    Leverage a fully typed SDK for rapid integration.
+    Move beyond simple RAG with advanced hybrid search and structural graph
+    constraints.
   </Card>
 </CardGroup>
 
-## Explore by Ecosystem
+## The Moat: Neuro-Symbolic Precision
 
-Worlds integrates with the tools you already use.
+Standard RAG relies on vector similarity, which often fails at logical consistency and complex relationship discovery. Worlds API is built on a **Neuro-Symbolic** architecture:
+
+- **Vector (Intuition)**: Finds "cozy" vibes and semantic similarities.
+- **SPARQL (Logic)**: Answers precise questions like "Who is the CEO of the company founded in 2024?".
+- **Edge Deployment**: In-memory N3 stores and WASM-compiled SQLite provide millisecond latency globally.
+
+## Foundational Interoperability
+
+Worlds API is "the abstraction that powers abstractions." It is an underlying engine designed to power personalized AI assistants, enterprise-grade reasoning engines, and consumer context platforms.
+
+## Explore by Ecosystem
 
 <CardGroup cols={3}>
   <Card title="Vibe Coding" icon="bolt" href="/cookbook/vibe-coding">
     Build with AI agents.
   </Card>
-  <Card
-    title="API Integrations"
-    icon="plug"
-    href="/api-integrations/frameworks/vercel-ai"
-  >
+  <Card title="Frameworks" icon="plug" href="/api-integrations/sdk-overview">
     AI SDK, LangChain, OpenAI.
   </Card>
   <Card title="Cookbook" icon="hat-chef" href="/cookbook/social-graphs">
-    Industry-specific logic.
+    Advanced logic guides.
   </Card>
 </CardGroup>
 

@@ -7,6 +7,9 @@
     "light": "#F59E0B",
     "dark": "#78350F"
   },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude"]
+  },
   "favicon": "/images/wazoo.svg",
   "navigation": {
     "tabs": [
@@ -29,7 +32,10 @@
               "developer-platform/concepts/architecture",
               "developer-platform/concepts/worlds",
               "developer-platform/concepts/connectors",
-              "developer-platform/concepts/data-privacy"
+              "developer-platform/concepts/data-privacy",
+              "developer-platform/concepts/visualization",
+              "developer-platform/concepts/edge-story",
+              "developer-platform/concepts/future-work"
             ]
           },
           {
@@ -38,7 +44,9 @@
               "developer-platform/infrastructure/server-hosting",
               "developer-platform/infrastructure/local-setup",
               "developer-platform/infrastructure/configuration",
-              "developer-platform/infrastructure/whitepaper"
+              "developer-platform/infrastructure/whitepaper",
+              "developer-platform/infrastructure/console-hosting",
+              "developer-platform/infrastructure/cli-persistence"
             ]
           }
         ]
