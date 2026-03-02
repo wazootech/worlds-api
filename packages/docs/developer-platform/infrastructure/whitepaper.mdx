@@ -16,17 +16,17 @@ capability is not equivalent to knowledge. While Retrieval-Augmented Generation
 capture the intricate structural relationships required for complex reasoning
 and "traceability" of facts.
 
-**Worlds API** is a managed neuro-symbolic infrastructure layer—a "World
+**Worlds** is a managed neuro-symbolic infrastructure layer—a "World
 Engine"—that acts as a detachable hippocampus for AI agents. By combining an
 in-memory SPARQL-compatible RDF store (n3) with edge-distributed SQLite for
-persistence, Worlds API enables agents to maintain mutable, structured knowledge
+persistence, Worlds enables agents to maintain mutable, structured knowledge
 graphs. This system implements a hybrid architecture fusing **Vector Search**
 (semantic intuition) with **Symbolic Logic** (RDF/SPARQL precision), empowering
 agents to navigate a persistent, interoperable map of reality rather than just
 predicting the next token.
 
 By 2026, the artificial intelligence industry has fundamentally realigned around
-**Fluid Intelligence** and **Outcome-Based Determinism**. Worlds API provides the
+**Fluid Intelligence** and **Outcome-Based Determinism**. Worlds provides the
 necessary structural scaffolding to guarantee reliable, auditable, and
 explainable end results even within probabilistic agentic workflows. This
 infrastructure is the backbone of the "Small Web," enabling true data ownership
@@ -64,9 +64,9 @@ occurs because vector search struggles with:
    hindering the **Interoperability** required for a truly personal or
    autonomous AI entity.
 
-### The solution: Worlds API
+### The solution: Worlds
 
-We propose **Worlds API**, a system designated to provide **Malleable
+We propose **Worlds**, a system designated to provide **Malleable
 Knowledge** within arm's reach of the AI agent. Unlike static knowledge bases,
 "Worlds" are dynamic, graph-based environments that agents can query, update,
 and reason over in real-time.
@@ -116,7 +116,7 @@ graph LR
         Auth[Auth Service]
     end
 
-    subgraph Edge ["Worlds API"]
+    subgraph Edge ["Worlds"]
         direction TB
         Guard{Auth Guard}
         N3[("n3<br/><i>Hot Memory</i>")]
@@ -146,7 +146,7 @@ graph LR
 - **Wazoo Technologies**: The parent company providing enterprise-grade
   stability.
 - **FartLabs**: The R&D division (Subsidiary) focused on neuro-symbolic research
-  and the development of the Worlds API.
+  and the development of Worlds.
 
 ### Component breakdown
 
@@ -286,9 +286,9 @@ The SDK provides drop-in tools for the Vercel AI SDK and other agent frameworks:
 
 ### Standardized Interoperability (MCP) & Plugins
 
-Worlds API is designed to be **Agent-Ready** from the first request. We embrace
+Worlds is designed to be **Agent-Ready** from the first request. We embrace
 the **Model Context Protocol (MCP)** as the "USB-C for AI integrations." By
-operating as a dedicated Context Layer, Worlds API allows host applications
+operating as a dedicated Context Layer, Worlds allows host applications
 (like Claude Code or Cursor) to securely interface with private knowledge graphs
 without raw, unfettered access.
 

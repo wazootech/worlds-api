@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Worlds API
+  title: Worlds API Specification
   version: 1.0.0
   description: API for managing and querying RDF-based "worlds".
 

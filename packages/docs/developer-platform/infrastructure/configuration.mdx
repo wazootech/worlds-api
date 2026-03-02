@@ -1,6 +1,6 @@
 ---
 title: "Configuration Reference"
-description: "Environment variables for the Console and Worlds API Server."
+description: "Environment variables for the Console and World Server."
 ---
 
 The platform switches between modes based on the presence of specific environment variables.
@@ -31,14 +31,14 @@ By default, the Worlds Platform uses **Ollama** for local embeddings. This ensur
 
 ### Embedding Provider Selection
 
-The Worlds API picks an embedding provider based on the available environment variables.
+The platform picks an embedding provider based on the available environment variables.
 
 | Provider       | Trigger                          | Notes                                                                         |
 | :------------- | :------------------------------- | :---------------------------------------------------------------------------- |
 | **OpenRouter** | `OPENROUTER_API_KEY` is present. | Recommended for cloud-based AI. Uses per-app keys if automatically generated. |
 | **Ollama**     | Default (no cloud key).          | Recommended for local development and private air-gapped hosting.             |
 
-### Worlds API Server Requirements
+### World Server Requirements
 
 These are automatically provisioned and injected by the Console during deployment, but required if self-hosting the server manually.
 

@@ -1,6 +1,6 @@
-# Worlds API Documentation
+# Worlds Documentation
 
-This repository contains the official documentation for the **Worlds API**,
+This repository contains the official documentation for **Worlds** (the Agentic Context Stack),
 built with [Mintlify](https://mintlify.com).
 
 ## Overview
