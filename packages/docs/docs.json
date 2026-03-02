@@ -83,14 +83,15 @@
       {
         "tab": "API Reference",
         "icon": "code",
-        "openapi": ["openapi.yaml"],
+        "openapi": "openapi.yaml",
         "groups": [
           {
             "group": "API Basics",
             "pages": [
               "api-reference/basics/authentication",
               "api-reference/basics/search",
-              "api-reference/basics/sparql"
+              "api-reference/basics/sparql",
+              "api-reference/basics/specification"
             ]
           },
           {
