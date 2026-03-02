@@ -1,0 +1,53 @@
+---
+title: "Trust & Future Roadmap"
+description: "Transparency regarding data privacy and the evolution of the Worlds ecosystem."
+---
+
+## Data Privacy & Residency
+
+We believe in data transparency. This guide explains exactly where your information lives depending on your deployment mode.
+
+### 1. Local Development (Ollama/SQLite)
+
+**No data ever leaves your machine**.
+
+- Metadata is stored in a local `.db` file.
+- Embeddings are generated via **Ollama** locally.
+- 100% private and air-gapped.
+
+### 2. Standalone Server (Self-Hosted)
+
+- Metadata is stored in your specified `LIBSQL_URL`.
+- Embeddings can remain private if using local providers like Ollama.
+
+### 3. Managed Platform (Console)
+
+- Each world gets its own dedicated **Turso** database and **Deno Deploy** worker.
+- You can choose regions during setup to ensure data residency and proximity.
+
+> [!IMPORTANT]
+> The Worlds Platform does not "phone home" or collect telemetry from self-hosted instances. Your data is your own.
+
+---
+
+## Future Roadmap
+
+Worlds is an evolving neuro-symbolic platform. The following "missing puzzle pieces" are targeted for future development:
+
+### 1. Automated Lifecycle & Syncing
+
+- **Folder Watcher**: CLI mode that monitors local directories and automatically ingests changes.
+- **Scheduled Sync**: Automated periodic pulls from external REST APIs.
+
+### 2. Advanced Semantic Tagging
+
+- **Semantic Tagging Spec**: Standardized metadata for categorizing Worlds and Organizations.
+- **Inference Rules**: Automatic tagging of triples based on logical patterns.
+
+### 3. Ecosystem Expansion
+
+- **VS Code Extension**: Direct SPARQL editing and World management.
+- **Python SDK**: Broadening the toolchain for data science and AI research.
+
+> [!TIP]
+> Have a suggestion for the roadmap? Open an issue on our [GitHub repository](https://github.com/wazootech/worlds).

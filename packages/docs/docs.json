@@ -27,22 +27,16 @@
           {
             "group": "Getting Started",
             "pages": [
-              "developer-platform/getting-started",
-              "developer-platform/quickstart"
+              "developer-platform/getting-started/index",
+              "developer-platform/getting-started/quickstart"
             ]
           },
           {
             "group": "Concepts & Architecture",
             "pages": [
-              "developer-platform/concepts/overview",
-              "developer-platform/concepts/malleable-knowledge",
-              "developer-platform/concepts/architecture",
-              "developer-platform/concepts/worlds",
-              "developer-platform/concepts/connectors",
-              "developer-platform/concepts/data-privacy",
-              "developer-platform/concepts/visualization",
-              "developer-platform/concepts/edge-story",
-              "developer-platform/concepts/future-work"
+              "developer-platform/concepts/index",
+              "developer-platform/concepts/entities",
+              "developer-platform/concepts/trust-roadmap"
             ]
           },
           {
@@ -65,8 +59,8 @@
           {
             "group": "Native SDKs",
             "pages": [
-              "api-integrations/sdk-overview",
-              "api-integrations/sdk"
+              "api-integrations/native-sdks/index",
+              "api-integrations/native-sdks/sdk"
             ]
           },
           {
@@ -120,10 +114,10 @@
           {
             "group": "Guides",
             "pages": [
-              "cookbook/social-graphs",
-              "cookbook/personal-search",
-              "cookbook/cli-tasks",
-              "cookbook/vibe-coding"
+              "cookbook/guides/social-graphs",
+              "cookbook/guides/personal-search",
+              "cookbook/guides/cli-tasks",
+              "cookbook/guides/vibe-coding"
             ]
           }
         ]
