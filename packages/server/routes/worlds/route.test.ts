@@ -13,7 +13,7 @@ Deno.test("Worlds API routes", async (t) => {
   const app = createRoute(testContext);
 
   await t.step(
-    "GET /v1/worlds/:world returns world metadata (Admin)",
+    "GET /worlds/:world returns world metadata (Admin)",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -32,7 +32,7 @@ Deno.test("Worlds API routes", async (t) => {
       await testContext.libsql.manager.create(worldId);
 
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}`, {
+        new Request(`http://localhost/worlds/${worldId}`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -46,11 +46,11 @@ Deno.test("Worlds API routes", async (t) => {
     },
   );
 
-  await t.step("POST /v1/worlds creates a new world (Admin Only)", async () => {
+  await t.step("POST /worlds creates a new world (Admin Only)", async () => {
     const { apiKey } = await createTestOrganization(testContext);
 
     const slug = ("new-world-" + ulid()).toLowerCase();
-    const req = new Request("http://localhost/v1/worlds", {
+    const req = new Request("http://localhost/worlds", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +71,7 @@ Deno.test("Worlds API routes", async (t) => {
   });
 
   await t.step(
-    "GET /v1/worlds/:world/export - Content Negotiation (Turtle)",
+    "GET /worlds/:world/export - Content Negotiation (Turtle)",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -91,7 +91,7 @@ Deno.test("Worlds API routes", async (t) => {
 
       // Request with Turtle Accept header
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/export`, {
+        new Request(`http://localhost/worlds/${worldId}/export`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -105,7 +105,7 @@ Deno.test("Worlds API routes", async (t) => {
   );
 
   await t.step(
-    "GET /v1/worlds/:world returns 200 without Auth if no apiKey is set",
+    "GET /worlds/:world returns 200 without Auth if no apiKey is set",
     async () => {
       const unprotectedContext = await createTestContext();
       unprotectedContext.apiKey = undefined;
@@ -129,7 +129,7 @@ Deno.test("Worlds API routes", async (t) => {
       await unprotectedContext.libsql.manager.create(worldId);
 
       const resp = await unprotectedApp.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}`, {
+        new Request(`http://localhost/worlds/${worldId}`, {
           method: "GET",
         }),
       );

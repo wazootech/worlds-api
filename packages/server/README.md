@@ -75,7 +75,7 @@ deno -A jsr:@wazoo/worlds-server [command]
 
 ## API Reference
 
-The API follows a standard RESTful structure under the `/v1` prefix.
+The API follows a standard RESTful structure.
 
 ---
 

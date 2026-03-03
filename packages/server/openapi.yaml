@@ -5,8 +5,8 @@ info:
   description: API for managing and querying RDF-based "worlds".
 
 servers:
-  - url: /v1
-    description: V1 API
+  - url: /
+    description: API
 
 components:
   securitySchemes:

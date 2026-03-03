@@ -8,7 +8,6 @@ export const worldsTable =
 
 /**
  * selectWorldById is a query that finds a world by ID
- * (used in GET /v1/worlds/:world).
  */
 export const selectWorldById =
   "SELECT\r\n  id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  id = ?\r\n  AND deleted_at IS NULL;";
@@ -26,20 +25,20 @@ export const selectAllWorlds =
   "SELECT\r\n  id,\r\n  slug,\r\n  label,\r\n  description,\r\n  db_hostname,\r\n  db_token,\r\n  created_at,\r\n  updated_at,\r\n  deleted_at\r\nFROM\r\n  worlds\r\nWHERE\r\n  deleted_at IS NULL\r\nORDER BY\r\n  created_at DESC\r\nLIMIT\r\n  ? OFFSET ?;";
 
 /**
- * insertWorld is a query that inserts a new world (used in POST /v1/worlds).
+ * insertWorld is a query that inserts a new world (used in POST /worlds).
  */
 export const insertWorld =
   "INSERT INTO\r\n  worlds (\r\n    id,\r\n    slug,\r\n    label,\r\n    description,\r\n    db_hostname,\r\n    db_token,\r\n    created_at,\r\n    updated_at,\r\n    deleted_at\r\n  )\r\nVALUES\r\n  (?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
 /**
  * updateWorld is a query that updates world fields
- * (used in PUT /v1/worlds/:world).
+ * (used in PUT /worlds/:world).
  */
 export const updateWorld =
   "UPDATE\r\n  worlds\r\nSET\r\n  slug = ?,\r\n  label = ?,\r\n  description = ?,\r\n  updated_at = ?,\r\n  db_hostname = ?,\r\n  db_token = ?,\r\n  deleted_at = ?\r\nWHERE\r\n  id = ?;";
 
 /**
  * deleteWorld is a query that deletes a world
- * (used in DELETE /v1/worlds/:world).
+ * (used in DELETE /worlds/:world).
  */
 export const deleteWorld = "DELETE FROM\r\n  worlds\r\nWHERE\r\n  id = ?;";

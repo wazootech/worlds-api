@@ -1,7 +1,5 @@
 import { Router } from "@fartlabs/rt";
-
 import { authorizeRequest } from "#/middleware/auth.ts";
-
 import type { ServerContext } from "#/context.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
@@ -13,7 +11,7 @@ const MAX_LIMIT = 100;
 export default (appContext: ServerContext) => {
   return new Router()
     .get(
-      "/v1/worlds/:world/logs",
+      "/worlds/:world/logs",
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {

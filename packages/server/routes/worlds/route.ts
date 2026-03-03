@@ -1,16 +1,15 @@
 import { STATUS_CODE } from "@std/http/status";
-import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid/ulid";
-import { authorizeRequest } from "#/middleware/auth.ts";
-
-import type { ServerContext } from "#/context.ts";
+import { Parser, Store, Writer } from "n3";
+import { Router } from "@fartlabs/rt";
 import {
   createWorldParamsSchema,
   paginationParamsSchema,
   updateWorldParamsSchema,
   worldSchema,
 } from "@wazoo/worlds-sdk";
-import { Parser, Store, Writer } from "n3";
+import { authorizeRequest } from "#/middleware/auth.ts";
+import type { ServerContext } from "#/context.ts";
 import {
   DEFAULT_SERIALIZATION,
   getSerializationByContentType,
@@ -24,7 +23,6 @@ import type {
   WorldTable,
 } from "#/lib/database/tables/worlds/schema.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
-
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
 import { BlobsService } from "#/lib/database/tables/blobs/service.ts";
 import { handlePatch } from "#/lib/rdf-patch/mod.ts";
@@ -35,7 +33,7 @@ export default (appContext: ServerContext) => {
 
   return new Router()
     .get(
-      "/v1/worlds/:world",
+      "/worlds/:world",
       async (ctx) => {
         const worldParam = ctx.params?.pathname.groups.world;
         if (!worldParam) {
@@ -68,7 +66,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .get(
-      "/v1/worlds/:world/export",
+      "/worlds/:world/export",
       async (ctx) => {
         const worldParam = ctx.params?.pathname.groups.world;
         if (!worldParam) {
@@ -143,7 +141,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .post(
-      "/v1/worlds/:world/import",
+      "/worlds/:world/import",
       async (ctx) => {
         const worldParam = ctx.params?.pathname.groups.world;
         if (!worldParam) {
@@ -223,7 +221,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .get(
-      "/v1/worlds",
+      "/worlds",
       async (ctx) => {
         const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
@@ -264,7 +262,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .post(
-      "/v1/worlds",
+      "/worlds",
       async (ctx) => {
         const authorized = authorizeRequest(appContext, ctx.request);
         if (!authorized.admin) {
@@ -319,7 +317,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .put(
-      "/v1/worlds/:world",
+      "/worlds/:world",
       async (ctx) => {
         const worldParam = ctx.params?.pathname.groups.world;
         if (!worldParam) {
@@ -362,7 +360,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .delete(
-      "/v1/worlds/:world",
+      "/worlds/:world",
       async (ctx) => {
         const worldParam = ctx.params?.pathname.groups.world;
         if (!worldParam) {
