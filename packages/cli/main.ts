@@ -2,7 +2,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import { WorldsCli } from "./cli.ts";
 import { createWazoo } from "./wazoo.ts";
 
-async function main() {
+export async function main() {
   const { sdk } = await createWazoo();
   const cli = new WorldsCli(sdk);
 
