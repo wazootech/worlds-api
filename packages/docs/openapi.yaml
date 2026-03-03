@@ -14,6 +14,26 @@ components:
       type: http
       scheme: bearer
 
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
   schemas:
     World:
       type: object
@@ -116,6 +136,7 @@ components:
           type: string
         organizationId:
           type: string
+          nullable: true
       required:
         - subject
         - predicate
@@ -133,52 +154,30 @@ components:
       type: object
       properties:
         head:
-          type: object
-          properties:
-            vars:
-              type: array
-              items:
-                type: string
-            link:
-              type: array
-              items:
-                type: string
-              nullable: true
+          $ref: "#/components/schemas/SparqlHead"
         results:
           type: object
           properties:
             bindings:
               type: array
               items:
-                type: object
-                additionalProperties:
-                  $ref: "#/components/schemas/SparqlValue"
+                $ref: "#/components/schemas/SparqlBinding"
+      required: [head, results]
 
     SparqlAskResults:
       type: object
       properties:
         head:
-          type: object
-          properties:
-            link:
-              type: array
-              items:
-                type: string
-              nullable: true
+          $ref: "#/components/schemas/SparqlHead"
         boolean:
           type: boolean
+      required: [head, boolean]
 
     SparqlQuadsResults:
       type: object
       properties:
         head:
-          type: object
-          properties:
-            link:
-              type: array
-              items:
-                type: string
-              nullable: true
+          $ref: "#/components/schemas/SparqlHead"
         results:
           type: object
           properties:
@@ -186,64 +185,122 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/SparqlQuad"
+      required: [head, results]
+
+    SparqlHead:
+      type: object
+      properties:
+        vars:
+          type: array
+          items:
+            type: string
+        link:
+          type: array
+          items:
+            type: string
+          nullable: true
+      required: [link]
+
+    SparqlBinding:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/SparqlValue"
 
     SparqlValue:
-      type: object
+      oneOf:
+        - $ref: "#/components/schemas/SparqlUriValue"
+        - $ref: "#/components/schemas/SparqlBnodeValue"
+        - $ref: "#/components/schemas/SparqlLiteralValue"
+        - $ref: "#/components/schemas/SparqlTripleValue"
       discriminator:
         propertyName: type
+
+    SparqlUriValue:
+      type: object
       properties:
         type:
-          type: string
-          enum: [uri, bnode, literal]
+          enum: [uri]
         value:
           type: string
-      required:
-        - type
-        - value
-      oneOf:
-        - properties:
-            type:
-              const: uri
-        - properties:
-            type:
-              const: bnode
-        - properties:
-            type:
-              const: literal
-            xml:lang:
-              type: string
-            datatype:
-              type: string
+      required: [type, value]
+
+    SparqlBnodeValue:
+      type: object
+      properties:
+        type:
+          enum: [bnode]
+        value:
+          type: string
+      required: [type, value]
+
+    SparqlLiteralValue:
+      type: object
+      properties:
+        type:
+          enum: [literal]
+        value:
+          type: string
+        xml:lang:
+          type: string
+        datatype:
+          type: string
+      required: [type, value]
+
+    SparqlTripleValue:
+      type: object
+      properties:
+        type:
+          enum: [triple]
+        value:
+          type: object
+          properties:
+            subject:
+              $ref: "#/components/schemas/SparqlValue"
+            predicate:
+              $ref: "#/components/schemas/SparqlValue"
+            object:
+              $ref: "#/components/schemas/SparqlValue"
+          required: [subject, predicate, object]
+      required: [type, value]
 
     SparqlQuad:
       type: object
       properties:
         subject:
-          type: object
-          properties:
-            type:
-              type: string
-              enum: [uri, bnode]
-            value:
-              type: string
+          $ref: "#/components/schemas/SparqlSubject"
         predicate:
-          type: object
-          properties:
-            type:
-              type: string
-              const: uri
-            value:
-              type: string
+          $ref: "#/components/schemas/SparqlPredicate"
         object:
           $ref: "#/components/schemas/SparqlValue"
         graph:
-          type: object
-          properties:
-            type:
-              type: string
-              enum: [default, uri]
-            value:
-              type: string
+          $ref: "#/components/schemas/SparqlGraph"
+
+    SparqlSubject:
+      type: object
+      properties:
+        type:
+          enum: [uri, bnode]
+        value:
+          type: string
+      required: [type, value]
+
+    SparqlPredicate:
+      type: object
+      properties:
+        type:
+          enum: [uri]
+        value:
+          type: string
+      required: [type, value]
+
+    SparqlGraph:
+      type: object
+      properties:
+        type:
+          enum: [default, uri]
+        value:
+          type: string
+      required: [type, value]
 
     Error:
       type: object
@@ -544,10 +601,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/SparqlResults"
             text/turtle:
-              description: SPARQL Service Description
               schema: { type: string }
             application/rdf+xml:
-              description: SPARQL Service Description
               schema: { type: string }
         "400":
           $ref: "#/components/responses/BadRequest"
@@ -599,24 +654,3 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
-
-components:
-  responses:
-    BadRequest:
-      description: Bad Request
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    Unauthorized:
-      description: Unauthorized
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
-    NotFound:
-      description: Not Found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/Error"
