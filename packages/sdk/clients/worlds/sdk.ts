@@ -302,6 +302,8 @@ export class Worlds {
    *
    * @example
    * ```ts
+   * declare const sdk: import("@wazoo/worlds-sdk").WorldsSdk;
+   * declare const worldId: string;
    * const buffer = await sdk.worlds.export(worldId, { format: "turtle" });
    * const text = new TextDecoder().decode(buffer);
    * ```
