@@ -1,18 +1,16 @@
+import { ulid } from "@std/ulid/ulid";
 import { Router } from "@fartlabs/rt";
-import { authorizeRequest } from "#/middleware/auth.ts";
-
-import type { ServerContext } from "#/context.ts";
 import { limitParamSchema } from "@wazoo/worlds-sdk";
+import { authorizeRequest } from "#/middleware/auth.ts";
+import type { ServerContext } from "#/context.ts";
 import { ErrorResponse } from "#/lib/errors/errors.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
-
 import { ChunksService } from "#/lib/database/tables/chunks/service.ts";
 import { LogsService } from "#/lib/database/tables/logs/service.ts";
-import { ulid } from "@std/ulid/ulid";
 
 export default (appContext: ServerContext) => {
   return new Router().get(
-    "/v1/worlds/:world/search",
+    "/worlds/:world/search",
     async (ctx) => {
       const worldId = ctx.params?.pathname.groups.world;
       if (!worldId) {

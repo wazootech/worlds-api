@@ -13,7 +13,7 @@ Deno.test("SPARQL API routes", async (t) => {
   const worldsService = new WorldsService(testContext.libsql.database);
 
   await t.step(
-    "GET /v1/worlds/:world/sparql (Admin)",
+    "GET /worlds/:world/sparql (Admin)",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -32,7 +32,7 @@ Deno.test("SPARQL API routes", async (t) => {
       await testContext.libsql.manager.create(worldId);
 
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/sparql`, {
+        new Request(`http://localhost/worlds/${worldId}/sparql`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -46,7 +46,7 @@ Deno.test("SPARQL API routes", async (t) => {
   );
 
   await t.step(
-    "GET /v1/worlds/:world/sparql - Service Description",
+    "GET /worlds/:world/sparql - Service Description",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -66,7 +66,7 @@ Deno.test("SPARQL API routes", async (t) => {
 
       // Request without query parameter should return Service Description
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/sparql`, {
+        new Request(`http://localhost/worlds/${worldId}/sparql`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -100,7 +100,7 @@ Deno.test("SPARQL API routes", async (t) => {
   );
 
   await t.step(
-    "GET /v1/worlds/:world/sparql - Service Description (N-Triples)",
+    "GET /worlds/:world/sparql - Service Description (N-Triples)",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -120,7 +120,7 @@ Deno.test("SPARQL API routes", async (t) => {
 
       // Request with N-Triples Accept header
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/sparql`, {
+        new Request(`http://localhost/worlds/${worldId}/sparql`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,
@@ -148,7 +148,7 @@ Deno.test("SPARQL API routes", async (t) => {
   );
 
   await t.step(
-    "GET /v1/worlds/:world/sparql - Weighted Content Negotiation",
+    "GET /worlds/:world/sparql - Weighted Content Negotiation",
     async () => {
       const { apiKey } = await createTestOrganization(testContext);
       const worldId = ulid();
@@ -168,7 +168,7 @@ Deno.test("SPARQL API routes", async (t) => {
 
       // Request with weighted Accept header: prefer NTriples over Turtle
       const resp = await app.fetch(
-        new Request(`http://localhost/v1/worlds/${worldId}/sparql`, {
+        new Request(`http://localhost/worlds/${worldId}/sparql`, {
           method: "GET",
           headers: {
             "Authorization": `Bearer ${apiKey}`,

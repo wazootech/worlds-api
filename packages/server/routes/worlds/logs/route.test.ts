@@ -7,20 +7,20 @@ import {
 import createRoute from "./route.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
 
-Deno.test("World Search API routes", async (t) => {
+Deno.test("World Logs API routes", async (t) => {
   const testContext = await createTestContext();
   const worldsService = new WorldsService(testContext.libsql.database);
   const app = createRoute(testContext);
 
-  await t.step("GET /v1/worlds/:world/search (Admin)", async () => {
+  await t.step("GET /worlds/:world/logs (Admin)", async () => {
     const { apiKey } = await createTestOrganization(testContext);
     const worldId = ulid();
     const now = Date.now();
     await worldsService.insert({
       id: worldId,
-      slug: "search-world-" + worldId,
-      label: "Search World",
-      description: "A world for searching",
+      slug: "logs-world-" + worldId,
+      label: "Logs World",
+      description: null,
       db_hostname: null,
       db_token: null,
       created_at: now,
@@ -30,7 +30,7 @@ Deno.test("World Search API routes", async (t) => {
     await testContext.libsql.manager.create(worldId);
 
     const resp = await app.fetch(
-      new Request(`http://localhost/v1/worlds/${worldId}/search?query=test`, {
+      new Request(`http://localhost/worlds/${worldId}/logs`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
@@ -39,7 +39,7 @@ Deno.test("World Search API routes", async (t) => {
     );
 
     assertEquals(resp.status, 200);
-    const results = await resp.json();
-    assert(Array.isArray(results));
+    const logs = await resp.json();
+    assert(Array.isArray(logs));
   });
 });

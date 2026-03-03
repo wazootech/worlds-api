@@ -13,10 +13,10 @@ import { TursoDatabaseManager } from "#/lib/database/managers/api.ts";
 import { FileDatabaseManager } from "#/lib/database/managers/file.ts";
 import { dirname } from "@std/path";
 
-import worldsRouter from "./routes/v1/worlds/route.ts";
-import sparqlRouter from "./routes/v1/worlds/sparql/route.ts";
-import logsRouter from "./routes/v1/worlds/logs/route.ts";
-import searchRouter from "./routes/v1/worlds/search/route.ts";
+import worldsRouter from "./routes/worlds/route.ts";
+import sparqlRouter from "./routes/worlds/sparql/route.ts";
+import logsRouter from "./routes/worlds/logs/route.ts";
+import searchRouter from "./routes/worlds/search/route.ts";
 
 // TODO: Worlds router should contain all sub-routers.
 const routes = [

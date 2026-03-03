@@ -1,14 +1,14 @@
 // @deno-types="@types/n3"
 import { DataFactory, Writer } from "n3";
 import { STATUS_CODE } from "@std/http/status";
-import { Router } from "@fartlabs/rt";
 import { ulid } from "@std/ulid/ulid";
+import { Router } from "@fartlabs/rt";
+import { executeSparqlOutputSchema, isSparqlUpdate } from "@wazoo/worlds-sdk";
 import { type AuthorizedRequest, authorizeRequest } from "#/middleware/auth.ts";
 import { negotiateSerialization } from "#/lib/rdf/serialization.ts";
 import type { ServerContext } from "#/context.ts";
 import type { DatasetParams } from "#/lib/blob/sparql.ts";
 import { sparql } from "#/lib/blob/sparql.ts";
-import { executeSparqlOutputSchema, isSparqlUpdate } from "@wazoo/worlds-sdk";
 import { BatchPatchHandler, handlePatch } from "#/lib/rdf-patch/mod.ts";
 import type { Patch } from "#/lib/rdf-patch/mod.ts";
 import { WorldsService } from "#/lib/database/tables/worlds/service.ts";
@@ -332,7 +332,7 @@ async function executeSparqlRequest(
 export default (appContext: ServerContext) => {
   return new Router()
     .get(
-      "/v1/worlds/:world/sparql",
+      "/worlds/:world/sparql",
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
@@ -367,7 +367,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .post(
-      "/v1/worlds/:world/sparql",
+      "/worlds/:world/sparql",
       async (ctx) => {
         const worldId = ctx.params?.pathname.groups.world;
         if (!worldId) {
@@ -415,7 +415,7 @@ export default (appContext: ServerContext) => {
     )
     // Handle unsupported methods (PUT, DELETE, etc.) via PUT and DELETE routes
     .put(
-      "/v1/worlds/:world/sparql",
+      "/worlds/:world/sparql",
       () => {
         return ErrorResponse.MethodNotAllowed("Method Not Allowed", {
           "Allow": "GET, POST",
@@ -423,7 +423,7 @@ export default (appContext: ServerContext) => {
       },
     )
     .delete(
-      "/v1/worlds/:world/sparql",
+      "/worlds/:world/sparql",
       () => {
         return ErrorResponse.MethodNotAllowed("Method Not Allowed", {
           "Allow": "GET, POST",

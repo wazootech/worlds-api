@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS worlds (
 );
 
 -- selectWorldById is a query that finds a world by ID
--- (used in GET /v1/worlds/:world).
 SELECT
   id,
   slug,
@@ -67,7 +66,7 @@ ORDER BY
 LIMIT
   ? OFFSET ?;
 
--- insertWorld is a query that inserts a new world (used in POST /v1/worlds).
+-- insertWorld is a query that inserts a new world (used in POST /worlds).
 INSERT INTO
   worlds (
     id,
@@ -84,7 +83,7 @@ VALUES
   (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 -- updateWorld is a query that updates world fields
--- (used in PUT /v1/worlds/:world).
+-- (used in PUT /worlds/:world).
 UPDATE
   worlds
 SET
@@ -99,7 +98,7 @@ WHERE
   id = ?;
 
 -- deleteWorld is a query that deletes a world
--- (used in DELETE /v1/worlds/:world).
+-- (used in DELETE /worlds/:world).
 DELETE FROM
   worlds
 WHERE
