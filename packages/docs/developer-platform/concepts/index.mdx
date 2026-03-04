@@ -40,6 +40,21 @@ self-improve, and manage their own context windows dynamically:
 
 ---
 
+## How it works (at a glance)
+
+Worlds transforms how agents retain and use knowledge through a structured
+4-step pipeline:
+
+- **Ingest**: Sync and extract facts from text, files, and external connectors.
+- **Structure**: Materialize "Malleable Knowledge" into a logically consistent
+  RDF graph.
+- **Reason**: Execute complex symbolic traversals via **SPARQL** to discover
+  non-obvious relationships.
+- **Query**: Retrieve high-precision context using **Hybrid Search** (Vector
+  similarity + Keyword precision + Graph filters).
+
+---
+
 ## Architecture Overview
 
 The Worlds Platform is built on a **polymorphic, hot-swappable architecture**.
