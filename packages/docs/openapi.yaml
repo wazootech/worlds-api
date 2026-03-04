@@ -5,7 +5,7 @@ info:
   description: API for managing and querying RDF-based "worlds".
 
 servers:
-  - url: /
+  - url: https://api.wazoo.dev
     description: API
 
 components:
