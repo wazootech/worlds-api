@@ -27,7 +27,7 @@
           {
             "group": "Getting Started",
             "pages": [
-              "developer-platform/getting-started/index",
+              "developer-platform/getting-started/overview",
               "developer-platform/getting-started/quickstart"
             ]
           },
