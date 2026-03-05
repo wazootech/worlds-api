@@ -57,6 +57,14 @@
               "infrastructure/console-hosting",
               "infrastructure/cli-persistence"
             ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/monorepo",
+              "architecture/system-design",
+              "architecture/request-pipeline"
+            ]
           }
         ]
       },

@@ -1,0 +1,67 @@
+---
+title: "Monorepo Structure"
+description:
+  "Overview of the packages and their relationships within the Worlds Platform
+  workspace."
+---
+
+# Monorepo Structure
+
+The Worlds Platform is organized as a Deno workspace. It contains several
+packages designed to work together, spanning from the core API server to client
+SDKs and a management dashboard.
+
+## Package Topology
+
+The following diagram shows how the different packages in the monorepo interact
+and their publishing targets.
+
+```mermaid
+graph TD
+    ROOT["deno.json\n(workspace root)"]
+
+    subgraph JSR["JSR Packages (Deno workspace)"]
+        SERVER["@wazoo/worlds-server\npackages/server"]
+        SDK["@wazoo/worlds-sdk\npackages/sdk"]
+        AISDK["@wazoo/worlds-ai-sdk\npackages/ai-sdk"]
+        CLI["@wazoo/worlds-cli\npackages/cli"]
+    end
+
+    subgraph NPM["npm (excluded from workspace)"]
+        CONSOLE["worlds-console\npackages/console"]
+    end
+
+    DOCS["packages/docs\n(Mintlify, excluded)"]
+
+    ROOT --> SERVER
+    ROOT --> SDK
+    ROOT --> AISDK
+    ROOT --> CLI
+    ROOT -.->|"exclude"| CONSOLE
+    ROOT -.->|"exclude"| DOCS
+
+    CLI -->|"WorldsSdk"| SDK
+    AISDK -->|"WorldsSdk"| SDK
+    CONSOLE -->|"WorldsSdk"| SDK
+    SDK -->|"HTTP REST"| SERVER
+```
+
+## Package Summaries
+
+| Package            | JSR/npm Name           | Language      | Purpose                                                              |
+| ------------------ | ---------------------- | ------------- | -------------------------------------------------------------------- |
+| `packages/server`  | `@wazoo/worlds-server` | Deno          | HTTP API server; manages worlds, SPARQL, search, and RDF processing. |
+| `packages/sdk`     | `@wazoo/worlds-sdk`    | Deno/TS       | Typed HTTP client library for interacting with the Worlds API.       |
+| `packages/ai-sdk`  | `@wazoo/worlds-ai-sdk` | Deno/TS       | LLM tool wrappers for agentic loops (Vercel AI SDK integration).     |
+| `packages/cli`     | `@wazoo/worlds-cli`    | Deno          | `wazoo` CLI for local development and remote management.             |
+| `packages/console` | `worlds-console`       | Next.js (npm) | Web-based management dashboard and control plane.                    |
+| `packages/docs`    | —                      | Mintlify      | This documentation site.                                             |
+
+## Workspace Design
+
+- **Deno First**: Most core packages are built for the Deno runtime and
+  published to JSR.
+- **Excluded Areas**: The `console` and `docs` are excluded from the main Deno
+  workspace as they use Node.js-based tooling (Next.js and Mintlify).
+- **Core Dependency**: The `sdk` package is the primary bridge used by the CLI,
+  AI SDK, and Console to communicate with the API Server.

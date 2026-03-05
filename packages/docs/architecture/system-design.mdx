@@ -1,0 +1,111 @@
+---
+title: "System Design"
+description:
+  "A deep dive into the Control Plane, Data Plane, and polymorphic service
+  architecture."
+---
+
+# System Design
+
+The Worlds Platform is built on a modular, polymorphic architecture designed to
+facilitate both low-latency local development and scalable production
+deployments.
+
+## Control Plane vs. Data Plane
+
+The platform architecture is split into two primary operational layers:
+
+### The Control Plane (`packages/console`)
+
+The **Management Console** acts as the system's brain. It manages identity,
+handles organization-level provisioning, and orchestrates the lifecycle of World
+Server instances.
+
+### The Data Plane (`packages/server`)
+
+The **Worlds API Server** handles the heavy lifting of RDF graph management,
+SPARQL query execution, and hybrid search. It is the specific instance that
+manages an organization's "Worlds."
+
+## Runtime Component Map
+
+The following diagram illustrates how actors interact with the system and how
+the different components relate across environments.
+
+```mermaid
+graph TD
+    subgraph "Actors"
+        DEV["Developer"]
+        AGENT["AI Agent / LLM"]
+        HUMAN["End User"]
+    end
+
+    subgraph "Control Plane — packages/console"
+        CONSOLE["Next.js App\n(port 3000)"]
+        PLATFORM["platform object\n(AppManager + WorkOSManager + TursoManager)"]
+        CONSOLE --> PLATFORM
+    end
+
+    subgraph "Client Libraries"
+        SDK["WorldsSdk\npackages/sdk"]
+        AISDK["createTools()\npackages/ai-sdk"]
+        CLI["wazoo CLI\npackages/cli"]
+    end
+
+    subgraph "Data Plane — packages/server"
+        APISERVER["deno serve\n(createServer)"]
+        SERVERCTX["ServerContext\n(apiKey, embeddings, libsql)"]
+        APISERVER --> SERVERCTX
+    end
+
+    subgraph "Identity"
+        WORKOS["RemoteWorkOSManager\n(WorkOS AuthKit)"]
+        LOCALIDP["LocalWorkOSManager\n(data/workos.json)"]
+    end
+
+    subgraph "Compute"
+        DENODEPLOY["DenoAppManager\n(Deno Deploy)"]
+        LOCALPROC["LocalAppManager\n(deno serve child process)"]
+    end
+
+    subgraph "Storage"
+        TURSO["TursoDatabaseManager\n(Turso / libSQL)"]
+        SQLITE["FileDatabaseManager\n(data/{org_id}/worlds.db)"]
+    end
+
+    HUMAN --> CONSOLE
+    DEV --> CLI
+    AGENT --> AISDK
+    AGENT --> SDK
+
+    CONSOLE --> SDK
+    CLI --> SDK
+    AISDK --> SDK
+
+    SDK -->|"HTTP + Bearer token"| APISERVER
+
+    PLATFORM -->|"prod"| WORKOS
+    PLATFORM -->|"dev"| LOCALIDP
+    PLATFORM -->|"prod"| DENODEPLOY
+    PLATFORM -->|"dev"| LOCALPROC
+    PLATFORM -->|"prod"| TURSO
+    PLATFORM -->|"dev"| SQLITE
+
+    SERVERCTX -->|"prod"| TURSO
+    SERVERCTX -->|"dev"| SQLITE
+```
+
+## Polymorphic Manager Pattern
+
+A key feature of the platform is its use of hot-swappable resource managers. The
+core logic remains identical, but the implementation swaps based on the
+environment:
+
+| Resource Type | Local Dev Implementation                      | Production Implementation              |
+| ------------- | --------------------------------------------- | -------------------------------------- |
+| **Identity**  | `LocalWorkOSManager` (Mock identity via file) | `RemoteWorkOSManager` (WorkOS AuthKit) |
+| **Compute**   | `LocalAppManager` (Local Deno processes)      | `DenoAppManager` (Deno Deploy)         |
+| **Storage**   | `FileDatabaseManager` (Local SQLite)          | `TursoDatabaseManager` (Turso/libSQL)  |
+
+This pattern allows developers to run the _entire_ stack locally by simply
+setting (or omitting) specific environment variables.
