@@ -12,9 +12,10 @@ similarity and _guesses_ the answer.
 
 Worlds, however, operates on a **Neuro-Symbolic Architecture**. It uses neural
 networks (LLMs) to understand human language, but it stores that understanding
-as pure, symbolic logic in a graph format. Because the graph operates on strict
-logic, the Worlds engine can perform **Reasoning & Inference**—it can discover
-facts that were never explicitly stated.
+as pure, symbolic logic in a graph format. By building **logical frameworks**
+(like first-order logic) on top of neural outputs, the Worlds engine can perform
+**Reasonable & Verifiable Inference**—discovering facts that were never
+explicitly stated.
 
 ## Finding Hidden Relationships
 
@@ -46,6 +47,19 @@ incoming triple against the existing state. Depending on your rulesets and how
 the predicate `favoriteColor` is defined, the engine will override the old fact,
 maintaining a clean state, rather than forcing the LLM to choose between two
 conflicting text chunks during retrieval.
+
+## Meta-Learning: Learning to Reason
+
+Unlike traditional neural models that require retraining on millions of examples
+to learn new rules, Worlds supports **Meta-Learning**.
+
+Because your agent's logic is stored as symbolic rules rather than hidden
+weights in a neural network, you can update its "reasoning layers" instantly.
+For example, if you teach a model that mammals have fur and it encounters a
+whale, a typical model fails. A neuro-symbolic system, however, can reason that
+because whales give birth to live young and have lungs, they are still
+mammals—and instantly **update its logic** for all future interactions without a
+single training run.
 
 ### For Advanced Users: SPARQL
 
