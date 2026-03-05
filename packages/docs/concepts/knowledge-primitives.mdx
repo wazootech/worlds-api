@@ -1,115 +1,68 @@
 ---
-title: "Knowledge Primitives & Items"
-description: "The core primitives for building high-precision knowledge bases."
+title: "Knowledge Primitives"
+description: "Items, Triples, and the grammar of your World."
 ---
 
-# Knowledge Primitives & Items
+# Knowledge Primitives
 
-To build applications with Worlds, you need to understand how the platform
-stores the "reality" it extracts from your unstructured data. The Worlds engine
-uses RDF triples as the fundamental primitive of knowledge in **Worlds**.
+Worlds stores the "reality" it extracts from unstructured data as **RDF
+Triples**. To build with Worlds, you need to understand the three fundamental
+building blocks of knowledge.
 
-## The Item Drive Metaphor
+## 1. Items (Entities)
 
-To make these Semantic Web concepts intuitive, think of a World not as a
-database, but as an **Item Drive**—the next evolution of the hard drive.
+**Items** are the distinct "things" in your World—a person, a piece of code, or
+a company.
 
-- **Items (The Nodes)**: An Item is synonymous with an **Entity**. These are the
-  distinct "things"—a person, a piece of code, or an identity. They are the
-  **Subjects** and **Objects** of your memory.
-- **Properties (The Connectors)**: These are the "ports" or "labels" that define
-  how Items relate (e.g., `worksOn`, `managerOf`). These are technically known
-  as **Predicates**.
-- **Facts (The Axioms)**: A **Fact** is created the moment you connect two Items
-  using a Property. This connection is an **RDF Triple** (Subject → Predicate →
-  Object)—the fundamental axiom of knowledge.
+- **Terminology**: Also referred to as **Resources** or **Named Nodes**.
+- **Identification**: Every item is identified by a unique **IRI**
+  (Internationalized Resource Identifier).
+- **Classes**: Items are categorized by their type (e.g., `User`, `Project`,
+  `Task`).
 
-| Storage Era          | Primitive       | How it Works                                                 |
-| :------------------- | :-------------- | :----------------------------------------------------------- |
-| **Traditional Disk** | File / Folder   | Hierarchical silos: You must know the path to find the data. |
-| **Item Drive**       | **Item / Fact** | Associative Graph: You follow the facts to find the items.   |
+## 2. Properties (Predicates)
 
-## 1. Worlds (The Container)
+**Properties** are the "verbs" or "connectors" that define how Items relate.
 
-A **World** is an isolated container for a knowledge graph. It is the
-fundamental unit of context and multi-tenant isolation.
+- **Examples**: `worksOn`, `managerOf`, `hasPriority`.
+- **Ontology**: The set of defined properties forms the "grammar" of your World,
+  ensuring the agent uses consistent language (e.g., using `w:prefers` instead
+  of guessing between "likes" or "loves").
 
-- **Boundary:** Data in `World A` is strictly invisible to `World B`.
-- **Use Cases:** You typically create one World per end-user for personal
-  memory, or one World per team for organizational knowledge.
-- **Components:** Behind the scenes, each World is an isolated namespace
-  containing its own RDF Triplestore and Vector Index.
+## 3. Facts (Triples)
 
-## 2. Entities (Nodes)
+A **Fact** is created the moment you connect two Items using a Property. This is
+an **RDF Triple**:
 
-Entities are the subjects and objects in your World—the physical or conceptual
-"nodes" in the graph. An entity can be a `User`, a `Task`, a `CodeSnippet`, a
-`Repository`, or any abstract concept.
+1. **Subject**: The item being described (`User:Ethan`).
+2. **Predicate**: The relationship (`isWorkingOn`).
+3. **Object**: The target item or value (`Project:Worlds-API`).
 
-- **IRIs:** Every entity is identified by a unique Internationalized Resource
-  Identifier (IRI).
-- **Types:** Entities are categorized by their type (e.g., this entity is a
-  `Company`, that entity is a `Person`).
+| Storage Era          | Primitive       | Mental Model                                       |
+| :------------------- | :-------------- | :------------------------------------------------- |
+| **Traditional Disk** | File / Folder   | Hierarchical: You must know the path to find data. |
+| **Worlds**           | **Item / Fact** | Associative: You follow facts to find items.       |
 
-## 3. Triples (Edges & Relationships)
+## Why this Architecture Wins
 
-A **Triple** is the smallest possible unit of knowledge, representing the
-connections ("edges") between entities. A triple acts as a surgically precise
-fact. It always consists of three parts:
+By structuring memory as symbolic facts rather than raw text chunks:
 
-1.  **Subject:** The entity being described.
-2.  **Predicate:** The relationship verb.
-3.  **Object:** The target value or another connected entity.
+- **Agents Reason**: They can traverse the graph to find hidden relationships
+  (e.g., "If Alice manages the team and Bob is on the team, Alice manages Bob").
+- **Facts Evolve**: New facts can surgically update or override old ones,
+  maintaining a "ground truth" state.
+- **Search Resonates**: Retrieval can combine semantic "vibes" with
+  deterministic logic.
 
-### Example
-
-If an agent reads the sentence: _"Ethan is working on the API redesign."_
-
-The Worlds engine extracts this as a Triple:
-
-- **Subject:** `User:Ethan`
-- **Predicate:** `isWorkingOn`
-- **Object:** `Task:API_Redesign`
-
-This structure ensures that the agent _knows_ this fact deterministically,
-rather than just having a text chunk that happens to contain those words.
-
-This structure ensures that the agent _knows_ this fact deterministically,
-rather than just having a text chunk that happens to contain those words.
-
-## Memory Types & Patterns
-
-When designing your agent's memory, it is helpful to categorize information into
-three functional types:
-
-- **Facts (The Core)**: Stable, verifiable truths. These are long-lived and
-  rarely change (e.g., birth dates, company names, project IRIs).
-- **Preferences (The Vibe)**: Malleable traits that guide an agent's behavior.
-  These evolve as the agent learns more about the user (e.g., "Prefers concise
-  answers", "Likes TypeScript over Rust").
-- **Episodes (The History)**: Event-based memories tied to specific moments or
-  interactions (e.g., "The last time we discussed the API redesign", "The result
-  of the system test on Friday").
-
-By categorizing your triples into these patterns, you can build agents that are
-not only smart but also deeply personalized.
-
-## The Semantic Visualizer
-
-Because Worlds are graph-based, they are fundamentally visual. Instead of
-looking at JSON logs, you can literally "see" what your agent knows by viewing
-its World.
-
-| Interface             | Purpose                                                                                                                                     |
-| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Worlds Console**    | The dashboard provides real-time graph exploration and querying.                                                                            |
-| **SDK Extensibility** | You can use our SDK to easily export the graph to visualizers like D3.js, React Flow, or specialized UI components in your own application. |
-
-<Card
-  title="Reasoning & Inference"
-  icon="bolt"
-  href="/concepts/reasoning-inference"
->
-  Learn how the engine uses these primitives to logically infer facts and
-  resolve contradictions.
-</Card>
+<CardGroup cols={2}>
+  <Card title="The Agentic Loop" icon="rotate" href="/concepts/agentic-loop">
+    Learn how agents use these primitives to Search, Act, and Learn.
+  </Card>
+  <Card
+    title="Reasoning & Inference"
+    icon="bolt"
+    href="/concepts/reasoning-inference"
+  >
+    See how the engine uses logic to eliminate hallucinations.
+  </Card>
+</CardGroup>

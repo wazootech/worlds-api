@@ -7,10 +7,9 @@ description:
 
 # How Worlds Work
 
-Worlds provides a structured framework for thinking about **Agent Memory**.
-Instead of treating an agent's context as a flat list of chat logs or disjointed
-text chunks (like traditional RAG), Worlds organizes information as a **dynamic,
-queryable model of the world**.
+Worlds provides a structured framework for **Agent Memory**. Instead of treating
+an agent's context as a flat list of chat logs or disjointed text chunks, Worlds
+organizes information as a **dynamic, queryable model of reality**.
 
 ## The Worlds Pipeline
 
@@ -19,54 +18,25 @@ lifecycle of data moving through the platform.
 
 ### 1. Ingestion (The Input)
 
-Raw information enters the system from an external source. This could be a user
-chatting with an assistant, an agent reading a GitHub repository, or a direct
-API call sending a PDF document. At this stage, the data is entirely
-unstructured.
+Raw information enters the system—from a user chat, a GitHub repository, or a
+PDF. At this stage, the data is unstructured human language.
 
 ### 2. Processing (The Neuro-Symbolic Engine)
 
-Once ingested, the Worlds Engine goes to work. An intelligent extraction layer
-(powered by LLMs) reads the unstructured data and identifies the core entities,
-relationships, and concepts being discussed. It breaks the text down into its
-semantic components, translating ambiguous human language into structured logic.
+The Worlds Engine uses LLMs to extract **meaning** and **entities**. It
+translates ambiguous language into structured **Triples** (Subject -> Predicate
+-> Object). These facts are then merged into a **World**—an isolated container
+where the graph evolves through:
 
-### 3. Graph Evolution (Continual Learning)
+- **Updating** conflicting facts.
+- **Extending** existing entities with new context.
+- **Inferring** hidden relationships via symbolic reasoning.
 
-The newly extracted knowledge is pushed into a **World**, where it participates
-in a **Continual Learning Loop**. Instead of just stacking new data on top of
-old data, the graph evolves through three primary patterns:
+### 3. Retrieval (The Output)
 
-- **Update**: If new information contradicts an existing fact (e.g., "The user
-  moved from New York to London"), the system automatically deprecates the old
-  triple and creates the new connection. This ensures the agent is never
-  confused by stale data.
-- **Extend**: If the data provides new context for an existing entity (e.g.,
-  "The user also likes Sushi"), the graph grows broader. The engine uses entity
-  disambiguation to ensure new facts are connected to the correct existing
-  nodes.
-- **Infer (Derive)**: The engine uses symbolic reasoning to discover facts that
-  were never explicitly stated. For example, if Alice manages the Frontend Team
-  and Bob is in the Frontend Team, the engine can **infer** that Alice is Bob's
-  manager.
-
-This evolution ensures that the agent's memory is a living, self-correcting
-model of reality.
-
-### 4. Retrieval (The Output)
-
-When an agent needs context to answer a query or perform a task, it doesn't just
-do a keyword search. It performs a **Hybrid Search**, mixing semantic vector
-similarity with deterministic graph traversal to pull a highly precise, grounded
-slice of reality directly into its context window.
-
-## The Mental Model
-
-Think of a World as a **Living Knowledge Primitive**.
-
-In traditional apps, you query a database for records. In AI apps powered by
-Worlds, your agent traverses a digital replica of its environment that evolves
-constantly as it interacts with users and tools.
+When an agent needs context, it performs a **Hybrid Search**. This mixes
+semantic vector similarity with deterministic graph traversal to pull a highly
+precise, grounded slice of reality directly into its context window.
 
 ```mermaid
 graph LR
@@ -90,6 +60,7 @@ graph LR
     icon="diagram-project"
     href="/concepts/knowledge-primitives"
   >
-    Learn exactly how Worlds stores extracted facts as Entities and Triples.
+    Learn exactly how Worlds stores extracted facts as Items, Resources, and
+    Triples.
   </Card>
 </CardGroup>

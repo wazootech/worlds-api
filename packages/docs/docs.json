@@ -30,38 +30,27 @@
             "pages": ["overview", "quickstart", "vibe-coding"]
           },
           {
-            "group": "Concepts",
+            "group": "Core Concepts",
             "pages": [
               "concepts/how-it-works",
               "concepts/worlds-vs-rag",
               "concepts/knowledge-primitives",
-              "concepts/user-profiles",
               "concepts/agentic-loop",
-              "concepts/reasoning-inference",
-              "concepts/ontology",
-              "concepts/hybrid-search",
-              "concepts/organizing-filtering",
-              "concepts/data-sources",
-              "concepts/privacy-and-evolution"
+              "concepts/reasoning-inference"
             ]
           },
           {
             "group": "Infrastructure",
             "pages": [
-              "infrastructure/neuro-symbolic",
-              "infrastructure/edge-first",
-              "infrastructure/server-hosting",
-              "infrastructure/local-setup",
+              "infrastructure/philosophy",
+              "infrastructure/deployment",
               "infrastructure/configuration",
-              "infrastructure/whitepaper",
-              "infrastructure/console-hosting",
-              "infrastructure/cli-persistence"
+              "infrastructure/whitepaper"
             ]
           },
           {
             "group": "Architecture",
             "pages": [
-              "architecture/monorepo",
               "architecture/system-design",
               "architecture/request-pipeline"
             ]
