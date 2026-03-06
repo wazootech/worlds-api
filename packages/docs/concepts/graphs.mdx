@@ -1,0 +1,83 @@
+---
+title: "Knowledge Graphs"
+description:
+  "How Worlds uses RDF and Statements to build a verifiable, neuro-symbolic
+  memory."
+---
+
+At the heart of every World is a **Knowledge Graph**. Unlike traditional
+databases that store data in rigid tables, Worlds uses a graph-based structure
+to model complex relationships with human-like flexibility and mathematical
+precision.
+
+## Statements: The Building Blocks
+
+A **Statement** is the most fundamental unit of knowledge in a World. Everything
+your agent knows or remembers is stored as a collection of individual
+Statements.
+
+### The Analogy: An Atom
+
+Think of a Statement as an **Atom**. Atoms are the smallest, indivisible units
+that make up matter. Similarly, a Statement is the smallest unit of knowledge in
+a World. Alone, a Statement is a simple fact; together, thousands of Statements
+form a complex and nuanced knowledge graph.
+
+### Technical Equivalent: RDF Triple
+
+Technically, a Statement is an **RDF Triple**. It follows the standard W3C
+structure of **Subject -> Predicate -> Object**.
+
+- **Subject:** The entity the fact is about (e.g., `User_123`).
+- **Predicate:** The relationship or property (e.g., `likes`).
+- **Object:** The value or another entity (e.g., `Coffee`).
+
+---
+
+## Why Knowledge Graphs Matter
+
+### Deterministic Truth
+
+Unlike a large language model's weights, which are probabilistic and prone to
+hallucination, a Statement in a Knowledge Graph is a hard fact. When an agent
+retrieves a Statement, it is retrieving a specific, verifiable relationship.
+
+### Malleability
+
+Knowledge Graphs are designed to be "forked, merged, and mutated" by agents in
+real-time. This allows the memory to evolve as the agent learns new information
+or corrects old assumptions.
+
+### Semantic Searchability
+
+While Statements are technically rigid triples, the Worlds API indexes them for
+semantic search. This means your agent can find the "Atom" it needs using
+natural language, even if the query doesn't perfectly match the technical
+predicate.
+
+---
+
+## Standards & RDF
+
+Worlds doesn't reinvent the wheel. It leverages the **Resource Description
+Framework (RDF)**, a family of World Wide Web Consortium (W3C) standards
+originally designed for the Semantic Web.
+
+### Benefits of RDF
+
+- **Interoperability:** Your data isn't trapped in a proprietary format. It can
+  be exported and used with any RDF-compliant tool.
+- **Symbolic Logic:** RDF enables the use of **SPARQL**, a powerful query
+  language for complex, deterministic lookups.
+- **Data Sovereignty:** By using open standards, we ensure your knowledge
+  remains yours. Knowledge is stored at the edge or locally, ensuring users—not
+  AI providers—own their personal data.
+
+---
+
+## Abstraction Layer
+
+While the underlying technology is complex, the **Worlds SDK** acts as a
+"translator." It sits between the developer and the RDF database, converting
+natural language or simple function calls into complex graph queries. This makes
+the power of symbolic logic accessible without needing to be a database expert.

@@ -28,7 +28,6 @@
           {
             "group": "Get started",
             "pages": [
-              "index",
               "intro",
               {
                 "group": "Quickstart",
@@ -36,6 +35,10 @@
                 "pages": ["quickstart/cli", "quickstart/sdk"]
               }
             ]
+          },
+          {
+            "group": "Concepts",
+            "pages": ["concepts/worlds", "concepts/graphs", "concepts/search"]
           }
         ]
       },

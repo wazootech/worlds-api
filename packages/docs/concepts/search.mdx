@@ -1,0 +1,56 @@
+---
+title: "Search"
+description: "How Worlds enables semantic and full-text discovery of knowledge."
+---
+
+Worlds doesn't just store data; it makes it discoverable. By combining
+traditional full-text search with modern vector-based retrieval, Worlds provides
+a "Neuro-Symbolic" search experience.
+
+## Search Technologies
+
+### Vector Index (Neural)
+
+Every piece of information in a World is converted into a high-dimensional
+vector. This allows for **Semantic Search**, where the agent can find
+information based on _meaning_ rather than exact keywords. It's the "intuition"
+part of the system.
+
+### FTS (Symbolic)
+
+For cases where exact matches matter (names, specific terminologies, codes),
+Worlds uses **Full-Text Search (FTS)**. This ensures that rigid, deterministic
+facts are always accessible when you know exactly what you're looking for.
+
+### Reciprocal Rank Fusion (RRF)
+
+To give you the best of both worlds, we use **RRF**. This algorithm combines the
+results from both the Vector Index and FTS, ranking them to provide the most
+relevant answer regardless of whether it was found semantically or via keyword.
+
+---
+
+## Chunks
+
+Knowledge is often too large to be stored as a single "atom" or "world." This is
+where **Chunks** come in.
+
+### The Analogy: A Page / Fragment
+
+Think of a Chunk as a **Page** in a book or a **Fragment** of a larger document.
+While a Statement is an "atom" of a specific fact, a Chunk is a larger segment
+of text that provides context.
+
+### Technical Equivalent: Document Segment
+
+Technically, a Chunk is a **Document Segment** that has been processed for
+indexing. In Worlds, when you import a large document or a long conversation, it
+is split into Chunks. Each Chunk is then:
+
+1.  **Vectorized:** To enable semantic retrieval.
+2.  **Linked:** Most Chunks are linked to the Statements (triples) they contain,
+    providing an audit trail from a broad search result down to a specific
+    atomic fact.
+
+By searching through Chunks, your agent can find the relevant _section_ of a
+knowledge base and then drill down into the specific _Statements_ that matter.

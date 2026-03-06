@@ -1,0 +1,50 @@
+---
+title: "Worlds"
+description:
+  "The primary resource of the Worlds ecosystem: A dedicated, isolated knowledge
+  graph instance."
+---
+
+A **World** is the foundational unit of organization in the ecosystem. It acts
+as an isolated container where an agent's relationships, history, and facts
+live.
+
+### The Analogy: A Room
+
+Think of a World as a **Room**. A room provides a scoped environment with its
+own set of objects, rules, and context. Just as you can move from one room to
+another to change your environment, an agent can interact with different Worlds
+to access different sets of knowledge.
+
+### Technical Equivalent: Isolated RDF Dataset
+
+Technically, a World is an **Isolated RDF Dataset**. Each World is a
+self-contained RDF store, often paired with a search index for high-performance
+semantic retrieval. This structure ensures that facts are stored as
+deterministic relationships (symbolic logic) while remained searchable via
+modern vector techniques (neural intuition).
+
+---
+
+## Key Characteristics
+
+### Portability
+
+Worlds treats memory as a modular component that can be "plugged into" any brain
+(OpenAI, Anthropic, etc.). If you switch the LLM, the World (the memory) stays
+intact and portable.
+
+### Neuro-Symbolic Fusion
+
+A World is the architectural fusion of:
+
+- **Neural (Intuition):** Vector Search for semantic similarity and natural
+  language understanding.
+- **Symbolic (Logic):** RDF and SPARQL for rigid, verifiable, and deterministic
+  facts.
+
+### Traceable Facts
+
+Moving away from probabilistic "hallucination-prone" RAG, Worlds provides a
+system where the AI can provide a traceable audit trail for every fact it
+retrieves.
