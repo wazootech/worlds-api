@@ -1,88 +1,60 @@
 ---
 title: "Introduction"
-description: "Worlds is the Memory API for the AI era"
-mode: "custom"
+description: "Context infrastructure for stateful world models"
 ---
 
-export const HeroCard = ({ imageUrl, title, description, href }) => {
-  return (
-    <a
-      className="group flex flex-col h-full rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-zinc-800 hover:border-gray-200 dark:hover:border-zinc-700"
-      href={href}
-    >
-      <div className="overflow-hidden">
-        <img
-          src={imageUrl}
-          className="w-full h-48 object-cover transform group-hover:scale-105 transition-all duration-500"
-          alt={title}
-        />
-      </div>
-      <div className="p-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-zinc-50">
-          {title}
-        </h3>
-        <p className="mt-3 text-gray-600 dark:text-zinc-400">{description}</p>
-      </div>
-    </a>
-  );
-};
+<div className="flex flex-col items-center justify-center py-20">
+  <img 
+    src="/logo/light.svg" 
+    className="block dark:hidden h-24 w-auto mb-8" 
+    alt="Worlds" 
+  />
+  <img 
+    src="/logo/dark.svg" 
+    className="hidden dark:block h-24 w-auto mb-8" 
+    alt="Worlds" 
+  />
+  
+  <p className="max-w-2xl text-2xl text-center text-gray-600 dark:text-zinc-400 leading-relaxed">
+    Welcome to the Worlds ecosystem. Use the neuro-symbolic memory API to empower your **AI agents**.
+  </p>
 
-<div className="relative pb-12">
-
-  <div className="px-4 py-16 lg:py-32 max-w-4xl mx-auto">
-    <div className="flex justify-center mb-4">
-      <img src="/logo/light.svg" className="block dark:hidden h-16 w-auto" alt="Worlds [docs]" />
-      <img src="/logo/dark.svg" className="hidden dark:block h-16 w-auto" alt="Worlds [docs]" />
-    </div>
-
-    <p className="max-w-2xl mx-auto px-4 mt-6 text-xl text-center text-gray-600 dark:text-zinc-400 leading-relaxed">
-      Welcome to the Worlds ecosystem. Meet your <span className="font-medium text-primary">AI agent's favorite</span> Neuro-Symbolic Memory API.
-    </p>
-
-    <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-      <a
-        href="/overview"
-        className="px-6 py-3 rounded-full bg-primary text-white font-semibold hover:opacity-90 transition-all duration-300 shadow-md"
-      >
-        Overview
-      </a>
-      <a
-        href="/quickstart"
-        className="px-6 py-3 rounded-full bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-zinc-50 font-semibold border border-gray-200 dark:border-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-700 transition-all duration-300 shadow-sm"
-      >
-        Quickstart
-      </a>
-    </div>
-
-    <div className="mt-16 lg:mt-20 grid sm:grid-cols-2 gap-8">
-      <HeroCard
-        imageUrl="http://images-assets.nasa.gov/image/ARC-1975-AC75-1886/ARC-1975-AC75-1886~large.jpg"
-        title="How Worlds Work"
-        description="Mutable, adaptive, and cross-session context API and SDKs for AI."
-        href="/concepts/how-it-works"
-      />
-
-      <HeroCard
-        imageUrl="http://images-assets.nasa.gov/image/AC76-0628/AC76-0628~large.jpg"
-        title="Personalization"
-        description="Private, semantic search over your own data."
-        href="/cookbook/guides/personal-search"
-      />
-
-      <HeroCard
-        imageUrl="http://images-assets.nasa.gov/image/ARC-1975-AC75-1085/ARC-1975-AC75-1085~large.jpg"
-        title="Local-first"
-        description="Run and develop Worlds on your machine."
-        href="/infrastructure/local-setup"
-      />
-
-      <HeroCard
-        imageUrl="http://images-assets.nasa.gov/image/ARC-1995-ACD95-0229/ARC-1995-ACD95-0229~large.jpg"
-        title="Cookbooks"
-        description="Recipes and patterns for common use cases."
-        href="/cookbook"
-      />
-    </div>
-
+  <div className="mt-12 flex items-center gap-4">
+    <Card
+      title="Overview"
+      icon="book-open"
+      href="/intro"
+    />
+    <Card
+      title="Quickstart"
+      icon="bolt"
+      href="/quickstart/index"
+    />
   </div>
 </div>
+
+<CardGroup cols={2}>
+  <Card
+    title="How Worlds works"
+    icon="gears"
+    href="/concepts/worlds"
+  >
+    Provide adaptive, cross-session context to AI agents with our API and SDKs.
+  </Card>
+
+<Card title="Personalization" icon="user" href="/concepts/search">
+  Search your private data semantically and securely.
+</Card>
+
+<Card title="Local-first" icon="computer" href="/concepts/worlds">
+  Develop and run Worlds locally on your machine.
+</Card>
+
+  <Card
+    title="Cookbooks"
+    icon="book"
+    href="/intro"
+  >
+    Discover recipes and patterns for common use cases.
+  </Card>
+</CardGroup>

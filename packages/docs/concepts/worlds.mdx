@@ -5,46 +5,43 @@ description:
   graph instance."
 ---
 
-A **World** is the foundational unit of organization in the ecosystem. It acts
-as an isolated container where an agent's relationships, history, and facts
-live.
+A **World** serves as the foundational unit of organization in the ecosystem. It
+provides an isolated container for an agent's relationships, history, and facts.
 
-### The Analogy: A Room
+### The analogy: A room
 
-Think of a World as a **Room**. A room provides a scoped environment with its
-own set of objects, rules, and context. Just as you can move from one room to
-another to change your environment, an agent can interact with different Worlds
-to access different sets of knowledge.
+Think of a World as a **Room**. A room provides a scoped environment with unique
+objects, rules, and context. Agents can interact with different Worlds to access
+specific sets of knowledge, similar to moving between rooms to change
+environments.
 
-### Technical Equivalent: Isolated RDF Dataset
+### Technical equivalent: Isolated RDF dataset
 
-Technically, a World is an **Isolated RDF Dataset**. Each World is a
-self-contained RDF store, often paired with a search index for high-performance
-semantic retrieval. This structure ensures that facts are stored as
-deterministic relationships (symbolic logic) while remained searchable via
-modern vector techniques (neural intuition).
+Technically, a World comprises an **Isolated RDF Dataset**. Each World functions
+as a self-contained RDF store, often pairing with a search index for
+high-performance semantic retrieval. This structure stores facts as
+deterministic relationships (symbolic logic) while maintaining searchability via
+vector techniques (neural intuition).
 
 ---
 
-## Key Characteristics
+## Key characteristics
 
 ### Portability
 
-Worlds treats memory as a modular component that can be "plugged into" any brain
-(OpenAI, Anthropic, etc.). If you switch the LLM, the World (the memory) stays
-intact and portable.
+Worlds treats memory as a modular component for any "brain" (OpenAI, Anthropic,
+etc.). Switching the LLM preserves the World and its associated memory.
 
-### Neuro-Symbolic Fusion
+### Neuro-symbolic fusion
 
-A World is the architectural fusion of:
+A World fuses two architectural components:
 
-- **Neural (Intuition):** Vector Search for semantic similarity and natural
+- **Neural (Intuition):** Uses Vector Search for semantic similarity and natural
   language understanding.
-- **Symbolic (Logic):** RDF and SPARQL for rigid, verifiable, and deterministic
+- **Symbolic (Logic):** Uses RDF and SPARQL for verifiable and deterministic
   facts.
 
-### Traceable Facts
+### Traceable facts
 
-Moving away from probabilistic "hallucination-prone" RAG, Worlds provides a
-system where the AI can provide a traceable audit trail for every fact it
-retrieves.
+Worlds eliminates probabilistic "hallucination-prone" RAG by providing a
+traceable audit trail for every retrieved fact.

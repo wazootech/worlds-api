@@ -3,54 +3,50 @@ title: "Search"
 description: "How Worlds enables semantic and full-text discovery of knowledge."
 ---
 
-Worlds doesn't just store data; it makes it discoverable. By combining
-traditional full-text search with modern vector-based retrieval, Worlds provides
-a "Neuro-Symbolic" search experience.
+Worlds combines traditional full-text search with vector-based retrieval to
+provide a "Neuro-Symbolic" discovery experience.
 
-## Search Technologies
+## Search technologies
 
-### Vector Index (Neural)
+### Vector index (neural)
 
-Every piece of information in a World is converted into a high-dimensional
-vector. This allows for **Semantic Search**, where the agent can find
-information based on _meaning_ rather than exact keywords. It's the "intuition"
-part of the system.
+Worlds converts every piece of information into a high-dimensional vector to
+enable **Semantic Search**. This allows agents to find information based on
+meaning rather than exact keywords, providing the "intuition" for the system.
 
-### FTS (Symbolic)
+### FTS (symbolic)
 
-For cases where exact matches matter (names, specific terminologies, codes),
-Worlds uses **Full-Text Search (FTS)**. This ensures that rigid, deterministic
-facts are always accessible when you know exactly what you're looking for.
+Worlds uses **Full-Text Search (FTS)** for cases requiring exact matches (names,
+terminologies, or codes). FTS ensures access to deterministic facts when the
+exact query term is known.
 
 ### Reciprocal Rank Fusion (RRF)
 
-To give you the best of both worlds, we use **RRF**. This algorithm combines the
-results from both the Vector Index and FTS, ranking them to provide the most
-relevant answer regardless of whether it was found semantically or via keyword.
+The **Reciprocal Rank Fusion (RRF)** algorithm combines results from the Vector
+Index and FTS. RRF ranks these results to provide the most relevant answer,
+whether discovered semantically or via keyword.
 
 ---
 
 ## Chunks
 
-Knowledge is often too large to be stored as a single "atom" or "world." This is
-where **Chunks** come in.
+Worlds handles large datasets by splitting knowledge into **Chunks**.
 
-### The Analogy: A Page / Fragment
+### The analogy: A page / fragment
 
-Think of a Chunk as a **Page** in a book or a **Fragment** of a larger document.
-While a Statement is an "atom" of a specific fact, a Chunk is a larger segment
-of text that provides context.
+Think of a Chunk as a **Page** in a book or a **Fragment** of a document. While
+a Statement represents an "atom" of a fact, a Chunk provides a larger segment of
+text for context.
 
-### Technical Equivalent: Document Segment
+### Technical equivalent: Document segment
 
-Technically, a Chunk is a **Document Segment** that has been processed for
-indexing. In Worlds, when you import a large document or a long conversation, it
-is split into Chunks. Each Chunk is then:
+Technically, a Chunk represents a **Document Segment** processed for indexing.
+When Worlds imports a large document or conversation, it splits the content into
+Chunks. Worlds then processes each Chunk in two ways:
 
-1.  **Vectorized:** To enable semantic retrieval.
-2.  **Linked:** Most Chunks are linked to the Statements (triples) they contain,
-    providing an audit trail from a broad search result down to a specific
-    atomic fact.
+1.  **Vectorization:** Enables semantic retrieval.
+2.  **Linking:** Connects the Chunk to the Statements (triples) it contains,
+    providing an audit trail from search results to specific facts.
 
-By searching through Chunks, your agent can find the relevant _section_ of a
-knowledge base and then drill down into the specific _Statements_ that matter.
+Searching through Chunks allows agents to identify the relevant section of a
+knowledge base and then drill down into specific Statements.

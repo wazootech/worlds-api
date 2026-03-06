@@ -31,8 +31,11 @@
               "intro",
               {
                 "group": "Quickstart",
-                "root": "quickstart",
-                "pages": ["quickstart/cli", "quickstart/sdk"]
+                "pages": [
+                  "quickstart/index",
+                  "quickstart/cli",
+                  "quickstart/sdk"
+                ]
               }
             ]
           },
