@@ -27,7 +27,7 @@
         "groups": [
           {
             "group": "Get started",
-            "pages": ["index", "quickstart"]
+            "pages": ["intro", "quickstart"]
           },
           {
             "group": "Command-line interface",
@@ -90,6 +90,10 @@
     }
   },
   "redirects": [
+    {
+      "source": "/",
+      "destination": "/intro"
+    },
     {
       "source": "/overview",
       "destination": "/intro"
