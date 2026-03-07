@@ -5,43 +5,42 @@ description:
   graph instance."
 ---
 
-A **World** serves as the foundational unit of organization in the ecosystem. It
-provides an isolated container for an agent's relationships, history, and facts.
+A **World** functions as the foundational unit of organization in the ecosystem.
+It provides an isolated container for an agent's relationships, history, and
+facts.
 
-### The analogy: A room
+## Key takeaways
 
-Think of a World as a **room**. A room provides a scoped environment with unique
-objects, rules, and context. Agents can interact with different Worlds to access
-specific sets of knowledge, similar to moving between rooms to change
-environments.
+- A World serves as an isolated container for agent relationships and facts.
+- Each World comprises an isolated RDF dataset paired with a search index.
+- World memory remains portable across different large language models.
 
-### Technical equivalent: Isolated RDF dataset
+## Technical foundations: Isolated RDF dataset
 
 Technically, a World comprises an **isolated RDF dataset**. Each World functions
-as a self-contained RDF store, often pairing with a search index for
-high-performance semantic retrieval. This structure stores facts as
+as a self-contained RDF store. This structure pairs with a search index for
+high-performance semantic retrieval. This architecture stores facts as
 deterministic relationships (symbolic logic) while maintaining searchability via
 vector techniques (neural intuition).
-
----
 
 ## Key characteristics
 
 ### Portability
 
 Worlds treats memory as a modular component for any "brain" (OpenAI, Anthropic,
-etc.). Switching the LLM preserves the World and its associated memory.
+or other providers). Switching the LLM preserves the World and its associated
+memory.
 
 ### Neuro-symbolic fusion
 
 A World fuses two architectural components:
 
-- **Neural (Intuition):** Uses Vector Search for semantic similarity and natural
-  language understanding.
-- **Symbolic (Logic):** Uses RDF and SPARQL for verifiable and deterministic
-  facts.
+- **Neural (intuition):** This component uses vector search for semantic
+  similarity and natural language understanding.
+- **Symbolic (logic):** This component uses RDF and SPARQL for verifiable and
+  deterministic facts.
 
 ### Traceable facts
 
-Worlds eliminates probabilistic "hallucination-prone" RAG by providing a
+Worlds eliminates probabilistic, hallucination-prone retrieval. It provides a
 traceable audit trail for every retrieved fact.

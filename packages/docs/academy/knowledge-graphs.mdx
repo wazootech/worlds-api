@@ -4,78 +4,64 @@ description:
   "How Worlds uses graphs to build a verifiable, neuro-symbolic memory."
 ---
 
-A **Knowledge Graph** powers every World. Unlike traditional databases that
-store data in rigid tables, Worlds organizes information in a graph-based
-structure. This approach models complex relationships with human-like
-flexibility and mathematical precision.
+A **knowledge graph** powers every World. Worlds organizes information in a
+graph-based structure rather than rigid tables. This approach models complex
+relationships with mathematical precision.
+
+## Key takeaways
+
+- Worlds uses graph-based structures to model complex relationships.
+- Statements represent the fundamental units of knowledge in a World.
+- RDF triples (Subject -> Predicate -> Object) provide a deterministic
+  foundation for memory.
 
 ## Statements: The building blocks
 
 A **Statement** represents the fundamental unit of knowledge in a World. Worlds
-stores everything an agent knows or remembers as a collection of individual
-Statements.
-
-### The analogy: An atom
-
-Think of a Statement as an **atom**. Atoms are the smallest, indivisible units
-of matter. Similarly, a Statement is the smallest unit of knowledge in a World.
-While a single Statement represents a simple fact, thousands of Statements
-together form a nuanced knowledge graph.
+stores all agent data as a collection of individual Statements.
 
 ### Technical equivalent: RDF triple
 
-Technically, a Statement is an **RDF triple**. It follows the standard W3C
+A Statement functions as an **RDF triple**. It follows the standard W3C
 structure of **Subject -> Predicate -> Object**.
 
 - **Subject:** The entity (e.g., `User_123`).
 - **Predicate:** The relationship or property (e.g., `likes`).
 - **Object:** The value or related entity (e.g., `Coffee`).
 
----
-
 ## Why knowledge graphs matter
 
 ### Deterministic truth
 
-Unlike large language model weights, which remain probabilistic and prone to
-hallucination, a Knowledge Graph Statement represents a hard fact. When an agent
-retrieves a Statement, it accesses a specific, verifiable relationship.
+Knowledge graph statements represent hard facts. Unlike large language model
+weights, which remain probabilistic, Worlds retrieves specific, verifiable
+relationships. This mechanism prevents hallucinations.
 
 ### Malleability
 
-Agents can "fork, merge, and mutate" Knowledge Graphs in real-time. This
-capability allows the memory to evolve as the agent learns new information or
-corrects assumptions.
+Agents can fork, merge, and mutate knowledge graphs in real-time. This
+capability allows the memory to evolve as the agent learns new information.
 
-### Semantic Searchability
+### Semantic searchability
 
-Statements use rigid triples, but the Worlds API indexes them for semantic
-search. This indexing allows agents to find the correct "Atom" using natural
-language, even when queries do not perfectly match the technical predicate.
-
----
+The Worlds API indexes rigid triples for semantic search. This indexing allows
+agents to find the correct statement using natural language.
 
 ## Standards and RDF
 
-Worlds leverages the **Resource Description Framework (RDF)** rather than
-reinventing its own standard. RDF comprises a family of World Wide Web
-Consortium (W3C) standards originally designed for the Semantic Web.
+Worlds leverages the **Resource Description Framework (RDF)** standard. RDF
+comprises a family of W3C standards designed for the Semantic Web.
 
 ### Benefits of RDF
 
-- **Interoperability:** Users can export and use data with any RDF-compliant
-  tool, ensuring it remains portable.
-- **Symbolic Logic:** RDF enables the use of **SPARQL**, a powerful query
-  language for complex, deterministic lookups.
-- **Data Sovereignty:** By using open standards, Worlds ensuring your knowledge
-  remains yours. Worlds stores knowledge at the edge or locally, ensuring
-  users—not AI providers—own their personal data.
+- **Interoperability:** Users can export data to any RDF-compliant tool.
+- **Symbolic logic:** RDF enables the use of **SPARQL** for complex,
+  deterministic lookups.
+- **Data sovereignty:** Users own their personal data. Worlds stores knowledge
+  at the edge or locally.
 
----
+## The Worlds SDK
 
-## Abstraction layer
-
-The **Worlds SDK** acts as a "translator" between the developer and the RDF
-database. It converts natural language or simple function calls into complex
-graph queries. This abstraction makes symbolic logic accessible without
-requiring database expertise.
+The **Worlds SDK** translates between the developer and the RDF database. It
+converts natural language into complex graph queries. This abstraction makes
+symbolic logic accessible without requiring database expertise.
