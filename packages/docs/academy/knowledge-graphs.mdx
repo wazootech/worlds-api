@@ -1,0 +1,81 @@
+---
+title: "Lesson 1.2: Knowledge graphs"
+description:
+  "How Worlds uses graphs to build a verifiable, neuro-symbolic memory."
+---
+
+A **knowledge graph** powers every World. Worlds organizes information in a
+graph-based structure rather than rigid tables. This approach models complex
+relationships with mathematical precision.
+
+## Key takeaways
+
+- Worlds uses graph-based structures to model complex relationships.
+- Statements represent the fundamental units of knowledge in a World.
+- RDF triples (Subject -> Predicate -> Object) provide a deterministic
+  foundation for memory.
+
+## Statements: The building blocks
+
+A **Statement** represents the fundamental unit of knowledge in a World. Worlds
+stores all agent data as a collection of individual Statements.
+
+### Technical equivalent: RDF triple
+
+A Statement functions as an **RDF triple**. It follows the standard W3C
+structure of **Subject -> Predicate -> Object**.
+
+- **Subject:** The entity (e.g., `User_123`).
+- **Predicate:** The relationship or property (e.g., `likes`).
+- **Object:** The value or related entity (e.g., `Coffee`).
+
+## Why knowledge graphs matter
+
+### Deterministic truth
+
+Knowledge graph statements represent hard facts. Unlike large language model
+weights, which remain probabilistic, Worlds retrieves specific, verifiable
+relationships. This mechanism prevents hallucinations.
+
+### Malleability
+
+Agents can fork, merge, and mutate knowledge graphs in real-time. This
+capability allows the memory to evolve as the agent learns new information.
+
+### Semantic searchability
+
+The Worlds API indexes rigid triples for semantic search. This indexing allows
+agents to find the correct statement using natural language.
+
+## Standards and RDF
+
+Worlds leverages the **Resource Description Framework (RDF)** standard. RDF
+comprises a family of W3C standards designed for the Semantic Web.
+
+### Benefits of RDF
+
+- **Interoperability:** Users can export data to any RDF-compliant tool.
+- **Symbolic logic:** RDF enables the use of **SPARQL** for complex,
+  deterministic lookups.
+- **Data sovereignty:** Users own their personal data. Worlds stores knowledge
+  at the edge or locally.
+
+### Technical specifications
+
+Get all the details straight from the source by exploring the official W3C
+specifications.
+
+Start with the **Abstract** and **Introduction** for the high-level mission.
+Look for **Examples** and **Diagrams** to see the concepts in action, and use
+the **Terminology** section as a glossary when you encounter new terms.
+
+- [**RDF 1.1 Concepts and Abstract Syntax**](http://www.w3.org/TR/rdf11-concepts/)
+  — The foundational model for representing information in the Worlds ecosystem.
+- [**SPARQL 1.1 Query Language**](http://www.w3.org/TR/sparql11-query/) — The
+  standard for querying and manipulating graph data.
+
+## The Worlds SDK
+
+The **Worlds SDK** translates between the developer and the RDF database. It
+converts natural language into complex graph queries. This abstraction makes
+symbolic logic accessible without requiring database expertise.

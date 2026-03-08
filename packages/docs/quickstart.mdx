@@ -1,0 +1,70 @@
+---
+title: "Quickstart"
+description: "Integrate Worlds into your AI application in minutes."
+---
+
+## Installation
+
+Add the Worlds SDK to the project using your preferred package manager:
+
+<CodeGroup>
+  ```bash deno
+  deno add jsr:@wazoo/worlds-sdk
+  ```
+
+```bash npm
+npx jsr add @wazoo/worlds-sdk
+```
+
+```bash pnpm
+pnpm i jsr:@wazoo/worlds-sdk
+```
+
+```bash yarn
+yarn add jsr:@wazoo/worlds-sdk
+```
+
+```bash bun
+bunx jsr add @wazoo/worlds-sdk
+```
+
+</CodeGroup>
+
+### Initialize your first World
+
+Connect to the Worlds API and initialize a persistent context:
+
+```typescript
+import { WorldsSdk } from "@wazoo/worlds-sdk";
+
+const sdk = new WorldsSdk({
+  baseUrl: "https://api.wazoo.dev",
+  apiKey: "YOUR_API_KEY",
+});
+
+const world = await sdk.worlds.create({
+  slug: "my-first-world",
+  label: "My First World",
+});
+```
+
+### Add context
+
+Provide AI agents with persistent, searchable memory:
+
+```typescript
+await sdk.worlds.import(
+  "my-first-world",
+  `
+  <#memo> <http://purl.org/dc/terms/description> "The secret ingredient is always more compute." .
+  `,
+  { format: "turtle" },
+);
+```
+
+## Next steps
+
+Now that you've integrated the SDK, check out:
+
+- [API reference](/api-reference/list-worlds)
+- [Conceptual overview](/intro)

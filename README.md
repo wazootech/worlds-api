@@ -2,6 +2,7 @@
 
 [![JSR](https://jsr.io/badges/@wazoo/worlds-sdk)](https://jsr.io/@wazoo/worlds-sdk)
 [![JSR score](https://jsr.io/badges/@wazoo/worlds-sdk/score)](https://jsr.io/@wazoo/worlds-sdk/score)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wazootech/worlds)
 
 **Worlds Platform™** is a REST API designed to manage, query, update, and reason
 over [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge

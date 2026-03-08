@@ -1,134 +1,83 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Worlds API",
+  "name": "Worlds Docs",
   "colors": {
     "primary": "#D97706",
     "light": "#F59E0B",
     "dark": "#78350F"
   },
+  "contextual": {
+    "options": ["copy", "view"]
+  },
   "favicon": "/images/wazoo.svg",
+  "seo": {
+    "indexing": "all",
+    "metatags": {
+      "og:type": "website",
+      "og:site_name": "Worlds Docs",
+      "canonical": "https://docs.wazoo.dev"
+    }
+  },
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Developer Platform",
+        "icon": "code",
         "groups": [
           {
-            "group": "Getting Started",
-            "pages": [
-              "index",
-              "getting-started/quickstart",
-              "getting-started/authentication"
-            ]
+            "group": "Get started",
+            "pages": ["intro", "quickstart"]
           },
           {
-            "group": "Architecture",
-            "pages": [
-              "architecture/overview",
-              "architecture/resource-hierarchy",
-              "architecture/paper"
-            ]
-          },
-          {
-            "group": "Hosting",
-            "pages": [
-              "hosting/production",
-              "hosting/configuration"
-            ]
-          },
-          {
-            "group": "Development",
-            "pages": [
-              "development/local-setup",
-              "development/local-persistence",
-              "development/tasks"
-            ]
-          },
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "concepts/worlds",
-              "concepts/sparql",
-              "concepts/search"
-            ]
+            "group": "Command-line interface",
+            "pages": ["cli"]
           }
         ]
       },
       {
-        "tab": "Internal",
+        "tab": "Academy",
+        "icon": "graduation-cap",
         "groups": [
           {
-            "group": "System Design",
+            "group": "Fundamentals",
             "pages": [
-              "internal/design",
-              "internal/request-flow",
-              "internal/database-layer",
-              "internal/resource-pattern"
+              "academy/index",
+              {
+                "group": "Chapter 1: Fundamentals",
+                "pages": ["academy/world-memory", "academy/knowledge-graphs"]
+              },
+              {
+                "group": "Chapter 2: Discovery",
+                "pages": ["academy/semantic-search"]
+              }
             ]
           },
           {
-            "group": "Implementation",
-            "pages": [
-              "internal/routes",
-              "internal/ai-sdk",
-              "internal/deno-app-management",
-              "internal/rdf-sparql",
-              "internal/embeddings-search",
-              "internal/logging"
-            ]
-          },
-
-          {
-            "group": "Maintenance",
-            "pages": [
-              "internal/testing",
-              "internal/checklist"
-            ]
+            "group": "History",
+            "pages": ["academy/history"]
           }
         ]
       },
       {
         "tab": "API Reference",
+        "icon": "book-open",
+        "openapi": "openapi.yaml",
         "groups": [
           {
-            "group": "Worlds",
+            "group": "Endpoints",
             "pages": [
-              "api-reference/worlds/list",
-              "api-reference/worlds/get",
-              "api-reference/worlds/create",
-              "api-reference/worlds/update",
-              "api-reference/worlds/delete"
-            ]
-          },
-          {
-            "group": "SPARQL",
-            "pages": [
-              "api-reference/sparql/query",
-              "api-reference/sparql/update"
-            ]
-          },
-          {
-            "group": "Search",
-            "pages": [
-              "api-reference/search/search"
-            ]
-          },
-          {
-            "group": "Policy",
-            "pages": [
-              "reference/rate-limits"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "SDKs",
-        "groups": [
-          {
-            "group": "TypeScript SDK",
-            "pages": [
-              "sdk/overview",
-              "sdk/reference"
+              "GET /worlds",
+              "POST /worlds",
+              "GET /worlds/{world}",
+              "PUT /worlds/{world}",
+              "DELETE /worlds/{world}",
+              "GET /worlds/{world}/search",
+              "GET /worlds/{world}/sparql",
+              "POST /worlds/{world}/sparql",
+              "GET /worlds/{world}/logs",
+              "GET /worlds/{world}/export",
+              "POST /worlds/{world}/import"
             ]
           }
         ]
@@ -144,15 +93,25 @@
       ]
     }
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/intro"
+    },
+    {
+      "source": "/overview",
+      "destination": "/intro"
+    }
+  ],
   "logo": {
-    "light": "/images/wazoo.svg",
-    "dark": "/images/wazoo.svg"
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "https://github.com/EthanThatOneKid/worlds-api/issues"
+        "type": "github",
+        "href": "https://github.com/wazootech/worlds"
       }
     ],
     "primary": {
@@ -162,10 +121,43 @@
     }
   },
   "footer": {
-    "socials": {
-      "linkedin": "https://www.linkedin.com/company/wazootech/",
-      "github": "https://github.com/wazootech"
-    }
+    "links": [
+      {
+        "header": "Explore",
+        "items": [
+          {
+            "label": "Worlds Console",
+            "href": "https://console.wazoo.dev"
+          },
+          {
+            "label": "SDK (JSR)",
+            "href": "https://jsr.io/@wazoo/worlds-sdk"
+          }
+        ]
+      },
+      {
+        "header": "Community",
+        "items": [
+          {
+            "label": "GitHub",
+            "href": "https://github.com/wazootech/worlds"
+          },
+          {
+            "label": "X (Twitter)",
+            "href": "https://x.com/wazootech"
+          }
+        ]
+      },
+      {
+        "header": "Resources",
+        "items": [
+          {
+            "label": "Blog",
+            "href": "https://wazoo.dev/blog"
+          }
+        ]
+      }
+    ]
   },
   "integrations": {
     "ga4": {

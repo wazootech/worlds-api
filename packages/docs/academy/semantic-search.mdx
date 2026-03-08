@@ -1,0 +1,54 @@
+---
+title: "Lesson 2.1: Semantic search"
+description: "How Worlds enables semantic and full-text discovery of knowledge."
+---
+
+Worlds combines traditional full-text search with vector-based retrieval to
+provide a neuro-symbolic discovery experience.
+
+## Key takeaways
+
+- Worlds uses vector-based retrieval for semantic search and full-text search
+  for exact matches.
+- The reciprocal rank fusion (RRF) algorithm merges and ranks search results
+  from both methods.
+- Worlds splits large datasets into Chunks to maintain context during indexing
+  and retrieval.
+
+## Search technologies
+
+### Vector index (neural)
+
+Worlds converts information into high-dimensional vectors. This process enables
+**semantic search**. Agents use this feature to find information based on
+meaning rather than exact keywords.
+
+### Full-text search (symbolic)
+
+Worlds utilizes **full-text search (FTS)** for exact matches. Use FTS for names,
+unique terminologies, or specific codes. This method provides deterministic
+results when the user provides exact query terms.
+
+### Reciprocal rank fusion
+
+The **reciprocal rank fusion (RRF)** algorithm combines results from the vector
+index and FTS. RRF ranks these results to identify the most relevant answer.
+
+## Chunks
+
+Worlds manages large datasets by splitting knowledge into discrete segments
+called **Chunks**.
+
+### Technical equivalent: Document segment
+
+A Chunk represents a **document segment** processed for indexing. Worlds splits
+large documents or conversations into these segments upon import. The system
+then processes each Chunk through two channels:
+
+1.  **Vectorization:** This step enables semantic retrieval.
+2.  **Linking:** This step connects the Chunk to its contained Statements
+    (triples). This connection provides an audit trail from search results to
+    specific facts.
+
+Searching through Chunks allows agents to identify relevant sections of a
+knowledge base before drilling down into specific Statements.
