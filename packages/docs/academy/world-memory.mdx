@@ -5,42 +5,43 @@ description:
   graph instance."
 ---
 
-A **World** functions as the foundational unit of organization in the ecosystem.
-It provides an isolated container for an agent's relationships, history, and
-facts.
+A **World** is the foundational unit of organization in the ecosystem. It
+provides an isolated container for an agent's relationships, history, and facts.
 
-## Key takeaways
+> [!IMPORTANT] **Architectural stress test: Fragmented context** Legacy systems
+> design relies on single, linear context windows. This approach creates
+> fundamental reasoning limits.
+>
+> _The Challenge_: Unlinked contexts fragment an agent's memory. To achieve
+> high-performance reasoning across complex tasks, utilize deterministic linkage
+> to build a multi-faceted graph.
 
-- A World serves as an isolated container for agent relationships and facts.
-- Each World comprises an isolated RDF dataset paired with a search index.
-- World memory remains portable across different large language models.
+## System goals and constraints
 
-## Technical foundations: Isolated RDF dataset
+| Goal            | Description                          | Constraint                     |
+| :-------------- | :----------------------------------- | :----------------------------- |
+| **Isolation**   | Prevent data leakage between agents. | One RDF dataset per World.     |
+| **Portability** | Maintain memory across model swaps.  | Decoupled from LLM provider.   |
+| **Fusion**      | Hybrid neural/symbolic reasoning.    | Requires both Vector + SPARQL. |
 
-Technically, a World comprises an **isolated RDF dataset**. Each World functions
-as a self-contained RDF store. This structure pairs with a search index for
-high-performance semantic retrieval. This architecture stores facts as
-deterministic relationships (symbolic logic) while maintaining searchability via
-vector techniques (neural intuition).
+## Technical architecture: Neuro-symbolic fusion
 
-## Key characteristics
+A World functions as a **neuro-symbolic memory container**. It pairs an isolated
+RDF dataset with a high-performance vector search index.
 
-### Portability
+### 1. The neural layer (intuition)
 
-Worlds treats memory as a modular component for any "brain" (OpenAI, Anthropic,
-or other providers). Switching the LLM preserves the World and its associated
-memory.
+This layer uses vector embeddings to manage semantic similarity. It allows the
+agent to navigate the world through natural language queries.
 
-### Neuro-symbolic fusion
+### 2. The symbolic layer (logic)
 
-A World fuses two architectural components:
+This layer uses RDF and SPARQL for deterministic facts. It provides
+**deterministic validation**, reducing the risk of hallucinations inherent in
+standalone LLMs.
 
-- **Neural (intuition):** This component uses vector search for semantic
-  similarity and natural language understanding.
-- **Symbolic (logic):** This component uses RDF and SPARQL for verifiable and
-  deterministic facts.
+## Symbolic audit trails
 
-### Traceable facts
-
-Worlds eliminates probabilistic, hallucination-prone retrieval. It provides a
-traceable audit trail for every retrieved fact.
+Worlds eliminates "black box" behavior. Every retrieved fact has a verifiable
+audit trail in the RDF graph. If an agent makes a claim, the symbolic layer
+proves it.

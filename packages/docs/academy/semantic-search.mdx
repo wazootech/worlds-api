@@ -3,52 +3,46 @@ title: "Lesson 2.1: Semantic search"
 description: "How Worlds enables semantic and full-text discovery of knowledge."
 ---
 
-Worlds combines traditional full-text search with vector-based retrieval to
-provide a neuro-symbolic discovery experience.
+Worlds combines full-text search with vector-based retrieval to provide a
+neuro-symbolic discovery experience.
 
-## Key takeaways
+> [!TIP] **Discovery workflow: Modeling synergy** Synergy defines the
+> interaction of discrete modules. In Worlds, discovery synergy combines
+> **neural intuition** and **symbolic exactness**.
 
-- Worlds uses vector-based retrieval for semantic search and full-text search
-  for exact matches.
-- The reciprocal rank fusion (RRF) algorithm merges and ranks search results
-  from both methods.
-- Worlds splits large datasets into Chunks to maintain context during indexing
-  and retrieval.
+```mermaid
+graph TD
+    Query["User Query"] --> Neural["Neural (Vector Embeddings)"]
+    Query --> Symbolic["Symbolic (Full-Text Search)"]
+    Neural --> RRF["Reciprocal Rank Fusion (RRF)"]
+    Symbolic --> RRF
+    RRF --> Result["Optimized Result Set"]
+    Result --> Audit["Symbolic Audit Trail (RDF Triples)"]
+```
 
-## Search technologies
+## Environmental context isolation
 
-### Vector index (neural)
+The Worlds architecture utilizes **progressive disclosure** to manage cognitive
+load. This technique isolates documentation sidebars strictly to the libraries,
+variables, and functions relevant to the active, localized module.
 
-Worlds converts information into high-dimensional vectors. This process enables
-**semantic search**. Agents use this feature to find information based on
-meaning rather than exact keywords.
+### Core discovery technologies
 
-### Full-text search (symbolic)
+| Technology          | Role                  | Pedagogical framework   |
+| :------------------ | :-------------------- | :---------------------- |
+| **Vector index**    | Semantic intuition    | Strategic modeling      |
+| **Full-text (FTS)** | Exact matching        | Deterministic retrieval |
+| **RRF**             | Ranking and synthesis | System optimization     |
 
-Worlds utilizes **full-text search (FTS)** for exact matches. Use FTS for names,
-unique terminologies, or specific codes. This method provides deterministic
-results when the user provides exact query terms.
-
-### Reciprocal rank fusion
-
-The **reciprocal rank fusion (RRF)** algorithm combines results from the vector
-index and FTS. RRF ranks these results to identify the most relevant answer.
-
-## Chunks
+## The search loop: Zero-knowledge onboarding
 
 Worlds manages large datasets by splitting knowledge into discrete segments
-called **Chunks**.
+called **Chunks**. Each Chunk undergoes a dual-channel process:
 
-### Technical equivalent: Document segment
+1.  **Vectorization**: Transforms the document segment into a high-dimensional
+    vector for semantic matching.
+2.  **Linking**: Connects the Chunk to specific RDF statements (triples). This
+    ensures that every search result is actionable and verifiable.
 
-A Chunk represents a **document segment** processed for indexing. Worlds splits
-large documents or conversations into these segments upon import. The system
-then processes each Chunk through two channels:
-
-1.  **Vectorization:** This step enables semantic retrieval.
-2.  **Linking:** This step connects the Chunk to its contained Statements
-    (triples). This connection provides an audit trail from search results to
-    specific facts.
-
-Searching through Chunks allows agents to identify relevant sections of a
-knowledge base before drilling down into specific Statements.
+Discovery in Worlds is a multi-stage process that prioritizes accuracy and
+verifiability rather than a single-turn operation.
