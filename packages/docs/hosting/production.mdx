@@ -5,13 +5,15 @@ description: "Deploy the Worlds platform to the cloud."
 
 # Production deployment
 
-To run a production-grade instance of the Worlds platform, configure the following infrastructure and services.
+To run a production-grade instance of the Worlds platform, configure the
+following infrastructure and services.
 
 ## Provision infrastructure
 
 Collect the necessary API keys and credentials for each service:
 
-- **Identity (WorkOS)**: Set up AuthKit and retrieve `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, and `WORKOS_COOKIE_PASSWORD`.
+- **Identity (WorkOS)**: Set up AuthKit and retrieve `WORKOS_API_KEY`,
+  `WORKOS_CLIENT_ID`, and `WORKOS_COOKIE_PASSWORD`.
 - **Compute (Deno Deploy)**: Generate a personal access token.
 - **Storage (Turso)**: Retrieve `TURSO_API_TOKEN` and `TURSO_ORG`.
 - **AI models (OpenRouter)**: Retrieve `OPENROUTER_API_KEY`.
@@ -28,20 +30,20 @@ The console is a Next.js application. Deploy it to Vercel, Netlify, or a VPS.
 Once the console is running:
 
 <Steps>
-  <Step title="Log in">
-    Access your console and log in via AuthKit.
-  </Step>
+  <Step title="Log in">Access your console and log in via AuthKit.</Step>
   <Step title="Create an organization">
     Define your organization within the console.
   </Step>
   <Step title="Automatic provisioning">
-    The platform will automatically provision a Turso database, deploy a Deno Deploy app, and link them together.
+    The platform will automatically provision a Turso database, deploy a Deno
+    Deploy app, and link them together.
   </Step>
 </Steps>
 
 ## Cloud embeddings with OpenRouter
 
-Production environments utilize **OpenRouter** for cloud-based embeddings by default.
+Production environments utilize **OpenRouter** for cloud-based embeddings by
+default.
 
 <Steps>
   <Step title="Generate API key">

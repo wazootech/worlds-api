@@ -1,11 +1,14 @@
 ---
 title: "Implementation checklist"
-description: "A guide for developers implementing new features and resources in the Worlds platform."
+description:
+  "A guide for developers implementing new features and resources in the Worlds
+  platform."
 ---
 
 # Implementation checklist
 
-Follow this checklist when adding new resources or routes to the platform to ensure consistency and reliability.
+Follow this checklist when adding new resources or routes to the platform to
+ensure consistency and reliability.
 
 ## New resource
 
@@ -23,8 +26,10 @@ Complete these steps when adding a new resource to the main database:
 Complete these steps when adding a table to the world-specific database:
 
 - [ ] Add the DDL to the resource's `queries.sql` file.
-- [ ] Register the table in the world-scope portion of `initializeDatabase` in `core/init.ts`.
-- [ ] Verify that `DatabaseManager` implementations execute this initialization for new worlds.
+- [ ] Register the table in the world-scope portion of `initializeDatabase` in
+      `core/init.ts`.
+- [ ] Verify that `DatabaseManager` implementations execute this initialization
+      for new worlds.
 
 ## New route
 

@@ -5,7 +5,8 @@ description: "Authenticate requests to the Worlds API."
 
 # Authentication
 
-The Worlds API requires **Bearer Token** authentication. Include your API key in the `Authorization` header of every request.
+The Worlds API requires **Bearer Token** authentication. Include your API key in
+the `Authorization` header of every request.
 
 ## Generate an API key
 
@@ -16,7 +17,8 @@ You must provide a valid API key to interact with the API.
     Generate an API key in the [dashboard](https://console.wazoo.dev/settings).
   </Tab>
   <Tab title="Self-hosted">
-    Use the `WORLDS_API_KEY` environment variable configured on your server. This acts as the **root admin key** for your instance.
+    Use the `WORLDS_API_KEY` environment variable configured on your server.
+    This acts as the **root admin key** for your instance.
   </Tab>
 </Tabs>
 
@@ -24,8 +26,9 @@ You must provide a valid API key to interact with the API.
 
 For rapid prototyping and local development, the `WORLDS_API_KEY` is optional.
 
-> [!WARNING]
-> If you do not provide a `WORLDS_API_KEY`, the server runs in **unprotected mode**, granting full administrative access to all requests. Use this state strictly for local development.
+> [!WARNING] If you do not provide a `WORLDS_API_KEY`, the server runs in
+> **unprotected mode**, granting full administrative access to all requests. Use
+> this state strictly for local development.
 
 ## Authenticate requests
 
@@ -52,4 +55,5 @@ const sdk = new WorldsSdk({
 
 ## Admin access
 
-Certain endpoints, such as listing all worlds for an account, require an admin API key. In self-hosted environments, use your `WORLDS_API_KEY`.
+Certain endpoints, such as listing all worlds for an account, require an admin
+API key. In self-hosted environments, use your `WORLDS_API_KEY`.

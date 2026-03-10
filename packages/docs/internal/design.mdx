@@ -5,7 +5,9 @@ description: "Structure, architecture, and conventions of the Worlds API."
 
 # Internal design
 
-This document describes the application structure to ensure consistent implementation and extension. It serves as the source of truth for architecture, layering, and conventions.
+This document describes the application structure to ensure consistent
+implementation and extension. It serves as the source of truth for architecture,
+layering, and conventions.
 
 ## Repository layout
 
@@ -29,5 +31,7 @@ packages/server/
 └── server.ts          # createServer, createServerContext
 ```
 
-- **Entrypoints**: `packages/server/main.ts` (server) and `packages/cli/main.ts` (CLI).
-- **Import alias**: The `#/` alias maps to `./` within each package. Use `#/lib/...` or `#/routes/...` for internal imports.
+- **Entrypoints**: `packages/server/main.ts` (server) and `packages/cli/main.ts`
+  (CLI).
+- **Import alias**: The `#/` alias maps to `./` within each package. Use
+  `#/lib/...` or `#/routes/...` for internal imports.
