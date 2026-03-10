@@ -49,15 +49,6 @@
             ]
           },
           {
-            "group": "Concepts",
-            "pages": [
-              "concepts/worlds",
-              "concepts/statements",
-              "concepts/graphs",
-              "concepts/search"
-            ]
-          },
-          {
             "group": "Guides",
             "pages": [
               {
