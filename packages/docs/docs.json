@@ -26,26 +26,36 @@
         "icon": "code",
         "groups": [
           {
-            "group": "Getting Started",
+            "group": "Welcome",
+            "pages": ["overview/introduction"]
+          },
+          {
+            "group": "Get Started",
+            "pages": ["getting-started/quickstart"]
+          },
+          {
+            "group": "Tutorials",
+            "pages": ["getting-started/first-steps"]
+          },
+          {
+            "group": "Concepts",
             "pages": [
-              "getting-started/quickstart",
-              "getting-started/installation",
-              "getting-started/first-steps",
-              "getting-started/common-tasks"
+              "overview/architecture",
+              "overview/world-memory",
+              "overview/features"
             ]
           },
           {
-            "group": "Overview",
+            "group": "Learning Path",
+            "pages": ["overview/academy"]
+          },
+          {
+            "group": "Reference",
             "pages": [
-              "overview/introduction",
-              "overview/architecture",
-              "overview/features",
               "overview/whitepaper",
               "overview/use-cases",
-              "overview/world-memory",
-              "overview/academy",
-              "overview/maturity",
               "overview/roadmap",
+              "overview/maturity",
               "overview/history"
             ]
           },
