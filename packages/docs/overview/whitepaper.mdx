@@ -3,29 +3,29 @@ title: "Whitepaper"
 description: "Malleable knowledge at the edge for neuro-symbolic agents."
 ---
 
-**Author**: Ethan Davidson (Founder, Wazoo Technologies) **Date**: January 2026
+**Author**: Ethan Davidson, Founder of Wazoo Technologies **Date**: January 2026
 
 ---
 
 ## Abstract
 
 Large Language Models (LLMs) demonstrate remarkable capabilities in natural
-language understanding, but they suffer from a fundamental limitation:
-capability is not equivalent to knowledge. Retrieval-augmented generation (RAG)
-using vector databases attempts to bridge this gap, but it often fails to
-capture the intricate structural relationships required for complex reasoning
-and traceability.
+language understanding, but they have a fundamental limitation: capability is
+not equivalent to knowledge. Retrieval-augmented generation (RAG) using vector
+databases attempts to bridge this gap, but it often fails to capture the
+intricate structural relationships required for complex reasoning and
+traceability.
 
-Worlds is a managed neuro-symbolic infrastructure layer—a "world engine"—that
-acts as a detachable hippocampus for AI agents. By combining a SPARQL-compatible
-RDF store with edge-distributed SQLite for persistence, Worlds enables agents to
-maintain mutable, structured knowledge graphs. This system fuses vector search
-for semantic intuition with symbolic logic for RDF/SPARQL precision, empowering
-agents to navigate a persistent, interoperable map of reality rather than
-predicting the next token.
+Worlds is a managed infrastructure layer—a "world engine"—that acts as a
+detachable hippocampus for AI agents. By combining a SPARQL-compatible RDF store
+with edge-distributed SQLite for persistence, Worlds enables agents to maintain
+mutable, structured knowledge graphs. This system fuses vector search for
+semantic intuition with deterministic facts for precise data retrieval,
+empowering agents to navigate a persistent, interoperable map of reality rather
+than predicting the next token.
 
 By 2026, the artificial intelligence industry has realigned around fluid
-intelligence and outcome-based determinism. Worlds provides the structural
+intelligence and outcome-based results. Worlds provides the structural
 scaffolding to guarantee reliable, auditable, and explainable results even
 within probabilistic agentic workflows. This infrastructure serves as the
 backbone of the "small web," enabling data ownership and high-precision
@@ -75,8 +75,8 @@ world where an assistant knows your relationships, history, and preferences with
 
 Foundational principles guide technical decisions:
 
-- **Bring your own brain (BYOB)**: The API is agnostic to the intelligence
-  layer. Whether using OpenAI, Anthropic, or local models, the world acts as a
+- **Bring your own brain (BYOB)**: The API works with any intelligence layer.
+  Whether using OpenAI, Anthropic, or local models, the world acts as a
   detachable hippocampus.
 - **Calm technology**: Developer tooling must remain invisible. Worlds targets
   zero-config experiences where complex graph management is abstracted away.
@@ -245,8 +245,8 @@ The system utilizes **Reciprocal Rank Fusion (RRF)** to combine results from
 distinct indices into a single, unified relevance ranking:
 
 - **Semantic search**: Captures conceptual meaning using a vector index and
-  high-dimensional embeddings (1536-dim).
-- **Keyword search (FTS5)**: Provides exact term matching using the BM25 ranking
+  high-dimensional embeddings.
+- **Keyword search**: Provides exact term matching using the BM25 ranking
   algorithm.
 - **Graph context**: Restricts search results based on structural RDF
   relationships using subject or predicate filters.
@@ -442,7 +442,7 @@ the "black box" of pure vector retrieval.
 | **RRF**            | **Reciprocal Rank Fusion**. An algorithm fusing Keyword (FTS) and Vector search rankings.  |
 | **RDF**            | **Resource Description Framework**. The W3C standard for graph data interchange.           |
 | **SPARQL**         | The W3C standard query language for RDF graphs.                                            |
-| **Neuro-symbolic** | An AI system that combines the strengths of neural networks and structured data.           |
+| **Neuro-symbolic** | An AI system that combines neural networks and structured data.                            |
 
 <Frame caption="Molecules are to RDF statements as atoms are to RDF terms.">
   <img
