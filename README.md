@@ -21,8 +21,8 @@
 
 ---
 
-Worlds Platform is the open-source memory and context layer for AI. It is a REST
-API designed to manage, query, update, and reason over
+Worlds Platform is the open-source **auto-memory** and context layer for AI. It
+is a REST API designed to manage, query, update, and reason over
 [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge bases at
 the edge.
 
@@ -179,18 +179,7 @@ worlds list
 worlds sparql "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
 ```
 
-## The architecture of memory
 
-Worlds Platform mirrors human cognitive systems to provide a "memory stack" for
-autonomous agents.
-
-| Memory type    | Agent perspective       | Worlds Platform implementation                                             |
-| :------------- | :---------------------- | :------------------------------------------------------------------------- |
-| **Semantic**   | What it **knows**       | **Triple Store**: Structured facts and SPARQL reasoning.                   |
-| **Episodic**   | What it **did**         | **Log System**: Temporal history of events and metadata.                   |
-| **Working**    | What it is **thinking** | **Scratchpad**: Live distillation of knowledge into prompts.               |
-| **Procedural** | What it **can do**      | **Tool Bridge**: Automated skills for graph operations, tools, and agents. |
-| **Sensory**    | What it **perceives**   | **Ingestion**: Raw data streams and vector indexing.                       |
 
 ## Prior research
 

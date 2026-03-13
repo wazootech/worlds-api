@@ -18,8 +18,9 @@ traceability.
 
 Worlds is a managed infrastructure layer—a "world engine"—that acts as a
 detachable hippocampus for AI agents. By combining a SPARQL-compatible RDF store
-with edge-distributed SQLite for persistence, Worlds enables agents to maintain
-mutable, structured knowledge graphs. This system fuses vector search for
+with edge-distributed SQLite for persistence, Worlds enables **automatic memory**
+(or **auto-memory**) for agents to maintain mutable, structured knowledge
+graphs. This system fuses vector search for
 semantic intuition with deterministic facts for precise data retrieval,
 empowering agents to navigate a persistent, interoperable map of reality rather
 than predicting the next token.
@@ -70,6 +71,18 @@ agents can query, update, and reason over in real-time.
 It acts as a **"digital garden"** for the next generation of software—a private
 world where an assistant knows your relationships, history, and preferences with
 100% accuracy, acting as an extension of your own mind.
+
+### Cognitive architecture
+
+The Worlds Platform mirrors human cognitive systems to provide a structured "memory stack" for autonomous agents, implementing what is increasingly recognized as **auto-memory**—a system that self-organizes and recalls context without manual engineering.
+
+| Memory type    | Agent perspective       | Worlds Platform implementation                                             |
+| :------------- | :---------------------- | :------------------------------------------------------------------------- |
+| **Semantic**   | What it **knows**       | **Triple Store**: Structured facts and SPARQL reasoning.                   |
+| **Episodic**   | What it **did**         | **Log System**: Temporal history of events and metadata.                   |
+| **Working**    | What it is **thinking** | **Scratchpad**: Live distillation of knowledge into prompts.               |
+| **Procedural** | What it **can do**      | **Tool Bridge**: Automated skills for graph operations, tools, and agents. |
+| **Sensory**    | What it **perceives**   | **Ingestion**: Raw data streams and vector indexing.                       |
 
 ---
 
