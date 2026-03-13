@@ -11,10 +11,10 @@
 </p>
 
 <p align="center">
-  [![JSR](https://jsr.io/badges/@wazoo/worlds-sdk)](https://jsr.io/@wazoo/worlds-sdk)
-  [![JSR Score](https://jsr.io/badges/@wazoo/worlds-sdk/score)](https://jsr.io/@wazoo/worlds-sdk/score)
-  [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/wazootech/worlds)
-  [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/wazootech/worlds)
+  <a href="https://jsr.io/@wazoo/worlds-sdk"><img src="https://jsr.io/badges/@wazoo/worlds-sdk" alt="JSR" /></a>
+  <a href="https://jsr.io/@wazoo/worlds-sdk/score"><img src="https://jsr.io/badges/@wazoo/worlds-sdk/score" alt="JSR Score" /></a>
+  <a href="https://github.com/wazootech/worlds"><img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" alt="GitHub" /></a>
+  <a href="https://deepwiki.com/wazootech/worlds"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
 ---

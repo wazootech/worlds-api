@@ -118,13 +118,10 @@
             "pages": ["reference/configuration"]
           },
           {
-            "group": "Schemas",
-            "pages": ["reference/schemas"]
-          },
-          {
             "group": "System Internals",
-            "pages": ["reference/request-flow", "reference/database-layer"]
+            "pages": ["reference/request-flow"]
           },
+
           {
             "group": "Changelog",
             "pages": ["reference/changelog"]
@@ -140,6 +137,7 @@
             "pages": [
               "contributing/developer-guide",
               "contributing/guidelines",
+
               "contributing/best-practices",
               "contributing/code-of-conduct",
               "contributing/getting-help"

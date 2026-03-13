@@ -4,9 +4,9 @@ description: "High-level diagram and explanation of the Worlds architecture."
 ---
 
 The Worlds Platform utilizes a managed neuro-symbolic infrastructure designed
-for edge-distributed, agentic memory. It separates a **Control Plane**, or
-Console, for management from a **Data Plane**, or Worlds API, for
-high-performance execution.
+for edge-distributed, agentic memory. Built on the [Deno](https://deno.com/)
+runtime, it separates a **Control Plane**, or Console, for management from a
+**Data Plane**, or Worlds API, for high-performance execution.
 
 ## High-level overview
 
@@ -145,20 +145,29 @@ graph LR
     W2 --> W2DB[(World 2 DB)]
 ```
 
-### Organizations
-
-The Console manages Organizations as top-level groupings. Provisioning an
-Organization initializes a dedicated API server instance, a primary metadata
-database, and an admin security boundary.
-
 ### Worlds
 
-The Organization's server manages each World as a specific context or graph.
+Each World is a specific context or knowledge graph managed by the server.
 
-- **Dedicated Storage**: Each World maintains its own secondary libSQL database
-  for triples and embeddings.
-- **Isolation**: Worlds are sub-resources accessed via the Org's base URL, such
-  as `/v1/worlds/{id}`, ensuring zero cross-contamination.
+- **Dedicated storage**: Each World maintains its own secondary libSQL database
+  for triples, chunks, and embeddings.
+- **Isolation**: Worlds are accessed via `/v1/worlds/{id}`, ensuring zero
+  cross-contamination between contexts.
+
+## Deno runtime
+
+The Worlds Platform is built on [Deno](https://deno.com/), which provides
+several advantages for a security-sensitive knowledge platform:
+
+- **Secure by default**: Deno's permission model requires explicit grants for
+  network, file system, and environment access — reducing the attack surface of
+  each deployment.
+- **Web-standard APIs**: The server exports a standard `fetch` handler, making
+  it natively compatible with Deno Deploy and other edge runtimes.
+- **TypeScript-native**: No build step or transpiler configuration required. The
+  entire codebase is TypeScript from source to execution.
+- **Edge-ready**: First-class support for Deno Deploy enables low-latency
+  deployments close to users.
 
 ## Monorepo topology
 
@@ -190,47 +199,34 @@ graph TD
 
 The server follows a modular layout organized by service and resource:
 
-```text
-The Worlds API Server follows a modular layout organized by service and
-resource, separating core reasoning logic from the persistence and transport
-layers.
-
-Key directories include:
-
 - `lib/`: Shared logic for RDF/SPARQL handling, database management, and
   embeddings.
-- `middleware/`: Authentication and rate-limiting logic.
-- `models/`: API models and shared types.
+- `middleware/`: Authentication guards.
 - `routes/`: Implementation of the v1 API endpoints.
-```
-
-- **Entrypoints**: The server and CLI provide dedicated entrypoints for
-  initialization and CLI command execution.
-- **Import alias**: The `#/` alias maps to `./` within each package.
 
 ---
 
 ## Request flow
 
 The Worlds Server follows a structured lifecycle for initialization and request
-handling. For a detailed breakdown of the startup process and per-request cycle,
-refer to the [Request flow](/reference/request-flow) reference.
+handling. For a detailed breakdown, refer to the
+[Request flow](/reference/request-flow) reference.
 
 ---
 
 ## Design principles
 
-## Polymorphic resource managers
+### Polymorphic resource managers
 
 A key design feature is the use of hot-swappable resource managers. The core
 logic remains identical, while the implementation swaps based on the
 environment:
 
-| Resource     | Local dev implementation | Production implementation |
-| :----------- | :----------------------- | :------------------------ |
-| **Compute**  | Local child processes    | Managed edge runtime      |
-| **Storage**  | Local SQLite files       | Remote libSQL             |
-| **Identity** | Mock identity file       | Managed Identity Service  |
+| Resource     | Local development     | Production               |
+| :----------- | :-------------------- | :----------------------- |
+| **Compute**  | Local child processes | Deno Deploy edge runtime |
+| **Storage**  | Local SQLite files    | Remote libSQL / Turso    |
+| **Identity** | Mock identity file    | WorkOS Identity Service  |
 
 This pattern allows the entire stack to run locally with zero cloud
 dependencies.

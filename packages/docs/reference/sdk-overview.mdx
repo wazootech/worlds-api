@@ -39,25 +39,26 @@ const result = await sdk.worlds.sparql(
 console.log(result);
 ```
 
-## AI SDK tools
+## Neuro-symbolic tools
 
-The `@wazoo/worlds-ai-sdk` package provides neuro-symbolic tools that bridge
-LLMs and structured RDF knowledge. These tools enable agents to interact with
-the world graph autonomously.
+The `@wazoo/worlds-ai-sdk` package provides tools that bridge LLMs and
+structured RDF knowledge, enabling agents to interact with world graphs
+autonomously.
 
-### Core tools
+When used together, these tools allow agents to navigate and manipulate
+knowledge graphs with precision:
 
-- **`discover-schema`**: Introspects a world's graph to identify available
-  classes and properties. This anchors the agent in the actual vocabulary of the
-  world, significantly reducing hallucinations.
-- **`execute-sparql`**: Provides a safe interface for agents to execute
-  structural queries. It restricts query types to ensure reasoning integrity and
-  database safety.
-- **`generate-iri`**: Utility for creating semantically consistent
-  Internationalized Resource Identifiers (IRIs) for new entities and
-  relationships.
-- **`search-entities`**: Direct integration with the hybrid search engine,
-  enabling agents to discover nodes via similarity or keyword matching.
+- **Schema discovery**: Agents can introspect a world to identify available
+  classes and properties. This anchors them in the specific vocabulary of the
+  domain, significantly reducing hallucinations.
+- **Hybrid search**: Agents can discover nodes via similarity or keyword
+  matching, enabling them to find relevant starting points in large graphs.
+- **Safe execution**: A restricted SPARQL interface allows agents to execute
+  structural queries safely, ensuring both reasoning integrity and database
+  security.
+- **Semantic identification**: Utilities for generating consistent identifiers
+  (IRIs) ensure that new entities and relationships maintain the semantic
+  integrity of the graph.
 
 ### Framework integration
 

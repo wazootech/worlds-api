@@ -6,7 +6,8 @@ description:
 ---
 
 This guide provides the standards and patterns for contributing to the Worlds
-platform.
+platform. See the [Architecture](/overview/architecture) page for a high-level
+overview of the system design.
 
 ## Resource pattern
 
@@ -19,7 +20,8 @@ Each resource resides within the internal database service directories and
 contains:
 
 - **`queries.sql`**: DDL and CRUD operations.
-- **`queries.sql.ts`**: Generated string constants for SQL queries.
+- **`queries.sql.ts`**: Generated string constants for SQL queries (run
+  `deno task generate`).
 - **`schema.ts`**: Zod schemas for the resource.
 - **`service.ts`**: Service class implementation.
 - **`service.test.ts`**: Deno tests using in-memory database clients.

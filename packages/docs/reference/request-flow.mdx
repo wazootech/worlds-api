@@ -3,75 +3,37 @@ title: "Request flow"
 description: "Startup process and per-request handling logic."
 ---
 
-The Worlds API Server is built on a modular architecture designed for
-predictable execution and high-performance graph operations at the edge.
+The Worlds API Server is built on Deno for secure, edge-ready execution with
+web-standard APIs.
 
-## Startup process
+## Request lifecycle
 
-The server initialization follows a strict sequence to ensure all resources are
-available before handling the first request.
-
-<Steps>
-  <Step title="Environment setup">
-    The server entrypoint reads environment variables and initializes the server
-    context.
-  </Step>
-
-<Step title="Context creation">
-  The server builds a single `ServerContext`. This includes creating the primary
-  LibSQL client, initializing the main metadata database, and setting up the
-  embeddings provider (e.g., Gemini).
-</Step>
-
-<Step title="Router configuration">
-  The engine builds a router and dynamically registers handlers for each defined
-  route.
-</Step>
-
-  <Step title="Server initialization">
-    The entry point exports a fetch handler, making the server compatible with Deno Deploy and other edge runtimes.
-  </Step>
-</Steps>
-
-## Per-request cycle
-
-Every incoming request passes through a standardized lifecycle to maintain
-security and consistency.
+Every request to the Worlds API passes through a standardized lifecycle to
+ensure security, consistency, and efficient graph operations.
 
 <Steps>
   <Step title="Routing">
-    The router matches the request URL and method to a specific handler module.
+    The server matches the incoming request URL and method to the appropriate handler.
   </Step>
 
 <Step title="Authorization">
-  If the endpoint is secured, the server verifies the `Authorization: Bearer`
-  token against the stored API keys or environment configuration.
+  For secured endpoints, the server verifies the `Authorization: Bearer` token.
+  See the [Authentication guide](/overview/getting-started/authentication) for
+  details.
 </Step>
 
 <Step title="Validation">
-  Request bodies and query parameters are validated via Zod schemas to ensure
-  type-safety before entering the logic layer.
+  Input data (body and query parameters) is validated against strict schemas to
+  ensure type-safety and data integrity.
 </Step>
 
 <Step title="Execution">
-  The handler uses the `ServerContext` to interact with services. For
-  world-specific operations, it resolves the appropriate per-world database
-  client.
+  The server performs the requested operation. For world-specific requests, it
+  automatically resolves and interacts with the correct knowledge graph
+  instance.
 </Step>
 
   <Step title="Response">
-    The system returns a serialized JSON response or a standardized error response.
+    The system returns a serialized JSON response or a standardized error message.
   </Step>
 </Steps>
-
-## Server context
-
-The `ServerContext` is a shared object that provides access to core
-infrastructure:
-
-- **Embeddings**: Interface for generating vectors from text.
-- **LibSQL**:
-  - **Database**: Client for the primary metadata database.
-  - **Manager**: Handles the creation and resolution of per-world database
-    files.
-- **Admin**: Security configuration for account-level operations.
