@@ -5,22 +5,8 @@ description:
   platform."
 ---
 
-The Worlds platform utilizes a dual-scope database architecture to separate
+The Worlds Platform utilizes a dual-scope database architecture to separate
 management logic from world-specific data.
-
-## Scopes
-
-The system manages two distinct types of database instances:
-
-- **Main database**, maintained as a single instance:
-  - **Tables**: `organizations`, `worlds`, `service_accounts`, `invites`,
-    `rate_limits`, `usage`.
-  - **Initialization**: The core database initialization service handles
-    identity.
-- **World databases**, initialized for each specific world:
-  - **Tables**: `chunks`, including FTS and vector indices, `triples`, and
-    `logs`.
-  - **Initialization**: Handled dynamically upon world creation.
 
 ## DatabaseManager
 
@@ -32,19 +18,12 @@ lifecycle management:
   world.
 - `delete(id: string)`: Removes the database resources for the specified world.
 
-### Implementations
-
-- **FileDatabaseManager**: Stores each world as a persistent database file.
-- **TursoDatabaseManager**: Interfaces with the Turso API for remote database
-  management.
-- **MemoryDatabaseManager**: Utilizes in-memory clients for testing.
-
 ## Generation
 
 The platform uses a structured approach to SQL management and type safety:
 
 - **Queries**: Live in `.sql` files near their respective resources.
 - **Code generation**: An internal utility embeds SQL queries into TypeScript
-  constants to ensure runtime availability.
+  constants at build time `.sql.ts` to ensure runtime availability.
 - **DDL execution**: The system orchestrates table and index creation during
   initialization to ensure correct execution order.

@@ -51,7 +51,7 @@ personal world model.
 
 Persistent context across all your AI assistants and tools.
 
-**[→ Open Worlds console](packages/console)**
+**[→ Open Worlds Console](https://console.wazoo.dev)**
 
 <br>
 </td>
