@@ -107,7 +107,10 @@
         "groups": [
           {
             "group": "API Basics",
-            "pages": ["reference/api-basics/authentication"]
+            "pages": [
+              "reference/api",
+              "reference/api-basics/authentication"
+            ]
           },
           {
             "group": "CLI",

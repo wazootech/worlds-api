@@ -2,7 +2,7 @@
 
 [![JSR](https://jsr.io/badges/@wazoo/worlds-server)](https://jsr.io/@wazoo/worlds-server)
 
-**Worlds Platform Server** is the core REST API implementation for managing,
+**Worlds server** is the core REST API implementation for managing,
 querying, and reasoning over context graphs. It is built with
 [Deno](https://deno.land/) and leverages high-performance libraries for RDF
 operations and vector embeddings.
@@ -12,9 +12,7 @@ operations and vector embeddings.
 - **SPARQL Support**: Comprehensive support for querying and updating RDF data
   using [Comunica](https://comunica.dev/) and
   [N3](https://github.com/rdfjs/N3.js).
-- **Vector Embeddings**: Intelligent search and reasoning powered by
-  [TensorFlow.js](https://www.tensorflow.org/js) and
-  [OpenRouter](https://openrouter.ai).
+- **Vector Embeddings**: Intelligent search and reasoning.
 - **Edge-Ready**: Designed to run efficiently at the edge.
 - **Persistence**: Backed by [LibSQL](https://github.com/libsql/libsql) for data
   storage.
@@ -38,11 +36,11 @@ Example directory layout for an organization `wazoo`:
 ```text
 packages/console/
 └── data/
-    └── wazoo/                 # SQLite storage for 'wazoo' (auto-generated)
-        ├── worlds.db          # Main server database 
-        └── worlds/            # Base directory for world-specific databases
-            ├── 01JJB2RQX3P5K9F6.db
-            └── 01JJB2RQY7H2M1N4.db
+    └── wazoo/                      # SQLite storage for organization 'wazoo'
+        ├── worlds.db               # Core server database
+        └── worlds/                 # Base directory for world-specific databases
+            ├── 01JJB2RQX3P5K9F6.db # RDF store & search index
+            └── 01JJB2RQY7H2M1N4.db # RDF store & search index
 ```
 
 This isolation ensures that world-specific operations (like SPARQL updates or
@@ -70,13 +68,13 @@ deno -A jsr:@wazoo/worlds-server [command]
 
 ### Tasks
 
-- **Start Development Server**: `deno task start`
-- **Generate SQL Schemas**: `deno task generate`
+- **Start development server**: `deno task start`
+- **Generate SQL schemas**: `deno task generate`
 
 ## API reference
 
 The API follows a standard RESTful structure. For full details, see the
-[official documentation](https://docs.wazoo.dev).
+[official documentation](https://docs.wazoo.dev/reference/api).
 
 ---
 
