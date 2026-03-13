@@ -198,6 +198,4 @@ See the [whitepaper](https://docs.wazoo.dev/overview/whitepaper).
 - [Wazoo Technologies](https://wazoo.dev)
 - [Support](https://github.com/wazootech/worlds/issues)
 
----
-
 Developed with 🧪 [**@wazootech**](https://github.com/wazootech)
