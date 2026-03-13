@@ -19,9 +19,6 @@
   <a href="https://deepwiki.com/wazootech/worlds"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki" /></a>
 </p>
 
-
-
-
 Worlds Platform is the open-source **auto-memory** and context layer for AI. It
 is a REST API designed to manage, query, update, and reason over
 [SPARQL](https://www.w3.org/TR/sparql11-overview/)-compatible knowledge bases at
@@ -179,8 +176,6 @@ worlds list
 # Run a SPARQL query
 worlds sparql "SELECT ?s ?p ?o WHERE { ?s ?p ?o } LIMIT 10"
 ```
-
-
 
 ## Prior research
 

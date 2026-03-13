@@ -7,18 +7,22 @@ description: "Malleable knowledge at the edge for neuro-symbolic agents."
 
 Large Language Models (LLMs) demonstrate remarkable capabilities in natural
 language understanding, but they have a fundamental limitation: capability is
-not equivalent to knowledge. Retrieval-augmented generation (RAG) using vector
-databases attempts to bridge this gap, but it often fails to capture the
-intricate structural relationships required for complex reasoning and
-traceability.
+not equivalent to knowledge.
+[Retrieval-augmented generation](https://en.wikipedia.org/wiki/Retrieval-augmented_generation)
+(RAG) using vector databases attempts to bridge this gap, but it often fails to
+capture the intricate structural relationships required for complex reasoning
+and traceability.
 
 Worlds is a managed infrastructure layer—a "world engine"—that acts as a
-detachable hippocampus for AI agents. By combining a SPARQL-compatible RDF store
-with edge-distributed SQLite for persistence, Worlds enables automatic
-memory (or auto-memory) for agents to maintain mutable, structured
-knowledge graphs. This system fuses vector search for semantic intuition with
-deterministic facts for precise data retrieval, empowering agents to navigate a
-persistent, interoperable map of reality rather than predicting the next token.
+detachable hippocampus for AI agents. By combining a
+[SPARQL](https://en.wikipedia.org/wiki/SPARQL)-compatible
+[RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework) store with
+edge-distributed [SQLite](https://en.wikipedia.org/wiki/SQLite) for persistence,
+Worlds enables automatic memory (or auto-memory) for agents to maintain mutable,
+structured knowledge graphs. This system fuses vector search for semantic
+intuition with deterministic facts for precise data retrieval, empowering agents
+to navigate a persistent, interoperable map of reality rather than predicting
+the next token.
 
 By 2026, the artificial intelligence industry has realigned around fluid
 intelligence and outcome-based results. Worlds provides the structural
@@ -39,10 +43,10 @@ both accessible and mutable.
 
 ### Reasoning gap
 
-Current industry standards rely heavily on vector databases to provide
-long-term memory. As identified in benchmarks like ARC-AGI-3, true
-intelligence requires a system to adapt efficiently to novel, untrained
-environments. The reasoning gap occurs because vector search struggles with:
+Current industry standards rely heavily on vector databases to provide long-term
+memory. As identified in benchmarks like ARC-AGI-3, true intelligence requires a
+system to adapt efficiently to novel, untrained environments. The reasoning gap
+occurs because vector search struggles with:
 
 - Logical precision: It cannot reliably answer structured queries like "Who is
   the brother of the person who invented X?".
@@ -52,14 +56,15 @@ environments. The reasoning gap occurs because vector search struggles with:
 - Temporal awareness: Standard RAG is stateless and fails to capture
   relationship dynamics or state invalidations over extended horizons.
 - Data silos: Information remains trapped in proprietary walled gardens,
-  hindering the interoperability required for a truly personal or autonomous
-  AI entity.
+  hindering the
+  [interoperability](https://en.wikipedia.org/wiki/Interoperability) required
+  for a truly personal or autonomous AI entity.
 
 ### Solution
 
-Worlds provides malleable knowledge within an AI agent's reach. Unlike
-static knowledge bases, "Worlds" are dynamic, graph-based environments that
-agents can query, update, and reason over in real-time.
+Worlds provides malleable knowledge within an AI agent's reach. Unlike static
+knowledge bases, "Worlds" are dynamic, graph-based environments that agents can
+query, update, and reason over in real-time.
 
 It acts as a "digital garden" for the next generation of software—a private
 world where an assistant knows your relationships, history, and preferences with
@@ -85,8 +90,11 @@ engineering.
 
 ## Methods
 
-The Worlds Platform utilizes a dual-process methodology to bridge the semantic
-intuition of neural networks with the deterministic logic of symbolic systems.
+The Worlds Platform utilizes a
+[dual-process](https://en.wikipedia.org/wiki/Dual_process_theory)
+[neuro-symbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) methodology to
+bridge the semantic intuition of neural networks with the deterministic logic of
+symbolic systems.
 
 ### 1. Neuro-symbolic pipeline
 
@@ -166,8 +174,9 @@ graph LR
 - **The SDK**: A canonical TypeScript client that handles authentication and
   type-safe API requests. It acts as the bridge between "neural" code (LLMs) and
   "symbolic" data.
-- **The Server**: A minimal Deno-based HTTP server handling SPARQL execution and
-  graph management.
+- **The Server**: A minimal
+  [Deno](<https://en.wikipedia.org/wiki/Deno_(software)>)-based HTTP server
+  handling SPARQL execution and graph management.
 - **Forward-sync search store**: A proprietary mechanism that replicates RDF
   data patches into optimized search stores, enabling full-text and semantic
   search over structured triples.
@@ -210,8 +219,9 @@ To ensure O(log N) performance for graph queries and millisecond responses for
 semantic search, the engine implements a multi-index strategy inspired by
 Hexastore index research:
 
-- **Graph indexing**: Standard B-Tree indices on `subject` and `predicate`
-  enable rapid pattern matching for search filters.
+- **Graph indexing**: Standard [B-tree](https://en.wikipedia.org/wiki/B-tree)
+  indices on `subject` and `predicate` enable rapid pattern matching for search
+  filters.
 - **Vector indexing**: Use of `libsql_vector_idx` for 1536-dimensional
   embeddings, enabling semantic similarity search at the edge.
 - **FTS5 indexing**: Native SQLite full-text search for fast keyword matching
@@ -222,8 +232,10 @@ Hexastore index research:
 
 ### Hybrid search
 
-The system utilizes Reciprocal Rank Fusion (RRF) to combine results from
-distinct indices into a single, unified relevance ranking:
+The system utilizes
+[Reciprocal Rank Fusion](https://en.wikipedia.org/wiki/Mean_reciprocal_rank)
+(RRF) to combine results from distinct indices into a single, unified relevance
+ranking:
 
 - **Semantic search**: Captures conceptual meaning using a vector index and
   high-dimensional embeddings.
@@ -284,15 +296,20 @@ agent's context.
 ### Human-in-the-loop (HITL)
 
 When the system identifies low-confidence matches or multiple conflicting
-entities, the malleable nature of Worlds allows the UI to present disambiguation
-prompts to the user.
+entities, the malleable nature of Worlds allows the UI to present
+[disambiguation](https://en.wikipedia.org/wiki/Entity_linking#Disambiguation)
+prompts to the user via a
+[Human-in-the-loop](https://en.wikipedia.org/wiki/Human-in-the-loop) (HITL)
+workflow.
 
 ### Outcome-based determinism
 
-Utilizing reification in context graphs makes relationships first-class
-entities. If a structural anomaly occurs during traversal, the system triggers
-an intervention. This shifts the focus of trust from eliminating uncertainty to
-managing it through rigorous, auditable verification.
+Utilizing
+[reification](<https://en.wikipedia.org/wiki/Reification_(knowledge_representation)>)
+in context graphs makes relationships first-class entities. If a structural
+anomaly occurs during traversal, the system triggers an intervention. This
+shifts the focus of trust from eliminating uncertainty to managing it through
+rigorous, auditable verification.
 
 ---
 
