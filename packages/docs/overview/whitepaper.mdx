@@ -86,8 +86,6 @@ engineering.
 | **Procedural** | What it **can do**      | **Tools**: Automated skills for graph operations, tools, and agents. |
 | **Sensory**    | What it **perceives**   | **Ingestion**: Raw data streams and vector indexing.                 |
 
----
-
 ## Methods
 
 The Worlds Platform utilizes a
@@ -150,10 +148,6 @@ graph LR
         SysDB[("System DB")]
         WorldDB[("Per-World DBs")]
     end
-
-    %% Human/Control Flow
-    Dev ==>|HTTPS| Console
-    Console <==>|Mgmt API| Guard
 
     %% Agent/Data Flow
     Agent <==>|HTTPS / SDK| Guard
@@ -311,8 +305,6 @@ anomaly occurs during traversal, the system triggers an intervention. This
 shifts the focus of trust from eliminating uncertainty to managing it through
 rigorous, auditable verification.
 
----
-
 ## SDK and agents
 
 The World Engine is available to AI agents without requiring developers to write
@@ -374,11 +366,11 @@ The platform exposes a comprehensive REST API organized into management-oriented
 - **Auth**: Dual-strategy authentication using WorkOS for humans and the Console
   and scoped API keys for agents.
 
-### Console
+### Worlds Console
 
-A Next.js-based control plane allows humans to oversee their agents' memories.
-Users can visualize their Worlds, manage API keys, and monitor usage, ensuring
-full transparency into what the agent knows and how it reasons.
+Manage your agent's memory through a dedicated interface. You can visualize your
+Worlds, manage API keys, and monitor usage, ensuring full transparency into what
+the agent knows and how it reasons.
 
 A worlds table
 ([animated procedural planets](https://github.com/Deep-Fold/PixelPlanets)) where

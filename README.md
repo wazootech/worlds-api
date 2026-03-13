@@ -77,7 +77,7 @@ The Worlds SDK and AI SDK provide AI agents with persistent, structured memory.
 > It understands relationships, hierarchies, and logic, moving beyond similarity
 > matches to true reasoning.
 
-### The console
+### Worlds Console
 
 Manage your worlds through our web interface. Build graphs, test SPARQL queries,
 and monitor your agent's memory.
