@@ -190,6 +190,7 @@ See the [whitepaper](https://docs.wazoo.dev/overview/whitepaper).
 ## Quicklinks
 
 - [Documentation](https://docs.wazoo.dev)
+- [Academy](https://docs.wazoo.dev/academy)
 - [Quickstart](#build-with-worlds-sdk)
 - [Wazoo Technologies](https://wazoo.dev)
 - [Support](https://github.com/wazootech/worlds/issues)

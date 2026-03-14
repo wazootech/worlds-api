@@ -49,10 +49,7 @@
               "overview/features"
             ]
           },
-          {
-            "group": "Learning Path",
-            "pages": ["overview/academy"]
-          },
+
           {
             "group": "Background",
             "pages": [
@@ -74,7 +71,7 @@
                   "guides/rag-workflows/document-rag"
                 ]
               },
-                            "guides/data-integration",
+              "guides/data-integration",
               "guides/querying",
               "guides/hosting/production",
               "guides/monitoring",
@@ -91,6 +88,17 @@
               "guides/examples/integrations"
             ]
           }
+        ]
+      },
+      {
+        "tab": "Academy",
+        "icon": "graduation-cap",
+        "pages": [
+          "academy/index",
+          "academy/memory",
+          "academy/graphs",
+          "academy/sparql",
+          "academy/agents"
         ]
       },
       {
