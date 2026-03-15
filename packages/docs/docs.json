@@ -49,6 +49,17 @@
               "overview/features"
             ]
           },
+          {
+            "group": "Glossary",
+            "pages": [
+              "glossary/world",
+              "glossary/triple",
+              "glossary/item",
+              "glossary/neuro-symbolic",
+              "glossary/sparql",
+              "glossary/hybrid-search"
+            ]
+          },
 
           {
             "group": "Background",
@@ -98,7 +109,8 @@
           "academy/memory",
           "academy/graphs",
           "academy/sparql",
-          "academy/agents"
+          "academy/agents",
+          "academy/graduation"
         ]
       },
       {
