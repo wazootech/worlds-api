@@ -10,13 +10,34 @@ executing SPARQL queries, and performing vector searches.
 
 Install the SDK via JSR:
 
-```bash
+<CodeGroup>
+  ```bash deno
+  deno add jsr:@wazoo/worlds-sdk
+  ```
+
+```bash npm
 npx jsr add @wazoo/worlds-sdk
 ```
+
+```bash pnpm
+pnpm i jsr:@wazoo/worlds-sdk
+```
+
+```bash yarn
+yarn add jsr:@wazoo/worlds-sdk
+```
+
+```bash bun
+bunx jsr add @wazoo/worlds-sdk
+```
+
+</CodeGroup>
 
 ## Basic usage
 
 Initialize the client with your API key.
+
+<RequestExample>
 
 ```typescript
 import { WorldsSdk } from "@wazoo/worlds-sdk";
@@ -38,6 +59,22 @@ const result = await sdk.worlds.sparql(
 
 console.log(result);
 ```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json
+[
+  {
+    "s": { "termType": "NamedNode", "value": "http://example.org/subject1" },
+    "p": { "termType": "NamedNode", "value": "http://example.org/predicate1" },
+    "o": { "termType": "Literal", "value": "Object 1" }
+  }
+]
+```
+
+</ResponseExample>
 
 ## Neuro-symbolic tools
 
@@ -64,3 +101,16 @@ knowledge graphs with precision:
 
 These tools are compatible with frameworks like the **Vercel AI SDK**, allowing
 you to expose them as standard tools during model conversations.
+
+<CardGroup cols={2}>
+  <Card
+    title="AI SDK integration"
+    icon="robot"
+    href="/overview/getting-started/agent-integration"
+  >
+    Connect Worlds to your preferred agent frameworks.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/reference/cli">
+    Manage your worlds from the command line.
+  </Card>
+</CardGroup>

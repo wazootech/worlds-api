@@ -16,21 +16,47 @@ Collect the necessary API keys and credentials for each service:
 - **Storage (Turso)**: Retrieve `TURSO_API_TOKEN` and `TURSO_ORG`.
 - **AI models (OpenRouter)**: Retrieve `OPENROUTER_API_KEY`.
 
+<Warning>
+  Protect your `WORKOS_COOKIE_PASSWORD` and `TURSO_API_TOKEN` securely. These
+  keys guarantee admin or root access to identity management and persistent
+  storage.
+</Warning>
+
 ## Deploy the console
 
 The console is a Next.js application. Deploy it to Vercel, Netlify, or a VPS.
 
-- Set the environment variables retrieved in the previous step.
-- Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your deployment callback URL.
+<Tabs>
+  <Tab title="Vercel">
+1. Import your repository into Vercel.
+2. Set the environment variables retrieved in the previous step.
+3. Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your deployment callback URL.
+  </Tab>
+  <Tab title="Netlify">
+1. Connect your repository to Netlify.
+2. Add the environment variables in your site settings.
+3. Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your Netlify URL.
+  </Tab>
+  <Tab title="VPS">
+1. Clone the repository to your server.
+2. Create a `.env` file with your environment variables.
+3. Build and define a process using PM2 or Docker.
+  </Tab>
+</Tabs>
 
 ## Orchestrate worlds
 
 Once the console is running:
 
 <Steps>
-  <Step title="Log in">Access your console and log in via AuthKit.</Step>
+  <Step title="Log in">
+    Access your console <Icon icon="gear" /> and log in via AuthKit.
+  </Step>
   <Step title="Create an organization">
     Define your organization within the console.
+    <Frame>
+      <img src="/images/wazoo.svg" alt="Worlds Console dashboard" />
+    </Frame>
   </Step>
   <Step title="Automatic provisioning">
     The platform will automatically provision a Turso database, deploy a Deno

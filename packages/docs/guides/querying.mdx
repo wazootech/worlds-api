@@ -4,8 +4,12 @@ description:
   "How the platform handles RDF blobs, N3 stores, and SPARQL queries."
 ---
 
-The Worlds Platform utilizes the Resource Description Framework (RDF) for its
-core data model and SPARQL for structured querying.
+The Worlds Platform utilizes the
+
+<Tooltip tip="Resource Description Framework: A standard model for structured data">
+  Resource Description Framework (RDF)
+</Tooltip>
+for its core data model and SPARQL for structured querying.
 
 ## RDF blob handling
 
@@ -15,14 +19,21 @@ The system manages RDF data through several core utilities:
   strings) and in-memory N3 stores.
 - **SPARQL utility**: Executes SPARQL queries using the Comunica engine over an
   N3 store.
+  <Info>
+    **Comunica** is a highly modular, open-source SPARQL query engine built for
+    the web. It is flexible and handles large RDF data sources efficiently.
+  </Info>
 
 ## RDF patching
 
 Centralized in the core patch service, the system processes mutations for the
 world database:
 
-1.  **Deterministic identification**: Skolemizes and hashes each quad to a
-    unique triple ID.
+1.  **Deterministic identification**:
+    <Tooltip tip="Replacing existential variables with new constants">
+      Skolemizes
+    </Tooltip>
+    and hashes each quad to a unique triple ID.
 2.  **Relational storage**: Upserts the resulting triples into the `triples`
     table.
 3.  **Semantic indexing**: Chunks and embeds literal values for hybrid search.
@@ -38,6 +49,12 @@ When you execute a SPARQL query via the API, the system follows this pipeline:
     `databaseManager.get(worldId)`.
 3.  Executes `handlePatch` with a handler that applies updates to the world
     client.
+    <ParamField path="worldId" type="string" required>
+      The specific World ID to target for the patch context.
+    </ParamField>
+    <ParamField path="patch" type="Quad[]" required>
+      The array of RDF Quads representing the changes to be applied.
+    </ParamField>
 4.  Executes the SPARQL query over the resulting RDF blob.
 5.  Updates the world metadata in the main database if the blob changed during a
     SPARQL update.

@@ -57,21 +57,28 @@ graph LR
 
 The platform splits operations into two primary layers:
 
-### 1. Worlds Console
+<Columns>
+  <div>
+### Worlds Console
 
 The **Worlds Console** acts as the system's brain. It manages identity through
 WorkOS, handles organization-level provisioning, and orchestrates **Worlds API**
 instances.
+  </div>
 
-### 2. Worlds API
+  <div>
+### Worlds API
 
 The **Worlds API Server** handles RDF graph management, SPARQL execution, and
 hybrid search. This is the API layer where your information lives.
+  </div>
+</Columns>
 
 ## Worlds API deep dive
 
-The World Engine follows a multi-tiered data transformation journey, fusing
-diverse input sources into a verifiable neuro-symbolic knowledge state.
+<Accordion title="Deep dive: API Data Flow">
+  The World Engine follows a multi-tiered data transformation journey, fusing
+  diverse input sources into a verifiable neuro-symbolic knowledge state.
 
 ```mermaid
 flowchart TD
@@ -129,6 +136,8 @@ flowchart TD
     class State,BLOBS,TRIPLES,CHUNKS persistence;
     class Pipeline,SKOLEM,EMBED,CHUNK process;
 ```
+
+</Accordion>
 
 ## Resource hierarchy
 
