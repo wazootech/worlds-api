@@ -98,7 +98,8 @@
           "academy/memory",
           "academy/graphs",
           "academy/sparql",
-          "academy/agents"
+          "academy/agents",
+          "academy/graduation"
         ]
       },
       {
