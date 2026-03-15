@@ -28,19 +28,36 @@ The console is a Next.js application. Deploy it to Vercel, Netlify, or a VPS.
 
 <Tabs>
   <Tab title="Vercel">
-1. Import your repository into Vercel.
-2. Set the environment variables retrieved in the previous step.
-3. Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your deployment callback URL.
+    <Steps>
+      <Step title="Import">Import your repository into Vercel.</Step>
+      <Step title="Configure">
+        Set the environment variables retrieved in the previous step.
+      </Step>
+      <Step title="Verify">
+        Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your deployment
+        callback URL.
+      </Step>
+    </Steps>
   </Tab>
   <Tab title="Netlify">
-1. Connect your repository to Netlify.
-2. Add the environment variables in your site settings.
-3. Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your Netlify URL.
+    <Steps>
+      <Step title="Connect">Connect your repository to Netlify.</Step>
+      <Step title="Configure">
+        Add the environment variables in your site settings.
+      </Step>
+      <Step title="Verify">
+        Ensure `NEXT_PUBLIC_WORKOS_REDIRECT_URI` matches your Netlify URL.
+      </Step>
+    </Steps>
   </Tab>
   <Tab title="VPS">
-1. Clone the repository to your server.
-2. Create a `.env` file with your environment variables.
-3. Build and define a process using PM2 or Docker.
+    <Steps>
+      <Step title="Clone">Clone the repository to your server.</Step>
+      <Step title="Configure">
+        Create a `.env` file with your environment variables.
+      </Step>
+      <Step title="Build">Build and define a process using PM2 or Docker.</Step>
+    </Steps>
   </Tab>
 </Tabs>
 
