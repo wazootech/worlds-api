@@ -1,4 +1,5 @@
 -- TODO: rename entity_types to item_types. When completing this, also ensure to update all documentation references to `entity_types` in packages/docs to `item_types`.
+
 -- entityTypesTable is a table for mapping entities to their types.
 CREATE TABLE IF NOT EXISTS entity_types (
   subject TEXT NOT NULL,
