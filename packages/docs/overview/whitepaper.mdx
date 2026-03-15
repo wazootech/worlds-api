@@ -51,8 +51,8 @@ occurs because vector search struggles with:
 - Logical precision: It cannot reliably answer structured queries like "Who is
   the brother of the person who invented X?".
 - Traceability: In high-stakes fields like medicine or law, agents must provide
-  a perfect trace of their reasoning. Vector similarity is a black box; it lacks
-  a verifiable audit trail.
+  a perfect trace of their reasoning. Vector similarity is fundamentally opaque;
+  it lacks a verifiable audit trail.
 - Temporal awareness: Standard RAG is stateless and fails to capture
   relationship dynamics or state invalidations over extended horizons.
 - Data silos: Information remains trapped in proprietary walled gardens,
@@ -402,7 +402,7 @@ consistency over time.
 ### Journey to SOTA
 
 The pursuit of state-of-the-art (SOTA) performance has required a move away from
-the "black box" of pure vector retrieval.
+the opaque nature of pure vector retrieval.
 
 1.  **Phase I: Vector Dominance**: Initial implementations relied on simple
     similarity search, which frequently hit a "reasoning ceiling" during complex
