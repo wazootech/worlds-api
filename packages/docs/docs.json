@@ -54,6 +54,7 @@
             "pages": [
               "glossary/world",
               "glossary/triple",
+              "glossary/item",
               "glossary/neuro-symbolic",
               "glossary/sparql",
               "glossary/hybrid-search"
