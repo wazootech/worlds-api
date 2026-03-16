@@ -271,6 +271,10 @@ Import snippets with `import { Component } from "/path/to/snippet-name.jsx"`.
   "Expandable Example"
 - Lead with context: explain what something is before how to use it
 - Prerequisites at the start of procedural content
+- Keep headings concise and self-explanatory in as few words as possible. Avoid
+  using colons. Keep contextual markers (like dates) in the body text.
+- Avoid repeatedly calling back to specific examples or analogies later in a
+  document if they lose context.
 
 ### What to avoid
 
@@ -280,6 +284,21 @@ Import snippets with `import { Component } from "/path/to/snippet-name.jsx"`.
 - Editorializing words like "obviously", "simply", "just", or "easily"
 - Generic introductions that don't add value
 - Concluding summaries that restate what was just said
+- Imaginative or anthropomorphic language to describe AI capabilities (e.g.,
+  avoid "intuition", "brain", or "thinking"; use "understanding", "model", or
+  "processing")
+- Idioms and metaphors that obscure technical precision (e.g., avoid "black
+  box", "heavy lifting", or "plumbing"; use literal descriptions)
+- Specific, single-model references when discussing general AI capabilities. Use
+  future-proof lists (e.g., "Gemini, Claude, or ChatGPT" instead of just
+  "GPT-4")
+
+### Terminology
+
+- Use **world memory** instead of "agent memory"
+- Use **item / items** in narrative text instead of "entity / entities"
+  (exceptions apply to internal API/database names like the `entity_types` table
+  or `search-entities` tools)
 
 ### Formatting
 
