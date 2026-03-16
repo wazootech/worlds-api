@@ -18,7 +18,7 @@ detachable hippocampus for AI agents. By combining a
 [SPARQL](https://en.wikipedia.org/wiki/SPARQL)-compatible
 [RDF](https://en.wikipedia.org/wiki/Resource_Description_Framework) store with
 edge-distributed [SQLite](https://en.wikipedia.org/wiki/SQLite) for persistence,
-Worlds enables automatic memory (or auto-memory) for agents to maintain mutable,
+Worlds enables automatic memory, or auto-memory, for agents to maintain mutable,
 structured knowledge graphs. This system fuses vector search for semantic
 intuition with deterministic facts for precise data retrieval, empowering agents
 to navigate a persistent, interoperable map of reality rather than predicting
@@ -51,14 +51,14 @@ occurs because vector search struggles with:
 - Logical precision: It cannot reliably answer structured queries like "Who is
   the brother of the person who invented X?".
 - Traceability: In high-stakes fields like medicine or law, agents must provide
-  a perfect trace of their reasoning. Vector similarity is a black box; it lacks
-  a verifiable audit trail.
+  a perfect trace of their reasoning. Vector similarity is fundamentally opaque;
+  it lacks a verifiable audit trail.
 - Temporal awareness: Standard RAG is stateless and fails to capture
   relationship dynamics or state invalidations over extended horizons.
 - Data silos: Information remains trapped in proprietary walled gardens,
   hindering the
   [interoperability](https://en.wikipedia.org/wiki/Interoperability) required
-  for a truly personal or autonomous AI entity.
+  for a truly personal or autonomous AI agent.
 
 ### Solution
 
@@ -72,27 +72,27 @@ world where an assistant knows your relationships, history, and preferences with
 
 ### Cognitive architecture
 
-The Worlds Platform mirrors human cognitive systems
-([Memory](https://en.wikipedia.org/wiki/Memory)) to provide a structured "memory
+The Worlds Platform mirrors human cognitive systems, such as
+[Memory](https://en.wikipedia.org/wiki/Memory), to provide a structured "memory
 stack" for autonomous agents, implementing what is increasingly recognized as
 auto-memory—a system that self-organizes and recalls context without manual
 engineering.
 
-| Memory type    | Agent perspective       | Worlds Platform implementation                                       |
-| :------------- | :---------------------- | :------------------------------------------------------------------- |
-| **Semantic**   | What it **knows**       | **RDF Store**: Structured facts and SPARQL reasoning.                |
-| **Episodic**   | What it **did**         | **Append-only Log**: Temporal history of events and metadata.        |
-| **Working**    | What it is **thinking** | **Scratchpad**: Live distillation of knowledge into prompts.         |
-| **Procedural** | What it **can do**      | **Tools**: Automated skills for graph operations, tools, and agents. |
-| **Sensory**    | What it **perceives**   | **Ingestion**: Raw data streams and vector indexing.                 |
+| Memory type    | Agent perspective         | Worlds Platform implementation                                       |
+| :------------- | :------------------------ | :------------------------------------------------------------------- |
+| **Semantic**   | What it **knows**         | **RDF Store**: Structured facts and SPARQL reasoning.                |
+| **Episodic**   | What it **did**           | **Append-only Log**: Temporal history of events and metadata.        |
+| **Working**    | What it is **processing** | **Scratchpad**: Live distillation of knowledge into prompts.         |
+| **Procedural** | What it **can do**        | **Tools**: Automated skills for graph operations, tools, and agents. |
+| **Sensory**    | What it **perceives**     | **Ingestion**: Raw data streams and vector indexing.                 |
 
 ## Methods
 
 The Worlds Platform utilizes a
 [dual-process](https://en.wikipedia.org/wiki/Dual_process_theory)
 [neuro-symbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) methodology to
-bridge the semantic intuition of neural networks with the deterministic logic of
-symbolic systems.
+bridge the semantic understanding of neural networks with the deterministic
+logic of symbolic systems.
 
 ### 1. Neuro-symbolic pipeline
 
@@ -100,12 +100,12 @@ Data ingestion follows a multi-stage transformation process:
 
 1.  **Segmentation**: Unstructured text is decomposed into semantically coherent
     chunks optimized for vector retrieval.
-2.  **Triple Extraction**: An LLM-based extraction layer identifies entities and
+2.  **Triple Extraction**: An LLM-based extraction layer identifies items and
     predicates, converting narrative flow into formalized RDF triples.
 3.  **Relational Mapping**: Extracted triples are mapped to an established
     ontology, ensuring structural consistency across the global graph.
 4.  **Semantic Indexing**: Each chunk and triple is indexed simultaneously via
-    high-dimensional vector embeddings and full-text search (FTS) keys.
+    high-dimensional vector embeddings and full-text search keys.
 
 ### 2. State management
 
@@ -201,8 +201,9 @@ runtime, providing isolated, high-performance in-memory state.
 Persistence utilize a hybrid schema to avoid the overhead of general-purpose
 SPARQL engines on disk while maintaining semantic integrity.
 
-- **`triples` table**: Stores atomic units of knowledge (Subject, Predicate,
-  Object), targeting string literals and ranks derived from triple data.
+- **`triples` table**: Stores atomic units of knowledge, including Subject,
+  Predicate, and Object, targeting string literals and ranks derived from triple
+  data.
 - **`entity_types` table**: An optimized table for mapping entities to their
   `rdf:type` IRIs, enabling rapid structural filtering.
 - **`blobs` table**: Handles large-scale RDF data and file-based state.
@@ -272,13 +273,13 @@ _The logic for the Reciprocal Rank Fusion algorithm is implemented within the
 core storage engine to ensure high-performance execution._
 
 This approach allows agents to answer complex, high-precision queries like
-_"Find entities located in New York via the graph that are 'cozy' via vector or
-FTS search"_.
+_"Find items located in New York via the graph that are 'cozy' via vector or FTS
+search"_.
 
 ### Disambiguation
 
 RRF provides a strong initial ranking, but complex knowledge graphs often
-contain ambiguous entities or near-identical triples. To ensure 100% reasoning
+contain ambiguous items or near-identical triples. To ensure 100% reasoning
 integrity, the platform supports two downstream refinement strategies:
 
 ### Reranking
@@ -289,21 +290,20 @@ agent's context.
 
 ### Human-in-the-loop (HITL)
 
-When the system identifies low-confidence matches or multiple conflicting
-entities, the malleable nature of Worlds allows the UI to present
+When the system identifies low-confidence matches or multiple conflicting items,
+the malleable nature of Worlds allows the UI to present
 [disambiguation](https://en.wikipedia.org/wiki/Entity_linking#Disambiguation)
 prompts to the user via a
-[Human-in-the-loop](https://en.wikipedia.org/wiki/Human-in-the-loop) (HITL)
-workflow.
+[Human-in-the-loop](https://en.wikipedia.org/wiki/Human-in-the-loop) workflow.
 
 ### Outcome-based determinism
 
 Utilizing
 [reification](<https://en.wikipedia.org/wiki/Reification_(knowledge_representation)>)
-in context graphs makes relationships first-class entities. If a structural
-anomaly occurs during traversal, the system triggers an intervention. This
-shifts the focus of trust from eliminating uncertainty to managing it through
-rigorous, auditable verification.
+in context graphs makes relationships first-class items. If a structural anomaly
+occurs during traversal, the system triggers an intervention. This shifts the
+focus of trust from eliminating uncertainty to managing it through rigorous,
+auditable verification.
 
 ## SDK and agents
 
@@ -320,7 +320,7 @@ The SDK provides drop-in tools for the Vercel AI SDK and other agent frameworks:
   updates.
 - **`search-entities`**: Performs semantic and keyword search to find relevant
   knowledge.
-- **`generate-iri`**: Creates stable, predictable identifiers for new entities.
+- **`generate-iri`**: Creates stable, predictable identifiers for new items.
 
 ### Interoperability
 
@@ -359,8 +359,8 @@ The platform exposes a comprehensive REST API organized into management-oriented
 
 ### Access control
 
-- **Dynamic access**: Runtime enforcement of plan limits (e.g., Free vs. Pro
-  tiers) without code deployment.
+- **Dynamic access**: Runtime enforcement of plan limits, such as Free vs. Pro
+  tiers, without code deployment.
 - **Metering**: Asynchronous usage tracking aggregated by API key and time
   bucket, supporting finer-grained "pay-as-you-go" billing.
 - **Auth**: Dual-strategy authentication using WorkOS for humans and the Console
@@ -402,7 +402,7 @@ consistency over time.
 ### Journey to SOTA
 
 The pursuit of state-of-the-art (SOTA) performance has required a move away from
-the "black box" of pure vector retrieval.
+the opaque nature of pure vector retrieval.
 
 1.  **Phase I: Vector Dominance**: Initial implementations relied on simple
     similarity search, which frequently hit a "reasoning ceiling" during complex
@@ -413,7 +413,7 @@ the "black box" of pure vector retrieval.
 3.  **Phase III: Symbolic Grounding**: The current Worlds architecture achieves
     SOTA by grounding every neural retrieval in a deterministic RDF structure.
     This "symbolic scaffolding" ensures that even when vector indices converge
-    on multiple similar results, the graph resolves the correct entity through
+    on multiple similar results, the graph resolves the correct item through
     logical context.
 
 ## Glossary

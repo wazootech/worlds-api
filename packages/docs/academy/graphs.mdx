@@ -1,44 +1,49 @@
 ---
 title: "Symbolic graph architecture"
 description:
-  "Learn how to structure knowledge using Subject-Predicate-Object triplets."
+  "Learn how to structure knowledge using Subject-Predicate-Object triples."
 ---
 
 In the previous module, you learned that a World is a graph. This lesson
 explains how to build that graph.
 
-## The triplet: The atomic unit of knowledge
+## Atomic knowledge unit
 
-Every piece of information in a World is stored as a **triplet**. A triplet
+Every piece of information in a World is stored as a **triple**. A triple
 consists of three components:
 
-1.  **Subject**: The entity you are describing (e.g., "Ethan").
-2.  **Predicate**: The relationship or property (e.g., "worksAt").
-3.  **Object**: The value or another entity related to the subject (e.g.,
-    "Wazoo").
+1.  **Subject**: A reference to the item you are describing, for example,
+    "Ethan".
+2.  **Predicate**: A reference to the relationship or property, for example,
+    "worksAt".
+3.  **Object**: The literal value or a reference to another item related to the
+    subject, for example, "Wazoo".
 
 Together, they form a clear semantic statement: **Ethan works at Wazoo.**
 
 ### Graph formation
 
-Triplets are powerful because they are universal. You can express everything
-from simple facts to complex hierarchies through this structure.
+Triples are powerful because they are universal. You can express everything from
+simple facts to complex hierarchies through this structure.
 
-As you add multiple triplets, they naturally form a **Graph**:
+As you add multiple triples, they naturally form a **Graph**:
 
 - "Ethan worksAt Wazoo"
-- "Wazoo locatedIn Seattle"
-- "Greg worksAt Wazoo"
+- "Wazoo locatedIn San Francisco"
+- "Gregory worksAt Wazoo"
 
-The agent can now reason that Ethan and Greg both work at Wazoo, and Wazoo is
-located in Seattle. It can infer that Ethan and Greg share the same work
-location.
+The agent can now reason that Ethan and Gregory both work at Wazoo, and Wazoo is
+located in San Francisco. It can infer that Ethan and Gregory share the same
+work location.
 
 ## Item identifiers
 
 In Worlds, subjects and objects are often identified by unique IDs (URIs). This
-ensures that references to "Wazoo" always point to the same global entity in the
+ensures that references to "Wazoo" always point to the same global item in the
 graph.
+
+For a deeper dive into node identifiers, complex namespaces, and extending graph
+topologies, check out our [Knowledge Graphs guide](/guides/knowledge-graphs).
 
 ### Summary
 

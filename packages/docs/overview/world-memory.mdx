@@ -11,15 +11,17 @@ provides an isolated container for an agent's relationships, history, and facts.
 <Note>
   **The problem: Why AI forgets**
 
-Traditional AI can only "remember" what's in its current chat window. Once that
-window fills up or the chat ends, it loses the thread. This makes it hard for
-agents to handle complex jobs that take more than one session.
+Traditional AI models are largely hobbled; they operate effectively only within
+short, back-and-forth dialogues. Once that context window fills up or the chat
+ends, they lose the thread. Because they lack long-term memory, their
+interactions are fresh starts, making it impossible for agents to take on big,
+multi-day projects like a human coworker might.
 
 **The solution: Linked memory**
 
 Instead of just hoping the AI finds the right data in a massive pile, Worlds
-creates a structured map (a graph). By linking related facts together, your
-agent can always follow the logical path from one piece of information to
+creates a structured map, acting as a graph. By linking related facts together,
+your agent can always follow the logical path from one piece of information to
 another, no matter how much data you add.
 
 </Note>
@@ -34,8 +36,9 @@ another, no matter how much data you add.
 
 ## Architecture
 
-A world functions as a **neuro-symbolic memory container**. It pairs an isolated
-RDF dataset with a high-performance vector search index.
+A world functions as a **[neuro-symbolic](/glossary/neuro-symbolic) memory
+container**. It pairs an isolated RDF dataset with a high-performance vector
+search index.
 
 ### Neural layer
 
@@ -44,12 +47,12 @@ the agent to navigate the world through natural language queries.
 
 ### Symbolic layer
 
-The symbolic layer uses RDF and SPARQL for deterministic facts. It provides
-deterministic validation, reducing the risk of hallucinations inherent in
-standalone LLMs.
+The symbolic layer uses RDF and [SPARQL](/glossary/sparql) for deterministic
+facts. It provides deterministic validation, reducing the risk of hallucinations
+inherent in standalone LLMs.
 
 ## Audit trails
 
-Worlds eliminates "black box" behavior. Every retrieved fact has a verifiable
-audit trail in the RDF graph. If an agent makes a claim, the symbolic layer
-proves it.
+Worlds eliminates opaque, untraceable behavior. Every retrieved fact has a
+verifiable audit trail in the RDF graph. If an agent makes a claim, the symbolic
+layer proves it.

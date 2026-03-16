@@ -1,7 +1,7 @@
 ---
 title: "Graph RAG"
 description:
-  "Transition from stateless text chunks to stateful agent memory using Worlds
+  "Transition from stateless text chunks to stateful world memory using Worlds
   Knowledge Graphs."
 ---
 
@@ -15,7 +15,7 @@ In traditional RAG, you chunk and embed text for retrieval based on semantic
 similarity. This works for static information but fails to capture relationship
 dynamics or state changes.
 
-### Scenario: The evolving fact
+### The evolving fact
 
 1. **Monday:** "I am working on Project Apollo."
 2. **Wednesday:** "I am pausing Apollo to focus on Project Hermes."
@@ -31,30 +31,33 @@ increasingly noisy.
 ```text
 You are a deterministic agent connected to a Worlds knowledge graph.
 When answering user queries:
-1. Use your tools to perform a SPARQL query or Hybrid Search on the stateful memory.
+1. Use your tools to perform a [SPARQL](/glossary/sparql) query or [Hybrid Search](/glossary/hybrid-search) on the stateful memory.
 2. The retrieved relationships represent the CURRENT, VERIFIED state.
-3. Respond strictly utilizing the relationships extracted, overriding any probabilistic intuition.
+3. Respond strictly utilizing the relationships extracted, overriding any probabilistic generation.
 ```
 
 </Prompt>
 
-## Worlds solution: Stateful memory
+## Stateful memory
 
 Worlds maintains a **living knowledge graph**. Instead of storing raw text, it
-extracts meaning as **triples** (subject → predicate → object).
+extracts meaning as **[triples](/glossary/triple)** (subject → predicate →
+object).
 
 When facts change, Worlds updates the specific relationships in the graph. This
 allows you to resolve contradictions at the data layer rather than relying on
 probabilistic LLM reasoning.
 
-### Comparison: RAG and Worlds
+### RAG vs Worlds
 
-| Feature       | Traditional RAG     | Worlds (agent memory)                 |
-| :------------ | :------------------ | :------------------------------------ |
-| **Search**    | Semantic similarity | Hybrid (semantic + relational)        |
-| **State**     | Stateless           | Stateful (resolves contradictions)    |
-| **Inference** | Hallucination-prone | Deterministic reasoning               |
-| **Structure** | Unstructured chunks | Knowledge primitives (items, triples) |
+![RAG vs Graph RAG](/images/rag-vs-worlds.png)
+
+| Feature       | Traditional RAG     | Worlds, functioning as world memory            |
+| :------------ | :------------------ | :--------------------------------------------- |
+| **Search**    | Semantic similarity | Hybrid, combining semantic and relational      |
+| **State**     | Stateless           | Stateful, resolving contradictions             |
+| **Inference** | Hallucination-prone | Deterministic reasoning                        |
+| **Structure** | Unstructured chunks | Knowledge primitives, namely items and triples |
 
 ## Implementing graph RAG
 

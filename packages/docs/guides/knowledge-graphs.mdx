@@ -18,9 +18,10 @@ of knowledge.
 **Items** are the distinct "things" in your world—a person, a piece of code, or
 a company.
 
-- **Identification**: A unique **IRI** (Internationalized Resource Identifier)
-  identifies every item.
-- **Classes**: Categorize items by their type (e.g., `User`, `Project`, `Task`).
+- **Identification**: A unique **IRI**, or Internationalized Resource
+  Identifier, identifies every item.
+- **Classes**: Categorize items by their type, such as `User`, `Project`, or
+  `Task`.
 
 ### Properties
 
@@ -47,6 +48,26 @@ graph LR
 | **Object**    | `Project:Worlds-API` |
 
 ## Why graphs matter
+
+![Table vs Node-Edge Graph](/images/table-vs-graph.png)
+
+### Knowledge representation vs decision infrastructure
+
+There is a fundamental difference between formalizing meaning and
+operationalizing context.
+
+- **RDF** (Resource Description Framework) is a **knowledge representation
+  model**. It uses standard URI-based triples to define canonical vocabularies
+  and ensure global interoperability. It excels at semantic precision.
+- **LPG** (Labelled Property Graph) is an **operational decision
+  infrastructure**. It physically structures nodes and relationships as
+  property-bearing networks (e.g., weights, temporal validity), making it the
+  ideal computational substrate for traversing dense connections under pressure.
+
+**Worlds bridges this architectural gap.** It leverages the interoperable,
+atomic meaning of standard RDF triples while functioning underneath as the
+high-velocity, graph-native decision infrastructure required for continuous AI
+workflows (like GraphRAG).
 
 Knowledge graph statements represent facts. Unlike statistical LLM weights,
 Worlds retrieves specific, auditable relationships.
