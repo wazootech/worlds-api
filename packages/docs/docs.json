@@ -90,20 +90,6 @@
           "contribute/license",
           "contribute/security"
         ]
-      },
-      {
-        "group": "Features",
-        "pages": [
-          "features/rest-api",
-          "features/managed-graphrag",
-          "features/byo-model",
-          "features/develop-your-world",
-          "features/query-and-reason",
-          "features/edge-first",
-          "features/hybrid-search",
-          "features/malleable-knowledge",
-          "features/agent-first"
-        ]
       }
     ],
     "global": {
