@@ -539,7 +539,7 @@ integrity.
   that infrastructure.
 </Info>
 
-## World Memory
+## World memory
 
 A **world** is the foundational unit of organization in the ecosystem. It
 provides an isolated container for an agent's relationships, history, and facts.
@@ -555,9 +555,9 @@ multi-day projects like a human coworker might.
 
 **The solution: Linked memory**
 
-Instead of just hoping the AI finds the right data in a massive pile, Worlds
-creates a structured map, acting as a graph. By linking related facts together,
-your agent can always follow the logical path from one piece of information to
+Instead of hoping the AI finds the right data in a massive pile, Worlds creates
+a structured map, acting as a graph. By linking related facts together, your
+agent can always follow the logical path from one piece of information to
 another, no matter how much data you add.
 
 </Note>
@@ -593,7 +593,7 @@ Worlds eliminates opaque, untraceable behavior. Every retrieved fact has a
 verifiable audit trail in the RDF graph. If an agent makes a claim, the symbolic
 layer proves it.
 
-## Use Cases
+## Use cases
 
 The Worlds Platform provides a flexible infrastructure for a wide range of
 neuro-symbolic and agentic applications.
@@ -690,9 +690,9 @@ detachable hippocampus for AI agents. By combining a
 edge-distributed [SQLite](https://en.wikipedia.org/wiki/SQLite) for persistence,
 Worlds enables automatic memory, or auto-memory, for agents to maintain mutable,
 structured knowledge graphs. This system fuses vector search for semantic
-intuition with deterministic facts for precise data retrieval, empowering agents
-to navigate a persistent, interoperable map of reality rather than predicting
-the next token.
+understanding with deterministic facts for precise data retrieval, empowering
+agents to navigate a persistent, interoperable map of reality rather than
+predicting the next token.
 
 By 2026, the artificial intelligence industry has realigned around fluid
 intelligence and outcome-based results. Worlds provides the structural
@@ -874,7 +874,7 @@ SPARQL engines on disk while maintaining semantic integrity.
 - **`triples` table**: Stores atomic units of knowledge, including Subject,
   Predicate, and Object, targeting string literals and ranks derived from triple
   data.
-- **`entity_types` table**: An optimized table for mapping entities to their
+- **`entity_types` table**: An optimized table for mapping items to their
   `rdf:type` IRIs, enabling rapid structural filtering.
 - **`blobs` table**: Handles large-scale RDF data and file-based state.
 
@@ -891,7 +891,7 @@ Hexastore index research:
   embeddings, enabling semantic similarity search at the edge.
 - **FTS5 indexing**: Native SQLite full-text search for fast keyword matching
   and ranking.
-- **Entity type indexing**: Composite indexing on the `entity_types` table
+- **Item type indexing**: Composite indexing on the `entity_types` table
   (`PRIMARY KEY (subject, type) WITHOUT ROWID`) for high-speed class-based
   filtering.
 
@@ -1267,7 +1267,7 @@ general-purpose SPARQL engines on disk while maintaining semantic integrity.
   Object).
 - **`chunks` table**: Stores overlapping text segments with vector embeddings
   targeting string literals, and ranks derived from triple data.
-- **`entity_types` table**: An optimized table for mapping entities to their
+- **`entity_types` table**: An optimized table for mapping items to their
   `rdf:type` IRIs, enabling rapid structural filtering.
 - **`blobs` table**: Handles large-scale RDF data and file-based state.
 
@@ -1292,7 +1292,7 @@ $$score = \sum_{d \in D} \frac{1}{60 + rank(d)}$$
 For a deeper dive into the mathematical and philosophical foundations of the
 Worlds storage engine, refer to the [Whitepaper](/overview/whitepaper).
 
-## Information Retrieval
+## Information retrieval
 
 Worlds employs a multi-index retrieval strategy to bridge the gap between
 high-dimensional semantic similarity and deterministic graph logic.
@@ -1359,7 +1359,7 @@ Worlds allows for structured interventions:
     detect structural anomalies during traversal and trigger auditable
     verification steps.
 
-## Maturity Model
+## Maturity model
 
 The following matrix provides transparency into the current state and stability
 of the platform's core features.

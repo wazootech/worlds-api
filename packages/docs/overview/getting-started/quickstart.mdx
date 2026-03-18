@@ -1,70 +1,109 @@
 ---
 title: "Quickstart"
-description: "Integrate Worlds into your AI application."
+description:
+  "Get a fully operational World running and queryable in under 60 seconds."
 ---
 
-## Installation
+The quickest way to understand Worlds is to watch it run. This guide bypasses
+environment configuration and authentication, getting you straight to a concrete
+result using a zero-stakes, in-memory sandbox.
 
-Add the Worlds SDK to your project.
+## Zero-stakes sandbox
 
-<CodeGroup>
-  ```bash deno
-  deno add jsr:@wazoo/worlds-sdk
-  ```
+Follow this mandatory sequence to train yourself on the core interaction loop:
+create a world, inject a fact, and retrieve it deterministically. Expect to
+observe and mimic.
 
-```bash npm
-npx jsr add @wazoo/worlds-sdk
-```
+<Steps>
+  <Step title="Initialize the sandbox">
+    Run the single-command initializer to create a temporary, local-first Worlds environment.
+    
+    <CodeGroup>
+      ```bash deno
+      deno run -A npm:@wazoo/worlds-cli@latest init --sandbox
+      ```
 
-```bash pnpm
-pnpm i jsr:@wazoo/worlds-sdk
-```
+      ```bash npx
+      npx @wazoo/worlds-cli@latest init --sandbox
+      ```
+    </CodeGroup>
 
-```bash yarn
-yarn add jsr:@wazoo/worlds-sdk
-```
+    <Check>You now have an isolated, ephemeral World running on your local machine.</Check>
 
-```bash bun
-bunx jsr add @wazoo/worlds-sdk
-```
+  </Step>
 
-</CodeGroup>
+  <Step title="Observe the execution">
+    Copy and run the following self-contained script. This script executes a complete neuro-symbolic thought loop:
+    
+    1. It connects to the SDK.
+    2. It creates an isolated World.
+    3. It injects a semantic fact (a [Triple](/worlds/facts)).
+    4. It queries that fact deterministically using [SPARQL](/worlds/query).
 
-### Initialize your first world
+    ```typescript sandbox.ts
+    import { WorldsSdk } from "@wazoo/worlds-sdk";
 
-Connect to the Worlds API and initialize a persistent context.
+    // 1. Connect (In-memory sandbox mode requires no API keys)
+    const sdk = new WorldsSdk();
 
-```typescript
-import { WorldsSdk } from "@wazoo/worlds-sdk";
+    // 2. Create an isolated world
+    const world = await sdk.worlds.create({
+      slug: "quickstart-sandbox",
+      label: "My First Sandbox"
+    });
 
-const sdk = new WorldsSdk({
-  baseUrl: "https://api.wazoo.dev",
-  apiKey: "YOUR_API_KEY",
-});
+    // 3. Inject a fact (Subject -> Predicate -> Object)
+    await sdk.worlds.import(
+      world.id,
+      `<#system> <#status> "operational" .`,
+      { format: "turtle" }
+    );
 
-const world = await sdk.worlds.create({
-  slug: "my-first-world",
-  label: "My First World",
-});
-```
+    // 4. Retrieve the fact precisely
+    const result = await sdk.sparql.query(
+      world.id,
+      `SELECT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }`
+    );
 
-### Add context
+    console.log("Memory retrieved:", result);
+    ```
 
-Provide AI agents with persistent, searchable memory.
+  </Step>
 
-```typescript
-await sdk.worlds.import(
-  "my-first-world",
-  `
-  <#memo> <http://purl.org/dc/terms/description> "The secret ingredient is always more compute." .
-  `,
-  { format: "turtle" },
-);
-```
+  <Step title="Analyze the output">
+    When you run the script, the system executes the highly optimized query and returns the fact exactly as you injected it—no probabilistic guessing.
+    
+    ```json
+    Memory retrieved:
+    [
+      {
+        "subject": { "value": "system" },
+        "predicate": { "value": "status" },
+        "object": { "value": "operational" }
+      }
+    ]
+    ```
 
-## Next steps
+    You have just completed the fundamental loop of interacting with an autonomous, stateful memory container.
 
-Explore the following resources:
+  </Step>
+</Steps>
 
-- [API reference](/reference)
-- [Conceptual overview](/overview/introduction)
+## Moving to production
+
+Once you understand the basic flow, you can add persistence, connect to the
+cloud, and grant AI agents direct access so they can manage this loop
+autonomously.
+
+<CardGroup cols={2}>
+  <Card
+    title="AI agent integration"
+    icon="robot"
+    href="/overview/getting-started/agent-integration"
+  >
+    Grant an AI agent direct access to construct its own Worlds.
+  </Card>
+  <Card title="Self-hosting" icon="server" href="/guides/self-hosting">
+    Deploy Worlds persistently using Docker and Turso.
+  </Card>
+</CardGroup>
