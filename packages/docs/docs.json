@@ -88,9 +88,7 @@
           },
           {
             "group": "Platform",
-            "pages": [
-              "platform/overview"
-            ]
+            "pages": ["platform/overview"]
           },
           {
             "group": "Contribute",
@@ -110,17 +108,17 @@
           {
             "group": "CLI Commands",
             "pages": [
-              "reference/cli/index",
-              "reference/cli/create",
-              "reference/cli/get",
-              "reference/cli/list",
-              "reference/cli/update",
-              "reference/cli/import",
-              "reference/cli/export",
-              "reference/cli/search",
-              "reference/cli/sparql",
-              "reference/cli/delete",
-              "reference/cli/chat"
+              "cli/index",
+              "cli/create",
+              "cli/get",
+              "cli/list",
+              "cli/update",
+              "cli/import",
+              "cli/export",
+              "cli/search",
+              "cli/sparql",
+              "cli/delete",
+              "cli/chat"
             ]
           }
         ]
