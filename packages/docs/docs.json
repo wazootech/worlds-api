@@ -58,9 +58,9 @@
         "group": "Core Engine",
         "pages": [
           "worlds/index",
-          "worlds/items-and-facts",
+          "worlds/items-facts",
           "worlds/search",
-          "worlds/query-and-updates"
+          "worlds/sparql"
         ]
       },
       {
