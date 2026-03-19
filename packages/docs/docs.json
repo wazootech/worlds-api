@@ -64,7 +64,12 @@
       {
         "group": "API Reference",
         "openapi": "openapi.yaml",
-        "pages": ["reference/index", "reference/api"]
+        "pages": [
+          "reference/index",
+          "reference/api",
+          "reference/sdk",
+          "reference/cli"
+        ]
       },
       {
         "group": "Integrations",
