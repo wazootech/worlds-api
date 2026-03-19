@@ -50,7 +50,8 @@
           "overview/getting-started/quickstart",
           "overview/architecture",
           "overview/features",
-          "overview/philosophy-history",
+          "overview/philosophy",
+          "overview/history",
           "overview/whitepaper",
           "overview/roadmap"
         ]
