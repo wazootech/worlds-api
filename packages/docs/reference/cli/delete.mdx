@@ -3,4 +3,14 @@ title: "worlds delete"
 description: "Permanently drop a graph and its associated indices."
 ---
 
-This strict technical reference for the \`delete\` command is coming soon.
+Permanently deletes a world and all of its associated facts and items. This action cannot be undone.
+
+<ParamField path="worldId" type="string" required>
+  The unique system identifier of the target world.
+</ParamField>
+
+### Usage
+
+```bash
+worlds delete <worldId>
+```

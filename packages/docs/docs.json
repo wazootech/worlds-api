@@ -112,10 +112,15 @@
             "pages": [
               "reference/cli/index",
               "reference/cli/create",
-              "reference/cli/delete",
+              "reference/cli/get",
+              "reference/cli/list",
+              "reference/cli/update",
               "reference/cli/import",
-              "reference/cli/query",
-              "reference/cli/search"
+              "reference/cli/export",
+              "reference/cli/search",
+              "reference/cli/sparql",
+              "reference/cli/delete",
+              "reference/cli/chat"
             ]
           }
         ]
