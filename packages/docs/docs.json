@@ -74,11 +74,16 @@
         ]
       },
       {
-        "group": "Guides & Integrations",
+        "group": "Guides",
         "pages": [
           "guides/self-hosting",
           "guides/automation-vibe-coding",
-          "guides/worlds-sdk",
+          "guides/worlds-sdk"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
           "guides/vercel-ai-sdk",
           "guides/openai-sdk",
           "guides/langgraph",
