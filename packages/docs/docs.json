@@ -105,22 +105,22 @@
           {
             "group": "Worlds CLI",
             "pages": [
-              "cli/index"
+              "reference/cli/index"
             ]
           },
           {
             "group": "Subcommands",
             "pages": [
-              "cli/create",
-              "cli/get",
-              "cli/list",
-              "cli/update",
-              "cli/import",
-              "cli/export",
-              "cli/search",
-              "cli/sparql",
-              "cli/delete",
-              "cli/chat"
+              "reference/cli/create",
+              "reference/cli/get",
+              "reference/cli/list",
+              "reference/cli/update",
+              "reference/cli/import",
+              "reference/cli/export",
+              "reference/cli/search",
+              "reference/cli/sparql",
+              "reference/cli/delete",
+              "reference/cli/chat"
             ]
           }
         ],
