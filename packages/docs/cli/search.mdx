@@ -3,7 +3,7 @@ title: "worlds search"
 description: "Retrieve items and facts using hybrid vector similarity."
 ---
 
-Executes a semantic hybrid search against the world's underlying vector index. 
+Executes a semantic hybrid search against the world's underlying vector index.
 
 <ParamField path="worldId" type="string" required>
   The unique system identifier of the target world.
@@ -14,21 +14,17 @@ Executes a semantic hybrid search against the world's underlying vector index.
 </ParamField>
 
 <ParamField path="--limit" type="number">
-  The maximum number of matches to return.
-  
-  *Alias:* `-l`
+  The maximum number of matches to return. *Alias:* `-l`
 </ParamField>
 
 <ParamField path="--subjects" type="string[]">
-  Restrict the semantic search geometrically to specific subject IRIs. Pass this flag multiple times for multiple subjects.
-  
-  *Alias:* `-s`
+  Restrict the semantic search geometrically to specific subject IRIs. Pass this
+  flag multiple times for multiple subjects. *Alias:* `-s`
 </ParamField>
 
 <ParamField path="--predicates" type="string[]">
-  Restrict the semantic search to specific predicate IRIs. Pass this flag multiple times for multiple predicates.
-  
-  *Alias:* `-p`
+  Restrict the semantic search to specific predicate IRIs. Pass this flag
+  multiple times for multiple predicates. *Alias:* `-p`
 </ParamField>
 
 ### Usage
