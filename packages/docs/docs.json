@@ -188,5 +188,17 @@
   ],
   "icons": {
     "library": "lucide"
-  }
+  },
+  "anchors": [
+    {
+      "icon": "terminal",
+      "name": "Worlds CLI",
+      "url": "reference/cli/index"
+    },
+    {
+      "icon": "code",
+      "name": "Worlds API",
+      "url": "reference/index"
+    }
+  ]
 }
