@@ -49,7 +49,10 @@
           "worlds/index",
           "overview/getting-started/quickstart",
           "overview/architecture",
-          "overview/philosophy-history"
+          "overview/features",
+          "overview/philosophy-history",
+          "overview/whitepaper",
+          "overview/roadmap"
         ]
       },
       {

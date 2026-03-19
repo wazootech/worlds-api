@@ -1,0 +1,214 @@
+---
+title: "Features & Use Cases"
+---
+
+For robots only:
+
+<Note>
+  Documentation Index: Fetch the complete documentation index at:
+  [llms.txt](/llms.txt). Use this file to discover all available pages before
+  exploring further.
+
+For more information for robots and LLMs, see
+[AI agent integration](/overview/getting-started/agent-integration).
+
+</Note>
+
+Worlds provides you with an open-source [neuro-symbolic](/overview/introduction)
+infrastructure layer to build agents with persistent, verifiable memory and
+world models.
+
+Traditional memory systems rely on semantic search, which often causes agents to
+hallucinate or lose structural context. You can bridge this "Reasoning Gap" by
+fusing [hybrid search](/worlds/search) with the precision of symbolic logic.
+Worlds ensures your agents navigate reality with deterministic precision.
+
+<Frame>
+  <img
+    className="block dark:hidden"
+    src="/images/wazoo.svg"
+    alt="Worlds API hero image light"
+  />
+  <img
+    className="hidden dark:block"
+    src="/images/wazoo.svg"
+    alt="Worlds API hero image dark"
+  />
+</Frame>
+
+## Overview
+
+Interact with self-contained environments of facts and rules at the network
+edge.
+
+<CardGroup cols={3}>
+  <Card title="Bring your own model" icon="brain">
+    Connect your LLM or agent to the Worlds REST SDK.
+  </Card>
+  <Card title="Construct your world" icon="hammer">
+    Ingest data into isolated Worlds where facts live as queryable
+    [triples](/worlds/facts).
+  </Card>
+  <Card title="Query and reason" icon="magnifying-glass">
+    Retrieve verifiable logical relationships instead of semantic guesses.
+  </Card>
+</CardGroup>
+
+## Capabilities
+
+<CardGroup cols={2}>
+  <Card title="Neuro-symbolic reasoning" icon="brain-circuit">
+    Query probabilistic LLM logic and rigid Knowledge Graph truth using SPARQL.
+  </Card>
+  <Card title="Edge-first architecture" icon="bolt">
+    Retrieve localized knowledge with low latency, powered by Deno and Turso.
+  </Card>
+  <Card title="Malleable knowledge" icon="pen-nib">
+    Edit specific facts within a graph without retraining or re-indexing entire
+    blocks.
+  </Card>
+  <Card title="Hybrid search" icon="magnifying-glass">
+    Combine vector similarity, keyword precision, and graph-based relational
+    filters.
+  </Card>
+  <Card title="Provider agnostic" icon="gears">
+    Connect your preferred models, including OpenAI, Anthropic, Gemini, xAI, and
+    DeepSeek.
+  </Card>
+  <Card title="Agent-native SDK" icon="puzzle-piece">
+    Bridge private knowledge using the Tool and MCP-native SDK, complete with
+    ready-to-use functions for schema discovery.
+  </Card>
+</CardGroup>
+
+## Use cases
+
+The Worlds Platform provides a flexible infrastructure for a wide range of
+neuro-symbolic and agentic applications.
+
+## Personal AI memory
+
+Build a truly personalized assistant that remembers every detail of your digital
+lifeâ€”from meeting notes to research papersâ€”with deterministic accuracy.
+
+- **Deterministic recall**: No more "I think you mentioned..."â€”the agent
+  retrieves specific facts from your private RDF graph.
+- **Privacy by design**: Memory stays local or edge-deployed, ensuring
+  high-fidelity recall without compromising data ownership.
+
+## Enterprise knowledge graphs
+
+Transform fragmented organizational data into a unified, queryable knowledge
+state for internal tools and agents.
+
+- **Structural grounding**: Ensure your enterprise bots answer questions based
+  on the latest company ontologies.
+- **Auditability**: Every agent action is backed by a verifiable fact in the
+  graph, providing a clear audit trail for compliance.
+
+## Agentic tool grounding
+
+Provide autonomous agents with a structured "map" of the tools and systems they
+interact with.
+
+- **Schema discovery**: Agents use `discover-schema` to introspect available
+  classes and properties before executing actions.
+- **Constraint enforcement**: Use symbolic logic to define what an agent _can_
+  and _cannot_ do within a specific operational context.
+
+## Research and analysis
+
+Manage complex research datasets where relationships between items are as
+important as the data points themselves.
+
+- **Complex querying**: Use SPARQL to find non-obvious connections across
+  massive datasets.
+- **Multi-modal fusion**: Combine document textures with structural knowledge
+  for deep, contextual analysis.
+
+
+## Features
+
+<CardGroup cols={3}>
+  <Card title="Query and reason" icon="magnifying-glass" href="/worlds/query">
+    Ontology-first, domain-driven design, SPARQL, and standard RDF querying.
+  </Card>
+  <Card title="Hybrid search" icon="list-ol" href="/worlds/search">
+    Combine vector similarity with keyword precision and structural RDF filters.
+  </Card>
+  <Card title="Managed GraphRAG" icon="chart-network" href="/worlds/query">
+    Stateful retrieval augmented generation backed by verifiable graph logic.
+  </Card>
+  <Card title="Worlds HTTP API" icon="server" href="/reference/api">
+    Flexible REST server and client libraries to integrate your pipeline.
+  </Card>
+  <Card title="Agent-native" icon="robot" href="/guides/automation-vibe-coding">
+    First-class support for Vercel AI SDK, MCP, and type-safe SDKs.
+  </Card>
+  <Card title="Develop your world" icon="wrench" href="/worlds/update">
+    Ingestion interoperable with your data to construct knowledge graphs.
+  </Card>
+  <Card title="BYO model" icon="brain" href="/guides/self-hosting">
+    Provider-agnostic intelligence; connect Anthropic, OpenAI, or any models.
+  </Card>
+  <Card title="Edge-first" icon="bolt" href="/overview/architecture">
+    Serverless architecture built for low latency global data deployment.
+  </Card>
+  <Card title="Malleable knowledge" icon="pen-nib" href="/worlds/update">
+    Mutate facts without re-indexing. Iterate, refine, evolve, and automate.
+  </Card>
+</CardGroup>
+
+## World memory
+
+A **world** is the foundational unit of organization in the ecosystem. It
+provides an isolated container for an agent's relationships, history, and facts.
+
+<Note>
+  **The problem: Why AI forgets**
+
+Traditional AI models are largely hobbled; they operate effectively only within
+short, back-and-forth dialogues. Once that context window fills up or the chat
+ends, they lose the thread. Because they lack long-term memory, their
+interactions are fresh starts, making it impossible for agents to take on big,
+multi-day projects like a human coworker might.
+
+**The solution: Linked memory**
+
+Instead of hoping the AI finds the right data in a massive pile, Worlds creates
+a structured map, acting as a graph. By linking related facts together, your
+agent can always follow the logical path from one piece of information to
+another, no matter how much data you add.
+
+</Note>
+
+## Goals
+
+| Goal            | Description                          | Constraint                     |
+| :-------------- | :----------------------------------- | :----------------------------- |
+| **Isolation**   | Prevent data leakage between agents. | One RDF dataset per world.     |
+| **Portability** | Maintain memory across model swaps.  | Decoupled from LLM provider.   |
+| **Fusion**      | Hybrid neural/symbolic reasoning.    | Requires both vector + SPARQL. |
+
+## Architecture
+
+A world functions as a **[neuro-symbolic](/overview/introduction) memory
+container**. It pairs an isolated RDF dataset with a high-performance vector
+search index.
+
+### Neural layer
+
+The neural layer uses vector embeddings to manage semantic similarity. It allows
+the agent to navigate the world through natural language queries.
+
+### Symbolic layer
+
+The symbolic layer uses RDF and [SPARQL](/worlds/query) for deterministic facts.
+It provides deterministic validation, reducing the risk of hallucinations
+inherent in standalone LLMs.
+
+## Audit trails
+
+Worlds eliminates opaque, untraceable behavior. Every retrieved fact has a
+verifiable audit trail in the RDF graph. If an agent makes a claim, the symbolic
+layer proves it.
