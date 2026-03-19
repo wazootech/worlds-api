@@ -133,9 +133,7 @@
             "group": "HTTP REST API",
             "openapi": "openapi.yaml",
             "pages": [
-              "reference/index",
-              "reference/api",
-              "reference/sdk"
+              "reference/index"
             ]
           }
         ],
