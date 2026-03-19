@@ -57,13 +57,7 @@
         "openapi": "openapi.yaml",
         "pages": [
           "reference/index",
-          "reference/api-basics/authentication",
-          "reference/api",
-          "reference/rate-limits",
-          "reference/changelog",
-          "reference/sdk-overview",
-          "reference/sdk",
-          "reference/cli"
+          "reference/api"
         ]
       },
       {
@@ -71,7 +65,8 @@
         "pages": [
           "guides/self-hosting",
           "guides/automation-vibe-coding",
-          "guides/worlds-sdk"
+          "guides/worlds-sdk",
+          "guides/cli"
         ]
       },
       {
@@ -104,7 +99,8 @@
           "contribute/contributing-guide",
           "contribute/code-of-conduct",
           "contribute/license",
-          "contribute/security"
+          "contribute/security",
+          "contribute/changelog"
         ]
       },
       {
