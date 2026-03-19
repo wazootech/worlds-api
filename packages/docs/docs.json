@@ -50,8 +50,7 @@
           "worlds/items",
           "worlds/facts",
           "worlds/search",
-          "worlds/query",
-          "worlds/update",
+          "worlds/sparql",
           "worlds/logs"
         ]
       },
