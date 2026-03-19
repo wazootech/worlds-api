@@ -68,7 +68,17 @@
           "reference/index",
           "reference/api",
           "reference/sdk",
-          "reference/cli"
+          {
+            "group": "CLI Commands",
+            "pages": [
+              "reference/cli/index",
+              "reference/cli/create",
+              "reference/cli/delete",
+              "reference/cli/import",
+              "reference/cli/query",
+              "reference/cli/search"
+            ]
+          }
         ]
       },
       {
