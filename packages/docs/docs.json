@@ -48,16 +48,16 @@
     "groups": [
       {
         "group": "Welcome",
+        "root": "overview/introduction",
         "pages": [
-          "overview/introduction",
           "overview/getting-started/quickstart",
           "overview/architecture"
         ]
       },
       {
         "group": "Core Engine",
+        "root": "worlds/index",
         "pages": [
-          "worlds/index",
           "worlds/items-facts",
           "worlds/search",
           "worlds/sparql"
@@ -65,8 +65,8 @@
       },
       {
         "group": "Platform",
+        "root": "platform/overview",
         "pages": [
-          "platform/overview",
           "platform/cli",
           "platform/sdk",
           "platform/api"
@@ -101,9 +101,9 @@
       },
       {
         "group": "API Reference",
+        "root": "reference/index",
         "openapi": "openapi.yaml",
         "pages": [
-          "reference/index",
           "reference/api-basics/authentication",
           "reference/api",
           "reference/rate-limits",
@@ -115,9 +115,9 @@
       },
       {
         "group": "Contribute",
+        "root": "contribute/contributing-guide",
         "pages": [
           "contribute/code-of-conduct",
-          "contribute/contributing-guide",
           "contribute/license",
           "contribute/security"
         ]
