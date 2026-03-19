@@ -45,6 +45,11 @@
     "global": {
       "anchors": [
         {
+          "anchor": "Platform",
+          "href": "/platform/overview",
+          "icon": "cloud"
+        },
+        {
           "anchor": "Reference",
           "href": "/reference/index",
           "icon": "code"
@@ -105,13 +110,8 @@
         ]
       },
       {
-        "group": "Platform",
-        "pages": [
-          "platform/overview",
-          "platform/cli",
-          "platform/sdk",
-          "platform/api"
-        ]
+        "group": "Reference",
+        "pages": ["reference/sdk-overview", "reference/sdk", "reference/cli"]
       },
       {
         "group": "Contribute",
@@ -123,16 +123,22 @@
         ]
       },
       {
-        "group": "Reference",
+        "group": "Platform",
+        "pages": [
+          "platform/overview",
+          "platform/cli",
+          "platform/sdk",
+          "platform/api"
+        ]
+      },
+      {
+        "group": "API Reference",
         "openapi": "openapi.yaml",
         "pages": [
           "reference/index",
           "reference/api-basics/authentication",
           "reference/api",
           "reference/rate-limits",
-          "reference/sdk-overview",
-          "reference/sdk",
-          "reference/cli",
           "reference/changelog"
         ]
       }
