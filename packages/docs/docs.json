@@ -68,18 +68,6 @@
     }
   },
   "navigation": {
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Worlds API",
-          "href": "/reference"
-        },
-        {
-          "anchor": "Worlds CLI",
-          "href": "/reference/cli"
-        }
-      ]
-    },
     "products": [
       {
         "product": "Worlds",
@@ -87,7 +75,7 @@
         "groups": [
           {
             "group": "Welcome",
-            "pages": ["quickstart", "platform", "manifesto"]
+            "pages": ["introduction", "quickstart", "platform", "manifesto"]
           },
           {
             "group": "Worlds",
@@ -184,6 +172,23 @@
   "footer": {
     "links": [
       {
+        "header": "Developers",
+        "items": [
+          {
+            "label": "API Reference",
+            "href": "/reference"
+          },
+          {
+            "label": "CLI Reference",
+            "href": "/reference/cli"
+          },
+          {
+            "label": "SDK (JSR)",
+            "href": "https://jsr.io/@wazoo/worlds-sdk"
+          }
+        ]
+      },
+      {
         "header": "Explore",
         "items": [
           {
@@ -191,8 +196,8 @@
             "href": "https://console.wazoo.dev"
           },
           {
-            "label": "SDK (JSR)",
-            "href": "https://jsr.io/@wazoo/worlds-sdk"
+            "label": "Blog",
+            "href": "https://wazoo.dev/blog"
           }
         ]
       },
@@ -208,22 +213,13 @@
             "href": "https://x.com/wazootech"
           }
         ]
-      },
-      {
-        "header": "Resources",
-        "items": [
-          {
-            "label": "Blog",
-            "href": "https://wazoo.dev/blog"
-          }
-        ]
       }
     ]
   },
   "redirects": [
     {
       "source": "/",
-      "destination": "/worlds"
+      "destination": "/introduction"
     }
   ],
   "icons": {
