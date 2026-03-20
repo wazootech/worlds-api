@@ -6,3 +6,8 @@ img[src*="/images/icons/"][src$=".svg"] {
 .dark img[src*="/images/icons/"][src$=".svg"] {
   filter: brightness(0) invert(1) opacity(0.85);
 }
+
+/* Hide product dropdown buttons since global navigation anchors and links are used instead */
+.nav-dropdown-products-selector-trigger {
+  display: none !important;
+}
