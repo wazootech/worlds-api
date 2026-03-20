@@ -132,8 +132,24 @@
         "groups": [
           {
             "group": "Worlds API",
-            "openapi": "openapi.yaml",
             "pages": ["reference/index"]
+          },
+          {
+            "group": "API Reference",
+            "openapi": "openapi.yaml",
+            "pages": [
+              "GET /worlds",
+              "POST /worlds",
+              "GET /worlds/{world}",
+              "PUT /worlds/{world}",
+              "DELETE /worlds/{world}",
+              "GET /worlds/{world}/export",
+              "POST /worlds/{world}/import",
+              "GET /worlds/{world}/logs",
+              "GET /worlds/{world}/search",
+              "GET /worlds/{world}/sparql",
+              "POST /worlds/{world}/sparql"
+            ]
           }
         ]
       },
@@ -146,7 +162,7 @@
             "pages": ["reference/cli/index"]
           },
           {
-            "group": "Subcommands",
+            "group": "CLI Reference",
             "icon": "terminal",
             "pages": [
               "reference/cli/create",

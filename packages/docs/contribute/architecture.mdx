@@ -3,7 +3,7 @@ title: "Architecture"
 description: "High-level diagram and explanation of the Worlds architecture."
 ---
 
-The Worlds Platform utilizes a managed [neuro-symbolic](/overview/introduction)
+The Worlds Platform utilizes a managed [neuro-symbolic](/manifesto)
 infrastructure designed for edge-distributed, agentic memory. Built on the
 [Deno](https://deno.com/) runtime, it separates the **Worlds Console** for
 management from the **Worlds API** for high-performance execution.
@@ -162,7 +162,7 @@ graph LR
 Each World is a specific context or knowledge graph managed by the server.
 
 - **Dedicated storage**: Each World maintains its own secondary libSQL database
-  for [triples](/worlds/facts), chunks, and embeddings.
+  for [triples](/worlds), chunks, and embeddings.
 - **Isolation**: Worlds are accessed via `/v1/worlds/{id}`, ensuring zero
   cross-contamination between contexts.
 
@@ -222,7 +222,7 @@ The server follows a modular layout organized by service and resource:
 
 The Worlds Server follows a structured lifecycle for initialization and request
 handling. For a detailed breakdown, refer to the
-[Request flow](/overview/architecture) reference.
+[Request flow](/contribute/architecture) reference.
 
 ## Design principles
 

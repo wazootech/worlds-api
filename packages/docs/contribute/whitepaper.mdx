@@ -476,9 +476,9 @@ At this stage, the data remains unstructured human language.
 ### Neuro-symbolic engine
 
 The Worlds engine uses LLMs to extract meaning and items. It translates
-ambiguous language into structured **[triples](/worlds/facts)** (subject â†’
-predicate â†’ object). These facts then merge into a **world**â€”an isolated
-container where the graph evolves through:
+ambiguous language into structured **[triples](/worlds)** (subject → predicate
+â†’ object). These facts then merge into a **world**â€”an isolated container
+where the graph evolves through:
 
 - **Updating** conflicting facts.
 - **Extending** existing items with new context.
@@ -547,8 +547,7 @@ The fusion algorithm follows the industry-standard RRF formula:
 $$score = \sum_{d \in D} \frac{1}{60 + rank(d)}$$
 
 For a deeper dive into the mathematical and philosophical foundations of the
-Worlds storage engine, refer to the
-[Whitepaper](/overview/introduction#whitepaper).
+Worlds storage engine, refer to the [Whitepaper](/manifesto).
 
 ## Information retrieval
 

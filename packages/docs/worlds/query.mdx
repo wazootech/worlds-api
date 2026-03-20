@@ -6,7 +6,7 @@ description:
 
 **SPARQL** (SPARQL Protocol and RDF Query Language) is the W3C-standard query
 language for RDF graphs. In Worlds, it provides the **symbolic** half of the
-[neuro-symbolic](/overview/introduction) architecture.
+[neuro-symbolic](/manifesto) architecture.
 
 ## How it looks
 
@@ -63,8 +63,8 @@ world database:
 1.  **Deterministic identification**:
     [Skolemizes](https://en.wikipedia.org/wiki/Skolem_normal_form) and hashes
     each quad to a unique triple ID.
-2.  **Relational storage**: Upserts the resulting [triples](/worlds/facts) into
-    the `triples` table.
+2.  **Relational storage**: Upserts the resulting [triples](/worlds) into the
+    `triples` table.
 3.  **Semantic indexing**: Chunks and embeds literal values for
     [hybrid search](/worlds/search).
 4.  **Triggers**: SQL triggers synchronize `rdf:type` relations to the
@@ -125,8 +125,7 @@ When answering user queries:
 ## Stateful memory
 
 Worlds maintains a **living knowledge graph**. Instead of storing raw text, it
-extracts meaning as **[triples](/worlds/facts)** (subject â†’ predicate â†’
-object).
+extracts meaning as **[triples](/worlds)** (subject → predicate → object).
 
 When facts change, Worlds updates the specific relationships in the graph. This
 allows you to resolve contradictions at the data layer rather than relying on
@@ -146,8 +145,8 @@ probabilistic LLM reasoning.
 ## Implementing graph RAG
 
 To implement graph RAG with Worlds, follow the
-[ingestion pipeline](/overview/introduction#the-worlds-pipeline) to transform
-your unstructured data into a queryable graph.
+[ingestion pipeline](/contribute/architecture) to transform your unstructured
+data into a queryable graph.
 
 Ontology RAG leverages rigid, predefined schemas to guide agentic reasoning and
 data retrieval. This ensures your agents operate within a well-defined

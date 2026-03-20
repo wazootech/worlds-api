@@ -37,7 +37,7 @@ observe and mimic.
     
     1. It connects to the SDK.
     2. It creates an isolated World.
-    3. It injects a semantic fact (a [Triple](/worlds/facts)).
+    3. It injects a semantic fact (a [Triple](/worlds)).
     4. It queries that fact deterministically using [SPARQL](/worlds/query).
 
     ```typescript sandbox.ts
@@ -96,14 +96,10 @@ cloud, and grant AI agents direct access so they can manage this loop
 autonomously.
 
 <CardGroup cols={2}>
-  <Card
-    title="AI agent integration"
-    icon="robot"
-    href="/overview/getting-started/agent-integration"
-  >
+  <Card title="AI agent integration" icon="robot" href="/guides/ai-sdk">
     Grant an AI agent direct access to construct its own Worlds.
   </Card>
-  <Card title="Self-hosting" icon="server" href="/guides/self-hosting">
+  <Card title="Self-hosting" icon="server" href="/guides/self-host">
     Deploy Worlds persistently using Docker and Turso.
   </Card>
 </CardGroup>
