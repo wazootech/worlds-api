@@ -63,15 +63,6 @@
     }
   },
   "navigation": {
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Worlds API",
-          "icon": "code",
-          "href": "/reference/index"
-        }
-      ]
-    },
     "products": [
       {
         "product": "Worlds",
@@ -79,11 +70,7 @@
         "groups": [
           {
             "group": "Welcome",
-            "pages": [
-              "overview/getting-started/quickstart",
-              "platform/overview",
-              "guides/self-host"
-            ]
+            "pages": ["quickstart", "platform", "manifesto"]
           },
           {
             "group": "Worlds",
@@ -110,13 +97,14 @@
             ]
           },
           {
-            "group": "Contribute",
+            "group": "Open Source",
             "pages": [
+              "contribute/architecture",
+              "guides/self-host",
+              "contribute/security",
               "contribute/index",
               "contribute/coc",
-              "contribute/license",
-              "contribute/security",
-              "contribute/changelog"
+              "contribute/license"
             ]
           }
         ]
@@ -126,7 +114,7 @@
         "icon": "code",
         "groups": [
           {
-            "group": "HTTP REST API",
+            "group": "Worlds API",
             "openapi": "openapi.yaml",
             "pages": ["reference/index"]
           }
