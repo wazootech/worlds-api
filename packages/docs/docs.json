@@ -4,19 +4,37 @@
   "theme": "mint",
   "logo": {
     "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "dark": "/logo/dark.svg",
+    "href": "/"
   },
   "favicon": "/images/wazoo.svg",
   "colors": {
-    "primary": "#D97706",
-    "light": "#F59E0B",
-    "dark": "#78350F"
+    "primary": "#FF9800",
+    "light": "#FFB74D",
+    "dark": "#F57C00"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "fonts": {
+    "body": {
+      "family": "Geist"
+    },
+    "heading": {
+      "family": "IBM Plex Mono"
+    }
+  },
+  "background": {
+    "color": {
+      "light": "#fafaf9",
+      "dark": "#040404"
+    }
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs"
   },
   "contextual": {
-    "options": [
-      "copy",
-      "view"
-    ]
+    "options": ["copy", "view"]
   },
   "seo": {
     "indexing": "all",
@@ -45,6 +63,20 @@
     }
   },
   "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Worlds API",
+          "icon": "code",
+          "href": "/reference/index"
+        },
+        {
+          "anchor": "Worlds CLI",
+          "icon": "terminal",
+          "href": "/reference/cli/index"
+        }
+      ]
+    },
     "products": [
       {
         "product": "Worlds",
@@ -60,16 +92,11 @@
           },
           {
             "group": "Platform",
-            "pages": [
-              "platform/overview"
-            ]
+            "pages": ["platform/overview"]
           },
           {
             "group": "Guides",
-            "pages": [
-              "overview/getting-started/quickstart",
-              "guides/self-host"
-            ]
+            "pages": ["overview/getting-started/quickstart", "guides/self-host"]
           },
           {
             "group": "Integrations",
@@ -81,7 +108,7 @@
               "guides/n8n",
               "guides/openclaw",
               "guides/opencode",
-              "guides/openai-sdk",
+              "guides/openai",
               "guides/zapier",
               "guides/zo"
             ]
@@ -104,9 +131,7 @@
         "groups": [
           {
             "group": "Worlds CLI",
-            "pages": [
-              "reference/cli/index"
-            ]
+            "pages": ["reference/cli/index"]
           },
           {
             "group": "Subcommands",
@@ -132,9 +157,7 @@
           {
             "group": "HTTP REST API",
             "openapi": "openapi.yaml",
-            "pages": [
-              "reference/index"
-            ]
+            "pages": ["reference/index"]
           }
         ],
         "icon": "code"
@@ -188,17 +211,5 @@
   ],
   "icons": {
     "library": "lucide"
-  },
-  "anchors": [
-    {
-      "icon": "terminal",
-      "name": "Worlds CLI",
-      "url": "reference/cli/index"
-    },
-    {
-      "icon": "code",
-      "name": "Worlds API",
-      "url": "reference/index"
-    }
-  ]
+  }
 }
