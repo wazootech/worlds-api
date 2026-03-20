@@ -98,7 +98,7 @@
         ]
       },
       {
-        "group": "Open Source",
+        "group": "Open source",
         "pages": [
           "contribute/architecture",
           "contribute/style",
@@ -111,7 +111,7 @@
         "pages": ["reference/index"]
       },
       {
-        "group": "API Reference",
+        "group": "API reference",
         "openapi": "openapi.yaml",
         "pages": [
           "GET /worlds",
@@ -132,7 +132,7 @@
         "pages": ["reference/cli/index"]
       },
       {
-        "group": "CLI Reference",
+        "group": "CLI reference",
         "icon": "terminal",
         "pages": [
           "reference/cli/create",
@@ -155,15 +155,15 @@
         "header": "Developers",
         "items": [
           {
-            "label": "API Reference",
+            "label": "API reference",
             "href": "/reference"
           },
           {
-            "label": "CLI Reference",
+            "label": "CLI reference",
             "href": "/reference/cli"
           },
           {
-            "label": "TypeScript Reference",
+            "label": "TypeScript reference",
             "href": "https://jsr.io/@wazoo/worlds-sdk"
           }
         ]
