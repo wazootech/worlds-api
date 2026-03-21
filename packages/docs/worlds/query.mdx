@@ -8,7 +8,7 @@ language for RDF graphs. In Worlds, it provides the **symbolic** half of the
 [neuro-symbolic](/manifesto) architecture.
 
 <Note>
-  You'll need an [API Key](/reference) and the [Worlds SDK](/quickstart)
+  You'll need an [API Key](/reference#authentication) and the [Worlds SDK](/quickstart)
   installed to run these examples.
 </Note>
 
@@ -96,7 +96,7 @@ each.
 
 The Worlds Platform utilizes the
 [Resource Description Framework (RDF)](https://en.wikipedia.org/wiki/Resource_Description_Framework)
-for its core data model and [SPARQL](/worlds/query) for structured querying.
+for its core data model and SPARQL for structured querying.
 
 ### RDF blob handling
 
@@ -119,7 +119,7 @@ world database:
 1.  **Deterministic identification**:
     [Skolemizes](https://en.wikipedia.org/wiki/Skolem_normal_form) and hashes
     each quad to a unique triple ID.
-2.  **Relational storage**: Upserts the resulting [triples](/worlds) into the
+2.  **Relational storage**: Upserts the resulting [triples](/worlds#facts) into the
     `triples` table.
 3.  **Semantic indexing**: Chunks and embeds literal values for
     [hybrid search](/worlds/search).
@@ -171,7 +171,7 @@ increasingly noisy.
 ```text
 You are a deterministic agent connected to a Worlds knowledge graph.
 When answering user queries:
-1. Use your tools to perform a [SPARQL](/worlds/query) query or [Hybrid Search](/worlds/search) on the stateful memory.
+1. Use your tools to perform a SPARQL query or [Hybrid Search](/worlds/search) on the stateful memory.
 2. The retrieved relationships represent the CURRENT, VERIFIED state.
 3. Respond strictly utilizing the relationships extracted, overriding any probabilistic generation.
 ```
@@ -181,7 +181,7 @@ When answering user queries:
 ### Stateful memory
 
 Worlds maintains a **living knowledge graph**. Instead of storing raw text, it
-extracts meaning as **[triples](/worlds)**, namely subject → predicate → object.
+extracts meaning as **[triples](/worlds#facts)**, namely subject → predicate → object.
 
 When facts change, Worlds updates the specific relationships in the graph. This
 allows you to resolve contradictions at the data layer rather than relying on
@@ -229,9 +229,6 @@ properties of a world before attempting to query it.
   actual data structure.
 
 ## Learn more
-
-- [Academy: Logical reasoning with SPARQL](/worlds/query) — guided walkthrough
-- [Querying guide](/worlds/query) — advanced query patterns
 
 <CardGroup cols={2}>
   <Card title="CLI Guide" icon="terminal" href="/reference/cli">
