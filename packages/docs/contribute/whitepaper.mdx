@@ -47,13 +47,12 @@ both accessible and mutable.
 
 ### Reasoning gap
 
+The industry is undergoing a fundamental shift: AI agents do not need human-facing dashboards; they need "Context Engineering." Traditional data systems record decisions but fail to capture the reasoning behind them, creating a severe **Context Gap**.
+
 Current industry standards rely on vector databases to provide long-term memory,
 creating a quantifiable "Hallucination Gap." Recent 2026 benchmarks demonstrate
 that naive semantic RAG over raw tables hits a rigid ~80% accuracy ceiling—often
-collapsing to 20% on complex, multi-hop queries. In contrast, systems utilizing
-a deterministic context graph consistently achieve 90–99% accuracy. The
-reasoning gap occurs because disparate vector search exacerbates two critical AI
-failure modes:
+collapsing to 20% on complex, multi-hop queries. Moving from a metrics-first to a knowledge-first architecture using deterministic context graphs consistently achieves 90–99% accuracy. The reasoning gap occurs because disparate vector search exacerbates several critical AI failure modes:
 
 - **Sycophancy**: LLMs natively attempt to appease the user, agreeing with
   fundamentally incorrect logical structures unless constrained by an ontology.
@@ -103,12 +102,12 @@ logic of symbolic systems.
 
 ### 1. Neuro-symbolic pipeline
 
+While traditional semantic layers (like LookML or dbt) use YAML to standardize metric calculations for human dashboards, they cannot encode complex business logic. AI requires **ontologies**, built on standards like OWL and W3C RDF, which define the hierarchies and relationships necessary for machines to autonomously reason.
+
 The historical "PhD bottleneck" of manual knowledge engineering is solved using
 **Large Ontology Models (LOMs)**. Worlds employs a **Construct-Align-Reason
 (CAR)** pipeline where autonomous processors achieve SOTA accuracy in ontology
-synthesis. Rather than relying on massive, brittle semantic pipelines, Worlds
-provides **Low-ETL** interoperability. Because W3C RDF is a universal standard,
-existing legacy databases comply natively.
+synthesis. By creating a living record of business logic, Worlds provides **Low-ETL** interoperability where existing legacy databases comply natively.
 
 Ingestion follows a multi-stage transformation process:
 
@@ -484,4 +483,7 @@ the opaque nature of pure vector retrieval.
 7. **Tsinghua University**. (2025). MemoryBench: A Benchmark for Memory and
    Continual Learning in LLM Systems.
    https://github.com/supermemoryai/memorybench
+8. **Sankar, P.** (2026). Ontologies, Context Graphs, and Semantic Layers.
+   Metadata Weekly.
+   https://metadataweekly.substack.com/p/ontologies-context-graphs-and-semantic
 
