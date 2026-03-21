@@ -50,7 +50,7 @@ both accessible and mutable.
 Current industry standards rely on vector databases to provide long-term memory,
 creating a quantifiable "Hallucination Gap." Recent 2026 benchmarks demonstrate
 that naive semantic RAG over raw tables hits a rigid ~80% accuracy ceiling—often
-collapsing to just 20% on complex, multi-hop queries. In contrast, systems
+collapsing to 20% on complex, multi-hop queries. In contrast, systems
 utilizing a deterministic context graph consistently achieve 90–99% accuracy.
 The reasoning gap occurs because disparate vector search exacerbates two
 critical AI failure modes:
@@ -125,7 +125,7 @@ Ingestion follows a multi-stage transformation process:
 
 Unlike stateless RAG systems, Worlds treats memory as a dynamic, mutable state.
 Crucially, this strict ontology acts as a hard guardrail. Under stringent laws
-like California's SB 243, "black box" AI is legally unviable. Worlds enables
+like California's SB 243, opaque AI is legally unviable. Worlds enables
 **Policy-as-Code** through axiom-based enforcement. For example, by explicitly
 defining a `MedicalAdvice` class as `disjoint` from a `GeneralChatbot` agent,
 the graph programmatically blocks unauthorized actions regardless of how a user
