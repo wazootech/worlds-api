@@ -1,23 +1,20 @@
-name: Publish Python SDK
+name: Check Python SDK
 on:
   push:
-    branches:
-      - main
     paths:
       - 'packages/python-sdk/**'
+      - 'packages/docs/openapi.yaml'
 
 jobs:
-  publish:
+  validate:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
-      - name: Build and Publish
-        working-directory: packages/python-sdk
+      
+      - name: Lint & Type Check
         run: |
-          uv build
-          uv publish
+          cd packages/python-sdk
+          uv run ruff check .
