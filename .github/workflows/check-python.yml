@@ -2,8 +2,8 @@ name: Check Python SDK
 on:
   push:
     paths:
-      - 'packages/python-sdk/**'
-      - 'packages/docs/openapi.yaml'
+      - "packages/python-sdk/**"
+      - "packages/docs/openapi.yaml"
 
 jobs:
   validate:
@@ -13,7 +13,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
-      
+
       - name: Lint & Type Check
         run: |
           cd packages/python-sdk
