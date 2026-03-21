@@ -1,7 +1,7 @@
 ---
 title: "Knowledge graphs"
 description:
-  "Model complex relationships with precision using a graph-based structure."
+  "Model complex relationships with precision using a graph-based structure"
 ---
 
 A **knowledge graph** powers every world. Worlds organizes information in a
@@ -60,9 +60,10 @@ analytical performance.
   URI-based triples to define canonical vocabularies and ensure global
   interoperability. It is the gold standard for representing knowledge, but
   traditional RDF databases can be slow for traversing dense connection paths.
-- **Analytical scale**: Continuous AI workflows (like GraphRAG) require
-  high-velocity, graph-native operational infrastructure to traverse complex
-  relationships quickly under pressure.
+
+- **Analytical scale**: Continuous AI workflows like GraphRAG require fast,
+  multi-hop lookups. Relational DB joins degrade rapidly at scale.structure to
+  traverse complex relationships quickly under pressure.
 
 **Worlds bridges this gap.** It leverages the interoperable, atomic meaning of
 standard RDF triples while functioning underneath as the high-speed
@@ -80,6 +81,5 @@ Worlds retrieves specific, auditable relationships.
 ## Technical context
 
 Worlds uses the **RDF 1.1** standard for universal portability. You can
-interface with the graph through the
-[Worlds SDK](/overview/getting-started/quickstart), which abstracts away the
-complexity of raw SPARQL queries.
+interface with the graph through the [Worlds SDK](/quickstart), which abstracts
+away the complexity of raw SPARQL queries.

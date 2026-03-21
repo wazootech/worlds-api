@@ -1,0 +1,105 @@
+---
+title: "Quickstart"
+description: "Build a world in 2 minutes"
+---
+
+The quickest way to understand Worlds is to watch it run. Bypass environment
+configuration and authentication entirely to generate concrete results using a
+zero-stakes, in-memory sandbox.
+
+## Zero-stakes sandbox
+
+Follow this mandatory sequence to train yourself on the core interaction loop:
+create a world, inject a fact, and retrieve it deterministically. Expect to
+observe and mimic.
+
+<Steps>
+  <Step title="Initialize the sandbox">
+    Run the single-command initializer to create a temporary, local-first Worlds environment.
+    
+    <CodeGroup>
+      ```bash deno
+      deno run -A npm:@wazoo/worlds-cli@latest init --sandbox
+      ```
+
+      ```bash npx
+      npx @wazoo/worlds-cli@latest init --sandbox
+      ```
+    </CodeGroup>
+
+    <Check>You now have an isolated, ephemeral World running on your local machine.</Check>
+
+  </Step>
+
+  <Step title="Observe the execution">
+    Copy and run the following self-contained script. This script executes a complete neuro-symbolic thought loop:
+    
+    1. It connects to the SDK.
+    2. It creates an isolated World.
+    3. It injects a semantic fact, specifically a [Triple](/worlds#facts).
+    4. It queries that fact deterministically using [SPARQL](/worlds/query).
+
+    ```typescript sandbox.ts
+    import { WorldsSdk } from "@wazoo/worlds-sdk";
+
+    // 1. Connect (In-memory sandbox mode configures local endpoints)
+    const sdk = new WorldsSdk({
+      baseUrl: "http://localhost:8080",
+      apiKey: "sandbox",
+    });
+
+    // 2. Create an isolated world
+    const world = await sdk.worlds.create({
+      slug: "quickstart-sandbox",
+      label: "My First Sandbox"
+    });
+
+    // 3. Inject a fact (Subject -> Predicate -> Object)
+    await sdk.worlds.import(
+      world.id,
+      `<#system> <#status> "operational" .`,
+      { format: "turtle" }
+    );
+
+    // 4. Retrieve the fact precisely
+    const result = await sdk.worlds.sparql(
+      world.id,
+      `SELECT ?subject ?predicate ?object WHERE { ?subject ?predicate ?object }`
+    );
+
+    console.log("Memory retrieved:", result);
+    ```
+
+  </Step>
+
+  <Step title="Analyze the output">
+    When you run the script, the system executes the highly optimized query and returns the fact exactly as you injected it—no probabilistic guessing.
+    
+    ```json
+    Memory retrieved:
+    [
+      {
+        "subject": { "value": "system" },
+        "predicate": { "value": "status" },
+        "object": { "value": "operational" }
+      }
+    ]
+    ```
+
+    You have completed the fundamental loop of interacting with an autonomous, stateful memory container.
+
+  </Step>
+</Steps>
+
+## Moving to production
+
+With the sandbox loop complete, give your agents persistent memory.
+
+<CardGroup cols={2}>
+  <Card title="AI agent integration" icon="bot" href="/guides/ai-sdk">
+    Grant an AI agent direct access to construct its own Worlds.
+  </Card>
+  <Card title="Self-hosting" icon="server" href="/contribute/self-host">
+    Deploy Worlds persistently using Docker and Turso.
+  </Card>
+</CardGroup>
