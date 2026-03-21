@@ -1,0 +1,23 @@
+name: Publish Python SDK
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/python-sdk/**'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+      - name: Build and Publish
+        working-directory: packages/python-sdk
+        run: |
+          uv build
+          uv publish
