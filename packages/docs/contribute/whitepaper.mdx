@@ -47,7 +47,7 @@ both accessible and mutable.
 
 ### Reasoning gap
 
-The industry is undergoing a fundamental shift: AI agents do not need human-facing dashboards; they need "Context Engineering." Traditional data systems record decisions but fail to capture the reasoning behind them, creating a severe **Context Gap**.
+The industry is undergoing a fundamental shift: AI agents do not need human-facing dashboards; they need "Context Engineering." Traditional data systems record decisions but fail to capture the reasoning behind them, creating a **Context Gap**.
 
 Current industry standards rely on vector databases to provide long-term memory,
 creating a quantifiable "Hallucination Gap." Recent 2026 benchmarks demonstrate
@@ -115,12 +115,14 @@ Ingestion follows a multi-stage transformation process:
     chunks.
 2.  **Triple Extraction (Construct)**: An LLM-based extraction layer identifies
     items and predicates, converting narrative flow into formalized RDF triples.
-3.  **Relational Mapping (Align)**: Extracted entities are mapped to a strict
+3.  **Relational Mapping (Align)**: Extracted items are mapped to a strict
     ontology, ensuring structural consistency across the global graph.
 4.  **Semantic Indexing**: Each chunk and triple is indexed simultaneously via
     high-dimensional vector embeddings and full-text search keys.
 
 ### 2. State management and Policy-as-Code
+
+The proliferation of AI agents exposes the flaw in "malleable software." Highly customizable platforms expand the context an agent must parse, directly increasing latency, token costs, and failure rates. Effective neuro-symbolic systems are strictly opinionated at the core. By defining clear objects and explicit workflows through a rigid ontology, the system carries the computational burden, allowing agents to execute efficiently without requiring users to architect the tool itself.
 
 Unlike stateless RAG systems, Worlds treats memory as a dynamic, mutable state.
 Crucially, this strict ontology acts as a hard guardrail. Under stringent laws
@@ -486,4 +488,6 @@ the opaque nature of pure vector retrieval.
 8. **Sankar, P.** (2026). Ontologies, Context Graphs, and Semantic Layers.
    Metadata Weekly.
    https://metadataweekly.substack.com/p/ontologies-context-graphs-and-semantic
+9. **Saarinen, K.** (2025). The Malleable Software That Never Was. X.
+   https://x.com/karrisaarinen/status/2034845387488731585
 
