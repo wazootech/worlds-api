@@ -1,4 +1,5 @@
 import type { OpenAPIV3_1 } from "openapi-types";
+import { createClient } from "@hey-api/openapi-ts";
 import { World } from "./components/schemas/world.ts";
 import rpcPath from "./paths/rpc.ts";
 
@@ -20,5 +21,20 @@ export const openapiDocument: OpenAPIV3_1.Document = {
 };
 
 if (import.meta.main) {
-  console.log(JSON.stringify(openapiDocument, null, 2));
+  await createClient([
+    {
+      input: openapiDocument,
+      output: {
+        path: "./src/models",
+        entryFile: false,
+      },
+      plugins: [
+        // https://heyapi.dev/openapi-ts/plugins/typescript
+        { name: "@hey-api/typescript" },
+
+        // https://heyapi.dev/openapi-ts/plugins/zod
+        { name: "zod" },
+      ],
+    },
+  ]);
 }
