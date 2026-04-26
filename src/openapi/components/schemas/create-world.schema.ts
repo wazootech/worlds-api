@@ -36,4 +36,3 @@ export const CreateWorldResponse: OpenAPIV3_1.SchemaObject = {
   },
   additionalProperties: false,
 };
-

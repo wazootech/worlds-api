@@ -1,11 +1,6 @@
 import type { OpenAPIV3_1 } from "openapi-types";
 import { createClient } from "@hey-api/openapi-ts";
-import { collectPathItems, collectSchemas, importGlob } from "./utils.ts";
-
-const pathsGlob = new URL("./paths/*.path-item.ts", import.meta.url);
-const paths = await importGlob(pathsGlob).then((modules) =>
-  collectPathItems(modules)
-);
+import { collectSchemas, importGlob } from "./utils.ts";
 
 const schemasGlob = new URL(
   "./components/schemas/*.schema.ts",
@@ -20,11 +15,50 @@ export const document: OpenAPIV3_1.Document = {
   info: {
     title: "Worlds API",
     version: "1.0.0",
-    description: "API for managing decentralized, multi-model semantic worlds.",
+    description: "API for managing decentralized, multi-model semantic Worlds.",
   },
-  paths,
   components: {
     schemas,
+  },
+  paths: {
+    "/rpc": {
+      post: {
+        summary: "Unified RPC endpoint for Worlds.",
+        operationId: "worldsRpc",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/RequestEnvelope",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Success",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ResponseEnvelope",
+                },
+              },
+            },
+          },
+          "400": {
+            description: "RPC error",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/ErrorEnvelope",
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
 };
 
@@ -39,7 +73,7 @@ if (import.meta.main) {
       },
       plugins: [
         // https://heyapi.dev/openapi-ts/plugins/typescript
-        { name: "@hey-api/typescript",},
+        { name: "@hey-api/typescript" },
       ],
     },
   ]);
