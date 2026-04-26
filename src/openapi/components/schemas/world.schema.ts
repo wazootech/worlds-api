@@ -30,3 +30,4 @@ export const World: OpenAPIV3_1.SchemaObject = {
     },
   },
 };
+
