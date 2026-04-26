@@ -437,13 +437,10 @@ export type DeleteWorldResponse = {
 };
 
 /**
- * Request to get a world by name.
+ * Request to get a world by source.
  */
 export type GetWorldRequest = {
-  /**
-   * The canonical resource name.
-   */
-  name: string;
+  source: Source;
 };
 
 export type GetWorldResponse = {

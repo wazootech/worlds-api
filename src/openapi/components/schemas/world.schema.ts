@@ -70,14 +70,12 @@ export const CreateWorldResponse: OpenAPIV3_1.SchemaObject = {
 
 export const GetWorldRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
-  description: "Request to get a world by name.",
-  required: ["name"],
+  description: "Request to get a world by source.",
+  required: ["source"],
   properties: {
-    name: {
-      type: "string",
-      description: "The canonical resource name.",
-    },
+    source: { $ref: "#/components/schemas/Source" },
   },
+  additionalProperties: false,
 };
 
 export const GetWorldResponse: OpenAPIV3_1.SchemaObject = {
