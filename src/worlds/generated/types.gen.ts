@@ -148,12 +148,12 @@ export type SearchWorldsRpcError = {
 
 export type SearchWorldsRpcRequest = {
   action: "searchWorlds";
-  request: SearchWorldsRequest;
+  request: SearchRequest;
 };
 
 export type SearchWorldsRpcResponse = {
   action: "searchWorlds";
-  response: SearchWorldsResponse;
+  response: SearchResponse;
 };
 
 export type SparqlQueryRpcError = {
@@ -273,17 +273,7 @@ export type WorldsRpcResponse =
     action: "sparqlQuery";
   } & SparqlQueryRpcResponse);
 
-export type SearchResult = {
-  subject: string;
-  predicate: string;
-  object: string;
-  vecRank?: number | null;
-  ftsRank?: number | null;
-  score: number;
-  world: World;
-};
-
-export type SearchWorldsRequest = {
+export type SearchRequest = {
   sources?: Array<Source>;
   parent?: string;
   query: string;
@@ -294,9 +284,19 @@ export type SearchWorldsRequest = {
   types?: Array<string>;
 };
 
-export type SearchWorldsResponse = {
+export type SearchResponse = {
   results?: Array<SearchResult>;
   nextPageToken?: string;
+};
+
+export type SearchResult = {
+  subject: string;
+  predicate: string;
+  object: string;
+  vecRank?: number | null;
+  ftsRank?: number | null;
+  score: number;
+  world: World;
 };
 
 /**

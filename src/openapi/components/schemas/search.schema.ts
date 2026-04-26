@@ -15,7 +15,7 @@ export const SearchResult: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SearchWorldsRequest: OpenAPIV3_1.SchemaObject = {
+export const SearchRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["query"],
   properties: {
@@ -34,7 +34,7 @@ export const SearchWorldsRequest: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SearchWorldsResponse: OpenAPIV3_1.SchemaObject = {
+export const SearchResponse: OpenAPIV3_1.SchemaObject = {
   type: "object",
   properties: {
     results: {

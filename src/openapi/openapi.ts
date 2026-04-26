@@ -67,8 +67,8 @@ if (import.meta.main) {
     {
       input: document,
       output: {
-        path: "./src/openapi/generated",
-        fileName: "models",
+        path: "./src/worlds/generated",
+        fileName: "types",
         entryFile: false,
       },
       plugins: [

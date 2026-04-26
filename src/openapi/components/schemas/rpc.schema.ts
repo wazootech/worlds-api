@@ -90,7 +90,7 @@ export const SearchWorldsRpcRequest: OpenAPIV3_1.SchemaObject = {
   required: ["action", "request"],
   properties: {
     action: { type: "string", const: "searchWorlds" },
-    request: { $ref: "#/components/schemas/SearchWorldsRequest" },
+    request: { $ref: "#/components/schemas/SearchRequest" },
   },
   additionalProperties: false,
 };
@@ -208,7 +208,7 @@ export const SearchWorldsRpcResponse: OpenAPIV3_1.SchemaObject = {
   required: ["action", "response"],
   properties: {
     action: { type: "string", const: "searchWorlds" },
-    response: { $ref: "#/components/schemas/SearchWorldsResponse" },
+    response: { $ref: "#/components/schemas/SearchResponse" },
   },
   additionalProperties: false,
 };

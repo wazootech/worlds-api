@@ -6,20 +6,20 @@ import type {
   ImportWorldRequest,
   ListWorldsRequest,
   ListWorldsResponse,
-  SearchWorldsRequest,
-  SearchWorldsResponse,
+  SearchRequest,
+  SearchResponse,
   SparqlQueryRequest,
   SparqlQueryResponse,
   UpdateWorldRequest,
   World,
-} from "#/openapi/types.ts";
+} from "./generated/types.gen.ts";
 
 /**
  * DataPlane defines the data operations interface (SPARQL, Search, Import/Export).
  */
 export interface DataPlane {
   sparql(input: SparqlQueryRequest): Promise<SparqlQueryResponse>;
-  search(input: SearchWorldsRequest): Promise<SearchWorldsResponse>;
+  search(input: SearchRequest): Promise<SearchResponse>;
   import(input: ImportWorldRequest): Promise<void>;
   export(input: ExportWorldRequest): Promise<ArrayBuffer>;
 }
