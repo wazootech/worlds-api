@@ -24,8 +24,8 @@ type StoredWorld = {
   createTime: number;
 };
 
-function keyOf(ref: WorldReference): string {
-  return `${ref.namespace}/${ref.id}`;
+function keyOf(reference: WorldReference): string {
+  return `${reference.namespace}/${reference.id}`;
 }
 
 function toWorld(stored: StoredWorld): World {
@@ -48,20 +48,23 @@ export class WorldsCore implements WorldsInterface {
   private readonly worlds = new Map<string, StoredWorld>();
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
-    const ref = resolveWorldRefFromSource(input.source);
-    const stored = this.worlds.get(keyOf(ref)) ?? null;
+    const reference = resolveWorldRefFromSource(input.source);
+    const stored = this.worlds.get(keyOf(reference)) ?? null;
     return stored ? toWorld(stored) : null;
   }
 
   async createWorld(input: CreateWorldRequest): Promise<World> {
-    const ref: WorldReference = { namespace: input.namespace, id: input.id };
-    const key = keyOf(ref);
+    const reference: WorldReference = {
+      namespace: input.namespace,
+      id: input.id,
+    };
+    const key = keyOf(reference);
     if (this.worlds.has(key)) {
-      throw new Error(`World already exists: ${formatWorldName(ref)}`);
+      throw new Error(`World already exists: ${formatWorldName(reference)}`);
     }
     const now = Date.now();
     const stored: StoredWorld = {
-      ref,
+      ref: reference,
       displayName: input.displayName,
       description: input.description,
       createTime: now,
@@ -71,11 +74,11 @@ export class WorldsCore implements WorldsInterface {
   }
 
   async updateWorld(input: UpdateWorldRequest): Promise<World> {
-    const ref = resolveWorldRefFromSource(input.source);
-    const key = keyOf(ref);
+    const reference = resolveWorldRefFromSource(input.source);
+    const key = keyOf(reference);
     const existing = this.worlds.get(key);
     if (!existing) {
-      throw new Error(`World not found: ${formatWorldName(ref)}`);
+      throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
     const updated: StoredWorld = {
       ...existing,
@@ -87,8 +90,8 @@ export class WorldsCore implements WorldsInterface {
   }
 
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
-    const ref = resolveWorldRefFromSource(input.source);
-    this.worlds.delete(keyOf(ref));
+    const reference = resolveWorldRefFromSource(input.source);
+    this.worlds.delete(keyOf(reference));
   }
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {

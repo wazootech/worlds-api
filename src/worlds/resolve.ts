@@ -15,8 +15,8 @@ export class WorldRefError extends Error {
  *
  * We intentionally require both namespace and id (no defaults).
  */
-export function formatWorldName(ref: WorldReference): string {
-  return `${ref.namespace}/${ref.id}`;
+export function formatWorldName(reference: WorldReference): string {
+  return `${reference.namespace}/${reference.id}`;
 }
 
 /**
