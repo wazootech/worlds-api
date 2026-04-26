@@ -62,14 +62,6 @@ export type CreateWorldRpcResponse = {
   response: CreateWorldResponse;
 };
 
-export type ErrorEnvelope =
-  | ({
-    action: "getWorld";
-  } & GetWorldRpcError)
-  | ({
-    action: "createWorld";
-  } & CreateWorldRpcError);
-
 export type GetWorldRpcError = {
   action: "getWorld";
   error: RpcErrorObject;
@@ -85,22 +77,6 @@ export type GetWorldRpcResponse = {
   response: GetWorldResponse;
 };
 
-export type RequestEnvelope =
-  | ({
-    action: "getWorld";
-  } & GetWorldRpcRequest)
-  | ({
-    action: "createWorld";
-  } & CreateWorldRpcRequest);
-
-export type ResponseEnvelope =
-  | ({
-    action: "getWorld";
-  } & GetWorldRpcResponse)
-  | ({
-    action: "createWorld";
-  } & CreateWorldRpcResponse);
-
 /**
  * Error payload for RPC failures.
  */
@@ -115,6 +91,30 @@ export type RpcErrorObject = {
   };
   [key: string]: unknown;
 };
+
+export type WorldsError =
+  | ({
+    action: "getWorld";
+  } & GetWorldRpcError)
+  | ({
+    action: "createWorld";
+  } & CreateWorldRpcError);
+
+export type WorldsRequest =
+  | ({
+    action: "getWorld";
+  } & GetWorldRpcRequest)
+  | ({
+    action: "createWorld";
+  } & CreateWorldRpcRequest);
+
+export type WorldsResponse =
+  | ({
+    action: "getWorld";
+  } & GetWorldRpcResponse)
+  | ({
+    action: "createWorld";
+  } & CreateWorldRpcResponse);
 
 /**
  * Metadata for a single world.
@@ -147,7 +147,7 @@ export type World = {
 };
 
 export type WorldsRpcData = {
-  body: RequestEnvelope;
+  body: WorldsRequest;
   path?: never;
   query?: never;
   url: "/rpc";
@@ -157,7 +157,7 @@ export type WorldsRpcErrors = {
   /**
    * RPC error
    */
-  400: ErrorEnvelope;
+  400: WorldsError;
 };
 
 export type WorldsRpcError = WorldsRpcErrors[keyof WorldsRpcErrors];
@@ -166,7 +166,7 @@ export type WorldsRpcResponses = {
   /**
    * Success
    */
-  200: ResponseEnvelope;
+  200: WorldsResponse;
 };
 
 export type WorldsRpcResponse = WorldsRpcResponses[keyof WorldsRpcResponses];

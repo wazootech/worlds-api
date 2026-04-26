@@ -35,7 +35,7 @@ export const CreateWorldRpcRequest: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const RequestEnvelope: OpenAPIV3_1.SchemaObject = {
+export const WorldsRequest: OpenAPIV3_1.SchemaObject = {
   oneOf: [
     { $ref: "#/components/schemas/GetWorldRpcRequest" },
     { $ref: "#/components/schemas/CreateWorldRpcRequest" },
@@ -69,7 +69,7 @@ export const CreateWorldRpcResponse: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const ResponseEnvelope: OpenAPIV3_1.SchemaObject = {
+export const WorldsResponse: OpenAPIV3_1.SchemaObject = {
   oneOf: [
     { $ref: "#/components/schemas/GetWorldRpcResponse" },
     { $ref: "#/components/schemas/CreateWorldRpcResponse" },
@@ -103,7 +103,7 @@ export const CreateWorldRpcError: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const ErrorEnvelope: OpenAPIV3_1.SchemaObject = {
+export const WorldsError: OpenAPIV3_1.SchemaObject = {
   oneOf: [
     { $ref: "#/components/schemas/GetWorldRpcError" },
     { $ref: "#/components/schemas/CreateWorldRpcError" },

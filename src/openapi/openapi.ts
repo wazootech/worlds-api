@@ -30,7 +30,7 @@ export const document: OpenAPIV3_1.Document = {
           content: {
             "application/json": {
               schema: {
-                $ref: "#/components/schemas/RequestEnvelope",
+                $ref: "#/components/schemas/WorldsRequest",
               },
             },
           },
@@ -41,7 +41,7 @@ export const document: OpenAPIV3_1.Document = {
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/ResponseEnvelope",
+                  $ref: "#/components/schemas/WorldsResponse",
                 },
               },
             },
@@ -51,7 +51,7 @@ export const document: OpenAPIV3_1.Document = {
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/ErrorEnvelope",
+                  $ref: "#/components/schemas/WorldsError",
                 },
               },
             },
