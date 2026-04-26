@@ -68,14 +68,14 @@ if (import.meta.main) {
       input: document,
       output: {
         path: "./src/worlds/generated",
-        fileName: {
-          suffix: "types",
-        },
         entryFile: false,
       },
       plugins: [
         // https://heyapi.dev/openapi-ts/plugins/typescript
         { name: "@hey-api/typescript" },
+
+        // https://heyapi.dev/openapi-ts/plugins/zod
+        { name: "zod" },
       ],
     },
   ]);

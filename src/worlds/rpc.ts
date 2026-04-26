@@ -4,7 +4,7 @@ import type {
   WorldsRpcError,
   WorldsRpcRequest,
   WorldsRpcResponse,
-} from "./generated/types.ts";
+} from "./generated/types.gen.ts";
 
 /**
  * RpcRequest is a typed RPC request envelope for a specific action.

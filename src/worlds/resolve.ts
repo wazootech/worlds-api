@@ -1,4 +1,4 @@
-import type { Source, WorldReference } from "./generated/types.ts";
+import type { Source, WorldReference } from "./generated/types.gen.ts";
 
 /**
  * WorldRefError is an error that occurs when a world reference is invalid.
