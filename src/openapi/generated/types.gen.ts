@@ -156,6 +156,9 @@ export type SparqlRpcError = {
   error: RpcError;
 };
 
+/**
+ * SPARQL query or update operation.
+ */
 export type SparqlRpcRequest = {
   action: "sparql";
   request: SparqlQueryRequest;

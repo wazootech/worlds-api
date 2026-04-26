@@ -96,6 +96,7 @@ export const SearchWorldsRpcRequest: OpenAPIV3_1.SchemaObject = {
 };
 
 export const SparqlRpcRequest: OpenAPIV3_1.SchemaObject = {
+  description: "SPARQL query or update operation.",
   type: "object",
   required: ["action", "request"],
   properties: {

@@ -179,6 +179,9 @@ export const zSparqlQueryRequest = z.object({
   namedGraphUris: z.array(z.string()).optional(),
 });
 
+/**
+ * SPARQL query or update operation.
+ */
 export const zSparqlRpcRequest = z.object({
   action: z.literal("sparql"),
   request: zSparqlQueryRequest,
