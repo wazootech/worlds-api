@@ -5,35 +5,30 @@ export type ClientOptions = {
 };
 
 /**
- * Supported RDF serialization content types.
+ * A source identifier or an object describing a source. For worlds, this is either a canonical world name (`{namespace}/{id}`) or a world ref (`{namespace, id}`).
  */
-export type ContentType =
-  | "text/turtle"
-  | "application/n-quads"
-  | "application/n-triples"
-  | "text/n3";
+export type Source =
+  | WorldName
+  | (WorldReference & {
+    mode?: TransactionMode;
+  });
 
-export type ExportWorldRequest = {
-  source: Source;
-  contentType?: ContentType;
-};
+/**
+ * Transaction behavior for source access.
+ */
+export type TransactionMode = "write" | "read" | "deferred";
 
-export type ExportWorldResponse = {
-  data: string;
-  contentType?: ContentType;
-};
+/**
+ * Canonical world name in the form `{namespace}/{id}`.
+ */
+export type WorldName = string;
 
-export type ImportWorldRequest = {
-  source: Source;
-  /**
-   * RDF data to import (can be base64-encoded).
-   */
-  data: string;
-  contentType?: ContentType;
-};
-
-export type ImportWorldResponse = {
-  [key: string]: never;
+/**
+ * World reference by namespace and id.
+ */
+export type WorldReference = {
+  namespace: string;
+  id: string;
 };
 
 export type CreateWorldRpcError = {
@@ -273,6 +268,38 @@ export type WorldsRpcResponse =
     action: "sparqlQuery";
   } & SparqlQueryRpcResponse);
 
+/**
+ * Supported RDF serialization content types.
+ */
+export type ContentType =
+  | "text/turtle"
+  | "application/n-quads"
+  | "application/n-triples"
+  | "text/n3";
+
+export type ExportWorldRequest = {
+  source: Source;
+  contentType?: ContentType;
+};
+
+export type ExportWorldResponse = {
+  data: string;
+  contentType?: ContentType;
+};
+
+export type ImportWorldRequest = {
+  source: Source;
+  /**
+   * RDF data to import (can be base64-encoded).
+   */
+  data: string;
+  contentType?: ContentType;
+};
+
+export type ImportWorldResponse = {
+  [key: string]: never;
+};
+
 export type SearchRequest = {
   sources?: Array<Source>;
   parent?: string;
@@ -298,21 +325,6 @@ export type SearchResult = {
   score: number;
   world: World;
 };
-
-/**
- * A source identifier or an object describing a source.
- */
-export type Source = string | {
-  name?: string;
-  id?: string;
-  namespace?: string;
-  mode?: TransactionMode;
-};
-
-/**
- * Transaction behavior for source access.
- */
-export type TransactionMode = "write" | "read" | "deferred";
 
 export type SparqlAskResults = {
   head: {

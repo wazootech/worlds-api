@@ -37,14 +37,7 @@ Deno.test("resolveWorldRefFromSource: string source is a name", () => {
   });
 });
 
-Deno.test("resolveWorldRefFromSource: object source with name parses name", () => {
-  assertEquals(resolveWorldRefFromSource({ name: "ns/w1" }), {
-    namespace: "ns",
-    id: "w1",
-  });
-});
-
-Deno.test("resolveWorldRefFromSource: object source with namespace+id", () => {
+Deno.test("resolveWorldRefFromSource: object source with ref", () => {
   assertEquals(resolveWorldRefFromSource({ namespace: "ns", id: "w1" }), {
     namespace: "ns",
     id: "w1",
@@ -53,7 +46,7 @@ Deno.test("resolveWorldRefFromSource: object source with namespace+id", () => {
 
 Deno.test("resolveWorldRefFromSource: missing namespace fails", () => {
   assertThrows(
-    () => resolveWorldRefFromSource({ id: "w1" }),
+    () => resolveWorldRefFromSource({ namespace: "", id: "w1" }),
     WorldRefError,
     "namespace",
   );
@@ -61,7 +54,7 @@ Deno.test("resolveWorldRefFromSource: missing namespace fails", () => {
 
 Deno.test("resolveWorldRefFromSource: missing id fails", () => {
   assertThrows(
-    () => resolveWorldRefFromSource({ namespace: "ns" }),
+    () => resolveWorldRefFromSource({ namespace: "ns", id: "" }),
     WorldRefError,
     "id",
   );

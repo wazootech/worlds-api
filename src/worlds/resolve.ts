@@ -1,20 +1,21 @@
-import type { Source } from "./generated/types.ts";
+import type { Source, WorldReference } from "./generated/types.ts";
 
-export type WorldRef = {
-  namespace: string;
-  id: string;
-};
-
+/**
+ * WorldRefError is an error that occurs when a world reference is invalid.
+ */
 export class WorldRefError extends Error {
+  /**
+   * The name of the error.
+   */
   override name = "WorldRefError";
 }
 
 /**
- * Canonical world resource name used by this API.
+ * formatWorldName formats a canonical world resource name used by this API.
  *
  * We intentionally require both namespace and id (no defaults).
  */
-export function formatWorldName(ref: WorldRef): string {
+export function formatWorldName(ref: WorldReference): string {
   return `${ref.namespace}/${ref.id}`;
 }
 
@@ -23,7 +24,7 @@ export function formatWorldName(ref: WorldRef): string {
  *
  * Required format: "{namespace}/{id}"
  */
-export function parseWorldName(name: string): WorldRef {
+export function parseWorldName(name: string): WorldReference {
   if (!name || typeof name !== "string") {
     throw new WorldRefError("World name must be a non-empty string");
   }
@@ -64,13 +65,9 @@ export function parseWorldName(name: string): WorldRef {
  * - If Source is a string, it MUST be a canonical world name.
  * - If Source is an object, it MUST contain both namespace and id.
  */
-export function resolveWorldRefFromSource(source: Source): WorldRef {
+export function resolveWorldRefFromSource(source: Source): WorldReference {
   if (typeof source === "string") {
     return parseWorldName(source);
-  }
-
-  if (source.name) {
-    return parseWorldName(source.name);
   }
 
   const namespace = source.namespace?.trim();

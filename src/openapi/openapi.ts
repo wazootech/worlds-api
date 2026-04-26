@@ -3,7 +3,7 @@ import { createClient } from "@hey-api/openapi-ts";
 import { collectSchemas, importGlob } from "./utils.ts";
 
 const schemasGlob = new URL(
-  "./components/schemas/*.schema.ts",
+  "./components/schemas/**/*.schema.ts",
   import.meta.url,
 );
 const schemas = await importGlob(schemasGlob).then((modules) =>
