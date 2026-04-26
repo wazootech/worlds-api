@@ -68,7 +68,9 @@ if (import.meta.main) {
       input: document,
       output: {
         path: "./src/worlds/generated",
-        fileName: "types",
+        fileName: {
+          suffix: "types",
+        },
         entryFile: false,
       },
       plugins: [

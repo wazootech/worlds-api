@@ -1,4 +1,4 @@
-import type { Source } from "./generated/types.gen.ts";
+import type { Source } from "./generated/types.ts";
 
 export type WorldRef = {
   namespace: string;
