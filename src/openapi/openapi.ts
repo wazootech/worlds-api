@@ -24,13 +24,13 @@ export const document: OpenAPIV3_1.Document = {
     "/rpc": {
       post: {
         summary: "Unified RPC endpoint for Worlds.",
-        operationId: "worldsRpc",
+        operationId: "rpc",
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
-                $ref: "#/components/schemas/WorldsRequest",
+                $ref: "#/components/schemas/WorldsRpcRequest",
               },
             },
           },
@@ -41,7 +41,7 @@ export const document: OpenAPIV3_1.Document = {
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/WorldsResponse",
+                  $ref: "#/components/schemas/WorldsRpcResponse",
                 },
               },
             },
@@ -51,7 +51,7 @@ export const document: OpenAPIV3_1.Document = {
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/WorldsError",
+                  $ref: "#/components/schemas/WorldsRpcError",
                 },
               },
             },
@@ -67,8 +67,8 @@ if (import.meta.main) {
     {
       input: document,
       output: {
-        path: "./src/models",
-        fileName: "openapi-ts",
+        path: "./src/openapi/generated",
+        fileName: "models",
         entryFile: false,
       },
       plugins: [
