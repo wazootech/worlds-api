@@ -36,6 +36,6 @@ Deno.test("handleRpc: error envelope includes action", async () => {
   const res = await handleRpc(core, req);
   assertEquals(res.action, "updateWorld");
   if ("error" in res) {
-    assertEquals(res.error.code, "INTERNAL");
+    assertEquals(res.error.code, "NOT_FOUND");
   }
 });

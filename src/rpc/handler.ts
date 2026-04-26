@@ -5,36 +5,27 @@ import type {
   WorldsRpcRequest,
   WorldsRpcResponse,
 } from "#/openapi/generated/types.gen.ts";
+import { zWorldsRpcRequest } from "#/openapi/generated/zod.gen.ts";
 
-/**
- * RpcRequest is a typed RPC request envelope for a specific action.
- */
-export type RpcRequest<TAction extends WorldsRpcRequest["action"]> = Extract<
-  WorldsRpcRequest,
-  { action: TAction }
->;
-
-/**
- * RpcResponse is a typed RPC success envelope for a specific action.
- */
-export type RpcResponse<TAction extends WorldsRpcResponse["action"]> = Extract<
-  WorldsRpcResponse,
-  { action: TAction }
->;
-
-/**
- * RpcError is a typed RPC error envelope for a specific action.
- */
-export type RpcError<TAction extends WorldsRpcError["action"]> = Extract<
-  WorldsRpcError,
-  { action: TAction }
->;
+const ErrorCode = {
+  INVALID_ARGUMENT: "INVALID_ARGUMENT",
+  NOT_FOUND: "NOT_FOUND",
+  ALREADY_EXISTS: "ALREADY_EXISTS",
+  INTERNAL: "INTERNAL",
+} as const;
 
 function toRpcErrorObject(err: unknown): RpcErrorObject {
   if (err instanceof Error) {
-    return { code: "INTERNAL", message: err.message };
+    const message = err.message;
+    if (message.includes("World not found")) {
+      return { code: ErrorCode.NOT_FOUND, message };
+    }
+    if (message.includes("World already exists")) {
+      return { code: ErrorCode.ALREADY_EXISTS, message };
+    }
+    return { code: ErrorCode.INTERNAL, message };
   }
-  return { code: "INTERNAL", message: String(err) };
+return { code: ErrorCode.INTERNAL, message: String(err) };
 }
 
 /**
@@ -46,6 +37,14 @@ export async function handleRpc(
   worlds: WorldsInterface,
   req: WorldsRpcRequest,
 ): Promise<WorldsRpcResponse | WorldsRpcError> {
+  const parsed = zWorldsRpcRequest.safeParse(req);
+  if (!parsed.success) {
+    return {
+      action: req.action || "unknown",
+      error: { code: ErrorCode.INVALID_ARGUMENT, message: "Invalid RPC request" },
+    } as WorldsRpcError;
+  }
+
   try {
     switch (req.action) {
       case "getWorld": {
