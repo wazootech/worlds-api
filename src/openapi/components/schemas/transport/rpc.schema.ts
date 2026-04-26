@@ -101,7 +101,7 @@ export const SparqlRpcRequest: OpenAPIV3_1.SchemaObject = {
   required: ["action", "request"],
   properties: {
     action: { type: "string", const: "sparql" },
-    request: { $ref: "#/components/schemas/SparqlQueryRequest" },
+    request: { $ref: "#/components/schemas/SparqlRequest" },
   },
   additionalProperties: false,
 };
@@ -219,7 +219,7 @@ export const SparqlRpcResponse: OpenAPIV3_1.SchemaObject = {
   required: ["action", "response"],
   properties: {
     action: { type: "string", const: "sparql" },
-    response: { $ref: "#/components/schemas/SparqlQueryResponse" },
+    response: { $ref: "#/components/schemas/SparqlResponse" },
   },
   additionalProperties: false,
 };

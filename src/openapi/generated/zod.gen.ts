@@ -171,7 +171,10 @@ export const zSparqlAskResults = z.object({
   boolean: z.boolean(),
 });
 
-export const zSparqlQueryRequest = z.object({
+/**
+ * SPARQL query or update operation.
+ */
+export const zSparqlRequest = z.object({
   sources: z.array(zSource).optional(),
   parent: z.string().optional(),
   query: z.string(),
@@ -184,7 +187,7 @@ export const zSparqlQueryRequest = z.object({
  */
 export const zSparqlRpcRequest = z.object({
   action: z.literal("sparql"),
-  request: zSparqlQueryRequest,
+  request: zSparqlRequest,
 });
 
 export const zSparqlSelectResults = z.object({
@@ -252,7 +255,10 @@ export const zSparqlQuadsResults = z.object({
   }),
 });
 
-export const zSparqlQueryResponse = z.union([
+/**
+ * Result of a SPARQL query or update operation.
+ */
+export const zSparqlResponse = z.union([
   zSparqlSelectResults,
   zSparqlAskResults,
   zSparqlQuadsResults,
@@ -260,7 +266,7 @@ export const zSparqlQueryResponse = z.union([
 
 export const zSparqlRpcResponse = z.object({
   action: z.literal("sparql"),
-  response: zSparqlQueryResponse,
+  response: zSparqlResponse,
 });
 
 /**

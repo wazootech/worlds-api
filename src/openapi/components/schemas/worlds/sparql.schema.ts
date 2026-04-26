@@ -156,7 +156,8 @@ export const SparqlQuadsResults: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SparqlQueryRequest: OpenAPIV3_1.SchemaObject = {
+export const SparqlRequest: OpenAPIV3_1.SchemaObject = {
+  description: "SPARQL query or update operation.",
   type: "object",
   required: ["query"],
   properties: {
@@ -172,7 +173,8 @@ export const SparqlQueryRequest: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SparqlQueryResponse: OpenAPIV3_1.SchemaObject = {
+export const SparqlResponse: OpenAPIV3_1.SchemaObject = {
+  description: "Result of a SPARQL query or update operation.",
   oneOf: [
     { $ref: "#/components/schemas/SparqlSelectResults" },
     { $ref: "#/components/schemas/SparqlAskResults" },

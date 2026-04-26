@@ -8,8 +8,8 @@ import type {
   ListWorldsResponse,
   SearchRequest,
   SearchResponse,
-  SparqlQueryRequest,
-  SparqlQueryResponse,
+  SparqlRequest,
+  SparqlResponse,
   UpdateWorldRequest,
   World,
   WorldReference,
@@ -112,7 +112,7 @@ export class WorldsCore implements WorldsInterface {
     return { worlds };
   }
 
-  async sparql(_input: SparqlQueryRequest): Promise<SparqlQueryResponse> {
+  async sparql(_input: SparqlRequest): Promise<SparqlResponse> {
     throw new Error("sparql not implemented");
   }
 

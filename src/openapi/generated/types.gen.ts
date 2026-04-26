@@ -161,12 +161,12 @@ export type SparqlRpcError = {
  */
 export type SparqlRpcRequest = {
   action: "sparql";
-  request: SparqlQueryRequest;
+  request: SparqlRequest;
 };
 
 export type SparqlRpcResponse = {
   action: "sparql";
-  response: SparqlQueryResponse;
+  response: SparqlResponse;
 };
 
 export type UpdateWorldRpcError = {
@@ -365,7 +365,10 @@ export type SparqlQuadsResults = {
   };
 };
 
-export type SparqlQueryRequest = {
+/**
+ * SPARQL query or update operation.
+ */
+export type SparqlRequest = {
   sources?: Array<Source>;
   parent?: string;
   query: string;
@@ -373,7 +376,10 @@ export type SparqlQueryRequest = {
   namedGraphUris?: Array<string>;
 };
 
-export type SparqlQueryResponse =
+/**
+ * Result of a SPARQL query or update operation.
+ */
+export type SparqlResponse =
   | SparqlSelectResults
   | SparqlAskResults
   | SparqlQuadsResults
