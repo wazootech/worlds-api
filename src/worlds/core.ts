@@ -13,7 +13,7 @@ import type {
   UpdateWorldRequest,
   World,
   WorldReference,
-} from "../openapi/generated/types.gen.ts";
+} from "#/openapi/generated/types.gen.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
 

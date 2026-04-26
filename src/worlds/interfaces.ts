@@ -12,7 +12,7 @@ import type {
   SparqlQueryResponse,
   UpdateWorldRequest,
   World,
-} from "../openapi/generated/types.gen.ts";
+} from "#/openapi/generated/types.gen.ts";
 
 /**
  * DataPlane defines the data operations interface (SPARQL, Search, Import/Export).
