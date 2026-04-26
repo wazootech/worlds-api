@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
-import { WorldsCore } from "./core.ts";
-import { handleRpc } from "./rpc.ts";
-import type { WorldsRpcRequest } from "./generated/types.gen.ts";
+import { WorldsCore } from "../worlds/core.ts";
+import { handleRpc } from "./handler.ts";
+import type { WorldsRpcRequest } from "../openapi/generated/types.gen.ts";
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {
   const core = new WorldsCore();

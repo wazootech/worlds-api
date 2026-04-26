@@ -1,7 +1,7 @@
 {
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "generate": "deno run -A src/openapi/openapi.ts && deno fmt ./src/worlds/generated"
+    "generate": "deno run -A src/openapi/openapi.ts && deno fmt ./src/openapi/generated"
   },
   "imports": {
     "#/": "./src/",
@@ -15,8 +15,7 @@
   "lint": {
     "exclude": [
       "./src/openapi/generated",
-      "./src/worlds/types.gen.ts",
-      "./src/worlds/generated"
+      "./src/worlds/types.gen.ts"
     ]
   }
 }

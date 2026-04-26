@@ -1,10 +1,10 @@
-import type { WorldsInterface } from "./interfaces.ts";
+import type { WorldsInterface } from "../worlds/interfaces.ts";
 import type {
   RpcErrorObject,
   WorldsRpcError,
   WorldsRpcRequest,
   WorldsRpcResponse,
-} from "./generated/types.gen.ts";
+} from "../openapi/generated/types.gen.ts";
 
 /**
  * RpcRequest is a typed RPC request envelope for a specific action.
