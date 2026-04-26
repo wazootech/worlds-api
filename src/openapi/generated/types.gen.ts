@@ -33,7 +33,7 @@ export type WorldReference = {
 
 export type CreateWorldRpcError = {
   action: "createWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type CreateWorldRpcRequest = {
@@ -48,7 +48,7 @@ export type CreateWorldRpcResponse = {
 
 export type DeleteWorldRpcError = {
   action: "deleteWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type DeleteWorldRpcRequest = {
@@ -63,7 +63,7 @@ export type DeleteWorldRpcResponse = {
 
 export type ExportWorldRpcError = {
   action: "exportWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type ExportWorldRpcRequest = {
@@ -78,7 +78,7 @@ export type ExportWorldRpcResponse = {
 
 export type GetWorldRpcError = {
   action: "getWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type GetWorldRpcRequest = {
@@ -93,7 +93,7 @@ export type GetWorldRpcResponse = {
 
 export type ImportWorldRpcError = {
   action: "importWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type ImportWorldRpcRequest = {
@@ -108,7 +108,7 @@ export type ImportWorldRpcResponse = {
 
 export type ListWorldsRpcError = {
   action: "listWorlds";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type ListWorldsRpcRequest = {
@@ -124,7 +124,7 @@ export type ListWorldsRpcResponse = {
 /**
  * Error payload for RPC failures.
  */
-export type RpcErrorObject = {
+export type RpcError = {
   code?: string;
   message?: string;
   /**
@@ -138,7 +138,7 @@ export type RpcErrorObject = {
 
 export type SearchWorldsRpcError = {
   action: "searchWorlds";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type SearchWorldsRpcRequest = {
@@ -151,24 +151,24 @@ export type SearchWorldsRpcResponse = {
   response: SearchResponse;
 };
 
-export type SparqlQueryRpcError = {
-  action: "sparqlQuery";
-  error: RpcErrorObject;
+export type SparqlRpcError = {
+  action: "sparql";
+  error: RpcError;
 };
 
-export type SparqlQueryRpcRequest = {
-  action: "sparqlQuery";
+export type SparqlRpcRequest = {
+  action: "sparql";
   request: SparqlQueryRequest;
 };
 
-export type SparqlQueryRpcResponse = {
-  action: "sparqlQuery";
+export type SparqlRpcResponse = {
+  action: "sparql";
   response: SparqlQueryResponse;
 };
 
 export type UpdateWorldRpcError = {
   action: "updateWorld";
-  error: RpcErrorObject;
+  error: RpcError;
 };
 
 export type UpdateWorldRpcRequest = {
@@ -207,8 +207,8 @@ export type WorldsRpcError =
     action: "searchWorlds";
   } & SearchWorldsRpcError)
   | ({
-    action: "sparqlQuery";
-  } & SparqlQueryRpcError);
+    action: "sparql";
+  } & SparqlRpcError);
 
 export type WorldsRpcRequest =
   | ({
@@ -236,8 +236,8 @@ export type WorldsRpcRequest =
     action: "searchWorlds";
   } & SearchWorldsRpcRequest)
   | ({
-    action: "sparqlQuery";
-  } & SparqlQueryRpcRequest);
+    action: "sparql";
+  } & SparqlRpcRequest);
 
 export type WorldsRpcResponse =
   | ({
@@ -265,8 +265,8 @@ export type WorldsRpcResponse =
     action: "searchWorlds";
   } & SearchWorldsRpcResponse)
   | ({
-    action: "sparqlQuery";
-  } & SparqlQueryRpcResponse);
+    action: "sparql";
+  } & SparqlRpcResponse);
 
 /**
  * Supported RDF serialization content types.
@@ -524,7 +524,7 @@ export type RpcErrors = {
   400: WorldsRpcError;
 };
 
-export type RpcError = RpcErrors[keyof RpcErrors];
+export type RpcError2 = RpcErrors[keyof RpcErrors];
 
 export type RpcResponses = {
   /**

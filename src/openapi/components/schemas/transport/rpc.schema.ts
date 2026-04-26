@@ -1,6 +1,6 @@
 import type { OpenAPIV3_1 } from "openapi-types";
 
-export const RpcErrorObject: OpenAPIV3_1.SchemaObject = {
+export const RpcError: OpenAPIV3_1.SchemaObject = {
   type: "object",
   description: "Error payload for RPC failures.",
   properties: {
@@ -95,11 +95,11 @@ export const SearchWorldsRpcRequest: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SparqlQueryRpcRequest: OpenAPIV3_1.SchemaObject = {
+export const SparqlRpcRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["action", "request"],
   properties: {
-    action: { type: "string", const: "sparqlQuery" },
+    action: { type: "string", const: "sparql" },
     request: { $ref: "#/components/schemas/SparqlQueryRequest" },
   },
   additionalProperties: false,
@@ -115,7 +115,7 @@ export const WorldsRpcRequest: OpenAPIV3_1.SchemaObject = {
     { $ref: "#/components/schemas/ImportWorldRpcRequest" },
     { $ref: "#/components/schemas/ExportWorldRpcRequest" },
     { $ref: "#/components/schemas/SearchWorldsRpcRequest" },
-    { $ref: "#/components/schemas/SparqlQueryRpcRequest" },
+    { $ref: "#/components/schemas/SparqlRpcRequest" },
   ],
   discriminator: {
     propertyName: "action",
@@ -128,7 +128,7 @@ export const WorldsRpcRequest: OpenAPIV3_1.SchemaObject = {
       importWorld: "#/components/schemas/ImportWorldRpcRequest",
       exportWorld: "#/components/schemas/ExportWorldRpcRequest",
       searchWorlds: "#/components/schemas/SearchWorldsRpcRequest",
-      sparqlQuery: "#/components/schemas/SparqlQueryRpcRequest",
+      sparql: "#/components/schemas/SparqlRpcRequest",
     },
   },
 };
@@ -213,11 +213,11 @@ export const SearchWorldsRpcResponse: OpenAPIV3_1.SchemaObject = {
   additionalProperties: false,
 };
 
-export const SparqlQueryRpcResponse: OpenAPIV3_1.SchemaObject = {
+export const SparqlRpcResponse: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["action", "response"],
   properties: {
-    action: { type: "string", const: "sparqlQuery" },
+    action: { type: "string", const: "sparql" },
     response: { $ref: "#/components/schemas/SparqlQueryResponse" },
   },
   additionalProperties: false,
@@ -233,7 +233,7 @@ export const WorldsRpcResponse: OpenAPIV3_1.SchemaObject = {
     { $ref: "#/components/schemas/ImportWorldRpcResponse" },
     { $ref: "#/components/schemas/ExportWorldRpcResponse" },
     { $ref: "#/components/schemas/SearchWorldsRpcResponse" },
-    { $ref: "#/components/schemas/SparqlQueryRpcResponse" },
+    { $ref: "#/components/schemas/SparqlRpcResponse" },
   ],
   discriminator: {
     propertyName: "action",
@@ -246,7 +246,7 @@ export const WorldsRpcResponse: OpenAPIV3_1.SchemaObject = {
       importWorld: "#/components/schemas/ImportWorldRpcResponse",
       exportWorld: "#/components/schemas/ExportWorldRpcResponse",
       searchWorlds: "#/components/schemas/SearchWorldsRpcResponse",
-      sparqlQuery: "#/components/schemas/SparqlQueryRpcResponse",
+      sparql: "#/components/schemas/SparqlRpcResponse",
     },
   },
 };
@@ -256,7 +256,7 @@ export const GetWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "getWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -266,7 +266,7 @@ export const CreateWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "createWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -276,7 +276,7 @@ export const UpdateWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "updateWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -286,7 +286,7 @@ export const DeleteWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "deleteWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -296,7 +296,7 @@ export const ListWorldsRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "listWorlds" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -306,7 +306,7 @@ export const ImportWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "importWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -316,7 +316,7 @@ export const ExportWorldRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "exportWorld" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -326,17 +326,17 @@ export const SearchWorldsRpcError: OpenAPIV3_1.SchemaObject = {
   required: ["action", "error"],
   properties: {
     action: { type: "string", const: "searchWorlds" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
 
-export const SparqlQueryRpcError: OpenAPIV3_1.SchemaObject = {
+export const SparqlRpcError: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["action", "error"],
   properties: {
-    action: { type: "string", const: "sparqlQuery" },
-    error: { $ref: "#/components/schemas/RpcErrorObject" },
+    action: { type: "string", const: "sparql" },
+    error: { $ref: "#/components/schemas/RpcError" },
   },
   additionalProperties: false,
 };
@@ -351,7 +351,7 @@ export const WorldsRpcError: OpenAPIV3_1.SchemaObject = {
     { $ref: "#/components/schemas/ImportWorldRpcError" },
     { $ref: "#/components/schemas/ExportWorldRpcError" },
     { $ref: "#/components/schemas/SearchWorldsRpcError" },
-    { $ref: "#/components/schemas/SparqlQueryRpcError" },
+    { $ref: "#/components/schemas/SparqlRpcError" },
   ],
   discriminator: {
     propertyName: "action",
@@ -364,7 +364,7 @@ export const WorldsRpcError: OpenAPIV3_1.SchemaObject = {
       importWorld: "#/components/schemas/ImportWorldRpcError",
       exportWorld: "#/components/schemas/ExportWorldRpcError",
       searchWorlds: "#/components/schemas/SearchWorldsRpcError",
-      sparqlQuery: "#/components/schemas/SparqlQueryRpcError",
+      sparql: "#/components/schemas/SparqlRpcError",
     },
   },
 };

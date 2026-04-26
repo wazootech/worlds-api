@@ -37,7 +37,7 @@ export const zSource = z.union([
 /**
  * Error payload for RPC failures.
  */
-export const zRpcErrorObject = z.object({
+export const zRpcError = z.object({
   code: z.string().optional(),
   message: z.string().optional(),
   details: z.record(z.string(), z.unknown()).optional(),
@@ -45,47 +45,47 @@ export const zRpcErrorObject = z.object({
 
 export const zCreateWorldRpcError = z.object({
   action: z.literal("createWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zDeleteWorldRpcError = z.object({
   action: z.literal("deleteWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zExportWorldRpcError = z.object({
   action: z.literal("exportWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zGetWorldRpcError = z.object({
   action: z.literal("getWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zImportWorldRpcError = z.object({
   action: z.literal("importWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zListWorldsRpcError = z.object({
   action: z.literal("listWorlds"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zSearchWorldsRpcError = z.object({
   action: z.literal("searchWorlds"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
-export const zSparqlQueryRpcError = z.object({
-  action: z.literal("sparqlQuery"),
-  error: zRpcErrorObject,
+export const zSparqlRpcError = z.object({
+  action: z.literal("sparql"),
+  error: zRpcError,
 });
 
 export const zUpdateWorldRpcError = z.object({
   action: z.literal("updateWorld"),
-  error: zRpcErrorObject,
+  error: zRpcError,
 });
 
 export const zWorldsRpcError = z.discriminatedUnion("action", [
@@ -97,7 +97,7 @@ export const zWorldsRpcError = z.discriminatedUnion("action", [
   zImportWorldRpcError.extend({ action: z.literal("importWorld") }),
   zExportWorldRpcError.extend({ action: z.literal("exportWorld") }),
   zSearchWorldsRpcError.extend({ action: z.literal("searchWorlds") }),
-  zSparqlQueryRpcError.extend({ action: z.literal("sparqlQuery") }),
+  zSparqlRpcError.extend({ action: z.literal("sparql") }),
 ]);
 
 /**
@@ -179,8 +179,8 @@ export const zSparqlQueryRequest = z.object({
   namedGraphUris: z.array(z.string()).optional(),
 });
 
-export const zSparqlQueryRpcRequest = z.object({
-  action: z.literal("sparqlQuery"),
+export const zSparqlRpcRequest = z.object({
+  action: z.literal("sparql"),
   request: zSparqlQueryRequest,
 });
 
@@ -255,8 +255,8 @@ export const zSparqlQueryResponse = z.union([
   zSparqlQuadsResults,
 ]).nullable();
 
-export const zSparqlQueryRpcResponse = z.object({
-  action: z.literal("sparqlQuery"),
+export const zSparqlRpcResponse = z.object({
+  action: z.literal("sparql"),
   response: zSparqlQueryResponse,
 });
 
@@ -334,7 +334,7 @@ export const zWorldsRpcRequest = z.discriminatedUnion("action", [
   zImportWorldRpcRequest.extend({ action: z.literal("importWorld") }),
   zExportWorldRpcRequest.extend({ action: z.literal("exportWorld") }),
   zSearchWorldsRpcRequest.extend({ action: z.literal("searchWorlds") }),
-  zSparqlQueryRpcRequest.extend({ action: z.literal("sparqlQuery") }),
+  zSparqlRpcRequest.extend({ action: z.literal("sparql") }),
 ]);
 
 /**
@@ -418,7 +418,7 @@ export const zWorldsRpcResponse = z.discriminatedUnion("action", [
   zImportWorldRpcResponse.extend({ action: z.literal("importWorld") }),
   zExportWorldRpcResponse.extend({ action: z.literal("exportWorld") }),
   zSearchWorldsRpcResponse.extend({ action: z.literal("searchWorlds") }),
-  zSparqlQueryRpcResponse.extend({ action: z.literal("sparqlQuery") }),
+  zSparqlRpcResponse.extend({ action: z.literal("sparql") }),
 ]);
 
 export const zRpcBody = zWorldsRpcRequest;

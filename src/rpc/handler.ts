@@ -1,6 +1,6 @@
 import type { WorldsInterface } from "#/worlds/interfaces.ts";
 import type {
-  RpcErrorObject,
+  RpcError,
   WorldsRpcError,
   WorldsRpcRequest,
   WorldsRpcResponse,
@@ -14,7 +14,7 @@ const ErrorCode = {
   INTERNAL: "INTERNAL",
 } as const;
 
-function toRpcErrorObject(err: unknown): RpcErrorObject {
+function toRpcError(err: unknown): RpcError {
   if (err instanceof Error) {
     const message = err.message;
     if (message.includes("World not found")) {
@@ -85,9 +85,9 @@ export async function handleRpc(
         const response = await worlds.search(req.request);
         return { action: "searchWorlds", response };
       }
-      case "sparqlQuery": {
+      case "sparql": {
         const response = await worlds.sparql(req.request);
-        return { action: "sparqlQuery", response };
+        return { action: "sparql", response };
       }
       default: {
         // Exhaustive guard (should be unreachable with generated types)
@@ -96,7 +96,7 @@ export async function handleRpc(
       }
     }
   } catch (err) {
-    const error = toRpcErrorObject(err);
+    const error = toRpcError(err);
     // Preserve the action in the error envelope for discriminated unions.
     return { action: req.action, error } as WorldsRpcError;
   }
