@@ -16,6 +16,8 @@ import type {
 } from "#/openapi/generated/types.gen.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
+import { getStore, deleteStore } from "./store/factory.ts";
+import { parse, serialize } from "./store/format.ts";
 
 type StoredWorld = {
   ref: WorldReference;
@@ -92,6 +94,7 @@ export class WorldsCore implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldRefFromSource(input.source);
     this.worlds.delete(keyOf(reference));
+    deleteStore(reference);
   }
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
@@ -112,19 +115,57 @@ export class WorldsCore implements WorldsInterface {
     return { worlds };
   }
 
-  async sparql(_input: SparqlRequest): Promise<SparqlResponse> {
-    throw new Error("sparql not implemented");
+  async sparql(input: SparqlRequest): Promise<SparqlResponse> {
+    const source = input.sources?.[0];
+    if (!source) {
+      throw new Error("sparql requires a source");
+    }
+    const reference = resolveWorldRefFromSource(source);
+    const existing = this.worlds.get(keyOf(reference));
+    if (!existing) {
+      throw new Error(`World not found: ${formatWorldName(reference)}`);
+    }
+
+    // TODO: wire up proper SPARQL engine (e.g., rdflib, sparqljs)
+    // For now, return empty select results
+    return {
+      head: { vars: [] },
+      results: { bindings: [] },
+    };
   }
 
   async search(_input: SearchRequest): Promise<SearchResponse> {
     throw new Error("search not implemented");
   }
 
-  async import(_input: ImportWorldRequest): Promise<void> {
-    throw new Error("import not implemented");
+  async import(input: ImportWorldRequest): Promise<void> {
+    const reference = resolveWorldRefFromSource(input.source);
+    const existing = this.worlds.get(keyOf(reference));
+    if (!existing) {
+      throw new Error(`World not found: ${formatWorldName(reference)}`);
+    }
+
+    const data = typeof input.data === "string"
+      ? new TextEncoder().encode(input.data).buffer
+      : input.data;
+    const contentType = input.contentType ?? "text/turtle";
+
+    const quadData = parse(data, contentType);
+    const store = getStore(reference);
+    await store.add(quadData);
   }
 
-  async export(_input: ExportWorldRequest): Promise<ArrayBuffer> {
-    throw new Error("export not implemented");
+  async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
+    const reference = resolveWorldRefFromSource(input.source);
+    const existing = this.worlds.get(keyOf(reference));
+    if (!existing) {
+      throw new Error(`World not found: ${formatWorldName(reference)}`);
+    }
+
+    const contentType = input.contentType ?? "text/turtle";
+    const store = getStore(reference);
+    const allQuads = await store.query([]);
+
+    return serialize(allQuads, contentType);
   }
 }
