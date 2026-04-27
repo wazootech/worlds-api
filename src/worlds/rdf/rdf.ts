@@ -1,5 +1,5 @@
 import type { StoredQuad } from "#/worlds/store/quad/types.ts";
-import { DataFactory, Parser, Writer, Store } from "n3";
+import { DataFactory, Parser, Store, Writer } from "n3";
 
 const df = DataFactory;
 
@@ -114,9 +114,7 @@ export function quadsFromStore(store: Store): StoredQuad[] {
         : q.object.termType === "Literal"
         ? q.object.value
         : q.object.value,
-      graph: q.graph.termType === "DefaultGraph"
-        ? ""
-        : q.graph.value,
+      graph: q.graph.termType === "DefaultGraph" ? "" : q.graph.value,
     });
   }
 
