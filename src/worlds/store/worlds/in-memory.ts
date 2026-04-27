@@ -1,4 +1,4 @@
-import type { MetadataStorage, StoredWorld } from "./metadata-storage.ts";
+import type { MetadataStorage, StoredWorld } from "./interface.ts";
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 
 function keyOfRef(reference: WorldReference): string {
@@ -9,9 +9,6 @@ function keyOfWorld(world: StoredWorld): string {
   return keyOfRef(world.reference);
 }
 
-/**
- * InMemoryMetadataStorage is a Map-backed MetadataStorage for development/testing.
- */
 export class InMemoryMetadataStorage implements MetadataStorage {
   private readonly worlds = new Map<string, StoredWorld>();
 
