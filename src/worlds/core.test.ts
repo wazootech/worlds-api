@@ -1,8 +1,14 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { WorldsCore } from "./core.ts";
+import { InMemoryMetadataStorage } from "./store/in-memory-metadata-storage.ts";
+import { InMemoryStoreStorage } from "./store/in-memory-store-storage.ts";
+
+function createCore() {
+  return new WorldsCore(new InMemoryMetadataStorage(), new InMemoryStoreStorage());
+}
 
 Deno.test("WorldsCore: create/get/update/delete world", async () => {
-  const core = new WorldsCore();
+  const core = createCore();
 
   const created = await core.createWorld({
     namespace: "ns",
@@ -31,7 +37,7 @@ Deno.test("WorldsCore: create/get/update/delete world", async () => {
 });
 
 Deno.test("WorldsCore: createWorld rejects duplicates", async () => {
-  const core = new WorldsCore();
+  const core = createCore();
   await core.createWorld({ namespace: "ns", id: "w1" });
   await assertRejects(
     () => core.createWorld({ namespace: "ns", id: "w1" }),

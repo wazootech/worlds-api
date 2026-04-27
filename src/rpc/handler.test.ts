@@ -1,10 +1,16 @@
 import { assertEquals } from "@std/assert";
 import { WorldsCore } from "#/worlds/core.ts";
+import { InMemoryMetadataStorage } from "#/worlds/store/in-memory-metadata-storage.ts";
+import { InMemoryStoreStorage } from "#/worlds/store/in-memory-store-storage.ts";
 import { handleRpc } from "./handler.ts";
 import type { WorldsRpcRequest } from "#/openapi/generated/types.gen.ts";
 
+function createCore() {
+  return new WorldsCore(new InMemoryMetadataStorage(), new InMemoryStoreStorage());
+}
+
 Deno.test("handleRpc: createWorld then getWorld", async () => {
-  const core = new WorldsCore();
+  const core = createCore();
 
   const createReq: WorldsRpcRequest = {
     action: "createWorld",
@@ -28,7 +34,7 @@ Deno.test("handleRpc: createWorld then getWorld", async () => {
 });
 
 Deno.test("handleRpc: error envelope includes action", async () => {
-  const core = new WorldsCore();
+  const core = createCore();
   const req: WorldsRpcRequest = {
     action: "updateWorld",
     request: { source: "ns/missing", displayName: "x" },
