@@ -19,6 +19,8 @@ import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
 import type { WorldStorage } from "./store/worlds/interface.ts";
 import type { StoredWorld } from "./store/worlds/types.ts";
 import type { StoreStorage } from "./store/store/interface.ts";
+import { deserialize, getFormat, serialize } from "./rdf/rdf.ts";
+import type { StoredQuad } from "./store/quad/types.ts";
 
 function toWorld(stored: StoredWorld): World {
   return {
@@ -132,11 +134,28 @@ export class WorldsCore implements WorldsInterface {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
 
-    // TODO: use proper RDF parsing (n3 or similar)
-    throw new Error("import: format provider not yet wired");
+    const contentType = input.contentType || "application/n-quads";
+    const data = typeof input.data === "string"
+      ? input.data
+      : new TextDecoder().decode(input.data);
+    const quads = deserialize(data, contentType);
+
+    const quadStorage = await this.storeStorage.getQuadStorage(reference);
+    await quadStorage.add(quads);
   }
 
-  async export(_input: ExportWorldRequest): Promise<ArrayBuffer> {
-    throw new Error("export: format provider not yet wired");
+  async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
+    const reference = resolveWorldRefFromSource(input.source);
+    const existing = await this.worldStorage.getWorld(reference);
+    if (!existing) {
+      throw new Error(`World not found: ${formatWorldName(reference)}`);
+    }
+
+    const quadStorage = await this.storeStorage.getQuadStorage(reference);
+    const quads = await quadStorage.query([]);
+
+    const contentType = input.contentType || "application/n-quads";
+    const serialized = await serialize(quads, contentType);
+    return new TextEncoder().encode(serialized).buffer as ArrayBuffer;
   }
 }
