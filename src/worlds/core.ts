@@ -16,7 +16,7 @@ import type {
 } from "#/openapi/generated/types.gen.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
-import type { MetadataStorage } from "./store/worlds/interface.ts";
+import type { WorldStorage } from "./store/worlds/interface.ts";
 import type { StoredWorld } from "./store/worlds/types.ts";
 import type { StoreStorage } from "./store/store/interface.ts";
 
@@ -33,17 +33,17 @@ function toWorld(stored: StoredWorld): World {
 
 /**
  * WorldsCore is the in-process reference implementation of WorldsInterface.
- * Accepts MetadataStorage and StoreStorage for all persistence.
+ * Accepts WorldStorage and StoreStorage for all persistence.
  */
 export class WorldsCore implements WorldsInterface {
   constructor(
-    private readonly metadataStorage: MetadataStorage,
+    private readonly worldStorage: WorldStorage,
     private readonly storeStorage: StoreStorage,
   ) {}
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
     const reference = resolveWorldRefFromSource(input.source);
-    const stored = await this.metadataStorage.get(reference);
+    const stored = await this.worldStorage.getWorld(reference);
     return stored ? toWorld(stored) : null;
   }
 
@@ -52,7 +52,7 @@ export class WorldsCore implements WorldsInterface {
       namespace: input.namespace,
       id: input.id,
     };
-    const existing = await this.metadataStorage.get(reference);
+    const existing = await this.worldStorage.getWorld(reference);
     if (existing) {
       throw new Error(`World already exists: ${formatWorldName(reference)}`);
     }
@@ -62,13 +62,13 @@ export class WorldsCore implements WorldsInterface {
       description: input.description,
       createTime: Date.now(),
     };
-    await this.metadataStorage.put(stored);
+    await this.worldStorage.updateWorld(stored);
     return toWorld(stored);
   }
 
   async updateWorld(input: UpdateWorldRequest): Promise<World> {
     const reference = resolveWorldRefFromSource(input.source);
-    const existing = await this.metadataStorage.get(reference);
+    const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
@@ -77,13 +77,13 @@ export class WorldsCore implements WorldsInterface {
       displayName: input.displayName ?? existing.displayName,
       description: input.description ?? existing.description,
     };
-    await this.metadataStorage.put(updated);
+    await this.worldStorage.updateWorld(updated);
     return toWorld(updated);
   }
 
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldRefFromSource(input.source);
-    await this.metadataStorage.delete(reference);
+    await this.worldStorage.deleteWorld(reference);
     if ("deleteQuadStorage" in this.storeStorage) {
       await (this.storeStorage as {
         deleteQuadStorage(reference: WorldReference): Promise<void>;
@@ -93,7 +93,7 @@ export class WorldsCore implements WorldsInterface {
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
     const namespaceFilter = input?.parent?.trim();
-    const all = await this.metadataStorage.list(namespaceFilter);
+    const all = await this.worldStorage.listWorld(namespaceFilter);
 
     const pageSize = input?.pageSize && input.pageSize > 0
       ? input.pageSize
@@ -109,7 +109,7 @@ export class WorldsCore implements WorldsInterface {
       throw new Error("sparql requires a source");
     }
     const reference = resolveWorldRefFromSource(source);
-    const existing = await this.metadataStorage.get(reference);
+    const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
@@ -127,7 +127,7 @@ export class WorldsCore implements WorldsInterface {
 
   async import(input: ImportWorldRequest): Promise<void> {
     const reference = resolveWorldRefFromSource(input.source);
-    const existing = await this.metadataStorage.get(reference);
+    const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }

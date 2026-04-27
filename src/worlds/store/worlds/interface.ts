@@ -3,9 +3,9 @@ export type { WorldReference };
 import type { StoredWorld } from "./types.ts";
 export type { StoredWorld };
 
-export interface MetadataStorage {
-  get(reference: WorldReference): Promise<StoredWorld | null>;
-  put(world: StoredWorld): Promise<void>;
-  delete(reference: WorldReference): Promise<void>;
-  list(namespace?: string): Promise<StoredWorld[]>;
+export interface WorldStorage {
+  getWorld(reference: WorldReference): Promise<StoredWorld | null>;
+  updateWorld(world: StoredWorld): Promise<void>;
+  deleteWorld(reference: WorldReference): Promise<void>;
+  listWorld(namespace?: string): Promise<StoredWorld[]>;
 }

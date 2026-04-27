@@ -10,7 +10,7 @@
     "dev": "deno run --watch main.ts",
     "bundle:browser": "deno bundle --no-check --platform=browser src/worlds/rdf/mod.ts; deno bundle --no-check --platform=browser src/worlds/rdf/sparql/mod.ts",
     "check:browser": "deno check -c deno.browser.json src/worlds/rdf/mod.ts src/worlds/rdf/sparql/mod.ts",
-    "test": "deno test --allow-env",
+    "test": "deno test --allow-all",
     "generate": "deno run -A src/openapi/openapi.ts && deno fmt ./src/openapi/generated"
   },
   "exports": {

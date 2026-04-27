@@ -1,11 +1,11 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { WorldsCore } from "./core.ts";
-import { InMemoryMetadataStorage } from "./store/worlds/in-memory.ts";
+import { InMemoryWorldStorage } from "./store/worlds/in-memory.ts";
 import { InMemoryStoreStorage } from "./store/store/in-memory.ts";
 
 function createCore() {
   return new WorldsCore(
-    new InMemoryMetadataStorage(),
+    new InMemoryWorldStorage(),
     new InMemoryStoreStorage(),
   );
 }
