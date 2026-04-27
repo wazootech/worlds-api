@@ -3,8 +3,8 @@ import type { Quad } from "n3";
 import { DataFactory, Parser, Store } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
-import { executeSparql } from "#/worlds/sparql/execute.ts";
 import type { SparqlSelectResults } from "#/openapi/generated/types.gen.ts";
+import { executeSparql } from "./sparql.ts";
 
 Deno.test("Comunica QueryEngine can query an n3 Store (RDFJS)", async () => {
   const store = new Store();
@@ -83,44 +83,52 @@ Deno.test("Same SPARQL query works on bnodes vs processed (canonicalized + subje
     assertEquals(bnodeRows.length > 0, true);
   });
 
-  await t.step("process dataset (RDFC-1.0 canonicalization + subject skolemization) and rerun same query", async () => {
-    const canonicalNQuads = await canonize(quads, {
-      algorithm: "RDFC-1.0",
-      format: "application/n-quads",
-    });
+  await t.step(
+    "process dataset (RDFC-1.0 canonicalization + subject skolemization) and rerun same query",
+    async () => {
+      const canonicalNQuads = await canonize(quads, {
+        algorithm: "RDFC-1.0",
+        format: "application/n-quads",
+      });
 
-    const canonicalStatements = canonicalNQuads
-      .split("\n")
-      .filter((l: string) => l.trim().length > 0)
-      .map((l: string) => `${l}\n`);
+      const canonicalStatements = canonicalNQuads
+        .split("\n")
+        .filter((l: string) => l.trim().length > 0)
+        .map((l: string) => `${l}\n`);
 
-    const parser = new Parser({ format: "application/n-quads" });
-    const processed = new Store();
+      const parser = new Parser({ format: "application/n-quads" });
+      const processed = new Store();
 
-    for (const statement of canonicalStatements) {
-      const [q] = parser.parse(statement) as Quad[];
-      if (!q) continue;
+      for (const statement of canonicalStatements) {
+        const [q] = parser.parse(statement) as Quad[];
+        if (!q) continue;
 
-      // Blank node subject skolemization:
-      // input subject = "_:a" becomes NamedNode("urn:worlds:fact:" + base64url(RDFC-1.0(canonicalQuad))).
-      const subject = q.subject.termType === "BlankNode"
-        ? DataFactory.namedNode(
-          `urn:worlds:fact:${encodeBase64Url(new TextEncoder().encode(statement))}`,
-        )
-        : q.subject;
+        // Blank node subject skolemization:
+        // input subject = "_:a" becomes NamedNode("urn:worlds:fact:" + base64url(RDFC-1.0(canonicalQuad))).
+        const subject = q.subject.termType === "BlankNode"
+          ? DataFactory.namedNode(
+            `urn:worlds:fact:${
+              encodeBase64Url(new TextEncoder().encode(statement))
+            }`,
+          )
+          : q.subject;
 
-      processed.addQuad(DataFactory.quad(subject, q.predicate, q.object, q.graph));
-    }
+        processed.addQuad(
+          DataFactory.quad(subject, q.predicate, q.object, q.graph),
+        );
+      }
 
-    const result = await executeSparql(processed, query);
-    const bindings = (result as SparqlSelectResults).results.bindings as Array<
-      Record<string, { type: string; value: string }>
-    >;
-    const processedRows = bindings.map((b) => ({
-      kind: b.kind?.value,
-      value: b.value?.value,
-    }));
+      const result = await executeSparql(processed, query);
+      const bindings = (result as SparqlSelectResults).results
+        .bindings as Array<
+          Record<string, { type: string; value: string }>
+        >;
+      const processedRows = bindings.map((b) => ({
+        kind: b.kind?.value,
+        value: b.value?.value,
+      }));
 
-    assertEquals(processedRows, bnodeRows);
-  });
+      assertEquals(processedRows, bnodeRows);
+    },
+  );
 });

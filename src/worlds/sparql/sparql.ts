@@ -7,16 +7,25 @@ import type {
   SparqlValue,
 } from "#/openapi/generated/types.gen.ts";
 
+/**
+ * queryEngine is a singleton instance of the Comunica QueryEngine.
+ *
+ * It's generally OK (and common) to share one `QueryEngine` instance across calls.
+ * Reusing it can be slightly more efficient than constructing a new engine per query.
+ */
 export const queryEngine: QueryEngine = new QueryEngine();
 
+/**
+ * executeSparql executes a SPARQL query or update on a given store.
+ */
 export async function executeSparql(
   store: Store,
   query: string,
-  baseIRI?: string,
+  options?: { baseIRI?: string },
 ): Promise<SparqlResponse> {
   const queryType = await queryEngine.query(query, {
     sources: [store],
-    baseIRI,
+    baseIRI: options?.baseIRI,
   });
 
   if (queryType.resultType === "void") {
@@ -40,7 +49,9 @@ export async function executeSparql(
   }
 
   if (queryType.resultType === "quads") {
-    return await handleQuads(queryType as unknown as { execute(): Promise<unknown> });
+    return await handleQuads(
+      queryType as unknown as { execute(): Promise<unknown> },
+    );
   }
 
   throw new Error("Unsupported query type");
@@ -51,9 +62,9 @@ async function handleBindings(queryType: {
   metadata(): Promise<{ variables: { value: string }[] }>;
 }): Promise<SparqlResponse> {
   const bindingsStream = await queryType.execute();
-  const vars = (await queryType.metadata()).variables.map((v: { value: string }) =>
-    v.value
-  );
+  const vars = (await queryType.metadata()).variables.map((
+    v: { value: string },
+  ) => v.value);
 
   const bindings = await new Promise<SparqlBinding[]>((resolve, reject) => {
     const b: SparqlBinding[] = [];
@@ -230,4 +241,3 @@ function toSparqlValue(term: {
 
   return val;
 }
-
