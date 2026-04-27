@@ -1,12 +1,15 @@
 import { assertEquals } from "@std/assert";
 import { WorldsCore } from "#/worlds/core.ts";
-import { InMemoryMetadataStorage } from "#/worlds/store/in-memory-metadata-storage.ts";
-import { InMemoryStoreStorage } from "#/worlds/store/in-memory-store-storage.ts";
+import { InMemoryMetadataStorage } from "#/worlds/store/worlds/in-memory.ts";
+import { InMemoryStoreStorage } from "#/worlds/store/store/in-memory.ts";
 import { handleRpc } from "./handler.ts";
 import type { WorldsRpcRequest } from "#/openapi/generated/types.gen.ts";
 
 function createCore() {
-  return new WorldsCore(new InMemoryMetadataStorage(), new InMemoryStoreStorage());
+  return new WorldsCore(
+    new InMemoryMetadataStorage(),
+    new InMemoryStoreStorage(),
+  );
 }
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {

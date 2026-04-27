@@ -1,2 +1,1 @@
-export { executeSparql, queryEngine } from "./execute.ts";
-
+export * from "./sparql.ts";

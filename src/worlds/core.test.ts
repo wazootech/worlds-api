@@ -1,10 +1,13 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { WorldsCore } from "./core.ts";
-import { InMemoryMetadataStorage } from "./store/in-memory-metadata-storage.ts";
-import { InMemoryStoreStorage } from "./store/in-memory-store-storage.ts";
+import { InMemoryMetadataStorage } from "./store/worlds/in-memory.ts";
+import { InMemoryStoreStorage } from "./store/store/in-memory.ts";
 
 function createCore() {
-  return new WorldsCore(new InMemoryMetadataStorage(), new InMemoryStoreStorage());
+  return new WorldsCore(
+    new InMemoryMetadataStorage(),
+    new InMemoryStoreStorage(),
+  );
 }
 
 Deno.test("WorldsCore: create/get/update/delete world", async () => {

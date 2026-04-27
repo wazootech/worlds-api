@@ -16,8 +16,9 @@ import type {
 } from "#/openapi/generated/types.gen.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
-import type { MetadataStorage, StoredWorld } from "./store/metadata-storage.ts";
-import type { StoreStorage } from "./store/store-storage.ts";
+import type { MetadataStorage } from "./store/worlds/interface.ts";
+import type { StoredWorld } from "./store/worlds/types.ts";
+import type { StoreStorage } from "./store/store/interface.ts";
 
 function toWorld(stored: StoredWorld): World {
   return {
@@ -84,7 +85,9 @@ export class WorldsCore implements WorldsInterface {
     const reference = resolveWorldRefFromSource(input.source);
     await this.metadataStorage.delete(reference);
     if ("deleteQuadStorage" in this.storeStorage) {
-      await (this.storeStorage as { deleteQuadStorage(reference: WorldReference): Promise<void> }).deleteQuadStorage(reference);
+      await (this.storeStorage as {
+        deleteQuadStorage(reference: WorldReference): Promise<void>;
+      }).deleteQuadStorage(reference);
     }
   }
 
