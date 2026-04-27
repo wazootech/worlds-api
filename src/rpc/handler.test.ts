@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { WorldsCore } from "#/worlds/core.ts";
-import { handleRpc } from "./handler.ts";
+import { handleRpc } from "#/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/worlds/store/worlds/in-memory.ts";
 import { InMemoryStoreStorage } from "#/worlds/store/store/in-memory.ts";

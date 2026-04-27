@@ -59,13 +59,13 @@ export function parseWorldName(name: string): WorldReference {
 }
 
 /**
- * Resolve a world ref from a Source.
+ * Resolve a world reference from a Source.
  *
  * Strict rules:
  * - If Source is a string, it MUST be a canonical world name.
  * - If Source is an object, it MUST contain both namespace and id.
  */
-export function resolveWorldRefFromSource(source: Source): WorldReference {
+export function resolveWorldReference(source: Source): WorldReference {
   if (typeof source === "string") {
     return parseWorldName(source);
   }

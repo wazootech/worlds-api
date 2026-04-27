@@ -2,7 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import {
   formatWorldName,
   parseWorldName,
-  resolveWorldRefFromSource,
+  resolveWorldReference,
   WorldRefError,
 } from "./resolve.ts";
 
@@ -30,31 +30,31 @@ Deno.test("parseWorldName: rejects non 2-part names", () => {
   );
 });
 
-Deno.test("resolveWorldRefFromSource: string source is a name", () => {
-  assertEquals(resolveWorldRefFromSource("ns/w1"), {
+Deno.test("resolveWorldReference: string source is a name", () => {
+  assertEquals(resolveWorldReference("ns/w1"), {
     namespace: "ns",
     id: "w1",
   });
 });
 
-Deno.test("resolveWorldRefFromSource: object source with ref", () => {
-  assertEquals(resolveWorldRefFromSource({ namespace: "ns", id: "w1" }), {
+Deno.test("resolveWorldReference: object source with ref", () => {
+  assertEquals(resolveWorldReference({ namespace: "ns", id: "w1" }), {
     namespace: "ns",
     id: "w1",
   });
 });
 
-Deno.test("resolveWorldRefFromSource: missing namespace fails", () => {
+Deno.test("resolveWorldReference: missing namespace fails", () => {
   assertThrows(
-    () => resolveWorldRefFromSource({ namespace: "", id: "w1" }),
+    () => resolveWorldReference({ namespace: "", id: "w1" }),
     WorldRefError,
     "namespace",
   );
 });
 
-Deno.test("resolveWorldRefFromSource: missing id fails", () => {
+Deno.test("resolveWorldReference: missing id fails", () => {
   assertThrows(
-    () => resolveWorldRefFromSource({ namespace: "ns", id: "" }),
+    () => resolveWorldReference({ namespace: "ns", id: "" }),
     WorldRefError,
     "id",
   );

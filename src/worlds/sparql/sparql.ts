@@ -1,5 +1,5 @@
 import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
-import type { Store } from "n3";
+import { Store, DataFactory } from "n3";
 import type {
   SparqlBinding,
   SparqlQuad,

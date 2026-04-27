@@ -1,5 +1,5 @@
-import type { StoredQuad } from "../store/quad/types.ts";
-import { DataFactory, Parser, Writer } from "n3";
+import type { StoredQuad } from "#/worlds/store/quad/types.ts";
+import { DataFactory, Parser, Writer, Store } from "n3";
 
 const df = DataFactory;
 
@@ -74,4 +74,51 @@ export function deserialize(data: string, contentType: string): StoredQuad[] {
     object: q.object.value,
     graph: q.graph.termType === "DefaultGraph" ? "" : q.graph.value,
   }));
+}
+
+export function storeFromQuads(quads: StoredQuad[]): Store {
+  const store = new Store();
+  const df = DataFactory;
+
+  for (const q of quads) {
+    const subject = q.subject.startsWith("_:")
+      ? df.blankNode(q.subject.slice(2))
+      : df.namedNode(q.subject);
+    const predicate = df.namedNode(q.predicate);
+    const object = q.object.startsWith("_:")
+      ? df.blankNode(q.object.slice(2))
+      : q.object.includes(":") || q.object.startsWith("urn:")
+      ? df.namedNode(q.object)
+      : df.literal(q.object);
+    const graph = q.graph && q.graph !== ""
+      ? df.namedNode(q.graph)
+      : df.defaultGraph();
+
+    store.addQuad(df.quad(subject, predicate, object, graph));
+  }
+
+  return store;
+}
+
+export function quadsFromStore(store: Store): StoredQuad[] {
+  const quads: StoredQuad[] = [];
+
+  for (const q of store.getQuads(null, null, null, null)) {
+    quads.push({
+      subject: q.subject.termType === "BlankNode"
+        ? `_:${q.subject.value}`
+        : q.subject.value,
+      predicate: q.predicate.value,
+      object: q.object.termType === "BlankNode"
+        ? `_:${q.object.value}`
+        : q.object.termType === "Literal"
+        ? q.object.value
+        : q.object.value,
+      graph: q.graph.termType === "DefaultGraph"
+        ? ""
+        : q.graph.value,
+    });
+  }
+
+  return quads;
 }
