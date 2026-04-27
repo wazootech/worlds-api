@@ -19,7 +19,12 @@ import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./store/worlds/interface.ts";
 import type { StoredWorld } from "./store/worlds/types.ts";
 import type { StoreStorage } from "./store/store/interface.ts";
-import { deserialize, getFormat, serialize, storeFromQuads, quadsFromStore } from "./rdf/rdf.ts";
+import {
+  deserialize,
+  quadsFromStore,
+  serialize,
+  storeFromQuads,
+} from "./rdf/rdf.ts";
 import type { StoredQuad } from "./store/quad/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
 
@@ -144,18 +149,31 @@ export class WorldsCore implements WorldsInterface {
 
       // Get the current quads and the new state
       const currentQuads = await quadStorage.query([]);
-      const currentStore = storeFromQuads(currentQuads);
       const newStore = store; // store now reflects the updated state
 
       // Compute added/removed quads by comparing
       const newQuads = quadsFromStore(newStore);
-      const currentQuadSet = new Set(currentQuads.map((q) => `${q.subject}|${q.predicate}|${q.object}|${q.graph}`));
-      const newQuadSet = new Set(newQuads.map((q) => `${q.subject}|${q.predicate}|${q.object}|${q.graph}`));
+      const currentQuadSet = new Set(
+        currentQuads.map((q) =>
+          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`
+        ),
+      );
+      const newQuadSet = new Set(
+        newQuads.map((q) =>
+          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`
+        ),
+      );
 
       // Quads to remove (in current but not in new)
-      const toRemove = currentQuads.filter((q) => !newQuadSet.has(`${q.subject}|${q.predicate}|${q.object}|${q.graph}`));
+      const toRemove = currentQuads.filter((q) =>
+        !newQuadSet.has(`${q.subject}|${q.predicate}|${q.object}|${q.graph}`)
+      );
       // Quads to add (in new but not in current)
-      const toAdd = newQuads.filter((q) => !currentQuadSet.has(`${q.subject}|${q.predicate}|${q.object}|${q.graph}`));
+      const toAdd = newQuads.filter((q) =>
+        !currentQuadSet.has(
+          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`,
+        )
+      );
 
       if (toRemove.length > 0) {
         await quadStorage.remove(toRemove);

@@ -1,7 +1,6 @@
 import { assertEquals } from "@std/assert";
 import {
   deserialize,
-  FORMATS,
   getFormat,
   serialize,
 } from "#/worlds/rdf/rdf.ts";
