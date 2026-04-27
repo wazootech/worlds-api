@@ -290,10 +290,9 @@ export class WorldsCore implements WorldsInterface {
       world: r.world,
     }));
 
-    const nextPageToken =
-      startIndex + pageSize < allResults.length
-        ? String(startIndex + pageSize)
-        : undefined;
+    const nextPageToken = startIndex + pageSize < allResults.length
+      ? String(startIndex + pageSize)
+      : undefined;
 
     return { results, nextPageToken };
   }

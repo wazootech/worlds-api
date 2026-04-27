@@ -414,8 +414,7 @@ Deno.test("WorldsCore: search finds quads matching query terms", async () => {
 
   await core.import({
     source: "ns/searchTest",
-    data:
-      `<https://example.org/ethan> <https://example.org/name> "Ethan" .
+    data: `<https://example.org/ethan> <https://example.org/name> "Ethan" .
 <https://example.org/ethan> <https://example.org/age> "30" .
 <https://example.org/gregory> <https://example.org/name> "Gregory" .
 <https://example.org/sandra> <https://example.org/name> "Sandra" .`,
@@ -444,8 +443,7 @@ Deno.test("WorldsCore: search scores by number of matching terms", async () => {
 
   await core.import({
     source: "ns/scoreTest",
-    data:
-      `<https://example.org/ethan> <https://example.org/name> "Ethan" .
+    data: `<https://example.org/ethan> <https://example.org/name> "Ethan" .
 <https://example.org/ethan> <https://example.org/friend> "Gregory" .`,
     contentType: "application/n-quads",
   });
@@ -481,7 +479,8 @@ Deno.test("WorldsCore: search returns results from multiple worlds", async () =>
   });
   await core.import({
     source: "ns/world2",
-    data: `<https://example.org/gregory> <https://example.org/name> "Gregory" .`,
+    data:
+      `<https://example.org/gregory> <https://example.org/name> "Gregory" .`,
     contentType: "application/n-quads",
   });
 
@@ -540,7 +539,8 @@ Deno.test("WorldsCore: search finds data added via SPARQL UPDATE", async () => {
 
   await core.sparql({
     sources: ["ns/sparqlSearch"],
-    query: `INSERT DATA { <https://example.org/person> <https://example.org/name> "Gregory" }`,
+    query:
+      `INSERT DATA { <https://example.org/person> <https://example.org/name> "Gregory" }`,
   });
 
   const result = await core.search({

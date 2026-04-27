@@ -1,9 +1,5 @@
 import { assertEquals } from "@std/assert";
-import {
-  deserialize,
-  getFormat,
-  serialize,
-} from "#/worlds/rdf/rdf.ts";
+import { deserialize, getFormat, serialize } from "#/worlds/rdf/rdf.ts";
 
 Deno.test("serializes and deserializes turtle", () => {
   const input =
