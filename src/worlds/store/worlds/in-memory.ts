@@ -1,4 +1,4 @@
-import type { WorldStorage, StoredWorld } from "./interface.ts";
+import type { StoredWorld, WorldStorage } from "./interface.ts";
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 
 function keyOfRef(reference: WorldReference): string {

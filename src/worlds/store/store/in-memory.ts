@@ -9,7 +9,9 @@ function keyOfRef(reference: WorldReference): string {
 export class InMemoryStoreStorage implements StoreStorage {
   private readonly stores = new Map<string, InMemoryQuadStorage>();
 
-  async getQuadStorage(reference: WorldReference): Promise<InMemoryQuadStorage> {
+  async getQuadStorage(
+    reference: WorldReference,
+  ): Promise<InMemoryQuadStorage> {
     const key = keyOfRef(reference);
     let store = this.stores.get(key);
     if (!store) {

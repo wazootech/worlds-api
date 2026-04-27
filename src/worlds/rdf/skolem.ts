@@ -2,14 +2,14 @@ import type { Quad } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
 
-export interface  SkolemOptions {
+export interface SkolemOptions {
   /**
    * skolemPrefix is the IRI prefix used when turning blank nodes into NamedNodes.
    *
    * Default: "urn:worlds:fact:"
    */
   skolemPrefix?: string;
-};
+}
 
 /**
  * resolveSkolemPrefix resolves the skolem prefix from the options.
