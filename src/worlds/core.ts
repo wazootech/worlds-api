@@ -8,6 +8,7 @@ import type {
   ListWorldsResponse,
   SearchRequest,
   SearchResponse,
+  SearchResult,
   SparqlRequest,
   SparqlResponse,
   UpdateWorldRequest,
@@ -188,8 +189,113 @@ export class WorldsCore implements WorldsInterface {
     return result;
   }
 
-  async search(_input: SearchRequest): Promise<SearchResponse> {
-    throw new Error("search not implemented");
+  async search(input: SearchRequest): Promise<SearchResponse> {
+    const sources = input.sources;
+    const targetRefs: WorldReference[] = [];
+
+    if (!sources || sources.length === 0) {
+      // No sources specified - search all worlds
+      const all = await this.worldStorage.listWorld(undefined);
+      for (const w of all) {
+        targetRefs.push(w.reference);
+      }
+    } else {
+      // Resolve each source to a world reference
+      for (const src of sources) {
+        const ref = resolveWorldReference(src);
+        const existing = await this.worldStorage.getWorld(ref);
+        if (!existing) {
+          throw new Error(`World not found: ${formatWorldName(ref)}`);
+        }
+        targetRefs.push(ref);
+      }
+    }
+
+    // Naive FTS: tokenize query, scan all quads, score by term matches
+    const queryTerms = input.query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t) => t.length > 0);
+
+    if (queryTerms.length === 0) {
+      return { results: [] };
+    }
+
+    // Collect quads from all target worlds and search them
+    const allResults: Array<{
+      subject: string;
+      predicate: string;
+      object: string;
+      ftsRank: number;
+      world: World;
+    }> = [];
+
+    for (const ref of targetRefs) {
+      const quadStorage = await this.storeStorage.getQuadStorage(ref);
+      const quads = await quadStorage.query([]);
+
+      const world: World = {
+        name: formatWorldName(ref),
+        namespace: ref.namespace,
+        id: ref.id,
+        displayName: (await this.worldStorage.getWorld(ref))?.displayName ?? "",
+        createTime: (await this.worldStorage.getWorld(ref))?.createTime ?? 0,
+      };
+
+      for (const q of quads) {
+        const subject = q.subject.toLowerCase();
+        const predicate = q.predicate.toLowerCase();
+        const object = q.object.toLowerCase();
+
+        // Score = number of query terms found in the triple
+        let score = 0;
+        for (const term of queryTerms) {
+          if (
+            subject.includes(term) ||
+            predicate.includes(term) ||
+            object.includes(term)
+          ) {
+            score++;
+          }
+        }
+
+        if (score > 0) {
+          allResults.push({
+            subject: q.subject,
+            predicate: q.predicate,
+            object: q.object,
+            ftsRank: score,
+            world,
+          });
+        }
+      }
+    }
+
+    // Sort by score descending
+    allResults.sort((a, b) => b.ftsRank - a.ftsRank);
+
+    // Apply pagination
+    const pageSize = input.pageSize ?? 20;
+    const pageToken = input.pageToken ?? "";
+    const startIndex = pageToken ? parseInt(pageToken, 10) : 0;
+    const pagedResults = allResults.slice(startIndex, startIndex + pageSize);
+
+    const results: SearchResult[] = pagedResults.map((r) => ({
+      subject: r.subject,
+      predicate: r.predicate,
+      object: r.object,
+      vecRank: null,
+      ftsRank: r.ftsRank,
+      score: r.ftsRank,
+      world: r.world,
+    }));
+
+    const nextPageToken =
+      startIndex + pageSize < allResults.length
+        ? String(startIndex + pageSize)
+        : undefined;
+
+    return { results, nextPageToken };
   }
 
   async import(input: ImportWorldRequest): Promise<void> {
