@@ -48,4 +48,3 @@ export function skolemizeBlankNodeLabel(label: string): string {
   const encoded = new TextEncoder().encode(label);
   return encodeBase64Url(encoded);
 }
-

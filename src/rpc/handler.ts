@@ -25,7 +25,7 @@ function toRpcError(err: unknown): RpcError {
     }
     return { code: ErrorCode.INTERNAL, message };
   }
-return { code: ErrorCode.INTERNAL, message: String(err) };
+  return { code: ErrorCode.INTERNAL, message: String(err) };
 }
 
 /**
@@ -41,7 +41,10 @@ export async function handleRpc(
   if (!parsed.success) {
     return {
       action: req.action || "unknown",
-      error: { code: ErrorCode.INVALID_ARGUMENT, message: "Invalid RPC request" },
+      error: {
+        code: ErrorCode.INVALID_ARGUMENT,
+        message: "Invalid RPC request",
+      },
     } as WorldsRpcError;
   }
 

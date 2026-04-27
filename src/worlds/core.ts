@@ -16,7 +16,7 @@ import type {
 } from "#/openapi/generated/types.gen.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldRefFromSource } from "./resolve.ts";
-import { getStore, deleteStore } from "./store/factory.ts";
+import { deleteStore, getStore } from "./store/factory.ts";
 import { parse, serialize } from "./store/format.ts";
 
 type StoredWorld = {

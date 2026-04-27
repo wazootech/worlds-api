@@ -57,13 +57,19 @@ function parseNquadsLine(line: string): StoredQuad | null {
   return parseNtriplesLine(line);
 }
 
-export function parse(data: ArrayBuffer, contentType: ContentType): StoredQuad[] {
+export function parse(
+  data: ArrayBuffer,
+  contentType: ContentType,
+): StoredQuad[] {
   const text = new TextDecoder().decode(data);
   const lines = text.split("\n");
   const quads: StoredQuad[] = [];
 
   for (const line of lines) {
-    if (contentType === "application/n-quads" || contentType === "application/n-triples") {
+    if (
+      contentType === "application/n-quads" ||
+      contentType === "application/n-triples"
+    ) {
       const q = parseNquadsLine(line);
       if (q) quads.push(q);
     } else if (contentType === "text/turtle" || contentType === "text/n3") {
@@ -88,7 +94,10 @@ function serializeQuad(q: StoredQuad, contentType: ContentType): string {
   return `${s} ${p} ${o} .\n`;
 }
 
-export function serialize(quads: StoredQuad[], contentType: ContentType): ArrayBuffer {
+export function serialize(
+  quads: StoredQuad[],
+  contentType: ContentType,
+): ArrayBuffer {
   const text = quads.map((q) => serializeQuad(q, contentType)).join("");
   return new TextEncoder().encode(text).buffer;
 }

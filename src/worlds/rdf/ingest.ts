@@ -4,7 +4,6 @@ import { canonize } from "rdf-canonize";
 import type { ContentType } from "#/openapi/generated/types.gen.ts";
 import { resolveSkolemPrefix, skolemizeBlankNodeLabel } from "./skolem.ts";
 
-
 /**
  * IngestOptions are the options for the ingestion.
  */
@@ -15,7 +14,7 @@ export interface IngestOptions {
    * Default: "urn:worlds:fact:"
    */
   skolemPrefix?: string;
-};
+}
 
 function isBlankNodeTerm(term: Term): term is BlankNode {
   return term.termType === "BlankNode";
@@ -32,9 +31,15 @@ function skolemNamedNode(term: BlankNode, opts?: IngestOptions): NamedNode {
  * This makes the resulting store safe to use in pipelines that prefer stable IRIs.
  */
 export function toSkolemizedQuad(quad: Quad, opts?: IngestOptions): Quad {
-  const s = isBlankNodeTerm(quad.subject) ? skolemNamedNode(quad.subject, opts) : quad.subject;
-  const o = isBlankNodeTerm(quad.object) ? skolemNamedNode(quad.object, opts) : quad.object;
-  const g = isBlankNodeTerm(quad.graph) ? skolemNamedNode(quad.graph, opts) : quad.graph;
+  const s = isBlankNodeTerm(quad.subject)
+    ? skolemNamedNode(quad.subject, opts)
+    : quad.subject;
+  const o = isBlankNodeTerm(quad.object)
+    ? skolemNamedNode(quad.object, opts)
+    : quad.object;
+  const g = isBlankNodeTerm(quad.graph)
+    ? skolemNamedNode(quad.graph, opts)
+    : quad.graph;
   return DataFactory.quad(s, quad.predicate, o, g);
 }
 
@@ -85,4 +90,3 @@ export async function parseStoreFromRdfBytes(
   store.addQuads(quads);
   return store;
 }
-
