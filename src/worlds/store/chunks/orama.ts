@@ -14,6 +14,7 @@ import type {
   ChunkSearchQuery,
   ChunkSearchRow,
 } from "./types.ts";
+import type { OramaSearchOptions } from "./orama-options.ts";
 
 function worldKey(ref: WorldReference): string {
   return `${ref.namespace}/${ref.id}`;
@@ -51,19 +52,33 @@ interface OramaChunkDoc {
   vector: string;
 }
 
+export interface OramaChunkStorageOptions {
+  orama?: OramaSearchOptions;
+}
+
 export class OramaChunkStorage implements ChunkStorage {
   private db: Orama<typeof CHUNK_SCHEMA>;
   private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
+  private readonly options: OramaSearchOptions;
 
-  private constructor(db: Orama<typeof CHUNK_SCHEMA>) {
+  private constructor(
+    db: Orama<typeof CHUNK_SCHEMA>,
+    options: OramaSearchOptions,
+  ) {
     this.db = db;
+    this.options = options;
   }
 
-  static async create(): Promise<OramaChunkStorage> {
+  static async create(options: OramaChunkStorageOptions = {}): Promise<OramaChunkStorage> {
     const db = await create({
       schema: CHUNK_SCHEMA,
     });
-    return new OramaChunkStorage(db);
+    return new OramaChunkStorage(
+      db,
+      options.orama ?? {
+        mode: "fulltext",
+      },
+    );
   }
 
   private docFromChunk(chunk: ChunkRecord): OramaChunkDoc {
