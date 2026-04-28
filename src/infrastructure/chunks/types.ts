@@ -11,3 +11,10 @@ export interface ChunkRecord {
   vector: Float32Array;
   world: WorldReference;
 }
+
+export interface ChunkIndexState {
+  world: WorldReference;
+  indexedAt: number;
+  embeddingDimensions: number;
+  embeddingModel?: string;
+}

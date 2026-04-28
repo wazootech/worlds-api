@@ -233,8 +233,8 @@ export class WorldsCore implements WorldsInterface {
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const rows = await this.searchDeps.chunkStorage.getByWorld(ref);
-      if (rows.length > 0) {
+      const indexState = await this.searchDeps.chunkStorage.getIndexState(ref);
+      if (indexState) {
         indexedRefs.push(ref);
       } else {
         unindexedRefs.push(ref);

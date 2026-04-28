@@ -1,7 +1,10 @@
 export type { EmbeddingsService } from "#/infrastructure/embeddings/interface.ts";
 export { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
 
-export type { ChunkRecord } from "#/infrastructure/chunks/types.ts";
+export type {
+  ChunkIndexState,
+  ChunkRecord,
+} from "#/infrastructure/chunks/types.ts";
 export type { ChunkStorage } from "#/infrastructure/chunks/interface.ts";
 export { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
 

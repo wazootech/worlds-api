@@ -53,42 +53,48 @@ export class SearchIndexHandler implements PatchHandler {
         }
       }
 
-      if (!patch.insertions?.length) continue;
+      if (patch.insertions?.length) {
+        for (const q of patch.insertions) {
+          if (!shouldIndexTriple(q)) continue;
+          if (isMetaPredicate(q.predicate)) continue;
 
-      for (const q of patch.insertions) {
-        if (!shouldIndexTriple(q)) continue;
-        if (isMetaPredicate(q.predicate)) continue;
+          const tripleId = await skolemizeStoredQuad(q);
+          const subject = q.subject;
+          const predicate = q.predicate;
+          const objectText = q.object;
 
-        const tripleId = await skolemizeStoredQuad(q);
-        const subject = q.subject;
-        const predicate = q.predicate;
-        const objectText = q.object;
+          const fullVector = await this.embeddings.embed(objectText);
+          const chunks = splitTextRecursive(objectText);
+          if (chunks.length === 0) continue;
 
-        const fullVector = await this.embeddings.embed(objectText);
-        const chunks = splitTextRecursive(objectText);
-        if (chunks.length === 0) continue;
+          for (let i = 0; i < chunks.length; i++) {
+            const chunkText = chunks[i];
+            let chunkVec = Float32Array.from(fullVector);
+            if (chunks.length > 1) {
+              const v = await this.embeddings.embed(chunkText);
+              chunkVec = Float32Array.from(v);
+            }
 
-        for (let i = 0; i < chunks.length; i++) {
-          const chunkText = chunks[i];
-          let chunkVec = Float32Array.from(fullVector);
-          if (chunks.length > 1) {
-            const v = await this.embeddings.embed(chunkText);
-            chunkVec = Float32Array.from(v);
+            const chunkId = await sha256Hex(`${tripleId}:chunk:${i}`);
+            const record: ChunkRecord = {
+              id: chunkId,
+              factId: tripleId,
+              subject,
+              predicate,
+              text: chunkText,
+              vector: chunkVec,
+              world: this.world,
+            };
+            await this.chunks.upsert(record);
           }
-
-          const chunkId = await sha256Hex(`${tripleId}:chunk:${i}`);
-          const record: ChunkRecord = {
-            id: chunkId,
-            factId: tripleId,
-            subject,
-            predicate,
-            text: chunkText,
-            vector: chunkVec,
-            world: this.world,
-          };
-          await this.chunks.upsert(record);
         }
       }
+
+      await this.chunks.markWorldIndexed({
+        world: this.world,
+        indexedAt: Date.now(),
+        embeddingDimensions: this.embeddings.dimensions,
+      });
     }
   }
 }
