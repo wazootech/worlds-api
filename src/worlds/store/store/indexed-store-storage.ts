@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
-import type { EmbeddingsService } from "#/infrastructure/embeddings/interface.ts";
-import type { ChunkStorage } from "#/infrastructure/chunks/interface.ts";
-import { SearchIndexHandler } from "#/infrastructure/rdf/patch/search-index-handler.ts";
+import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
+import { SearchIndexHandler } from "#/worlds/index/patch/search-index-handler.ts";
+import type { ChunkStorage } from "#/worlds/store/chunks/interface.ts";
 import { InMemoryQuadStorage } from "#/worlds/store/quad/in-memory.ts";
 import { IndexedQuadStorage } from "#/worlds/store/quad/indexed-quad-storage.ts";
 import type { StoreStorage } from "./interface.ts";

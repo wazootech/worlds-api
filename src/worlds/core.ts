@@ -15,11 +15,11 @@ import type {
   World,
   WorldReference,
 } from "#/openapi/generated/types.gen.ts";
-import type { ChunkStorage } from "#/infrastructure/chunks/interface.ts";
-import type { EmbeddingsService } from "#/infrastructure/embeddings/interface.ts";
-import { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
-import { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
-import { searchChunks } from "#/infrastructure/search/chunks-search-engine.ts";
+import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
+import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
+import { searchChunks } from "#/worlds/search/chunks-search-engine.ts";
+import type { ChunkStorage } from "#/worlds/store/chunks/interface.ts";
+import { InMemoryChunkStorage } from "#/worlds/store/chunks/in-memory.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./store/worlds/interface.ts";

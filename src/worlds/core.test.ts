@@ -1,6 +1,6 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
-import { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
+import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
+import { InMemoryChunkStorage } from "#/worlds/store/chunks/in-memory.ts";
 import { WorldsCore } from "./core.ts";
 import { InMemoryWorldStorage } from "./store/worlds/in-memory.ts";
 import { IndexedStoreStorage } from "./store/store/indexed-store-storage.ts";
