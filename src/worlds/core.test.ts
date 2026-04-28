@@ -609,3 +609,108 @@ Deno.test("WorldsCore: search finds data added via SPARQL UPDATE", async () => {
   assertEquals(result.results?.[0].predicate, "https://example.org/name");
   assertEquals(result.results?.[0].object, "Gregory");
 });
+
+Deno.test("WorldsCore: sparql DELETE removes from search index", async () => {
+  const core = createCore();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "deleteSearch",
+    displayName: "DELETE Search",
+  });
+
+  await core.import({
+    source: "ns/deleteSearch",
+    data: `
+      <https://example.org/alice> <https://example.org/name> "Alice" .
+      <https://example.org/bob> <https://example.org/name> "Bob" .
+    `,
+    contentType: "application/n-quads",
+  });
+
+  const before = await core.search({
+    query: "alice bob",
+    sources: ["ns/deleteSearch"],
+  });
+  assertEquals(before.results?.length, 2);
+
+  await core.sparql({
+    sources: ["ns/deleteSearch"],
+    query:
+      `DELETE DATA { <https://example.org/alice> <https://example.org/name> "Alice" }`,
+  });
+
+  const after = await core.search({
+    query: "alice bob",
+    sources: ["ns/deleteSearch"],
+  });
+  assertEquals(after.results?.length, 1);
+  assertEquals(after.results?.[0].subject, "https://example.org/bob");
+});
+
+Deno.test("WorldsCore: search filters by specified sources only", async () => {
+  const core = createCore();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "world1",
+    displayName: "World 1",
+  });
+  await core.createWorld({
+    namespace: "ns",
+    id: "world2",
+    displayName: "World 2",
+  });
+
+  await core.import({
+    source: "ns/world1",
+    data: `<https://example.org/s1> <https://example.org/p> "one" .`,
+    contentType: "application/n-quads",
+  });
+  await core.import({
+    source: "ns/world2",
+    data: `<https://example.org/s2> <https://example.org/p> "two" .`,
+    contentType: "application/n-quads",
+  });
+
+  const result1 = await core.search({
+    query: "one two",
+    sources: ["ns/world1"],
+  });
+  assertEquals(result1.results?.length, 1);
+  assertEquals(result1.results?.[0].subject, "https://example.org/s1");
+
+  const result2 = await core.search({
+    query: "one two",
+    sources: ["ns/world2"],
+  });
+  assertEquals(result2.results?.length, 1);
+  assertEquals(result2.results?.[0].subject, "https://example.org/s2");
+});
+
+Deno.test("WorldsCore: empty sparql UPDATE does not mutate", async () => {
+  const core = createCore();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "emptyUpdate",
+    displayName: "Empty UPDATE",
+  });
+
+  await core.import({
+    source: "ns/emptyUpdate",
+    data: `<https://example.org/s> <https://example.org/p> "data" .`,
+    contentType: "application/n-quads",
+  });
+
+  await core.sparql({
+    sources: ["ns/emptyUpdate"],
+    query: `INSERT DATA {}`,
+  });
+
+  const result = await core.search({
+    query: "data",
+    sources: ["ns/emptyUpdate"],
+  });
+  assertEquals(result.results?.length, 1);
+});
