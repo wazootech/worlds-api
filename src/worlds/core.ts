@@ -192,10 +192,10 @@ export class WorldsCore implements WorldsInterface {
       );
 
       if (toRemove.length > 0) {
-        await quadStorage.deleteQuad(toRemove[0]);
+        await quadStorage.deleteQuads(toRemove);
       }
       if (toAdd.length > 0) {
-        await quadStorage.setQuad(toAdd[0]);
+        await quadStorage.setQuads(toAdd);
       }
 
       return null;
