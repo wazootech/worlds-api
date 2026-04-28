@@ -5,7 +5,7 @@ import {
   type Orama,
   remove,
   search,
-} from "jsr:@orama/orama@^2.0.6";
+} from "@orama/orama";
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 import type { ChunkStorage } from "./interface.ts";
 import type {
