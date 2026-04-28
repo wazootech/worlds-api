@@ -18,3 +18,20 @@ export interface ChunkIndexState {
   embeddingDimensions: number;
   embeddingModel?: string;
 }
+
+export interface ChunkSearchQuery {
+  worlds: WorldReference[];
+  queryText: string;
+  queryTerms: string[];
+  queryVector: Float32Array | number[];
+  subjects?: string[];
+  predicates?: string[];
+  types?: string[];
+}
+
+export interface ChunkSearchRow {
+  chunk: ChunkRecord;
+  vecRank: number | null;
+  ftsRank: number | null;
+  score: number;
+}

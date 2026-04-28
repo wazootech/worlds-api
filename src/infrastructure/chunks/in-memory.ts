@@ -1,9 +1,36 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
+import { RDF_TYPE } from "#/worlds/rdf/vocab.ts";
+import { ftsTermHits } from "#/worlds/search/fts.ts";
 import type { ChunkStorage } from "./interface.ts";
-import type { ChunkIndexState, ChunkRecord } from "./types.ts";
+import type {
+  ChunkIndexState,
+  ChunkRecord,
+  ChunkSearchQuery,
+  ChunkSearchRow,
+} from "./types.ts";
 
 function worldKey(ref: WorldReference): string {
   return `${ref.namespace}/${ref.id}`;
+}
+
+function dotNormalized(
+  a: Float32Array | number[],
+  b: Float32Array | number[],
+): number {
+  let s = 0;
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) s += (a[i] ?? 0) * (b[i] ?? 0);
+  return s;
+}
+
+function buildSubjectTypes(chunks: ChunkRecord[]): Map<string, Set<string>> {
+  const subjectTypes = new Map<string, Set<string>>();
+  for (const c of chunks) {
+    if (c.predicate !== RDF_TYPE) continue;
+    if (!subjectTypes.has(c.subject)) subjectTypes.set(c.subject, new Set());
+    subjectTypes.get(c.subject)!.add(c.text);
+  }
+  return subjectTypes;
 }
 
 /**
@@ -68,6 +95,57 @@ export class InMemoryChunkStorage implements ChunkStorage {
     return Array.from(ids)
       .map((id) => this.chunksById.get(id))
       .filter((chunk): chunk is ChunkRecord => chunk !== undefined);
+  }
+
+  async search(input: ChunkSearchQuery): Promise<ChunkSearchRow[]> {
+    const chunks = (
+      await Promise.all(input.worlds.map((world) => this.getByWorld(world)))
+    ).flat();
+    const subjectTypes = buildSubjectTypes(chunks);
+    const qFull = input.queryText.toLowerCase();
+
+    const rows: ChunkSearchRow[] = [];
+
+    const filtered = chunks.filter((c) =>
+      !input.subjects || input.subjects.length === 0 ||
+      input.subjects.includes(c.subject)
+    ).filter((c) =>
+      !input.predicates || input.predicates.length === 0 ||
+      input.predicates.includes(c.predicate)
+    ).filter((c) => {
+      if (!input.types || input.types.length === 0) return true;
+      const st = subjectTypes.get(c.subject);
+      return input.types.some((t) => st?.has(t));
+    });
+
+    for (const chunk of filtered) {
+      const fts = ftsTermHits(
+        input.queryTerms,
+        chunk.subject,
+        chunk.predicate,
+        chunk.text,
+      );
+      const hay = `${chunk.subject} ${chunk.predicate} ${chunk.text}`
+        .toLowerCase();
+      const phraseMatch = qFull.length > 0 && hay.includes(qFull);
+
+      // Keep keyword parity while placeholder vectors are non-semantic.
+      if (fts === 0 && !phraseMatch) continue;
+
+      const dot = dotNormalized(input.queryVector, chunk.vector);
+      const vecRank = dot > 1e-12 ? dot : null;
+      const score = fts * 1000 + (vecRank ?? 0);
+
+      rows.push({
+        chunk,
+        vecRank,
+        ftsRank: fts > 0 ? fts : null,
+        score,
+      });
+    }
+
+    rows.sort((a, b) => b.score - a.score);
+    return rows;
   }
 
   async getIndexState(world: WorldReference): Promise<ChunkIndexState | null> {

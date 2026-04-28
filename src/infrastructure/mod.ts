@@ -4,6 +4,8 @@ export { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeh
 export type {
   ChunkIndexState,
   ChunkRecord,
+  ChunkSearchQuery,
+  ChunkSearchRow,
 } from "#/infrastructure/chunks/types.ts";
 export type { ChunkStorage } from "#/infrastructure/chunks/interface.ts";
 export { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
