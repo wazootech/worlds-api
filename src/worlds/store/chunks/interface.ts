@@ -7,8 +7,8 @@ import type {
 } from "./types.ts";
 
 export interface ChunkStorage {
-  upsert(chunk: ChunkRecord): Promise<void>;
-  deleteByFactId(world: WorldReference, factId: string): Promise<void>;
+  setChunk(chunk: ChunkRecord): Promise<void>;
+  deleteChunk(world: WorldReference, factId: string): Promise<void>;
   getByWorld(world: WorldReference): Promise<ChunkRecord[]>;
   search(input: ChunkSearchQuery): Promise<ChunkSearchRow[]>;
   getIndexState(world: WorldReference): Promise<ChunkIndexState | null>;

@@ -57,7 +57,7 @@ export class InMemoryChunkStorage implements ChunkStorage {
     return `${worldKey(world)}|${factId}`;
   }
 
-  async upsert(chunk: ChunkRecord): Promise<void> {
+  async setChunk(chunk: ChunkRecord): Promise<void> {
     const previous = this.chunksById.get(chunk.id);
     if (previous) {
       this.chunkIdsByWorld.get(worldKey(previous.world))?.delete(previous.id);
@@ -77,7 +77,7 @@ export class InMemoryChunkStorage implements ChunkStorage {
     factIds.add(chunk.id);
   }
 
-  async deleteByFactId(world: WorldReference, factId: string): Promise<void> {
+  async deleteChunk(world: WorldReference, factId: string): Promise<void> {
     const factKey = this.factKey(world, factId);
     const ids = this.chunkIdsByFact.get(factKey);
     if (!ids) return;

@@ -25,7 +25,7 @@ Deno.test("InMemoryChunkStorage: deletes chunks by fact id", async () => {
   const storage = new InMemoryChunkStorage();
   const world = { namespace: "ns", id: "w1" };
 
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-1",
     factId: "fact-1",
     subject: "s",
@@ -34,7 +34,7 @@ Deno.test("InMemoryChunkStorage: deletes chunks by fact id", async () => {
     vector: new Float32Array([1]),
     world,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-2",
     factId: "fact-1",
     subject: "s",
@@ -43,7 +43,7 @@ Deno.test("InMemoryChunkStorage: deletes chunks by fact id", async () => {
     vector: new Float32Array([1]),
     world,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-3",
     factId: "fact-2",
     subject: "s",
@@ -53,7 +53,7 @@ Deno.test("InMemoryChunkStorage: deletes chunks by fact id", async () => {
     world,
   });
 
-  await storage.deleteByFactId(world, "fact-1");
+  await storage.deleteChunk(world, "fact-1");
 
   assertEquals((await storage.getByWorld(world)).map((c) => c.id), ["chunk-3"]);
 });
@@ -67,7 +67,7 @@ Deno.test("InMemoryChunkStorage: clearWorld removes rows and index state", async
     indexedAt: 123,
     embeddingDimensions: 384,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-1",
     factId: "fact-1",
     subject: "s",
@@ -87,7 +87,7 @@ Deno.test("InMemoryChunkStorage: searches chunks with filters and ranking", asyn
   const storage = new InMemoryChunkStorage();
   const world = { namespace: "ns", id: "w1" };
 
-  await storage.upsert({
+  await storage.setChunk({
     id: "type-1",
     factId: "fact-type-1",
     subject: "person:1",
@@ -96,7 +96,7 @@ Deno.test("InMemoryChunkStorage: searches chunks with filters and ranking", asyn
     vector: new Float32Array([1, 0]),
     world,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-1",
     factId: "fact-1",
     subject: "person:1",
@@ -105,7 +105,7 @@ Deno.test("InMemoryChunkStorage: searches chunks with filters and ranking", asyn
     vector: new Float32Array([1, 0]),
     world,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-2",
     factId: "fact-2",
     subject: "person:2",
@@ -133,7 +133,7 @@ Deno.test("InMemoryChunkStorage: search respects world boundary", async () => {
   const world1 = { namespace: "ns", id: "w1" };
   const world2 = { namespace: "ns", id: "w2" };
 
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-1",
     factId: "fact-1",
     subject: "s1",
@@ -142,7 +142,7 @@ Deno.test("InMemoryChunkStorage: search respects world boundary", async () => {
     vector: new Float32Array([1]),
     world: world1,
   });
-  await storage.upsert({
+  await storage.setChunk({
     id: "chunk-2",
     factId: "fact-2",
     subject: "s2",

@@ -151,7 +151,7 @@ export class WorldsCore implements WorldsInterface {
     let allQuads: StoredQuad[] = [];
     for (const ref of references) {
       const quadStorage = await this.storeStorage.getQuadStorage(ref);
-      const quads = await quadStorage.query([]);
+      const quads = await quadStorage.findQuads([]);
       allQuads = allQuads.concat(quads);
     }
 
@@ -170,7 +170,7 @@ export class WorldsCore implements WorldsInterface {
       const quadStorage = await this.storeStorage.getQuadStorage(ref);
 
       // Get the current quads and the new state
-      const currentQuads = await quadStorage.query([]);
+      const currentQuads = await quadStorage.findQuads([]);
       const newStore = store; // store now reflects the updated state
 
       // Compute added/removed quads by comparing
@@ -192,10 +192,10 @@ export class WorldsCore implements WorldsInterface {
       );
 
       if (toRemove.length > 0) {
-        await quadStorage.remove(toRemove);
+        await quadStorage.deleteQuad(toRemove[0]);
       }
       if (toAdd.length > 0) {
-        await quadStorage.add(toAdd);
+        await quadStorage.setQuad(toAdd[0]);
       }
 
       return null;
@@ -285,7 +285,7 @@ export class WorldsCore implements WorldsInterface {
 
     for (const ref of targetRefs) {
       const quadStorage = await this.storeStorage.getQuadStorage(ref);
-      const quads = await quadStorage.query([]);
+      const quads = await quadStorage.findQuads([]);
 
       const meta = await this.worldStorage.getWorld(ref);
       const world: World = {
@@ -344,7 +344,7 @@ export class WorldsCore implements WorldsInterface {
     const quads = deserialize(data, contentType);
 
     const quadStorage = await this.storeStorage.getQuadStorage(reference);
-    await quadStorage.add(quads);
+    await quadStorage.setQuads(quads);
   }
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
@@ -355,7 +355,7 @@ export class WorldsCore implements WorldsInterface {
     }
 
     const quadStorage = await this.storeStorage.getQuadStorage(reference);
-    const quads = await quadStorage.query([]);
+    const quads = await quadStorage.findQuads([]);
 
     const contentType = input.contentType || "application/n-quads";
     const serialized = await serialize(quads, contentType);

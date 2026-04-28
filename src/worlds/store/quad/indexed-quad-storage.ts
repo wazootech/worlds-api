@@ -11,26 +11,38 @@ export class IndexedQuadStorage implements QuadStorage {
     private readonly handlers: PatchHandler[],
   ) {}
 
-  async add(quads: StoredQuad[]): Promise<void> {
-    await this.inner.add(quads);
+  async setQuad(quad: StoredQuad): Promise<void> {
+    await this.inner.setQuad(quad);
+    const patch = { insertions: [quad], deletions: [] as StoredQuad[] };
+    await Promise.all(this.handlers.map((h) => h.patch([patch])));
+  }
+
+  async deleteQuad(quad: StoredQuad): Promise<void> {
+    await this.inner.deleteQuad(quad);
+    const patch = { insertions: [] as StoredQuad[], deletions: [quad] };
+    await Promise.all(this.handlers.map((h) => h.patch([patch])));
+  }
+
+  async setQuads(quads: StoredQuad[]): Promise<void> {
     if (quads.length === 0) return;
+    await this.inner.setQuads(quads);
     const patch = { insertions: quads, deletions: [] as StoredQuad[] };
     await Promise.all(this.handlers.map((h) => h.patch([patch])));
   }
 
-  async remove(quads: StoredQuad[]): Promise<void> {
-    await this.inner.remove(quads);
+  async deleteQuads(quads: StoredQuad[]): Promise<void> {
     if (quads.length === 0) return;
+    await this.inner.deleteQuads(quads);
     const patch = { insertions: [] as StoredQuad[], deletions: quads };
     await Promise.all(this.handlers.map((h) => h.patch([patch])));
   }
 
-  async query(matchers: StoredQuad[]): Promise<StoredQuad[]> {
-    return this.inner.query(matchers);
+  async findQuads(matchers: StoredQuad[]): Promise<StoredQuad[]> {
+    return this.inner.findQuads(matchers);
   }
 
   async clear(): Promise<void> {
-    const existing = await this.inner.query([]);
+    const existing = await this.inner.findQuads([]);
     await this.inner.clear();
     if (existing.length === 0) return;
     const patch = { insertions: [] as StoredQuad[], deletions: existing };

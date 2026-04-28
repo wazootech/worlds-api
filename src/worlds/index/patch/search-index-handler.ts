@@ -49,7 +49,7 @@ export class SearchIndexHandler implements PatchHandler {
       if (patch.deletions?.length) {
         for (const q of patch.deletions) {
           const factId = await skolemizeStoredQuad(q);
-          await this.chunks.deleteByFactId(this.world, factId);
+          await this.chunks.deleteChunk(this.world, factId);
         }
       }
 
@@ -85,7 +85,7 @@ export class SearchIndexHandler implements PatchHandler {
               vector: chunkVec,
               world: this.world,
             };
-            await this.chunks.upsert(record);
+            await this.chunks.setChunk(record);
           }
         }
       }
