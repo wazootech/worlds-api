@@ -32,6 +32,7 @@ import {
   storeFromQuads,
 } from "./rdf/rdf.ts";
 import { ftsTermHits, tokenizeSearchQuery } from "./search/fts.ts";
+import { storedQuadKey } from "./store/quad/key.ts";
 import type { StoredQuad } from "./store/quad/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
 
@@ -175,25 +176,19 @@ export class WorldsCore implements WorldsInterface {
       // Compute added/removed quads by comparing
       const newQuads = quadsFromStore(newStore);
       const currentQuadSet = new Set(
-        currentQuads.map((q) =>
-          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`
-        ),
+        currentQuads.map(storedQuadKey),
       );
       const newQuadSet = new Set(
-        newQuads.map((q) =>
-          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`
-        ),
+        newQuads.map(storedQuadKey),
       );
 
       // Quads to remove (in current but not in new)
       const toRemove = currentQuads.filter((q) =>
-        !newQuadSet.has(`${q.subject}|${q.predicate}|${q.object}|${q.graph}`)
+        !newQuadSet.has(storedQuadKey(q))
       );
       // Quads to add (in new but not in current)
       const toAdd = newQuads.filter((q) =>
-        !currentQuadSet.has(
-          `${q.subject}|${q.predicate}|${q.object}|${q.graph}`,
-        )
+        !currentQuadSet.has(storedQuadKey(q))
       );
 
       if (toRemove.length > 0) {
@@ -235,23 +230,31 @@ export class WorldsCore implements WorldsInterface {
       return { results: [] };
     }
 
-    let useChunkIndex = false;
+    const indexedRefs: WorldReference[] = [];
+    const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
       const rows = await this.searchDeps.chunkStorage.getByWorld(ref);
       if (rows.length > 0) {
-        useChunkIndex = true;
-        break;
+        indexedRefs.push(ref);
+      } else {
+        unindexedRefs.push(ref);
       }
     }
 
-    const allResults = useChunkIndex
-      ? await searchChunks(input, targetRefs, {
+    const chunkResults = indexedRefs.length > 0
+      ? await searchChunks(input, indexedRefs, {
         chunkStorage: this.searchDeps.chunkStorage,
         embeddings: this.searchDeps.embeddings,
         worldStorage: this.worldStorage,
         formatWorldName,
       })
-      : await this.searchNaiveFts(targetRefs, queryTerms);
+      : [];
+    const naiveResults = unindexedRefs.length > 0
+      ? await this.searchNaiveFts(unindexedRefs, queryTerms)
+      : [];
+    const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
+      b.ftsRank! - a.ftsRank! || b.score - a.score
+    );
 
     const pageSize = input.pageSize ?? 20;
     const pageToken = input.pageToken ?? "";

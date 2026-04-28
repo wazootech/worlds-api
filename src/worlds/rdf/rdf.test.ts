@@ -28,6 +28,36 @@ Deno.test("round-trips n-quads", async () => {
   assertEquals(quads[0].graph, "http://example.org/g");
 });
 
+Deno.test("preserves URL-shaped literals as literals", async () => {
+  const input =
+    `<http://example.org/s> <http://example.org/p> "https://example.org/not-a-node" .\n`;
+  const quads = deserialize(input, "application/n-quads");
+  const output = await serialize(quads, "application/n-quads");
+
+  assertEquals(quads[0].object, "https://example.org/not-a-node");
+  assertEquals(quads[0].objectTermType, "Literal");
+  assertEquals(
+    output,
+    `<http://example.org/s> <http://example.org/p> "https://example.org/not-a-node" .\n`,
+  );
+});
+
+Deno.test("preserves literal datatype and language", async () => {
+  const input =
+    `<http://example.org/s> <http://example.org/when> "2026-04-27T10:00:00Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .\n` +
+    `<http://example.org/s> <http://example.org/label> "bonjour"@fr .\n`;
+  const quads = deserialize(input, "application/n-quads");
+  const output = await serialize(quads, "application/n-quads");
+
+  assertEquals(quads[0].objectTermType, "Literal");
+  assertEquals(
+    quads[0].objectDatatype,
+    "http://www.w3.org/2001/XMLSchema#dateTime",
+  );
+  assertEquals(quads[1].objectLanguage, "fr");
+  assertEquals(output, input);
+});
+
 Deno.test("getFormat defaults to n-quads", () => {
   const format = getFormat(undefined);
   assertEquals(format.contentType, "application/n-quads");

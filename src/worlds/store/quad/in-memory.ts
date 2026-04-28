@@ -1,21 +1,18 @@
 import type { QuadStorage, StoredQuad } from "./interface.ts";
-
-function quadKey(q: StoredQuad): string {
-  return `${q.subject}|${q.predicate}|${q.object}|${q.graph ?? ""}`;
-}
+import { storedQuadKey } from "./key.ts";
 
 export class InMemoryQuadStorage implements QuadStorage {
   private readonly quads = new Map<string, StoredQuad>();
 
   async add(quads: StoredQuad[]): Promise<void> {
     for (const q of quads) {
-      this.quads.set(quadKey(q), q);
+      this.quads.set(storedQuadKey(q), q);
     }
   }
 
   async remove(quads: StoredQuad[]): Promise<void> {
     for (const q of quads) {
-      this.quads.delete(quadKey(q));
+      this.quads.delete(storedQuadKey(q));
     }
   }
 

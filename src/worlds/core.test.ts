@@ -15,6 +15,18 @@ function createCore() {
   );
 }
 
+function createCoreWithSharedDeps() {
+  const worldStorage = new InMemoryWorldStorage();
+  const chunkStorage = new InMemoryChunkStorage();
+  const embeddings = new PlaceholderEmbeddingsService();
+  const storeStorage = new IndexedStoreStorage(embeddings, chunkStorage);
+  const core = new WorldsCore(worldStorage, storeStorage, {
+    chunkStorage,
+    embeddings,
+  });
+  return { core, chunkStorage };
+}
+
 Deno.test("WorldsCore: create/get/update/delete world", async () => {
   const core = createCore();
 
@@ -495,6 +507,45 @@ Deno.test("WorldsCore: search returns results from multiple worlds", async () =>
   });
 
   assertEquals(result.results?.length, 2);
+});
+
+Deno.test("WorldsCore: search falls back per unindexed world", async () => {
+  const { core, chunkStorage } = createCoreWithSharedDeps();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "indexed",
+    displayName: "Indexed",
+  });
+  await core.createWorld({
+    namespace: "ns",
+    id: "unindexed",
+    displayName: "Unindexed",
+  });
+
+  await core.import({
+    source: "ns/indexed",
+    data: `<https://example.org/indexed> <https://example.org/name> "Ethan" .`,
+    contentType: "application/n-quads",
+  });
+  await core.import({
+    source: "ns/unindexed",
+    data:
+      `<https://example.org/unindexed> <https://example.org/name> "Gregory" .`,
+    contentType: "application/n-quads",
+  });
+
+  await chunkStorage.clearWorld({ namespace: "ns", id: "unindexed" });
+
+  const result = await core.search({
+    query: "ethan gregory",
+    sources: ["ns/indexed", "ns/unindexed"],
+  });
+
+  assertEquals(result.results?.map((r) => r.subject).sort(), [
+    "https://example.org/indexed",
+    "https://example.org/unindexed",
+  ]);
 });
 
 Deno.test("WorldsCore: search rejects on non-existent world", async () => {

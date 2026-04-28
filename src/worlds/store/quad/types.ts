@@ -3,4 +3,7 @@ export interface StoredQuad {
   predicate: string;
   object: string;
   graph: string;
+  objectTermType?: "NamedNode" | "BlankNode" | "Literal";
+  objectDatatype?: string;
+  objectLanguage?: string;
 }

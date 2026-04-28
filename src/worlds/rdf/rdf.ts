@@ -3,6 +3,7 @@ import type { Quad } from "n3";
 import { DataFactory, Parser, Store, Writer } from "n3";
 
 const df = DataFactory;
+const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
 
 /**
  * Single source of truth: {@link StoredQuad} to N3 term/quad (aligns SPARQL, serialize, skolem ids).
@@ -12,10 +13,22 @@ export function storedQuadToN3(quad: StoredQuad): Quad {
     ? df.blankNode(quad.subject.slice(2))
     : df.namedNode(quad.subject);
   const predicate = df.namedNode(quad.predicate);
-  const object = quad.object.startsWith("_:")
-    ? df.blankNode(quad.object.slice(2))
-    : quad.object.includes(":") || quad.object.startsWith("urn:")
+  const objectTermType = quad.objectTermType ??
+    (quad.object.startsWith("_:")
+      ? "BlankNode"
+      : quad.object.includes(":") || quad.object.startsWith("urn:")
+      ? "NamedNode"
+      : "Literal");
+  const object = objectTermType === "BlankNode"
+    ? df.blankNode(
+      quad.object.startsWith("_:") ? quad.object.slice(2) : quad.object,
+    )
+    : objectTermType === "NamedNode"
     ? df.namedNode(quad.object)
+    : quad.objectLanguage
+    ? df.literal(quad.object, quad.objectLanguage)
+    : quad.objectDatatype && quad.objectDatatype !== XSD_STRING
+    ? df.literal(quad.object, df.namedNode(quad.objectDatatype))
     : df.literal(quad.object);
   const graph = quad.graph && quad.graph !== ""
     ? df.namedNode(quad.graph)
@@ -79,10 +92,21 @@ export function deserialize(data: string, contentType: string): StoredQuad[] {
     };
     graph: { value: string; termType: string };
   }) => ({
-    subject: q.subject.value,
+    subject: q.subject.termType === "BlankNode"
+      ? `_:${q.subject.value}`
+      : q.subject.value,
     predicate: q.predicate.value,
-    object: q.object.value,
+    object: q.object.termType === "BlankNode"
+      ? `_:${q.object.value}`
+      : q.object.value,
     graph: q.graph.termType === "DefaultGraph" ? "" : q.graph.value,
+    objectTermType: q.object.termType,
+    objectDatatype: q.object.termType === "Literal"
+      ? q.object.datatype?.value
+      : undefined,
+    objectLanguage: q.object.termType === "Literal"
+      ? q.object.language || undefined
+      : undefined,
   }));
 }
 
@@ -109,6 +133,13 @@ export function quadsFromStore(store: Store): StoredQuad[] {
         ? q.object.value
         : q.object.value,
       graph: q.graph.termType === "DefaultGraph" ? "" : q.graph.value,
+      objectTermType: q.object.termType,
+      objectDatatype: q.object.termType === "Literal"
+        ? q.object.datatype.value
+        : undefined,
+      objectLanguage: q.object.termType === "Literal"
+        ? q.object.language || undefined
+        : undefined,
     });
   }
 

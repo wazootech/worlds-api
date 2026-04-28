@@ -18,9 +18,13 @@ function shouldIndexTriple(quad: StoredQuad): boolean {
   if (quad.predicate === RDF_TYPE) {
     return obj.length > 0;
   }
-  if (obj.startsWith("_:")) return false;
-  const isNamedNode = obj.includes(":") || obj.startsWith("urn:");
-  return !isNamedNode && obj.length > 0;
+  const objectTermType = quad.objectTermType ??
+    (obj.startsWith("_:")
+      ? "BlankNode"
+      : obj.includes(":") || obj.startsWith("urn:")
+      ? "NamedNode"
+      : "Literal");
+  return objectTermType === "Literal" && obj.length > 0;
 }
 
 async function sha256Hex(msg: string): Promise<string> {
@@ -60,33 +64,29 @@ export class SearchIndexHandler implements PatchHandler {
         const predicate = q.predicate;
         const objectText = q.object;
 
-        try {
-          const fullVector = await this.embeddings.embed(objectText);
-          const chunks = splitTextRecursive(objectText);
-          if (chunks.length === 0) continue;
+        const fullVector = await this.embeddings.embed(objectText);
+        const chunks = splitTextRecursive(objectText);
+        if (chunks.length === 0) continue;
 
-          for (let i = 0; i < chunks.length; i++) {
-            const chunkText = chunks[i];
-            let chunkVec = Float32Array.from(fullVector);
-            if (chunks.length > 1) {
-              const v = await this.embeddings.embed(chunkText);
-              chunkVec = Float32Array.from(v);
-            }
-
-            const chunkId = await sha256Hex(`${tripleId}:chunk:${i}`);
-            const record: ChunkRecord = {
-              id: chunkId,
-              factId: tripleId,
-              subject,
-              predicate,
-              text: chunkText,
-              vector: chunkVec,
-              world: this.world,
-            };
-            await this.chunks.upsert(record);
+        for (let i = 0; i < chunks.length; i++) {
+          const chunkText = chunks[i];
+          let chunkVec = Float32Array.from(fullVector);
+          if (chunks.length > 1) {
+            const v = await this.embeddings.embed(chunkText);
+            chunkVec = Float32Array.from(v);
           }
-        } catch (e) {
-          console.error(`Failed to index quad ${tripleId}:`, e);
+
+          const chunkId = await sha256Hex(`${tripleId}:chunk:${i}`);
+          const record: ChunkRecord = {
+            id: chunkId,
+            factId: tripleId,
+            subject,
+            predicate,
+            text: chunkText,
+            vector: chunkVec,
+            world: this.world,
+          };
+          await this.chunks.upsert(record);
         }
       }
     }
