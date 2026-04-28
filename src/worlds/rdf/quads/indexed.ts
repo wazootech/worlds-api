@@ -1,10 +1,6 @@
-import type { QuadStorage } from "./interface.ts";
-import type { StoredQuad } from "./types.ts";
+import type { QuadStorage, StoredQuad } from "./interface.ts";
 import type { PatchHandler } from "#/worlds/index/patch/types.ts";
 
-/**
- * Delegates to inner storage and notifies patch handlers after mutations.
- */
 export class IndexedQuadStorage implements QuadStorage {
   constructor(
     private readonly inner: QuadStorage,

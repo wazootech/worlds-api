@@ -1,4 +1,4 @@
-import type { QuadStorage } from "../quad/interface.ts";
+import type { QuadStorage } from "#/worlds/rdf/quads/interface.ts";
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 
 export interface StoreStorage {

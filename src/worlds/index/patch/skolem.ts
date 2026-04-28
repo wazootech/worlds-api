@@ -1,4 +1,4 @@
-import type { StoredQuad } from "#/worlds/store/quad/types.ts";
+import type { StoredQuad } from "#/worlds/rdf/quads/types.ts";
 import { storedQuadToN3 } from "#/worlds/rdf/rdf.ts";
 import { skolemizeQuad } from "#/worlds/rdf/skolem.ts";
 

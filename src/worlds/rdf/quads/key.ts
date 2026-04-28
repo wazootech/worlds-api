@@ -7,10 +7,6 @@ function inferredObjectTermType(q: StoredQuad): string {
   return "Literal";
 }
 
-/**
- * Stable identity key for storage/diffing. Include object term metadata so a
- * literal URL and a named-node URL do not collapse to the same fact.
- */
 export function storedQuadKey(q: StoredQuad): string {
   return [
     q.subject,

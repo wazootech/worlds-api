@@ -18,12 +18,12 @@ import type {
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
 import { searchChunks } from "#/worlds/search/chunks-search-engine.ts";
-import type { ChunkStorage } from "#/worlds/store/chunks/interface.ts";
-import { InMemoryChunkStorage } from "#/worlds/store/chunks/in-memory.ts";
+import type { ChunkStorage } from "#/worlds/search/chunks/interface.ts";
+import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
-import type { WorldStorage } from "./store/worlds/interface.ts";
-import type { StoredWorld } from "./store/worlds/types.ts";
+import type { WorldStorage } from "./core/worlds/interface.ts";
+import type { StoredWorld } from "./core/worlds/types.ts";
 import type { StoreStorage } from "./store/store/interface.ts";
 import {
   deserialize,
@@ -32,8 +32,8 @@ import {
   storeFromQuads,
 } from "./rdf/rdf.ts";
 import { ftsTermHits, tokenizeSearchQuery } from "./search/fts.ts";
-import { storedQuadKey } from "./store/quad/key.ts";
-import type { StoredQuad } from "./store/quad/types.ts";
+import { storedQuadKey } from "./rdf/quads/key.ts";
+import type { StoredQuad } from "./rdf/quads/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedStoreStorage} deps when used). */

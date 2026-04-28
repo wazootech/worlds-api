@@ -1,25 +1,16 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
 import { SearchIndexHandler } from "#/worlds/index/patch/search-index-handler.ts";
-import type { ChunkStorage } from "#/worlds/store/chunks/interface.ts";
-import { InMemoryQuadStorage } from "#/worlds/store/quad/in-memory.ts";
-import { IndexedQuadStorage } from "#/worlds/store/quad/indexed-quad-storage.ts";
+import type { ChunkStorage } from "#/worlds/search/chunks/interface.ts";
+import { InMemoryQuadStorage } from "#/worlds/rdf/quads/in-memory.ts";
+import { IndexedQuadStorage } from "#/worlds/rdf/quads/indexed.ts";
 import type { StoreStorage } from "./interface.ts";
 
 function keyOfRef(reference: WorldReference): string {
   return `${reference.namespace}/${reference.id}`;
 }
 
-/**
- * In-memory quad storage per world, with search index updates on write.
- *
- * The ChunkStorage is passed in by the caller, enabling pluggable backends:
- * - InMemoryChunkStorage (default)
- * - OramaChunkStorage (via npm:@orama/orama)
- * - Any future implementation
- */
 export class IndexedStoreStorage implements StoreStorage {
-  /** One indexed quad storage per world (stable SearchIndexHandler instance). */
   private readonly wrapped = new Map<string, IndexedQuadStorage>();
 
   constructor(

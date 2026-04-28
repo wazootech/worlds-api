@@ -5,8 +5,8 @@ import type {
   WorldReference,
 } from "#/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
-import type { ChunkStorage } from "#/worlds/store/chunks/interface.ts";
-import type { WorldStorage } from "#/worlds/store/worlds/interface.ts";
+import type { ChunkStorage } from "#/worlds/search/chunks/interface.ts";
+import type { WorldStorage } from "#/worlds/core/worlds/interface.ts";
 import { tokenizeSearchQuery } from "#/worlds/search/fts.ts";
 
 export interface ChunkSearchDeps {

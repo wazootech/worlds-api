@@ -33,10 +33,6 @@ function buildSubjectTypes(chunks: ChunkRecord[]): Map<string, Set<string>> {
   return subjectTypes;
 }
 
-/**
- * In-memory chunk storage shaped like a small relational schema:
- * chunk rows by id, world membership, fact membership, and per-world index state.
- */
 export class InMemoryChunkStorage implements ChunkStorage {
   private readonly chunksById = new Map<string, ChunkRecord>();
   private readonly chunkIdsByWorld = new Map<string, Set<string>>();
@@ -129,7 +125,6 @@ export class InMemoryChunkStorage implements ChunkStorage {
         .toLowerCase();
       const phraseMatch = qFull.length > 0 && hay.includes(qFull);
 
-      // Keep keyword parity while placeholder vectors are non-semantic.
       if (fts === 0 && !phraseMatch) continue;
 
       const dot = dotNormalized(input.queryVector, chunk.vector);

@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
-import { InMemoryChunkStorage } from "#/worlds/store/chunks/in-memory.ts";
+import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import { IndexedStoreStorage } from "./indexed-store-storage.ts";
 
 Deno.test("IndexedStoreStorage: getQuadStorage returns same instance for same world", async () => {
