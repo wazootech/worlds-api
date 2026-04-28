@@ -1,12 +1,17 @@
 import { assertEquals, assertRejects } from "@std/assert";
+import { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
+import { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
 import { WorldsCore } from "./core.ts";
 import { InMemoryWorldStorage } from "./store/worlds/in-memory.ts";
-import { InMemoryStoreStorage } from "./store/store/in-memory.ts";
+import { IndexedStoreStorage } from "./store/store/indexed-store-storage.ts";
 
 function createCore() {
+  const chunkStorage = new InMemoryChunkStorage();
+  const embeddings = new PlaceholderEmbeddingsService();
   return new WorldsCore(
     new InMemoryWorldStorage(),
-    new InMemoryStoreStorage(),
+    new IndexedStoreStorage(embeddings, chunkStorage),
+    { chunkStorage, embeddings },
   );
 }
 

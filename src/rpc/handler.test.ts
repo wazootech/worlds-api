@@ -1,14 +1,19 @@
 import { assertEquals } from "@std/assert";
+import { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
+import { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
 import { WorldsCore } from "#/worlds/core.ts";
 import { handleRpc } from "#/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/worlds/store/worlds/in-memory.ts";
-import { InMemoryStoreStorage } from "#/worlds/store/store/in-memory.ts";
+import { IndexedStoreStorage } from "#/worlds/store/store/indexed-store-storage.ts";
 
 function createCore() {
+  const chunkStorage = new InMemoryChunkStorage();
+  const embeddings = new PlaceholderEmbeddingsService();
   return new WorldsCore(
     new InMemoryWorldStorage(),
-    new InMemoryStoreStorage(),
+    new IndexedStoreStorage(embeddings, chunkStorage),
+    { chunkStorage, embeddings },
   );
 }
 

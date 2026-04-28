@@ -1,7 +1,27 @@
 import type { StoredQuad } from "#/worlds/store/quad/types.ts";
+import type { Quad } from "n3";
 import { DataFactory, Parser, Store, Writer } from "n3";
 
 const df = DataFactory;
+
+/**
+ * Single source of truth: {@link StoredQuad} to N3 term/quad (aligns SPARQL, serialize, skolem ids).
+ */
+export function storedQuadToN3(quad: StoredQuad): Quad {
+  const subject = quad.subject.startsWith("_:")
+    ? df.blankNode(quad.subject.slice(2))
+    : df.namedNode(quad.subject);
+  const predicate = df.namedNode(quad.predicate);
+  const object = quad.object.startsWith("_:")
+    ? df.blankNode(quad.object.slice(2))
+    : quad.object.includes(":") || quad.object.startsWith("urn:")
+    ? df.namedNode(quad.object)
+    : df.literal(quad.object);
+  const graph = quad.graph && quad.graph !== ""
+    ? df.namedNode(quad.graph)
+    : df.defaultGraph();
+  return df.quad(subject, predicate, object, graph);
+}
 
 export interface RdfFormat {
   contentType: string;
@@ -33,17 +53,7 @@ export async function serialize(
   const { n3Format } = getFormat(contentType);
   const writer = new Writer({ format: n3Format });
   for (const q of quads) {
-    const subject = q.subject.startsWith("_:")
-      ? df.blankNode(q.subject.slice(2))
-      : df.namedNode(q.subject);
-    const predicate = df.namedNode(q.predicate);
-    const object = q.object.startsWith("_:")
-      ? df.blankNode(q.object.slice(2))
-      : q.object.includes(":")
-      ? df.namedNode(q.object)
-      : df.literal(q.object);
-    const graph = q.graph ? df.namedNode(q.graph) : df.defaultGraph();
-    writer.addQuad(df.quad(subject, predicate, object, graph));
+    writer.addQuad(storedQuadToN3(q));
   }
   const result = await new Promise<string>((resolve, reject) => {
     writer.end((err: Error | null, result?: string) => {
@@ -78,25 +88,9 @@ export function deserialize(data: string, contentType: string): StoredQuad[] {
 
 export function storeFromQuads(quads: StoredQuad[]): Store {
   const store = new Store();
-  const df = DataFactory;
-
   for (const q of quads) {
-    const subject = q.subject.startsWith("_:")
-      ? df.blankNode(q.subject.slice(2))
-      : df.namedNode(q.subject);
-    const predicate = df.namedNode(q.predicate);
-    const object = q.object.startsWith("_:")
-      ? df.blankNode(q.object.slice(2))
-      : q.object.includes(":") || q.object.startsWith("urn:")
-      ? df.namedNode(q.object)
-      : df.literal(q.object);
-    const graph = q.graph && q.graph !== ""
-      ? df.namedNode(q.graph)
-      : df.defaultGraph();
-
-    store.addQuad(df.quad(subject, predicate, object, graph));
+    store.addQuad(storedQuadToN3(q));
   }
-
   return store;
 }
 

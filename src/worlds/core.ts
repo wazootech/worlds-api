@@ -15,6 +15,11 @@ import type {
   World,
   WorldReference,
 } from "#/openapi/generated/types.gen.ts";
+import type { ChunkStorage } from "#/infrastructure/chunks/interface.ts";
+import type { EmbeddingsService } from "#/infrastructure/embeddings/interface.ts";
+import { InMemoryChunkStorage } from "#/infrastructure/chunks/in-memory.ts";
+import { PlaceholderEmbeddingsService } from "#/infrastructure/embeddings/placeholder.ts";
+import { searchChunks } from "#/infrastructure/search/chunks-search-engine.ts";
 import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./store/worlds/interface.ts";
@@ -26,8 +31,15 @@ import {
   serialize,
   storeFromQuads,
 } from "./rdf/rdf.ts";
+import { ftsTermHits, tokenizeSearchQuery } from "./search/fts.ts";
 import type { StoredQuad } from "./store/quad/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
+
+/** Shared chunk index + embeddings for vector search (must match {@link IndexedStoreStorage} deps when used). */
+export interface WorldsCoreSearchDeps {
+  chunkStorage: ChunkStorage;
+  embeddings: EmbeddingsService;
+}
 
 function toWorld(stored: StoredWorld): World {
   return {
@@ -45,10 +57,18 @@ function toWorld(stored: StoredWorld): World {
  * Accepts WorldStorage and StoreStorage for all persistence.
  */
 export class WorldsCore implements WorldsInterface {
+  private readonly searchDeps: WorldsCoreSearchDeps;
+
   constructor(
     private readonly worldStorage: WorldStorage,
     private readonly storeStorage: StoreStorage,
-  ) {}
+    searchDeps?: WorldsCoreSearchDeps,
+  ) {
+    this.searchDeps = searchDeps ?? {
+      chunkStorage: new InMemoryChunkStorage(),
+      embeddings: new PlaceholderEmbeddingsService(),
+    };
+  }
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
     const reference = resolveWorldReference(input.source);
@@ -194,13 +214,11 @@ export class WorldsCore implements WorldsInterface {
     const targetRefs: WorldReference[] = [];
 
     if (!sources || sources.length === 0) {
-      // No sources specified - search all worlds
       const all = await this.worldStorage.listWorld(undefined);
       for (const w of all) {
         targetRefs.push(w.reference);
       }
     } else {
-      // Resolve each source to a world reference
       for (const src of sources) {
         const ref = resolveWorldReference(src);
         const existing = await this.worldStorage.getWorld(ref);
@@ -211,17 +229,49 @@ export class WorldsCore implements WorldsInterface {
       }
     }
 
-    // Naive FTS: tokenize query, scan all quads, score by term matches
-    const queryTerms = input.query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((t) => t.length > 0);
+    const queryTerms = tokenizeSearchQuery(input.query);
 
     if (queryTerms.length === 0) {
       return { results: [] };
     }
 
-    // Collect quads from all target worlds and search them
+    let useChunkIndex = false;
+    for (const ref of targetRefs) {
+      const rows = await this.searchDeps.chunkStorage.getByWorld(ref);
+      if (rows.length > 0) {
+        useChunkIndex = true;
+        break;
+      }
+    }
+
+    const allResults = useChunkIndex
+      ? await searchChunks(input, targetRefs, {
+        chunkStorage: this.searchDeps.chunkStorage,
+        embeddings: this.searchDeps.embeddings,
+        worldStorage: this.worldStorage,
+        formatWorldName,
+      })
+      : await this.searchNaiveFts(targetRefs, queryTerms);
+
+    const pageSize = input.pageSize ?? 20;
+    const pageToken = input.pageToken ?? "";
+    const startIndex = pageToken ? parseInt(pageToken, 10) : 0;
+    const pagedResults = allResults.slice(startIndex, startIndex + pageSize);
+
+    const nextPageToken = startIndex + pageSize < allResults.length
+      ? String(startIndex + pageSize)
+      : undefined;
+
+    return { results: pagedResults, nextPageToken };
+  }
+
+  /**
+   * Full quad scan + term counts (legacy path when no chunk index exists).
+   */
+  private async searchNaiveFts(
+    targetRefs: WorldReference[],
+    queryTerms: string[],
+  ): Promise<SearchResult[]> {
     const allResults: Array<{
       subject: string;
       predicate: string;
@@ -234,30 +284,23 @@ export class WorldsCore implements WorldsInterface {
       const quadStorage = await this.storeStorage.getQuadStorage(ref);
       const quads = await quadStorage.query([]);
 
+      const meta = await this.worldStorage.getWorld(ref);
       const world: World = {
         name: formatWorldName(ref),
         namespace: ref.namespace,
         id: ref.id,
-        displayName: (await this.worldStorage.getWorld(ref))?.displayName ?? "",
-        createTime: (await this.worldStorage.getWorld(ref))?.createTime ?? 0,
+        displayName: meta?.displayName ?? "",
+        description: meta?.description,
+        createTime: meta?.createTime ?? 0,
       };
 
       for (const q of quads) {
-        const subject = q.subject.toLowerCase();
-        const predicate = q.predicate.toLowerCase();
-        const object = q.object.toLowerCase();
-
-        // Score = number of query terms found in the triple
-        let score = 0;
-        for (const term of queryTerms) {
-          if (
-            subject.includes(term) ||
-            predicate.includes(term) ||
-            object.includes(term)
-          ) {
-            score++;
-          }
-        }
+        const score = ftsTermHits(
+          queryTerms,
+          q.subject,
+          q.predicate,
+          q.object,
+        );
 
         if (score > 0) {
           allResults.push({
@@ -271,16 +314,9 @@ export class WorldsCore implements WorldsInterface {
       }
     }
 
-    // Sort by score descending
     allResults.sort((a, b) => b.ftsRank - a.ftsRank);
 
-    // Apply pagination
-    const pageSize = input.pageSize ?? 20;
-    const pageToken = input.pageToken ?? "";
-    const startIndex = pageToken ? parseInt(pageToken, 10) : 0;
-    const pagedResults = allResults.slice(startIndex, startIndex + pageSize);
-
-    const results: SearchResult[] = pagedResults.map((r) => ({
+    return allResults.map((r) => ({
       subject: r.subject,
       predicate: r.predicate,
       object: r.object,
@@ -289,12 +325,6 @@ export class WorldsCore implements WorldsInterface {
       score: r.ftsRank,
       world: r.world,
     }));
-
-    const nextPageToken = startIndex + pageSize < allResults.length
-      ? String(startIndex + pageSize)
-      : undefined;
-
-    return { results, nextPageToken };
   }
 
   async import(input: ImportWorldRequest): Promise<void> {
