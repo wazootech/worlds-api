@@ -6,7 +6,7 @@ import type {
   ChunkSearchRow,
 } from "./types.ts";
 
-export type { ChunkRecord, ChunkIndexState, ChunkSearchQuery, ChunkSearchRow };
+export type { ChunkIndexState, ChunkRecord, ChunkSearchQuery, ChunkSearchRow };
 
 export interface ChunkStorage {
   setChunk(chunk: ChunkRecord): Promise<void>;

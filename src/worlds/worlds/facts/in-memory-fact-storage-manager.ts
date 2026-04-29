@@ -1,5 +1,4 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
-import type { FactStorage } from "#/worlds/rdf/facts/interface.ts";
 import type { FactStorageManager } from "./interface.ts";
 import { InMemoryFactStorage } from "#/worlds/rdf/facts/in-memory.ts";
 
@@ -16,7 +15,9 @@ export class InMemoryFactStorageManager implements FactStorageManager {
     },
   ) {}
 
-  async getFactStorage(reference: WorldReference): Promise<InMemoryFactStorage> {
+  async getFactStorage(
+    reference: WorldReference,
+  ): Promise<InMemoryFactStorage> {
     const key = keyOfRef(reference);
     let s = this.storage.get(key);
     if (!s) {

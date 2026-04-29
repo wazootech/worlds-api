@@ -9,7 +9,12 @@ import {
 } from "@orama/orama";
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 import type { ChunkStorage } from "./interface.ts";
-import type { ChunkSearchQuery, ChunkSearchRow, ChunkIndexState, ChunkRecord } from "./types.ts";
+import type {
+  ChunkIndexState,
+  ChunkRecord,
+  ChunkSearchQuery,
+  ChunkSearchRow,
+} from "./types.ts";
 
 export const CHUNK_SCHEMA = {
   id: "string",
@@ -22,7 +27,10 @@ export const CHUNK_SCHEMA = {
   vector: "string",
 } as const;
 
-export type OramaSearchOptions = Omit<SearchParams<Orama<typeof CHUNK_SCHEMA>>, "term">;
+export type OramaSearchOptions = Omit<
+  SearchParams<Orama<typeof CHUNK_SCHEMA>>,
+  "term"
+>;
 
 export const DEFAULT_ORAMA_OPTIONS: OramaSearchOptions = {
   mode: "fulltext",
@@ -70,7 +78,9 @@ export class OramaChunkStorage implements ChunkStorage {
     this.options = options;
   }
 
-  static async create(options: OramaChunkStorageOptions = {}): Promise<OramaChunkStorage> {
+  static async create(
+    options: OramaChunkStorageOptions = {},
+  ): Promise<OramaChunkStorage> {
     const db = await create({
       schema: CHUNK_SCHEMA,
     });

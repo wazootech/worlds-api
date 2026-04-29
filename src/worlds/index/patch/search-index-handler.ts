@@ -1,6 +1,9 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
-import type { ChunkStorage, ChunkRecord } from "#/worlds/search/chunks/interface.ts";
+import type {
+  ChunkRecord,
+  ChunkStorage,
+} from "#/worlds/search/chunks/interface.ts";
 import type { StoredFact } from "#/worlds/rdf/facts/types.ts";
 import { META_PREDICATES, RDF_TYPE } from "#/worlds/rdf/vocab.ts";
 import type { Patch, PatchHandler } from "./types.ts";

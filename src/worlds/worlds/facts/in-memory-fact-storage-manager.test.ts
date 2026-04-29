@@ -17,7 +17,7 @@ Deno.test("InMemoryFactStorageManager: different worlds have isolated storage", 
   const store1 = await storage.getFactStorage({ namespace: "ns", id: "w1" });
   const store2 = await storage.getFactStorage({ namespace: "ns", id: "w2" });
 
-await store1.setFact({
+  await store1.setFact({
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
     object: "Hello world",
@@ -33,7 +33,7 @@ Deno.test("InMemoryFactStorageManager: deleteFactStorage clears wrapped storage"
   const ref = { namespace: "ns", id: "w1" };
 
   const store = await storage.getFactStorage(ref);
-await store.setFact({
+  await store.setFact({
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
     object: "Hello world",
