@@ -28,7 +28,7 @@ classDiagram
         +string id
     }
     
-    class WorldFactStorage {
+    class FactStorageManager {
         +getFactStorage(reference: WorldReference) Promise~FactStorage~
         +deleteFactStorage(reference: WorldReference) Promise~void~
     }
@@ -59,16 +59,16 @@ classDiagram
         +patch(patches: Patch[]) Promise~void~
     }
     
-    WorldReference --> WorldFactStorage
+    WorldReference --> FactStorageManager
     WorldReference --> WorldStorage
     WorldReference --> ChunkStorage
     
-    FactStorage --> WorldFactStorage: managed by
-    ChunkStorage --> WorldFactStorage: indexed by
-    EmbeddingsService --> WorldFactStorage: vectorized by
+    FactStorage --> FactStorageManager: managed by
+    ChunkStorage --> FactStorageManager: indexed by
+    EmbeddingsService --> FactStorageManager: vectorized by
     PatchHandler --> FactStorage: wraps
     
-    WorldFactStorage "1" *-- "many" FactStorage: creates
+    FactStorageManager "1" *-- "many" FactStorage: creates
 ```
 
 ## Data Flow - Search Index Pipeline
@@ -76,16 +76,16 @@ classDiagram
 ```mermaid
 sequenceDiagram
     participant Client
-    participant WorldsCore
-    participant WorldFactStorage
+    participant Worlds
+    participant FactStorageManager
     participant IndexedFactStorage
     participant SearchIndexHandler
     participant EmbeddingsService
     participant ChunkStorage
     
-    Client->>WorldsCore: sparql UPDATE (INSERT/DELETE)
-    WorldsCore->>WorldFactStorage: getFactStorage(ref)
-    WorldFactStorage-->>IndexedFactStorage: returns
+    Client->>Worlds: sparql UPDATE (INSERT/DELETE)
+    Worlds->>FactStorageManager: getFactStorage(ref)
+    FactStorageManager-->>IndexedFactStorage: returns
     
     Note over IndexedFactStorage: Applies fact changes<br/>then notifies handlers
     
@@ -102,8 +102,8 @@ sequenceDiagram
     end
     
     SearchIndexHandler->>ChunkStorage: markWorldIndexed(state)
-    ChunkStorage-->>WorldsCore: done
-    WorldsCore-->>Client: null (UPDATE result)
+    ChunkStorage-->>Worlds: done
+    Worlds-->>Client: null (UPDATE result)
 ```
 
 ## Data Flow - Search Query
@@ -111,31 +111,37 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant Client
-    participant WorldsCore
-    participant WorldFactStorage
+    participant Worlds
+    participant FactStorageManager
     participant ChunkStorage
     
-    Client->>WorldsCore: search(query, sources)
-    WorldsCore->>WorldFactStorage: getFactStorage(refs)
+    Client->>Worlds: search(query, sources)
+    Worlds->>FactStorageManager: getFactStorage(refs)
     
     loop for each world
         alt world indexed
-            WorldFactStorage->>ChunkStorage: search(query, topK)
-            ChunkStorage-->>WorldFactStorage: ChunkSearchRow[]
+            FactStorageManager->>ChunkStorage: search(query, topK)
+            ChunkStorage-->>FactStorageManager: ChunkSearchRow[]
         else world not indexed
-            WorldFactStorage->>WorldFactStorage: findFacts([]) - full scan
-            WorldFactStorage-->>WorldFactStorage: score by term matches
+            FactStorageManager->>FactStorageManager: findFacts([]) - full scan
+            FactStorageManager-->>FactStorageManager: score by term matches
         end
     end
     
-    WorldFactStorage-->>WorldsCore: results (ranked)
-    WorldsCore-->>Client: SearchResult[]
+    FactStorageManager-->>Worlds: results (ranked)
+    Worlds-->>Client: SearchResult[]
 ```
 
 ## Implementation Hierarchy
 
 ```mermaid
 classDiagram
+    class FactStorageConfig {
+        +search?: boolean
+        +embeddings?: EmbeddingsService
+        +chunkStorage?: ChunkStorage
+    }
+    
     class InMemoryFactStorage {
         -Map~string, StoredFact~ facts
         +setFact(fact: StoredFact) Promise~void~
@@ -157,8 +163,14 @@ classDiagram
         +clear() Promise~void~
     }
     
-    class IndexedWorldFactStorage {
-        -Map~string, IndexedFactStorage~ wrapped
+    class InMemoryFactStorageManager {
+        -Map~string, InMemoryFactStorage~ storage
+        +getFactStorage(ref) Promise~InMemoryFactStorage~
+        +deleteFactStorage(ref) Promise~void~
+    }
+    
+    class IndexedFactStorageManager {
+        -Map~string, IndexedFactStorage~ storage
         -EmbeddingsService embeddings
         -ChunkStorage chunks
         +getFactStorage(ref) Promise~IndexedFactStorage~
@@ -176,58 +188,104 @@ classDiagram
         +clearWorld(world) Promise~void~
     }
     
-    class PlaceholderEmbeddingsService {
+    class OramaChunkStorage {
+        -RDMA orama
+        +setChunk(chunk: ChunkRecord) Promise~void~
+        +deleteChunk(world, factId) Promise~void~
+        +getByWorld(world) Promise~ChunkRecord[]~
+        +search(query) Promise~ChunkSearchRow[]~
+        +getIndexState(world) Promise~ChunkIndexState~
+        +markWorldIndexed(state) Promise~void~
+        +clearWorld(world) Promise~void~
+    }
+    
+    class NoopEmbeddingsService {
         +dimensions: number
         +embed(text: string) Promise~number[]~
+    }
+    
+    class Worlds {
+        -WorldStorage worldStorage
+        -FactStorageManager factStorageManager
+        +createWorld(ref) Promise~StoredWorld~
+        +getWorld(ref) Promise~StoredWorld~
+        +updateWorld(ref, world) Promise~void~
+        +deleteWorld(ref) Promise~void~
+        +query(sparql, sources) Promise~QueryResult~
+        +search(query, sources) Promise~SearchResult[]~
     }
     
     FactStorage <|-- InMemoryFactStorage: implements
     FactStorage <|-- IndexedFactStorage: implements
     IndexedFactStorage --> InMemoryFactStorage: wraps
     IndexedFactStorage --> SearchIndexHandler: notifies
-    WorldFactStorage <|-- IndexedWorldFactStorage: implements
-    IndexedWorldFactStorage --> IndexedFactStorage: creates
-    IndexedWorldFactStorage --> EmbeddingsService: uses
-    IndexedWorldFactStorage --> ChunkStorage: uses
+    
+    FactStorageManager <|-- InMemoryFactStorageManager: implements
+    FactStorageManager <|-- IndexedFactStorageManager: implements
+    InMemoryFactStorageManager --> InMemoryFactStorage: creates
+    IndexedFactStorageManager --> IndexedFactStorage: creates
+    IndexedFactStorageManager --> EmbeddingsService: uses
+    IndexedFactStorageManager --> ChunkStorage: uses
+    
     ChunkStorage <|-- InMemoryChunkStorage: implements
-    EmbeddingsService <|-- PlaceholderEmbeddingsService: implements
+    ChunkStorage <|-- OramaChunkStorage: implements
+    EmbeddingsService <|-- NoopEmbeddingsService: implements
 ```
 
 ## Storage Layers
 
 ```mermaid
 flowchart TB
-    subgraph WorldsCore
-        A[WorldsCore] --> B[WorldStorage]
-        A --> C[WorldFactStorage]
+    subgraph Worlds
+        A[Worlds] --> B[WorldStorage]
+        A --> C[FactStorageManager]
+    end
+    
+    subgraph Storage Managers
+        C --> D[IndexedFactStorageManager]
+        C --> E[InMemoryFactStorageManager]
     end
     
     subgraph Fact Layer
-        C --> D[IndexedFactStorage]
-        D --> E[InMemoryFactStorage]
-        D --> F[SearchIndexHandler]
-        F --> G[EmbeddingsService]
-        F --> H[ChunkStorage]
+        D --> F[IndexedFactStorage]
+        E --> G[InMemoryFactStorage]
+        F --> H[SearchIndexHandler]
+        H --> I[EmbeddingsService]
+        H --> J[ChunkStorage]
     end
     
     subgraph Index Layer
-        G --> I[PlaceholderEmbeddingsService]
-        H --> J[InMemoryChunkStorage]
+        I --> K[NoopEmbeddingsService]
+        J --> L[InMemoryChunkStorage]
+        J --> M[OramaChunkStorage]
     end
     
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#bbf,stroke:#333
     style C fill:#bbf,stroke:#333
     style D fill:#bfb,stroke:#333
-    style E fill:#dfd,stroke:#333
+    style E fill:#bfb,stroke:#333
     style F fill:#dfd,stroke:#333
-    style G fill:#fdd,stroke:#333
-    style H fill:#fdd,stroke:#333
-    style I fill:#efe,stroke:#333
-    style J fill:#efe,stroke:#333
+    style G fill:#dfd,stroke:#333
+    style H fill:#dfd,stroke:#333
+    style I fill:#fdd,stroke:#333
+    style J fill:#fdd,stroke:#333
+    style K fill:#efe,stroke:#333
+    style L fill:#efe,stroke:#333
+    style M fill:#efe,stroke:#333
 ```
 
 ## Key Types
+
+### FactStorageConfig
+
+```typescript
+interface FactStorageConfig {
+  search?: boolean; // undefined = use search (indexed), false = SPARQL only
+  embeddings?: EmbeddingsService; // undefined = NoopEmbeddingsService
+  chunkStorage?: ChunkStorage; // undefined = InMemoryChunkStorage
+}
+```
 
 ### StoredFact
 

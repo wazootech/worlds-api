@@ -5,7 +5,7 @@ import { Worlds } from "#/worlds/core.ts";
 import { handleRpc } from "#/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/worlds/core/worlds/in-memory.ts";
-import { IndexedFactStorageManager } from "#/worlds/worlds/facts/indexed-fact-storage-manager.ts";
+import { IndexedFactStorageManager } from "#/worlds/facts/indexed-fact-storage-manager.ts";
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();

@@ -3,7 +3,8 @@ import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import { Worlds } from "./core.ts";
 import { InMemoryWorldStorage } from "./core/worlds/in-memory.ts";
-import { IndexedFactStorageManager } from "./worlds/facts/indexed-fact-storage-manager.ts";
+import { IndexedFactStorageManager } from "#/worlds/facts/indexed-fact-storage-manager.ts";
+import { InMemoryFactStorageManager } from "#/worlds/facts/in-memory-fact-storage-manager.ts";
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();
@@ -25,6 +26,13 @@ function createCoreWithSharedDeps() {
     embeddings,
   });
   return { core, chunkStorage };
+}
+
+function createCoreWithInMemoryFactStorage() {
+  return new Worlds(
+    new InMemoryWorldStorage(),
+    new InMemoryFactStorageManager(),
+  );
 }
 
 Deno.test("Worlds: create/get/update/delete world", async () => {
@@ -713,4 +721,118 @@ Deno.test("Worlds: empty sparql UPDATE does not mutate", async () => {
     sources: ["ns/emptyUpdate"],
   });
   assertEquals(result.results?.length, 1);
+});
+
+Deno.test("Worlds (InMemoryFactStorageManager): sparql SELECT query", async () => {
+  const core = createCoreWithInMemoryFactStorage();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "sparqlTest",
+    displayName: "SPARQL Test",
+  });
+
+  await core.import({
+    source: "ns/sparqlTest",
+    data:
+      `<https://example.com/s> <https://example.com/p> <https://example.com/o> .`,
+    contentType: "application/n-quads",
+  });
+
+  const result = await core.sparql({
+    sources: ["ns/sparqlTest"],
+    query:
+      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
+  });
+
+  const rows = result as {
+    results: { bindings: Array<{ o?: { value: string } }> };
+  };
+  assertEquals(rows.results.bindings.length, 1);
+  assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o");
+});
+
+Deno.test("Worlds (InMemoryFactStorageManager): sparql UPDATE", async () => {
+  const core = createCoreWithInMemoryFactStorage();
+
+  await core.createWorld({
+    namespace: "ns",
+    id: "updateTest",
+    displayName: "UPDATE Test",
+  });
+
+  await core.sparql({
+    sources: ["ns/updateTest"],
+    query:
+      `INSERT DATA { <https://example.com/s> <https://example.com/p> "value" }`,
+  });
+
+  const result = await core.sparql({
+    sources: ["ns/updateTest"],
+    query:
+      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
+  });
+
+  const rows = result as {
+    results: { bindings: Array<{ o?: { value: string } }> };
+  };
+  assertEquals(rows.results.bindings.length, 1);
+  assertEquals(rows.results.bindings[0].o?.value, "value");
+});
+
+Deno.test("Worlds (InMemoryFactStorageManager): multi-world", async () => {
+  const core = createCoreWithInMemoryFactStorage();
+
+  await core.createWorld({ namespace: "ns", id: "w1" });
+  await core.createWorld({ namespace: "ns", id: "w2" });
+
+  await core.import({
+    source: "ns/w1",
+    data: `<https://example.com/s> <https://example.com/p> "one" .`,
+    contentType: "application/n-quads",
+  });
+  await core.import({
+    source: "ns/w2",
+    data: `<https://example.com/s> <https://example.com/p> "two" .`,
+    contentType: "application/n-quads",
+  });
+
+  const result = await core.sparql({
+    sources: ["ns/w1", "ns/w2"],
+    query: "SELECT DISTINCT ?o WHERE { ?s ?p ?o } ORDER BY ?o",
+  });
+
+  const rows = result as {
+    results: { bindings: Array<{ o?: { value: string } }> };
+  };
+  assertEquals(rows.results.bindings.length, 2);
+});
+
+Deno.test("Worlds (InMemoryFactStorageManager): isolated worlds", async () => {
+  const core = createCoreWithInMemoryFactStorage();
+
+  await core.createWorld({ namespace: "ns", id: "w1" });
+  await core.createWorld({ namespace: "ns", id: "w2" });
+
+  const triple = `<https://example.com/shared> <https://example.com/p> "v" .`;
+
+  await core.import({
+    source: "ns/w1",
+    data: triple,
+    contentType: "application/n-quads",
+  });
+
+  const r1 = await core.sparql({
+    sources: ["ns/w1"],
+    query: "SELECT * WHERE { ?s ?p ?o }",
+  });
+  const r1Data = r1 as unknown as { results: { bindings: [] } };
+  assertEquals(r1Data.results.bindings.length, 1);
+
+  const r2 = await core.sparql({
+    sources: ["ns/w2"],
+    query: "SELECT * WHERE { ?s ?p ?o }",
+  });
+  const r2Data = r2 as unknown as { results: { bindings: [] } };
+  assertEquals(r2Data.results.bindings.length, 0);
 });

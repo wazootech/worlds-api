@@ -24,7 +24,7 @@ import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./core/worlds/interface.ts";
 import type { StoredWorld } from "./core/worlds/types.ts";
-import type { FactStorageManager } from "./worlds/facts/interface.ts";
+import type { FactStorageManager } from "#/worlds/facts/interface.ts";
 import {
   deserialize,
   factsFromStore,
