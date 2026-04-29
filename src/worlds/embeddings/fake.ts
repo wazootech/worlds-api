@@ -16,7 +16,7 @@ function normalize(vec: number[]): number[] {
  * @deprecated Use a real EmbeddingsService implementation for production.
  * @deprecated Use InMemoryFactStorageManager for SPARQL-only worlds without search.
  */
-export class NoopEmbeddingsService implements EmbeddingsService {
+export class FakeEmbeddingsService implements EmbeddingsService {
   readonly dimensions = DIM;
 
   async embed(text: string): Promise<number[]> {
@@ -30,11 +30,6 @@ export class NoopEmbeddingsService implements EmbeddingsService {
     return normalize(vec);
   }
 }
-
-/**
- * @deprecated Use NoopEmbeddingsService instead.
- */
-export { NoopEmbeddingsService as PlaceholderEmbeddingsService };
 
 function hashString(s: string): number {
   let h = 0x811c9dc5;

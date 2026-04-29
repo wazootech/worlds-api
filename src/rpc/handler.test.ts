@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
+import { FakeEmbeddingsService } from "#/worlds/embeddings/fake.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import { Worlds } from "#/worlds/core.ts";
 import { handleRpc } from "#/rpc/handler.ts";
@@ -9,7 +9,7 @@ import { IndexedFactStorageManager } from "#/worlds/facts/indexed-fact-storage-m
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();
-  const embeddings = new PlaceholderEmbeddingsService();
+  const embeddings = new FakeEmbeddingsService();
   return new Worlds(
     new InMemoryWorldStorage(),
     new IndexedFactStorageManager(embeddings, chunkStorage),

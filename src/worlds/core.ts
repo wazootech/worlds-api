@@ -16,7 +16,7 @@ import type {
   WorldReference,
 } from "#/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
-import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
+import { FakeEmbeddingsService } from "#/worlds/embeddings/fake.ts";
 import { searchChunks } from "#/worlds/search/chunks-search-engine.ts";
 import type { ChunkStorage } from "#/worlds/search/chunks/interface.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
@@ -68,7 +68,7 @@ export class Worlds implements WorldsInterface {
   ) {
     this.searchDeps = searchDeps ?? {
       chunkStorage: new InMemoryChunkStorage(),
-      embeddings: new PlaceholderEmbeddingsService(),
+      embeddings: new FakeEmbeddingsService(),
     };
   }
 
