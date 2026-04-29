@@ -1,4 +1,6 @@
 node_modules/
 .deno/
 node_modules/.deno/
+scratch/
+scratch.ts
 

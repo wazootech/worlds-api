@@ -8,18 +8,18 @@
   ],
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "bundle:browser": "deno bundle --no-check --platform=browser src/worlds/rdf/mod.ts; deno bundle --no-check --platform=browser src/worlds/rdf/sparql/mod.ts",
-    "check:browser": "deno check -c deno.browser.json src/worlds/rdf/mod.ts src/worlds/rdf/sparql/mod.ts",
+    "bundle:browser": "deno bundle --no-check --platform=browser src/facts/rdf/rdf.ts; deno bundle --no-check --platform=browser src/facts/sparql/sparql.ts",
+    "check:browser": "deno check -c deno.browser.json src/facts/rdf/rdf.ts src/facts/sparql/sparql.ts",
     "test": "deno test --allow-all",
-    "generate": "deno run -A src/openapi/openapi.ts && deno fmt ./src/openapi/generated"
+    "generate": "deno run -A src/api/openapi/openapi.ts && deno fmt ./src/api/openapi/generated"
   },
   "exports": {
     ".": "./src/mod.ts",
-    "./rdf": "./src/worlds/rdf/mod.ts"
+    "./rdf": "./src/facts/rdf/mod.ts"
   },
   "lint": {
     "exclude": [
-      "./src/openapi/generated",
+      "./src/api/openapi/generated",
       "./vendor/jsonld-context-parser"
     ],
     "rules": {

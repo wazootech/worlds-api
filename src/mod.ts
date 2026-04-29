@@ -1,3 +1,3 @@
-export * as rdf from "#/worlds/rdf/rdf.ts";
+export * as rdf from "#/facts/rdf/rdf.ts";
 
-export * as sparql from "#/worlds/sparql/sparql.ts";
+export * as sparql from "#/facts/sparql/sparql.ts";
