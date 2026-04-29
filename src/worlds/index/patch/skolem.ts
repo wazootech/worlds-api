@@ -1,12 +1,12 @@
-import type { StoredQuad } from "#/worlds/rdf/quads/types.ts";
-import { storedQuadToN3 } from "#/worlds/rdf/rdf.ts";
+import type { StoredFact } from "#/worlds/rdf/facts/types.ts";
+import { storedFactToN3 } from "#/worlds/rdf/rdf.ts";
 import { skolemizeQuad } from "#/worlds/rdf/skolem.ts";
 
-export { storedQuadToN3 } from "#/worlds/rdf/rdf.ts";
+export { storedFactToN3 } from "#/worlds/rdf/rdf.ts";
 
 /**
- * Stable base64url fact id from RDFC-1.0 canonicalization (same as {@link skolemizeQuad} on N3 quads).
+ * Stable base64url fact id from RDFC-1.0 canonicalization.
  */
-export async function skolemizeStoredQuad(quad: StoredQuad): Promise<string> {
-  return skolemizeQuad(storedQuadToN3(quad));
+export async function skolemizeStoredFact(fact: StoredFact): Promise<string> {
+  return skolemizeQuad(storedFactToN3(fact));
 }

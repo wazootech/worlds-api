@@ -1,23 +1,23 @@
 import type { WorldReference } from "#/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/worlds/embeddings/interface.ts";
 import type { ChunkStorage, ChunkRecord } from "#/worlds/search/chunks/interface.ts";
-import type { StoredQuad } from "#/worlds/rdf/quads/types.ts";
+import type { StoredFact } from "#/worlds/rdf/facts/types.ts";
 import { META_PREDICATES, RDF_TYPE } from "#/worlds/rdf/vocab.ts";
 import type { Patch, PatchHandler } from "./types.ts";
-import { skolemizeStoredQuad } from "./skolem.ts";
+import { skolemizeStoredFact } from "./skolem.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 
 function isMetaPredicate(p: string): boolean {
   return META_PREDICATES.includes(p);
 }
 
-/** Align with `storeFromQuads` in rdf.ts: literals are not IRIs. */
-function shouldIndexTriple(quad: StoredQuad): boolean {
-  const obj = quad.object;
-  if (quad.predicate === RDF_TYPE) {
+/** Align with `storeFromFacts` in rdf.ts: literals are not IRIs. */
+function shouldIndexTriple(fact: StoredFact): boolean {
+  const obj = fact.object;
+  if (fact.predicate === RDF_TYPE) {
     return obj.length > 0;
   }
-  const objectTermType = quad.objectTermType ??
+  const objectTermType = fact.objectTermType ??
     (obj.startsWith("_:")
       ? "BlankNode"
       : obj.includes(":") || obj.startsWith("urn:")
@@ -47,7 +47,7 @@ export class SearchIndexHandler implements PatchHandler {
     for (const patch of patches) {
       if (patch.deletions?.length) {
         for (const q of patch.deletions) {
-          const factId = await skolemizeStoredQuad(q);
+          const factId = await skolemizeStoredFact(q);
           await this.chunks.deleteChunk(this.world, factId);
         }
       }
@@ -57,7 +57,7 @@ export class SearchIndexHandler implements PatchHandler {
           if (!shouldIndexTriple(q)) continue;
           if (isMetaPredicate(q.predicate)) continue;
 
-          const tripleId = await skolemizeStoredQuad(q);
+          const tripleId = await skolemizeStoredFact(q);
           const subject = q.subject;
           const predicate = q.predicate;
           const objectText = q.object;

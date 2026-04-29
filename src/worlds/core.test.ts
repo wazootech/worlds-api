@@ -2,15 +2,15 @@ import { assertEquals, assertRejects } from "@std/assert";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import { WorldsCore } from "./core.ts";
-import { InMemoryWorldStorage } from "./store/worlds/in-memory.ts";
-import { IndexedStoreStorage } from "./store/store/indexed-store-storage.ts";
+import { InMemoryWorldStorage } from "./core/worlds/in-memory.ts";
+import { IndexedWorldFactStorage } from "./store/store/indexed-store-storage.ts";
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();
   const embeddings = new PlaceholderEmbeddingsService();
   return new WorldsCore(
     new InMemoryWorldStorage(),
-    new IndexedStoreStorage(embeddings, chunkStorage),
+    new IndexedWorldFactStorage(embeddings, chunkStorage),
     { chunkStorage, embeddings },
   );
 }
@@ -19,7 +19,7 @@ function createCoreWithSharedDeps() {
   const worldStorage = new InMemoryWorldStorage();
   const chunkStorage = new InMemoryChunkStorage();
   const embeddings = new PlaceholderEmbeddingsService();
-  const storeStorage = new IndexedStoreStorage(embeddings, chunkStorage);
+  const storeStorage = new IndexedWorldFactStorage(embeddings, chunkStorage);
   const core = new WorldsCore(worldStorage, storeStorage, {
     chunkStorage,
     embeddings,
@@ -420,7 +420,7 @@ Deno.test("WorldsCore: sparql rejects on non-existent world", async () => {
   );
 });
 
-Deno.test("WorldsCore: search finds quads matching query terms", async () => {
+Deno.test("WorldsCore: search finds facts matching query terms", async () => {
   const core = createCore();
 
   await core.createWorld({

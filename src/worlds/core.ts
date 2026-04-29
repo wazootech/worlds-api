@@ -24,19 +24,19 @@ import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./core/worlds/interface.ts";
 import type { StoredWorld } from "./core/worlds/types.ts";
-import type { StoreStorage } from "./store/store/interface.ts";
+import type { WorldFactStorage } from "./store/store/interface.ts";
 import {
   deserialize,
-  quadsFromStore,
+  factsFromStore,
   serialize,
-  storeFromQuads,
+  storeFromFacts,
 } from "./rdf/rdf.ts";
 import { ftsTermHits, tokenizeSearchQuery } from "./search/fts.ts";
-import { storedQuadKey } from "./rdf/quads/key.ts";
-import type { StoredQuad } from "./rdf/quads/types.ts";
+import { storedFactKey } from "./rdf/facts/key.ts";
+import type { StoredFact } from "./rdf/facts/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
 
-/** Shared chunk index + embeddings for vector search (must match {@link IndexedStoreStorage} deps when used). */
+/** Shared chunk index + embeddings for vector search (must match {@link IndexedWorldFactStorage} deps when used). */
 export interface WorldsCoreSearchDeps {
   chunkStorage: ChunkStorage;
   embeddings: EmbeddingsService;
@@ -62,7 +62,7 @@ export class WorldsCore implements WorldsInterface {
 
   constructor(
     private readonly worldStorage: WorldStorage,
-    private readonly storeStorage: StoreStorage,
+    private readonly worldFactStorage: WorldFactStorage,
     searchDeps?: WorldsCoreSearchDeps,
   ) {
     this.searchDeps = searchDeps ?? {
@@ -114,10 +114,10 @@ export class WorldsCore implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.worldStorage.deleteWorld(reference);
-    if ("deleteQuadStorage" in this.storeStorage) {
-      await (this.storeStorage as {
-        deleteQuadStorage(reference: WorldReference): Promise<void>;
-      }).deleteQuadStorage(reference);
+    if ("deleteFactStorage" in this.worldFactStorage) {
+      await (this.worldFactStorage as {
+        deleteFactStorage(reference: WorldReference): Promise<void>;
+      }).deleteFactStorage(reference);
     }
   }
 
@@ -147,15 +147,15 @@ export class WorldsCore implements WorldsInterface {
       }
     }
 
-    // Aggregate quads from all source worlds into a single store
-    let allQuads: StoredQuad[] = [];
+    // Aggregate facts from all source worlds into a single store
+    let allFacts: StoredFact[] = [];
     for (const ref of references) {
-      const quadStorage = await this.storeStorage.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
-      allQuads = allQuads.concat(quads);
+      const factStorage = await this.worldFactStorage.getFactStorage(ref);
+      const facts = await factStorage.findFacts([]);
+      allFacts = allFacts.concat(facts);
     }
 
-    const store = storeFromQuads(allQuads);
+    const store = storeFromFacts(allFacts);
 
     // Execute the query
     const result = await executeSparql(store, input.query, {
@@ -164,38 +164,32 @@ export class WorldsCore implements WorldsInterface {
 
     // Handle SPARQL UPDATE (void result) - check for INSERT/DELETE
     if (result === null) {
-      // UPDATE operations: apply changes back to source worlds
-      // For multi-source, apply to the first source only for now
       const ref = references[0];
-      const quadStorage = await this.storeStorage.getQuadStorage(ref);
+      const factStorage = await this.worldFactStorage.getFactStorage(ref);
 
-      // Get the current quads and the new state
-      const currentQuads = await quadStorage.findQuads([]);
-      const newStore = store; // store now reflects the updated state
+      const currentFacts = await factStorage.findFacts([]);
+      const newStore = store;
 
-      // Compute added/removed quads by comparing
-      const newQuads = quadsFromStore(newStore);
-      const currentQuadSet = new Set(
-        currentQuads.map(storedQuadKey),
+      const newFacts = factsFromStore(newStore);
+      const currentFactSet = new Set(
+        currentFacts.map(storedFactKey),
       );
-      const newQuadSet = new Set(
-        newQuads.map(storedQuadKey),
+      const newFactSet = new Set(
+        newFacts.map(storedFactKey),
       );
 
-      // Quads to remove (in current but not in new)
-      const toRemove = currentQuads.filter((q) =>
-        !newQuadSet.has(storedQuadKey(q))
+      const toRemove = currentFacts.filter((q: StoredFact) =>
+        !newFactSet.has(storedFactKey(q))
       );
-      // Quads to add (in new but not in current)
-      const toAdd = newQuads.filter((q) =>
-        !currentQuadSet.has(storedQuadKey(q))
+      const toAdd = newFacts.filter((q: StoredFact) =>
+        !currentFactSet.has(storedFactKey(q))
       );
 
       if (toRemove.length > 0) {
-        await quadStorage.deleteQuads(toRemove);
+        await factStorage.deleteFacts(toRemove);
       }
       if (toAdd.length > 0) {
-        await quadStorage.setQuads(toAdd);
+        await factStorage.setFacts(toAdd);
       }
 
       return null;
@@ -269,7 +263,7 @@ export class WorldsCore implements WorldsInterface {
   }
 
   /**
-   * Full quad scan + term counts (legacy path when no chunk index exists).
+   * Full fact scan + term counts (legacy path when no chunk index exists).
    */
   private async searchNaiveFts(
     targetRefs: WorldReference[],
@@ -284,8 +278,8 @@ export class WorldsCore implements WorldsInterface {
     }> = [];
 
     for (const ref of targetRefs) {
-      const quadStorage = await this.storeStorage.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
+      const factStorage = await this.worldFactStorage.getFactStorage(ref);
+      const facts = await factStorage.findFacts([]);
 
       const meta = await this.worldStorage.getWorld(ref);
       const world: World = {
@@ -297,7 +291,7 @@ export class WorldsCore implements WorldsInterface {
         createTime: meta?.createTime ?? 0,
       };
 
-      for (const q of quads) {
+      for (const q of facts) {
         const score = ftsTermHits(
           queryTerms,
           q.subject,
@@ -341,10 +335,10 @@ export class WorldsCore implements WorldsInterface {
     const data = typeof input.data === "string"
       ? input.data
       : new TextDecoder().decode(input.data);
-    const quads = deserialize(data, contentType);
+    const facts = deserialize(data, contentType);
 
-    const quadStorage = await this.storeStorage.getQuadStorage(reference);
-    await quadStorage.setQuads(quads);
+    const factStorage = await this.worldFactStorage.getFactStorage(reference);
+    await factStorage.setFacts(facts);
   }
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
@@ -354,11 +348,11 @@ export class WorldsCore implements WorldsInterface {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
 
-    const quadStorage = await this.storeStorage.getQuadStorage(reference);
-    const quads = await quadStorage.findQuads([]);
+    const factStorage = await this.worldFactStorage.getFactStorage(reference);
+    const facts = await factStorage.findFacts([]);
 
     const contentType = input.contentType || "application/n-quads";
-    const serialized = await serialize(quads, contentType);
+    const serialized = await serialize(facts, contentType);
     return new TextEncoder().encode(serialized).buffer as ArrayBuffer;
   }
 }
