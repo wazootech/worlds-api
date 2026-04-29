@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
-import { IndexedFactStorageManager } from "./worlds-fact-storage.ts";
+import { IndexedFactStorageManager } from "./indexed-fact-storage-manager.ts";
 
 Deno.test("IndexedFactStorageManager: getFactStorage returns same instance for same world", async () => {
   const embeddings = new PlaceholderEmbeddingsService();

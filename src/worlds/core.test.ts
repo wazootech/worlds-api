@@ -3,7 +3,7 @@ import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
 import { Worlds } from "./core.ts";
 import { InMemoryWorldStorage } from "./core/worlds/in-memory.ts";
-import { IndexedFactStorageManager } from "./worlds/facts/worlds-fact-storage.ts";
+import { IndexedFactStorageManager } from "./worlds/facts/indexed-fact-storage-manager.ts";
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();
