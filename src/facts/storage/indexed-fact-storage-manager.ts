@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
 import { SearchIndexHandler } from "#/facts/storage/index/search-index-handler.ts";
-import type { ChunkStorage } from "#/search/storage/interface.ts";
+import type { ChunkIndexManager } from "#/search/storage/interface.ts";
 import { InMemoryFactStorage } from "#/facts/storage/in-memory.ts";
 import { IndexedFactStorage } from "#/facts/storage/indexed.ts";
 import type { FactStorageManager } from "./interface.ts";
@@ -12,7 +12,7 @@ function keyOfRef(reference: WorldReference): string {
 
 export interface IndexedFactStorageManagerConfig {
   embeddings: EmbeddingsService;
-  chunks: ChunkStorage;
+  chunks: ChunkIndexManager;
 }
 
 export class IndexedFactStorageManager implements FactStorageManager {
@@ -20,7 +20,7 @@ export class IndexedFactStorageManager implements FactStorageManager {
 
   constructor(
     private readonly embeddings: EmbeddingsService,
-    private readonly chunks: ChunkStorage,
+    private readonly chunks: ChunkIndexManager,
   ) {}
 
   async getFactStorage(reference: WorldReference): Promise<IndexedFactStorage> {
@@ -28,9 +28,15 @@ export class IndexedFactStorageManager implements FactStorageManager {
     let w = this.wrapped.get(key);
     if (!w) {
       const inner = new InMemoryFactStorage();
+      await this.chunks.setIndexState({
+        world: reference,
+        indexedAt: Date.now(),
+        embeddingDimensions: this.embeddings.dimensions,
+      });
+      const index = await this.chunks.getChunkIndex(reference);
       const handler = new SearchIndexHandler(
         this.embeddings,
-        this.chunks,
+        index,
         reference,
       );
       w = new IndexedFactStorage(inner, [handler]);
@@ -41,6 +47,6 @@ export class IndexedFactStorageManager implements FactStorageManager {
 
   async deleteFactStorage(reference: WorldReference): Promise<void> {
     this.wrapped.delete(keyOfRef(reference));
-    await this.chunks.clearWorld(reference);
+    await this.chunks.deleteChunkIndex(reference);
   }
 }

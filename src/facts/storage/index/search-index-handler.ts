@@ -1,9 +1,6 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type {
-  ChunkRecord,
-  ChunkStorage,
-} from "#/search/storage/interface.ts";
+import type { ChunkIndex, ChunkRecord } from "#/search/storage/interface.ts";
 import type { StoredFact } from "#/facts/storage/types.ts";
 import { META_PREDICATES, RDF_TYPE } from "#/facts/rdf/vocab.ts";
 import type { Patch, PatchHandler } from "./types.ts";
@@ -42,7 +39,7 @@ async function sha256Hex(msg: string): Promise<string> {
 export class SearchIndexHandler implements PatchHandler {
   constructor(
     private readonly embeddings: EmbeddingsService,
-    private readonly chunks: ChunkStorage,
+    private readonly chunks: ChunkIndex,
     private readonly world: WorldReference,
   ) {}
 
@@ -51,7 +48,7 @@ export class SearchIndexHandler implements PatchHandler {
       if (patch.deletions?.length) {
         for (const q of patch.deletions) {
           const factId = await skolemizeStoredFact(q);
-          await this.chunks.deleteChunk(this.world, factId);
+          await this.chunks.deleteChunk(factId);
         }
       }
 
@@ -92,11 +89,7 @@ export class SearchIndexHandler implements PatchHandler {
         }
       }
 
-      await this.chunks.markWorldIndexed({
-        world: this.world,
-        indexedAt: Date.now(),
-        embeddingDimensions: this.embeddings.dimensions,
-      });
+      // Index state is management-plane; handled by the caller/manager.
     }
   }
 }

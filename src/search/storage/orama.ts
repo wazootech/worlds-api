@@ -5,205 +5,190 @@ import {
   type Orama,
   remove,
   search,
-  type SearchParams,
 } from "@orama/orama";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
-import type { ChunkStorage } from "./interface.ts";
 import type {
-  ChunkIndexState,
-  ChunkRecord,
-  ChunkSearchQuery,
-  ChunkSearchRow,
-} from "./types.ts";
-
-export const CHUNK_SCHEMA = {
-  id: "string",
-  factId: "string",
-  subject: "string",
-  predicate: "string",
-  text: "string",
-  namespace: "string",
-  worldId: "string",
-  vector: "string",
-} as const;
-
-export type OramaSearchOptions = Omit<
-  SearchParams<Orama<typeof CHUNK_SCHEMA>>,
-  "term"
->;
-
-export const DEFAULT_ORAMA_OPTIONS: OramaSearchOptions = {
-  mode: "fulltext",
-};
+  ChunkIndex,
+  ChunkIndexManager,
+  ChunkIndexSearchQuery,
+} from "./interface.ts";
+import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
 function worldKey(ref: WorldReference): string {
   return `${ref.namespace}/${ref.id}`;
 }
 
-function dotNormalized(
-  a: Float32Array | number[],
-  b: Float32Array | number[],
-): number {
-  let s = 0;
-  const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) s += (a[i] ?? 0) * (b[i] ?? 0);
-  return s;
-}
+export class OramaChunkIndex implements ChunkIndex {
+  constructor(
+    private readonly world: WorldReference,
+    private readonly getOrCreateDb: (
+      dimensions: number,
+    ) => Promise<Orama<any> | null>,
+  ) {}
 
-interface OramaChunkDoc {
-  id: string;
-  factId: string;
-  subject: string;
-  predicate: string;
-  text: string;
-  namespace: string;
-  worldId: string;
-  vector: string;
-}
-
-export interface OramaChunkStorageOptions {
-  orama?: OramaSearchOptions;
-}
-
-export class OramaChunkStorage implements ChunkStorage {
-  private db: Orama<typeof CHUNK_SCHEMA>;
-  private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
-  private readonly options: OramaSearchOptions;
-
-  private constructor(
-    db: Orama<typeof CHUNK_SCHEMA>,
-    options: OramaSearchOptions,
-  ) {
-    this.db = db;
-    this.options = options;
-  }
-
-  static async create(
-    options: OramaChunkStorageOptions = {},
-  ): Promise<OramaChunkStorage> {
-    const db = await create({
-      schema: CHUNK_SCHEMA,
-    });
-    return new OramaChunkStorage(
-      db,
-      options.orama ?? {
-        mode: "fulltext",
-      },
-    );
-  }
-
-  private docFromChunk(chunk: ChunkRecord): OramaChunkDoc {
-    return {
+  async setChunk(chunk: ChunkRecord): Promise<void> {
+    if (worldKey(chunk.world) !== worldKey(this.world)) {
+      throw new Error("Chunk world does not match index world.");
+    }
+    const db = await this.getOrCreateDb(chunk.vector.length);
+    if (!db) {
+      throw new Error("Failed to initialize Orama DB for chunk index.");
+    }
+    const existing = await getByID(db, chunk.id);
+    if (existing) await remove(db, chunk.id);
+    await insert(db, {
       id: chunk.id,
       factId: chunk.factId,
       subject: chunk.subject,
       predicate: chunk.predicate,
       text: chunk.text,
-      namespace: chunk.world.namespace,
-      worldId: chunk.world.id,
-      vector: Array.from(chunk.vector).join(","),
-    };
-  }
-
-  private chunkFromDoc(doc: OramaChunkDoc, vector: Float32Array): ChunkRecord {
-    return {
-      id: doc.id,
-      factId: doc.factId,
-      subject: doc.subject,
-      predicate: doc.predicate,
-      text: doc.text,
-      vector,
-      world: { namespace: doc.namespace, id: doc.worldId },
-    };
-  }
-
-  async setChunk(chunk: ChunkRecord): Promise<void> {
-    const existing = await getByID(this.db, chunk.id);
-    if (existing) {
-      await remove(this.db, chunk.id);
-    }
-    const doc = this.docFromChunk(chunk);
-    await insert(this.db, doc);
-  }
-
-  async deleteChunk(world: WorldReference, factId: string): Promise<void> {
-    const results = await search(this.db, {
-      term: "",
-      where: {
-        factId: factId,
-        namespace: world.namespace,
-        worldId: world.id,
-      },
+      vector: Array.from(chunk.vector),
+      vector_blob: Array.from(chunk.vector),
     });
-    for (const hit of results.hits) {
-      await remove(this.db, hit.id);
-    }
   }
 
-  async getByWorld(world: WorldReference): Promise<ChunkRecord[]> {
-    const results = await search(this.db, {
+  async deleteChunk(factId: string): Promise<void> {
+    const db = await this.getOrCreateDb(0);
+    if (!db) return;
+    const results = await search(db, {
       term: "",
-      where: {
-        namespace: world.namespace,
-        worldId: world.id,
-      },
+      where: { factId },
     });
+    for (const hit of results.hits) await remove(db, hit.id);
+  }
+
+  async getAll(): Promise<ChunkRecord[]> {
+    const db = await this.getOrCreateDb(0);
+    if (!db) return [];
+    const results = await search(db, { term: "" });
     return results.hits.map((hit) => {
-      const doc = hit.document as unknown as OramaChunkDoc;
-      const vector = new Float32Array(
-        doc.vector.split(",").map((n) => parseFloat(n)),
-      );
-      return this.chunkFromDoc(doc, vector);
+      const doc = hit.document as any;
+      return {
+        id: doc.id,
+        factId: doc.factId,
+        subject: doc.subject,
+        predicate: doc.predicate,
+        text: doc.text,
+        vector: Float32Array.from(doc.vector_blob),
+        world: this.world,
+      };
     });
   }
 
-  async search(input: ChunkSearchQuery): Promise<ChunkSearchRow[]> {
-    const chunks = (
-      await Promise.all(input.worlds.map((world) => this.getByWorld(world)))
-    ).flat();
+  async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
+    const db = await this.getOrCreateDb(0);
+    if (!db) return [];
+    const results = await search(db, {
+      term: input.queryText,
+      vector: {
+        value: Array.from(input.queryVector),
+        property: "vector",
+      },
+      where: {
+        ...(input.subjects?.length ? { subject: input.subjects } : {}),
+        ...(input.predicates?.length ? { predicate: input.predicates } : {}),
+      },
+    });
 
     const rows: ChunkSearchRow[] = [];
-    const qFull = input.queryText.toLowerCase();
+    for (const hit of results.hits) {
+      const doc = hit.document as any;
+      const chunk: ChunkRecord = {
+        id: doc.id,
+        factId: doc.factId,
+        subject: doc.subject,
+        predicate: doc.predicate,
+        text: doc.text,
+        vector: Float32Array.from(doc.vector_blob),
+        world: this.world,
+      };
 
-    for (const chunk of chunks) {
-      const hay = `${chunk.subject} ${chunk.predicate} ${chunk.text}`
-        .toLowerCase();
-      const termsFound = input.queryTerms.filter((t) =>
-        hay.includes(t.toLowerCase())
-      ).length;
-      const phraseMatch = qFull.length > 0 && hay.includes(qFull);
-
-      if (termsFound === 0 && !phraseMatch) continue;
-
-      const vecRank = dotNormalized(input.queryVector, chunk.vector);
-      const ftsRank = termsFound > 0 ? termsFound : null;
-      const score = (ftsRank ?? 0) * 1000 + (vecRank > 1e-12 ? vecRank : 0);
+      // Defensive: Orama `where` should already handle these.
+      if (input.subjects?.length && !input.subjects.includes(chunk.subject)) {
+        continue;
+      }
+      if (
+        input.predicates?.length && !input.predicates.includes(chunk.predicate)
+      ) {
+        continue;
+      }
 
       rows.push({
         chunk,
-        vecRank: vecRank > 1e-12 ? vecRank : null,
-        ftsRank,
-        score,
+        vecRank: hit.score,
+        ftsRank: hit.score,
+        score: hit.score,
       });
     }
 
     rows.sort((a, b) => b.score - a.score);
     return rows;
   }
+}
+
+export class OramaChunkIndexManager implements ChunkIndexManager {
+  private readonly dbs = new Map<string, Orama<any>>();
+  private readonly indexes = new Map<string, OramaChunkIndex>();
+  private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
+
+  async getChunkIndex(reference: WorldReference): Promise<ChunkIndex> {
+    const key = worldKey(reference);
+    let index = this.indexes.get(key);
+    if (index) return index;
+
+    index = new OramaChunkIndex(
+      reference,
+      (dimensions) => this.getOrCreateDb(reference, dimensions),
+    );
+    this.indexes.set(key, index);
+    return index;
+  }
 
   async getIndexState(world: WorldReference): Promise<ChunkIndexState | null> {
     return this.indexStateByWorld.get(worldKey(world)) ?? null;
   }
 
-  async markWorldIndexed(state: ChunkIndexState): Promise<void> {
-    this.indexStateByWorld.set(worldKey(state.world), state);
+  async setIndexState(state: ChunkIndexState): Promise<void> {
+    const key = worldKey(state.world);
+    this.indexStateByWorld.set(key, state);
+    await this.getOrCreateDb(state.world, state.embeddingDimensions);
+    this.indexes.set(
+      key,
+      new OramaChunkIndex(
+        state.world,
+        (dimensions) => this.getOrCreateDb(state.world, dimensions),
+      ),
+    );
   }
 
-  async clearWorld(world: WorldReference): Promise<void> {
-    const chunks = await this.getByWorld(world);
-    for (const chunk of chunks) {
-      await remove(this.db, chunk.id);
+  async deleteChunkIndex(reference: WorldReference): Promise<void> {
+    const key = worldKey(reference);
+    this.dbs.delete(key);
+    this.indexes.delete(key);
+    this.indexStateByWorld.delete(key);
+  }
+
+  private async getOrCreateDb(
+    world: WorldReference,
+    dimensions: number,
+  ): Promise<Orama<any> | null> {
+    const key = worldKey(world);
+    let db = this.dbs.get(key);
+    if (!db) {
+      if (!dimensions || dimensions <= 0) return null;
+      db = await create({
+        schema: {
+          id: "string",
+          factId: "string",
+          subject: "string",
+          predicate: "string",
+          text: "string",
+          vector: `vector[${dimensions}]`,
+          vector_blob: "number[]",
+        },
+      });
+      this.dbs.set(key, db);
     }
-    this.indexStateByWorld.delete(worldKey(world));
+    return db;
   }
 }

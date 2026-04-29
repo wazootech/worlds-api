@@ -18,8 +18,8 @@ import type {
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
 import { searchChunks } from "#/search/chunks-search-engine.ts";
-import type { ChunkStorage } from "#/search/storage/interface.ts";
-import { InMemoryChunkStorage } from "#/search/storage/in-memory.ts";
+import type { ChunkIndexManager } from "#/search/storage/interface.ts";
+import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
 import type { WorldsInterface } from "#/core/interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "#/core/resolve.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
@@ -38,7 +38,7 @@ import { executeSparql } from "#/facts/sparql/sparql.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedFactStorageManager} deps when used). */
 export interface WorldsSearchDeps {
-  chunkStorage: ChunkStorage;
+  chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;
 }
 
@@ -66,7 +66,7 @@ export class Worlds implements WorldsInterface {
     searchDeps?: WorldsSearchDeps,
   ) {
     this.searchDeps = searchDeps ?? {
-      chunkStorage: new InMemoryChunkStorage(),
+      chunkIndexManager: new InMemoryChunkIndexManager(),
       embeddings: new FakeEmbeddingsService(),
     };
   }
@@ -227,7 +227,9 @@ export class Worlds implements WorldsInterface {
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkStorage.getIndexState(ref);
+      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(
+        ref,
+      );
       if (indexState) {
         indexedRefs.push(ref);
       } else {
@@ -237,7 +239,7 @@ export class Worlds implements WorldsInterface {
 
     const chunkResults = indexedRefs.length > 0
       ? await searchChunks(input, indexedRefs, {
-        chunkStorage: this.searchDeps.chunkStorage,
+        chunkIndexManager: this.searchDeps.chunkIndexManager,
         embeddings: this.searchDeps.embeddings,
         worldStorage: this.worldStorage,
         formatWorldName,

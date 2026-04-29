@@ -21,7 +21,6 @@ Deno.test("round-trips n-quads", async () => {
   const quads = deserialize(input, "application/n-quads");
   const output = await serialize(quads, "application/n-quads");
 
-
   assertEquals(quads.length, 1);
   assertEquals(quads[0].subject, "http://example.org/s");
   assertEquals(quads[0].predicate, "http://example.org/p");

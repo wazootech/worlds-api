@@ -6,17 +6,17 @@ export interface OpenAIEmbeddingsConfig {
    * If not provided, it will attempt to use the `OPENAI_API_KEY` environment variable.
    */
   apiKey?: string;
-  
+
   /**
    * The model to use. Defaults to `text-embedding-3-small`.
    */
   model?: string;
-  
+
   /**
    * The dimension size of the generated embeddings. Defaults to `1536` for `text-embedding-3-small`.
    */
   dimensions?: number;
-  
+
   /**
    * The base URL for the OpenAI API. Defaults to `https://api.openai.com/v1`.
    */

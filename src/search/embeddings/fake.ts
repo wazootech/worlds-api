@@ -12,9 +12,6 @@ function normalize(vec: number[]): number[] {
 /**
  * Deterministic pseudo-embeddings for development and tests.
  * Same input yields the same unit-length vector; no external API.
- *
- * @deprecated Use a real EmbeddingsService implementation for production.
- * @deprecated Use InMemoryFactStorageManager for SPARQL-only worlds without search.
  */
 export class FakeEmbeddingsService implements EmbeddingsService {
   readonly dimensions = DIM;

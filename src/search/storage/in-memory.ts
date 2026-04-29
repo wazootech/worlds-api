@@ -1,13 +1,12 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { RDF_TYPE } from "#/facts/rdf/vocab.ts";
 import { ftsTermHits } from "#/search/fts.ts";
-import type { ChunkStorage } from "./interface.ts";
 import type {
-  ChunkIndexState,
-  ChunkRecord,
-  ChunkSearchQuery,
-  ChunkSearchRow,
-} from "./types.ts";
+  ChunkIndex,
+  ChunkIndexManager,
+  ChunkIndexSearchQuery,
+} from "./interface.ts";
+import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
 function worldKey(ref: WorldReference): string {
   return `${ref.namespace}/${ref.id}`;
@@ -33,70 +32,53 @@ function buildSubjectTypes(chunks: ChunkRecord[]): Map<string, Set<string>> {
   return subjectTypes;
 }
 
-export class InMemoryChunkStorage implements ChunkStorage {
+export class InMemoryChunkIndex implements ChunkIndex {
   private readonly chunksById = new Map<string, ChunkRecord>();
-  private readonly chunkIdsByWorld = new Map<string, Set<string>>();
-  private readonly chunkIdsByFact = new Map<string, Set<string>>();
-  private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
+  private readonly chunkIds = new Set<string>();
+  private readonly chunkIdsByFactId = new Map<string, Set<string>>();
 
-  private chunkIdsForWorld(world: WorldReference): Set<string> {
-    const key = worldKey(world);
-    let ids = this.chunkIdsByWorld.get(key);
-    if (!ids) {
-      ids = new Set();
-      this.chunkIdsByWorld.set(key, ids);
-    }
-    return ids;
-  }
-
-  private factKey(world: WorldReference, factId: string): string {
-    return `${worldKey(world)}|${factId}`;
-  }
+  constructor(private readonly world: WorldReference) {}
 
   async setChunk(chunk: ChunkRecord): Promise<void> {
+    if (worldKey(chunk.world) !== worldKey(this.world)) {
+      throw new Error("Chunk world does not match index world.");
+    }
+
     const previous = this.chunksById.get(chunk.id);
     if (previous) {
-      this.chunkIdsByWorld.get(worldKey(previous.world))?.delete(previous.id);
-      this.chunkIdsByFact.get(this.factKey(previous.world, previous.factId))
-        ?.delete(previous.id);
+      this.chunkIds.delete(previous.id);
+      this.chunkIdsByFactId.get(previous.factId)?.delete(previous.id);
     }
 
     this.chunksById.set(chunk.id, chunk);
-    this.chunkIdsForWorld(chunk.world).add(chunk.id);
+    this.chunkIds.add(chunk.id);
 
-    const factKey = this.factKey(chunk.world, chunk.factId);
-    let factIds = this.chunkIdsByFact.get(factKey);
-    if (!factIds) {
-      factIds = new Set();
-      this.chunkIdsByFact.set(factKey, factIds);
+    let ids = this.chunkIdsByFactId.get(chunk.factId);
+    if (!ids) {
+      ids = new Set();
+      this.chunkIdsByFactId.set(chunk.factId, ids);
     }
-    factIds.add(chunk.id);
+    ids.add(chunk.id);
   }
 
-  async deleteChunk(world: WorldReference, factId: string): Promise<void> {
-    const factKey = this.factKey(world, factId);
-    const ids = this.chunkIdsByFact.get(factKey);
+  async deleteChunk(factId: string): Promise<void> {
+    const ids = this.chunkIdsByFactId.get(factId);
     if (!ids) return;
-
     for (const id of ids) {
       this.chunksById.delete(id);
-      this.chunkIdsByWorld.get(worldKey(world))?.delete(id);
+      this.chunkIds.delete(id);
     }
-    this.chunkIdsByFact.delete(factKey);
+    this.chunkIdsByFactId.delete(factId);
   }
 
-  async getByWorld(world: WorldReference): Promise<ChunkRecord[]> {
-    const ids = this.chunkIdsByWorld.get(worldKey(world));
-    if (!ids) return [];
-    return Array.from(ids)
+  async getAll(): Promise<ChunkRecord[]> {
+    return Array.from(this.chunkIds)
       .map((id) => this.chunksById.get(id))
       .filter((chunk): chunk is ChunkRecord => chunk !== undefined);
   }
 
-  async search(input: ChunkSearchQuery): Promise<ChunkSearchRow[]> {
-    const chunks = (
-      await Promise.all(input.worlds.map((world) => this.getByWorld(world)))
-    ).flat();
+  async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
+    const chunks = await this.getAll();
     const subjectTypes = buildSubjectTypes(chunks);
     const qFull = input.queryText.toLowerCase();
 
@@ -142,29 +124,35 @@ export class InMemoryChunkStorage implements ChunkStorage {
     rows.sort((a, b) => b.score - a.score);
     return rows;
   }
+}
+
+export class InMemoryChunkIndexManager implements ChunkIndexManager {
+  private readonly indexesByWorld = new Map<string, InMemoryChunkIndex>();
+  private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
+
+  async getChunkIndex(reference: WorldReference): Promise<ChunkIndex> {
+    const key = worldKey(reference);
+    let index = this.indexesByWorld.get(key);
+    if (!index) {
+      index = new InMemoryChunkIndex(reference);
+      this.indexesByWorld.set(key, index);
+    }
+    return index;
+  }
 
   async getIndexState(world: WorldReference): Promise<ChunkIndexState | null> {
     return this.indexStateByWorld.get(worldKey(world)) ?? null;
   }
 
-  async markWorldIndexed(state: ChunkIndexState): Promise<void> {
+  async setIndexState(state: ChunkIndexState): Promise<void> {
     this.indexStateByWorld.set(worldKey(state.world), state);
+    // Ensure an index exists so data-plane writers can rely on it.
+    await this.getChunkIndex(state.world);
   }
 
-  async clearWorld(world: WorldReference): Promise<void> {
-    const key = worldKey(world);
-    const ids = this.chunkIdsByWorld.get(key);
-    if (ids) {
-      for (const id of ids) {
-        const chunk = this.chunksById.get(id);
-        if (chunk) {
-          this.chunkIdsByFact.get(this.factKey(chunk.world, chunk.factId))
-            ?.delete(id);
-        }
-        this.chunksById.delete(id);
-      }
-    }
-    this.chunkIdsByWorld.delete(key);
+  async deleteChunkIndex(reference: WorldReference): Promise<void> {
+    const key = worldKey(reference);
+    this.indexesByWorld.delete(key);
     this.indexStateByWorld.delete(key);
   }
 }

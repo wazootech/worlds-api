@@ -8,7 +8,11 @@ Deno.test("tokenizeSearchQuery: splits on whitespace and lowercases", () => {
 });
 
 Deno.test("tokenizeSearchQuery: handles multiple spaces and tabs", () => {
-  assertEquals(tokenizeSearchQuery("  foo   bar\tbaz  "), ["foo", "bar", "baz"]);
+  assertEquals(tokenizeSearchQuery("  foo   bar\tbaz  "), [
+    "foo",
+    "bar",
+    "baz",
+  ]);
 });
 
 Deno.test("tokenizeSearchQuery: empty string returns empty array", () => {
@@ -29,25 +33,44 @@ Deno.test("tokenizeSearchQuery: preserves special characters", () => {
 
 // --- ftsTermHits ---
 
-
 Deno.test("ftsTermHits: term in subject scores 1", () => {
-  const hits = ftsTermHits(["alice"], "https://example.org/alice", "https://example.org/p", "some text");
+  const hits = ftsTermHits(
+    ["alice"],
+    "https://example.org/alice",
+    "https://example.org/p",
+    "some text",
+  );
   assertEquals(hits, 1);
 });
 
 Deno.test("ftsTermHits: term in predicate scores 1", () => {
-  const hits = ftsTermHits(["name"], "https://example.org/s", "https://example.org/name", "some text");
+  const hits = ftsTermHits(
+    ["name"],
+    "https://example.org/s",
+    "https://example.org/name",
+    "some text",
+  );
   assertEquals(hits, 1);
 });
 
 Deno.test("ftsTermHits: term in object scores 1", () => {
-  const hits = ftsTermHits(["hello"], "https://example.org/s", "https://example.org/p", "Hello World");
+  const hits = ftsTermHits(
+    ["hello"],
+    "https://example.org/s",
+    "https://example.org/p",
+    "Hello World",
+  );
   assertEquals(hits, 1);
 });
 
 Deno.test("ftsTermHits: each distinct term counted once even if in multiple fields", () => {
   // "alice" appears in both subject and object — should still be 1
-  const hits = ftsTermHits(["alice"], "https://example.org/alice", "https://example.org/p", "Alice is great");
+  const hits = ftsTermHits(
+    ["alice"],
+    "https://example.org/alice",
+    "https://example.org/p",
+    "Alice is great",
+  );
   assertEquals(hits, 1);
 });
 
@@ -62,12 +85,22 @@ Deno.test("ftsTermHits: multiple terms all matching", () => {
 });
 
 Deno.test("ftsTermHits: no matching terms returns 0", () => {
-  const hits = ftsTermHits(["xyz"], "https://example.org/s", "https://example.org/p", "hello");
+  const hits = ftsTermHits(
+    ["xyz"],
+    "https://example.org/s",
+    "https://example.org/p",
+    "hello",
+  );
   assertEquals(hits, 0);
 });
 
 Deno.test("ftsTermHits: empty terms array returns 0", () => {
-  const hits = ftsTermHits([], "https://example.org/s", "https://example.org/p", "hello");
+  const hits = ftsTermHits(
+    [],
+    "https://example.org/s",
+    "https://example.org/p",
+    "hello",
+  );
   assertEquals(hits, 0);
 });
 

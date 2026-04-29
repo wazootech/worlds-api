@@ -1,30 +1,30 @@
 import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { InMemoryChunkStorage } from "#/search/storage/in-memory.ts";
+import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
 import { Worlds } from "#/core/worlds.ts";
 import { handleRpc } from "#/api/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedFactStorageManager } from "#/facts/storage/indexed-fact-storage-manager.ts";
 
-function createCore() {
-  const chunkStorage = new InMemoryChunkStorage();
+function createWorlds() {
+  const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
   return new Worlds(
     new InMemoryWorldStorage(),
-    new IndexedFactStorageManager(embeddings, chunkStorage),
-    { chunkStorage, embeddings },
+    new IndexedFactStorageManager(embeddings, chunkIndexManager),
+    { chunkIndexManager, embeddings },
   );
 }
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {
-  const core = createCore();
+  const worlds = createWorlds();
 
   const createReq: WorldsRpcRequest = {
     action: "createWorld",
     request: { namespace: "ns", id: "w1", displayName: "World 1" },
   };
-  const createRes = await handleRpc(core, createReq);
+  const createRes = await handleRpc(worlds, createReq);
   assertEquals(createRes.action, "createWorld");
   if ("response" in createRes && createRes.action === "createWorld") {
     assertEquals(createRes.response.world.name, "ns/w1");
@@ -34,7 +34,7 @@ Deno.test("handleRpc: createWorld then getWorld", async () => {
     action: "getWorld",
     request: { source: "ns/w1" },
   };
-  const getRes = await handleRpc(core, getReq);
+  const getRes = await handleRpc(worlds, getReq);
   assertEquals(getRes.action, "getWorld");
   if ("response" in getRes && getRes.action === "getWorld") {
     assertEquals(getRes.response.world?.name, "ns/w1");
@@ -42,12 +42,12 @@ Deno.test("handleRpc: createWorld then getWorld", async () => {
 });
 
 Deno.test("handleRpc: error envelope includes action", async () => {
-  const core = createCore();
+  const worlds = createWorlds();
   const req: WorldsRpcRequest = {
     action: "updateWorld",
     request: { source: "ns/missing", displayName: "x" },
   };
-  const res = await handleRpc(core, req);
+  const res = await handleRpc(worlds, req);
   assertEquals(res.action, "updateWorld");
   if ("error" in res) {
     assertEquals(res.error.code, "NOT_FOUND");
@@ -55,13 +55,13 @@ Deno.test("handleRpc: error envelope includes action", async () => {
 });
 
 Deno.test("handleRpc: createWorld duplicate returns ALREADY_EXISTS", async () => {
-  const core = createCore();
+  const worlds = createWorlds();
   const req: WorldsRpcRequest = {
     action: "createWorld",
     request: { namespace: "ns", id: "dup", displayName: "D" },
   };
-  await handleRpc(core, req);
-  const res = await handleRpc(core, req);
+  await handleRpc(worlds, req);
+  const res = await handleRpc(worlds, req);
   assertEquals(res.action, "createWorld");
   if ("error" in res) {
     assertEquals(res.error.code, "ALREADY_EXISTS");
@@ -69,20 +69,20 @@ Deno.test("handleRpc: createWorld duplicate returns ALREADY_EXISTS", async () =>
 });
 
 Deno.test("handleRpc: deleteWorld", async () => {
-  const core = createCore();
-  await handleRpc(core, {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "del" },
   } as WorldsRpcRequest);
 
-  const res = await handleRpc(core, {
+  const res = await handleRpc(worlds, {
     action: "deleteWorld",
     request: { source: "ns/del" },
   } as WorldsRpcRequest);
   assertEquals(res.action, "deleteWorld");
   assertEquals("response" in res, true);
 
-  const getRes = await handleRpc(core, {
+  const getRes = await handleRpc(worlds, {
     action: "getWorld",
     request: { source: "ns/del" },
   } as WorldsRpcRequest);
@@ -92,17 +92,17 @@ Deno.test("handleRpc: deleteWorld", async () => {
 });
 
 Deno.test("handleRpc: listWorlds", async () => {
-  const core = createCore();
-  await handleRpc(core, {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "l1" },
   } as WorldsRpcRequest);
-  await handleRpc(core, {
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "l2" },
   } as WorldsRpcRequest);
 
-  const res = await handleRpc(core, {
+  const res = await handleRpc(worlds, {
     action: "listWorlds",
     request: {},
   } as WorldsRpcRequest);
@@ -113,28 +113,30 @@ Deno.test("handleRpc: listWorlds", async () => {
 });
 
 Deno.test("handleRpc: importWorld then sparql", async () => {
-  const core = createCore();
-  await handleRpc(core, {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "imp" },
   } as WorldsRpcRequest);
 
-  const importRes = await handleRpc(core, {
+  const importRes = await handleRpc(worlds, {
     action: "importWorld",
     request: {
       source: "ns/imp",
-      data: `<https://example.com/s> <https://example.com/p> <https://example.com/o> .`,
+      data:
+        `<https://example.com/s> <https://example.com/p> <https://example.com/o> .`,
       contentType: "application/n-quads",
     },
   } as WorldsRpcRequest);
   assertEquals(importRes.action, "importWorld");
   assertEquals("response" in importRes, true);
 
-  const sparqlRes = await handleRpc(core, {
+  const sparqlRes = await handleRpc(worlds, {
     action: "sparql",
     request: {
       sources: ["ns/imp"],
-      query: "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
+      query:
+        "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
     },
   } as WorldsRpcRequest);
   assertEquals(sparqlRes.action, "sparql");
@@ -147,12 +149,12 @@ Deno.test("handleRpc: importWorld then sparql", async () => {
 });
 
 Deno.test("handleRpc: searchWorlds", async () => {
-  const core = createCore();
-  await handleRpc(core, {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "srch" },
   } as WorldsRpcRequest);
-  await handleRpc(core, {
+  await handleRpc(worlds, {
     action: "importWorld",
     request: {
       source: "ns/srch",
@@ -161,7 +163,7 @@ Deno.test("handleRpc: searchWorlds", async () => {
     },
   } as WorldsRpcRequest);
 
-  const res = await handleRpc(core, {
+  const res = await handleRpc(worlds, {
     action: "searchWorlds",
     request: { query: "hello", sources: ["ns/srch"] },
   } as WorldsRpcRequest);
@@ -173,21 +175,22 @@ Deno.test("handleRpc: searchWorlds", async () => {
 });
 
 Deno.test("handleRpc: exportWorld", async () => {
-  const core = createCore();
-  await handleRpc(core, {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
     action: "createWorld",
     request: { namespace: "ns", id: "exp" },
   } as WorldsRpcRequest);
-  await handleRpc(core, {
+  await handleRpc(worlds, {
     action: "importWorld",
     request: {
       source: "ns/exp",
-      data: `<https://example.com/s> <https://example.com/p> <https://example.com/o> .`,
+      data:
+        `<https://example.com/s> <https://example.com/p> <https://example.com/o> .`,
       contentType: "application/n-quads",
     },
   } as WorldsRpcRequest);
 
-  const res = await handleRpc(core, {
+  const res = await handleRpc(worlds, {
     action: "exportWorld",
     request: { source: "ns/exp", contentType: "application/n-quads" },
   } as WorldsRpcRequest);

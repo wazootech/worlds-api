@@ -1,5 +1,5 @@
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type { ChunkStorage } from "#/search/storage/interface.ts";
+import type { ChunkIndexManager } from "#/search/storage/interface.ts";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type { StoredFact } from "./types.ts";
 
@@ -16,7 +16,7 @@ export interface FactStorage {
 
 export interface FactStorageConfig {
   embeddings?: EmbeddingsService | null;
-  chunks?: ChunkStorage | null;
+  chunks?: ChunkIndexManager | null;
 }
 
 export interface FactStorageManager {

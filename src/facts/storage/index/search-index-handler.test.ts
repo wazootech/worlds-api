@@ -1,15 +1,21 @@
 import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { InMemoryChunkStorage } from "#/search/storage/in-memory.ts";
+import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
 import type { StoredFact } from "#/facts/storage/types.ts";
 
-function setup() {
+async function setup() {
   const embeddings = new FakeEmbeddingsService();
-  const chunks = new InMemoryChunkStorage();
+  const chunkIndexManager = new InMemoryChunkIndexManager();
   const world = { namespace: "ns", id: "w1" };
-  const handler = new SearchIndexHandler(embeddings, chunks, world);
-  return { handler, chunks, world };
+  await chunkIndexManager.setIndexState({
+    world,
+    indexedAt: Date.now(),
+    embeddingDimensions: embeddings.dimensions,
+  });
+  const index = await chunkIndexManager.getChunkIndex(world);
+  const handler = new SearchIndexHandler(embeddings, index, world);
+  return { handler, chunkIndexManager, index, world };
 }
 
 function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
@@ -23,14 +29,14 @@ function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
 }
 
 Deno.test("SearchIndexHandler: indexes literal object", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [makeFact({ object: "Alice is a developer" })],
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 1);
   assertEquals(result[0].text, "Alice is a developer");
   assertEquals(result[0].subject, "https://example.org/s");
@@ -38,7 +44,7 @@ Deno.test("SearchIndexHandler: indexes literal object", async () => {
 });
 
 Deno.test("SearchIndexHandler: skips NamedNode objects", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [makeFact({
@@ -48,12 +54,12 @@ Deno.test("SearchIndexHandler: skips NamedNode objects", async () => {
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 0);
 });
 
 Deno.test("SearchIndexHandler: skips BlankNode objects", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [makeFact({
@@ -63,12 +69,12 @@ Deno.test("SearchIndexHandler: skips BlankNode objects", async () => {
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 0);
 });
 
 Deno.test("SearchIndexHandler: indexes rdf:type triples", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [makeFact({
@@ -78,60 +84,65 @@ Deno.test("SearchIndexHandler: indexes rdf:type triples", async () => {
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 1);
   assertEquals(result[0].text, "https://example.org/Person");
 });
 
 Deno.test("SearchIndexHandler: skips meta predicates (rdfs:label, rdfs:comment)", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [
-      makeFact({ predicate: "http://www.w3.org/2000/01/rdf-schema#label", object: "My Label" }),
-      makeFact({ predicate: "http://www.w3.org/2000/01/rdf-schema#comment", object: "My Comment", subject: "https://example.org/s2" }),
+      makeFact({
+        predicate: "http://www.w3.org/2000/01/rdf-schema#label",
+        object: "My Label",
+      }),
+      makeFact({
+        predicate: "http://www.w3.org/2000/01/rdf-schema#comment",
+        object: "My Comment",
+        subject: "https://example.org/s2",
+      }),
     ],
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 0);
 });
 
 Deno.test("SearchIndexHandler: skips empty object", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
 
   await handler.patch([{
     insertions: [makeFact({ object: "" })],
     deletions: [],
   }]);
 
-  const result = await chunks.getByWorld(world);
+  const result = await index.getAll();
   assertEquals(result.length, 0);
 });
 
 Deno.test("SearchIndexHandler: deletion removes chunks", async () => {
-  const { handler, chunks, world } = setup();
+  const { handler, index } = await setup();
   const fact = makeFact({ object: "Some text" });
 
   await handler.patch([{ insertions: [fact], deletions: [] }]);
-  assertEquals((await chunks.getByWorld(world)).length, 1);
+  assertEquals((await index.getAll()).length, 1);
 
   await handler.patch([{ insertions: [], deletions: [fact] }]);
-  assertEquals((await chunks.getByWorld(world)).length, 0);
+  assertEquals((await index.getAll()).length, 0);
 });
 
-Deno.test("SearchIndexHandler: marks world indexed after patch", async () => {
-  const { handler, chunks, world } = setup();
-
-  assertEquals(await chunks.getIndexState(world), null);
+Deno.test("SearchIndexHandler: does not mutate index state", async () => {
+  const { handler, chunkIndexManager, world } = await setup();
+  const before = await chunkIndexManager.getIndexState(world);
 
   await handler.patch([{
     insertions: [makeFact()],
     deletions: [],
   }]);
 
-  const state = await chunks.getIndexState(world);
-  assertEquals(state !== null, true);
-  assertEquals(state!.embeddingDimensions, 384); // FakeEmbeddingsService.dimensions = 384
+  const after = await chunkIndexManager.getIndexState(world);
+  assertEquals(after, before);
 });

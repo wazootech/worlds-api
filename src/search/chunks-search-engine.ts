@@ -5,12 +5,12 @@ import type {
   WorldReference,
 } from "#/api/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type { ChunkStorage } from "#/search/storage/interface.ts";
+import type { ChunkIndexManager } from "#/search/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import { tokenizeSearchQuery } from "#/search/fts.ts";
 
 export interface ChunkSearchDeps {
-  chunkStorage: ChunkStorage;
+  chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;
   worldStorage: WorldStorage;
   formatWorldName: (ref: WorldReference) => string;
@@ -31,15 +31,21 @@ export async function searchChunks(
   }
 
   const queryVector = await deps.embeddings.embed(input.query);
-  const rows = await deps.chunkStorage.search({
-    worlds: targetRefs,
-    queryText: input.query,
-    queryTerms,
-    queryVector,
-    subjects: input.subjects,
-    predicates: input.predicates,
-    types: input.types,
-  });
+  const rows = (
+    await Promise.all(targetRefs.map(async (ref) => {
+      const index = await deps.chunkIndexManager.getChunkIndex(ref);
+      return await index.search({
+        queryText: input.query,
+        queryTerms,
+        queryVector,
+        subjects: input.subjects,
+        predicates: input.predicates,
+        types: input.types,
+      });
+    }))
+  ).flat();
+
+  rows.sort((a, b) => b.score - a.score);
 
   const worldByKey = new Map<string, World>();
   for (const ref of targetRefs) {

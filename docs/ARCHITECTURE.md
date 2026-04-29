@@ -317,7 +317,9 @@ interface ChunkRecord {
 
 ## Directory Layout
 
-The `src/worlds` package is organized to clearly separate application logic (like `Worlds` and `SPARQL` orchestration) from data storage interfaces and implementations:
+The `src/worlds` package is organized to clearly separate application logic
+(like `Worlds` and `SPARQL` orchestration) from data storage interfaces and
+implementations:
 
 ```text
 src/
@@ -340,7 +342,8 @@ src/
 
 ### Setting up with InMemoryFactStorageManager
 
-If you want a lightweight, in-memory implementation without search indexing (SPARQL-only):
+If you want a lightweight, in-memory implementation without search indexing
+(SPARQL-only):
 
 ```typescript
 import { Worlds } from "#/core/worlds.ts";
@@ -349,7 +352,7 @@ import { InMemoryFactStorageManager } from "#/facts/storage/in-memory-fact-stora
 
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
-  new InMemoryFactStorageManager()
+  new InMemoryFactStorageManager(),
 );
 
 await worlds.createWorld({ namespace: "demo", id: "w1", displayName: "Demo" });
@@ -372,6 +375,6 @@ const embeddings = new OpenAIEmbeddingsService("sk-...");
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
   new IndexedFactStorageManager(embeddings, chunkStorage),
-  { chunkStorage, embeddings } // Provide search deps for global querying
+  { chunkStorage, embeddings }, // Provide search deps for global querying
 );
 ```

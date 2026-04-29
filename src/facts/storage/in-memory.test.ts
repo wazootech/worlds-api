@@ -28,7 +28,12 @@ Deno.test("InMemoryFactStorage: findFacts filters by subject", async () => {
   await storage.setFact(makeFact({ subject: "https://example.org/alice" }));
   await storage.setFact(makeFact({ subject: "https://example.org/bob" }));
 
-  const results = await storage.findFacts([{ subject: "https://example.org/alice", predicate: "", object: "", graph: "" }]);
+  const results = await storage.findFacts([{
+    subject: "https://example.org/alice",
+    predicate: "",
+    object: "",
+    graph: "",
+  }]);
   assertEquals(results.length, 1);
   assertEquals(results[0].subject, "https://example.org/alice");
 });
@@ -36,9 +41,19 @@ Deno.test("InMemoryFactStorage: findFacts filters by subject", async () => {
 Deno.test("InMemoryFactStorage: findFacts filters by predicate", async () => {
   const storage = new InMemoryFactStorage();
   await storage.setFact(makeFact({ predicate: "https://example.org/name" }));
-  await storage.setFact(makeFact({ predicate: "https://example.org/age", subject: "https://example.org/s2" }));
+  await storage.setFact(
+    makeFact({
+      predicate: "https://example.org/age",
+      subject: "https://example.org/s2",
+    }),
+  );
 
-  const results = await storage.findFacts([{ subject: "", predicate: "https://example.org/name", object: "", graph: "" }]);
+  const results = await storage.findFacts([{
+    subject: "",
+    predicate: "https://example.org/name",
+    object: "",
+    graph: "",
+  }]);
   assertEquals(results.length, 1);
   assertEquals(results[0].predicate, "https://example.org/name");
 });
@@ -46,9 +61,16 @@ Deno.test("InMemoryFactStorage: findFacts filters by predicate", async () => {
 Deno.test("InMemoryFactStorage: findFacts filters by graph", async () => {
   const storage = new InMemoryFactStorage();
   await storage.setFact(makeFact({ graph: "g1" }));
-  await storage.setFact(makeFact({ graph: "g2", subject: "https://example.org/s2" }));
+  await storage.setFact(
+    makeFact({ graph: "g2", subject: "https://example.org/s2" }),
+  );
 
-  const results = await storage.findFacts([{ subject: "", predicate: "", object: "", graph: "g1" }]);
+  const results = await storage.findFacts([{
+    subject: "",
+    predicate: "",
+    object: "",
+    graph: "g1",
+  }]);
   assertEquals(results.length, 1);
   assertEquals(results[0].graph, "g1");
 });
