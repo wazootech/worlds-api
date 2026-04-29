@@ -1,17 +1,14 @@
-import {
-  create,
-  getByID,
-  insert,
-  type Orama,
-  remove,
-  search,
-} from "@orama/orama";
+import { getByID, insert, remove, search } from "@orama/orama";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type {
   ChunkIndex,
   ChunkIndexManager,
   ChunkIndexSearchQuery,
 } from "./interface.ts";
+import {
+  createChunkOramaDb,
+  type ChunkOramaDb,
+} from "./orama-chunk-db.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
 function worldKey(ref: WorldReference): string {
@@ -23,7 +20,7 @@ export class OramaChunkIndex implements ChunkIndex {
     private readonly world: WorldReference,
     private readonly getOrCreateDb: (
       dimensions: number,
-    ) => Promise<Orama<any> | null>,
+    ) => Promise<ChunkOramaDb | null>,
   ) {}
 
   async setChunk(chunk: ChunkRecord): Promise<void> {
@@ -62,7 +59,7 @@ export class OramaChunkIndex implements ChunkIndex {
     if (!db) return [];
     const results = await search(db, { term: "" });
     return results.hits.map((hit) => {
-      const doc = hit.document as any;
+      const doc = hit.document;
       return {
         id: doc.id,
         factId: doc.factId,
@@ -92,7 +89,7 @@ export class OramaChunkIndex implements ChunkIndex {
 
     const rows: ChunkSearchRow[] = [];
     for (const hit of results.hits) {
-      const doc = hit.document as any;
+      const doc = hit.document;
       const chunk: ChunkRecord = {
         id: doc.id,
         factId: doc.factId,
@@ -127,7 +124,7 @@ export class OramaChunkIndex implements ChunkIndex {
 }
 
 export class OramaChunkIndexManager implements ChunkIndexManager {
-  private readonly dbs = new Map<string, Orama<any>>();
+  private readonly dbs = new Map<string, ChunkOramaDb>();
   private readonly indexes = new Map<string, OramaChunkIndex>();
   private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
 
@@ -171,22 +168,12 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
   private async getOrCreateDb(
     world: WorldReference,
     dimensions: number,
-  ): Promise<Orama<any> | null> {
+  ): Promise<ChunkOramaDb | null> {
     const key = worldKey(world);
     let db = this.dbs.get(key);
     if (!db) {
       if (!dimensions || dimensions <= 0) return null;
-      db = await create({
-        schema: {
-          id: "string",
-          factId: "string",
-          subject: "string",
-          predicate: "string",
-          text: "string",
-          vector: `vector[${dimensions}]`,
-          vector_blob: "number[]",
-        },
-      });
+      db = await createChunkOramaDb(dimensions);
       this.dbs.set(key, db);
     }
     return db;

@@ -22,7 +22,7 @@ export function makeChunk(overrides: MakeChunkOverrides): ChunkRecord {
 }
 
 /**
- * Shared test suite for any ChunkIndexManager implementation.
+ * Shared test suite for ChunkIndexManager implementations.
  */
 export async function testChunkIndexManager(manager: ChunkIndexManager) {
   const world = { namespace: "ns", id: "w1" };
