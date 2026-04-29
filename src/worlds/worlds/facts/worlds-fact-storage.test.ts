@@ -1,12 +1,12 @@
 import { assertEquals } from "@std/assert";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
-import { IndexedWorldFactStorage } from "./indexed-store-storage.ts";
+import { IndexedFactStorageManager } from "./worlds-fact-storage.ts";
 
-Deno.test("IndexedWorldFactStorage: getFactStorage returns same instance for same world", async () => {
+Deno.test("IndexedFactStorageManager: getFactStorage returns same instance for same world", async () => {
   const embeddings = new PlaceholderEmbeddingsService();
   const chunks = new InMemoryChunkStorage();
-  const storage = new IndexedWorldFactStorage(embeddings, chunks);
+  const storage = new IndexedFactStorageManager(embeddings, chunks);
   const ref = { namespace: "ns", id: "w1" };
 
   const store1 = await storage.getFactStorage(ref);
@@ -15,10 +15,10 @@ Deno.test("IndexedWorldFactStorage: getFactStorage returns same instance for sam
   assertEquals(store1, store2);
 });
 
-Deno.test("IndexedWorldFactStorage: different worlds have isolated storage", async () => {
+Deno.test("IndexedFactStorageManager: different worlds have isolated storage", async () => {
   const embeddings = new PlaceholderEmbeddingsService();
   const chunks = new InMemoryChunkStorage();
-  const storage = new IndexedWorldFactStorage(embeddings, chunks);
+  const storage = new IndexedFactStorageManager(embeddings, chunks);
 
   const store1 = await storage.getFactStorage({ namespace: "ns", id: "w1" });
   const store2 = await storage.getFactStorage({ namespace: "ns", id: "w2" });
@@ -34,10 +34,10 @@ Deno.test("IndexedWorldFactStorage: different worlds have isolated storage", asy
   assertEquals(results.length, 0);
 });
 
-Deno.test("IndexedWorldFactStorage: deleteFactStorage clears wrapped storage", async () => {
+Deno.test("IndexedFactStorageManager: deleteFactStorage clears wrapped storage", async () => {
   const embeddings = new PlaceholderEmbeddingsService();
   const chunks = new InMemoryChunkStorage();
-  const storage = new IndexedWorldFactStorage(embeddings, chunks);
+  const storage = new IndexedFactStorageManager(embeddings, chunks);
   const ref = { namespace: "ns", id: "w1" };
 
   const store = await storage.getFactStorage(ref);
@@ -55,10 +55,10 @@ Deno.test("IndexedWorldFactStorage: deleteFactStorage clears wrapped storage", a
   assertEquals(results.length, 0);
 });
 
-Deno.test("IndexedWorldFactStorage: deleteFactStorage clears chunk index", async () => {
+Deno.test("IndexedFactStorageManager: deleteFactStorage clears chunk index", async () => {
   const embeddings = new PlaceholderEmbeddingsService();
   const chunks = new InMemoryChunkStorage();
-  const storage = new IndexedWorldFactStorage(embeddings, chunks);
+  const storage = new IndexedFactStorageManager(embeddings, chunks);
   const ref = { namespace: "ns", id: "w1" };
 
   const store = await storage.getFactStorage(ref);
@@ -75,10 +75,10 @@ Deno.test("IndexedWorldFactStorage: deleteFactStorage clears chunk index", async
   assertEquals(chunksAfter.length, 0);
 });
 
-Deno.test("IndexedWorldFactStorage: deleteFactStorage is no-op for missing", async () => {
+Deno.test("IndexedFactStorageManager: deleteFactStorage is no-op for missing", async () => {
   const embeddings = new PlaceholderEmbeddingsService();
   const chunks = new InMemoryChunkStorage();
-  const storage = new IndexedWorldFactStorage(embeddings, chunks);
+  const storage = new IndexedFactStorageManager(embeddings, chunks);
 
   await storage.deleteFactStorage({ namespace: "ns", id: "missing" });
 

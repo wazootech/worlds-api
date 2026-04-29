@@ -1,16 +1,16 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { PlaceholderEmbeddingsService } from "#/worlds/embeddings/placeholder.ts";
 import { InMemoryChunkStorage } from "#/worlds/search/chunks/in-memory.ts";
-import { WorldsCore } from "./core.ts";
+import { Worlds } from "./core.ts";
 import { InMemoryWorldStorage } from "./core/worlds/in-memory.ts";
-import { IndexedWorldFactStorage } from "./store/store/indexed-store-storage.ts";
+import { IndexedFactStorageManager } from "./worlds/facts/worlds-fact-storage.ts";
 
 function createCore() {
   const chunkStorage = new InMemoryChunkStorage();
   const embeddings = new PlaceholderEmbeddingsService();
-  return new WorldsCore(
+  return new Worlds(
     new InMemoryWorldStorage(),
-    new IndexedWorldFactStorage(embeddings, chunkStorage),
+    new IndexedFactStorageManager(embeddings, chunkStorage),
     { chunkStorage, embeddings },
   );
 }
@@ -19,15 +19,15 @@ function createCoreWithSharedDeps() {
   const worldStorage = new InMemoryWorldStorage();
   const chunkStorage = new InMemoryChunkStorage();
   const embeddings = new PlaceholderEmbeddingsService();
-  const storeStorage = new IndexedWorldFactStorage(embeddings, chunkStorage);
-  const core = new WorldsCore(worldStorage, storeStorage, {
+  const storeStorage = new IndexedFactStorageManager(embeddings, chunkStorage);
+  const core = new Worlds(worldStorage, storeStorage, {
     chunkStorage,
     embeddings,
   });
   return { core, chunkStorage };
 }
 
-Deno.test("WorldsCore: create/get/update/delete world", async () => {
+Deno.test("Worlds: create/get/update/delete world", async () => {
   const core = createCore();
 
   const created = await core.createWorld({
@@ -56,7 +56,7 @@ Deno.test("WorldsCore: create/get/update/delete world", async () => {
   assertEquals(afterDelete, null);
 });
 
-Deno.test("WorldsCore: createWorld rejects duplicates", async () => {
+Deno.test("Worlds: createWorld rejects duplicates", async () => {
   const core = createCore();
   await core.createWorld({ namespace: "ns", id: "w1" });
   await assertRejects(
@@ -66,7 +66,7 @@ Deno.test("WorldsCore: createWorld rejects duplicates", async () => {
   );
 });
 
-Deno.test("WorldsCore: sparql SELECT query on world", async () => {
+Deno.test("Worlds: sparql SELECT query on world", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -99,7 +99,7 @@ Deno.test("WorldsCore: sparql SELECT query on world", async () => {
   assertEquals(rows.results.bindings[1].o?.value, "https://example.com/o2");
 });
 
-Deno.test("WorldsCore: sparql ASK query returns true", async () => {
+Deno.test("Worlds: sparql ASK query returns true", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -124,7 +124,7 @@ Deno.test("WorldsCore: sparql ASK query returns true", async () => {
   assertEquals((result as { boolean: boolean }).boolean, true);
 });
 
-Deno.test("WorldsCore: sparql ASK query returns false", async () => {
+Deno.test("Worlds: sparql ASK query returns false", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -149,7 +149,7 @@ Deno.test("WorldsCore: sparql ASK query returns false", async () => {
   assertEquals((result as { boolean: boolean }).boolean, false);
 });
 
-Deno.test("WorldsCore: sparql UPDATE INSERT adds triples", async () => {
+Deno.test("Worlds: sparql UPDATE INSERT adds triples", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -179,7 +179,7 @@ Deno.test("WorldsCore: sparql UPDATE INSERT adds triples", async () => {
   assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o1");
 });
 
-Deno.test("WorldsCore: sparql UPDATE DELETE removes triples", async () => {
+Deno.test("Worlds: sparql UPDATE DELETE removes triples", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -228,7 +228,7 @@ Deno.test("WorldsCore: sparql UPDATE DELETE removes triples", async () => {
   assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o2");
 });
 
-Deno.test("WorldsCore: sparql UPDATE INSERT+DELETE combination", async () => {
+Deno.test("Worlds: sparql UPDATE INSERT+DELETE combination", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -268,7 +268,7 @@ Deno.test("WorldsCore: sparql UPDATE INSERT+DELETE combination", async () => {
   assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o2");
 });
 
-Deno.test("WorldsCore: multi-source sparql query unions multiple worlds", async () => {
+Deno.test("Worlds: multi-source sparql query unions multiple worlds", async () => {
   const core = createCore();
 
   // Create two worlds
@@ -313,7 +313,7 @@ Deno.test("WorldsCore: multi-source sparql query unions multiple worlds", async 
   assertEquals(rows.results.bindings[1].o?.value, "https://example.com/o2");
 });
 
-Deno.test("WorldsCore: multi-source query with overlapping data", async () => {
+Deno.test("Worlds: multi-source query with overlapping data", async () => {
   const core = createCore();
 
   // Create two worlds
@@ -359,7 +359,7 @@ Deno.test("WorldsCore: multi-source query with overlapping data", async () => {
   assertEquals(rows.results.bindings[1].o?.value, "https://example.com/unique");
 });
 
-Deno.test("WorldsCore: sparql with blank nodes", async () => {
+Deno.test("Worlds: sparql with blank nodes", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -396,7 +396,7 @@ Deno.test("WorldsCore: sparql with blank nodes", async () => {
   );
 });
 
-Deno.test("WorldsCore: sparql rejects with no sources", async () => {
+Deno.test("Worlds: sparql rejects with no sources", async () => {
   const core = createCore();
 
   await assertRejects(
@@ -406,7 +406,7 @@ Deno.test("WorldsCore: sparql rejects with no sources", async () => {
   );
 });
 
-Deno.test("WorldsCore: sparql rejects on non-existent world", async () => {
+Deno.test("Worlds: sparql rejects on non-existent world", async () => {
   const core = createCore();
 
   await assertRejects(
@@ -420,7 +420,7 @@ Deno.test("WorldsCore: sparql rejects on non-existent world", async () => {
   );
 });
 
-Deno.test("WorldsCore: search finds facts matching query terms", async () => {
+Deno.test("Worlds: search finds facts matching query terms", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -449,7 +449,7 @@ Deno.test("WorldsCore: search finds facts matching query terms", async () => {
   assertEquals(result.results?.[0].object, "Sandra");
 });
 
-Deno.test("WorldsCore: search scores by number of matching terms", async () => {
+Deno.test("Worlds: search scores by number of matching terms", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -475,7 +475,7 @@ Deno.test("WorldsCore: search scores by number of matching terms", async () => {
   assertEquals(result.results?.[1].ftsRank, 1);
 });
 
-Deno.test("WorldsCore: search returns results from multiple worlds", async () => {
+Deno.test("Worlds: search returns results from multiple worlds", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -509,7 +509,7 @@ Deno.test("WorldsCore: search returns results from multiple worlds", async () =>
   assertEquals(result.results?.length, 2);
 });
 
-Deno.test("WorldsCore: search falls back per unindexed world", async () => {
+Deno.test("Worlds: search falls back per unindexed world", async () => {
   const { core, chunkStorage } = createCoreWithSharedDeps();
 
   await core.createWorld({
@@ -548,7 +548,7 @@ Deno.test("WorldsCore: search falls back per unindexed world", async () => {
   ]);
 });
 
-Deno.test("WorldsCore: search rejects on non-existent world", async () => {
+Deno.test("Worlds: search rejects on non-existent world", async () => {
   const core = createCore();
 
   await assertRejects(
@@ -562,7 +562,7 @@ Deno.test("WorldsCore: search rejects on non-existent world", async () => {
   );
 });
 
-Deno.test("WorldsCore: search with empty query returns empty", async () => {
+Deno.test("Worlds: search with empty query returns empty", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -584,7 +584,7 @@ Deno.test("WorldsCore: search with empty query returns empty", async () => {
   assertEquals(result.results?.length, 0);
 });
 
-Deno.test("WorldsCore: search finds data added via SPARQL UPDATE", async () => {
+Deno.test("Worlds: search finds data added via SPARQL UPDATE", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -610,7 +610,7 @@ Deno.test("WorldsCore: search finds data added via SPARQL UPDATE", async () => {
   assertEquals(result.results?.[0].object, "Gregory");
 });
 
-Deno.test("WorldsCore: sparql DELETE removes from search index", async () => {
+Deno.test("Worlds: sparql DELETE removes from search index", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -648,7 +648,7 @@ Deno.test("WorldsCore: sparql DELETE removes from search index", async () => {
   assertEquals(after.results?.[0].subject, "https://example.org/bob");
 });
 
-Deno.test("WorldsCore: search filters by specified sources only", async () => {
+Deno.test("Worlds: search filters by specified sources only", async () => {
   const core = createCore();
 
   await core.createWorld({
@@ -688,7 +688,7 @@ Deno.test("WorldsCore: search filters by specified sources only", async () => {
   assertEquals(result2.results?.[0].subject, "https://example.org/s2");
 });
 
-Deno.test("WorldsCore: empty sparql UPDATE does not mutate", async () => {
+Deno.test("Worlds: empty sparql UPDATE does not mutate", async () => {
   const core = createCore();
 
   await core.createWorld({

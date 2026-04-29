@@ -4,13 +4,13 @@ import { SearchIndexHandler } from "#/worlds/index/patch/search-index-handler.ts
 import type { ChunkStorage } from "#/worlds/search/chunks/interface.ts";
 import { InMemoryFactStorage } from "#/worlds/rdf/facts/in-memory.ts";
 import { IndexedFactStorage } from "#/worlds/rdf/facts/indexed.ts";
-import type { WorldFactStorage } from "./interface.ts";
+import type { FactStorageManager } from "./interface.ts";
 
 function keyOfRef(reference: WorldReference): string {
   return `${reference.namespace}/${reference.id}`;
 }
 
-export class IndexedWorldFactStorage implements WorldFactStorage {
+export class IndexedFactStorageManager implements FactStorageManager {
   private readonly wrapped = new Map<string, IndexedFactStorage>();
 
   constructor(

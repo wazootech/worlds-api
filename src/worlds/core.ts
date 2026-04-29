@@ -24,7 +24,7 @@ import type { WorldsInterface } from "./interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "./resolve.ts";
 import type { WorldStorage } from "./core/worlds/interface.ts";
 import type { StoredWorld } from "./core/worlds/types.ts";
-import type { WorldFactStorage } from "./store/store/interface.ts";
+import type { FactStorageManager } from "./worlds/facts/interface.ts";
 import {
   deserialize,
   factsFromStore,
@@ -36,7 +36,7 @@ import { storedFactKey } from "./rdf/facts/key.ts";
 import type { StoredFact } from "./rdf/facts/types.ts";
 import { executeSparql } from "./sparql/sparql.ts";
 
-/** Shared chunk index + embeddings for vector search (must match {@link IndexedWorldFactStorage} deps when used). */
+/** Shared chunk index + embeddings for vector search (must match {@link IndexedFactStorageManager} deps when used). */
 export interface WorldsCoreSearchDeps {
   chunkStorage: ChunkStorage;
   embeddings: EmbeddingsService;
@@ -57,12 +57,13 @@ function toWorld(stored: StoredWorld): World {
  * WorldsCore is the in-process reference implementation of WorldsInterface.
  * Accepts WorldStorage and StoreStorage for all persistence.
  */
-export class WorldsCore implements WorldsInterface {
+/** Accepts WorldStorage and FactStorageManager for all persistence. */
+export class Worlds implements WorldsInterface {
   private readonly searchDeps: WorldsCoreSearchDeps;
 
   constructor(
     private readonly worldStorage: WorldStorage,
-    private readonly worldFactStorage: WorldFactStorage,
+    private readonly worldFactStorage: FactStorageManager,
     searchDeps?: WorldsCoreSearchDeps,
   ) {
     this.searchDeps = searchDeps ?? {

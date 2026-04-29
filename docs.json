@@ -1,0 +1,566 @@
+﻿{
+  "version": 2,
+  "nodes": {
+    "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts": {
+      "imports": [
+        {
+          "importedName": "StoredFact",
+          "originalName": "StoredFact",
+          "src": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "StoredFact",
+          "declarations": [
+            {
+              "location": {
+                "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                "line": 0,
+                "col": 0,
+                "byteIndex": 0
+              },
+              "declarationKind": "export",
+              "kind": "interface",
+              "def": {
+                "properties": [
+                  {
+                    "name": "subject",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 1,
+                      "col": 2,
+                      "byteIndex": 32
+                    },
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  },
+                  {
+                    "name": "predicate",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 2,
+                      "col": 2,
+                      "byteIndex": 51
+                    },
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  },
+                  {
+                    "name": "object",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 3,
+                      "col": 2,
+                      "byteIndex": 72
+                    },
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  },
+                  {
+                    "name": "graph",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 4,
+                      "col": 2,
+                      "byteIndex": 90
+                    },
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  },
+                  {
+                    "name": "objectTermType",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 5,
+                      "col": 2,
+                      "byteIndex": 107
+                    },
+                    "optional": true,
+                    "tsType": {
+                      "kind": "union",
+                      "value": [
+                        {
+                          "repr": "NamedNode",
+                          "kind": "literal",
+                          "value": {
+                            "kind": "string",
+                            "string": "NamedNode"
+                          }
+                        },
+                        {
+                          "repr": "BlankNode",
+                          "kind": "literal",
+                          "value": {
+                            "kind": "string",
+                            "string": "BlankNode"
+                          }
+                        },
+                        {
+                          "repr": "Literal",
+                          "kind": "literal",
+                          "value": {
+                            "kind": "string",
+                            "string": "Literal"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "objectDatatype",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 6,
+                      "col": 2,
+                      "byteIndex": 165
+                    },
+                    "optional": true,
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  },
+                  {
+                    "name": "objectLanguage",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/types.ts",
+                      "line": 7,
+                      "col": 2,
+                      "byteIndex": 192
+                    },
+                    "optional": true,
+                    "tsType": {
+                      "repr": "string",
+                      "kind": "keyword",
+                      "value": "string"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "FactStorage",
+          "declarations": [
+            {
+              "location": {
+                "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                "line": 3,
+                "col": 0,
+                "byteIndex": 75
+              },
+              "declarationKind": "export",
+              "kind": "interface",
+              "def": {
+                "methods": [
+                  {
+                    "name": "setFact",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 4,
+                      "col": 2,
+                      "byteIndex": 108
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "fact",
+                        "optional": false,
+                        "tsType": {
+                          "repr": "StoredFact",
+                          "kind": "typeRef",
+                          "value": {
+                            "typeName": "StoredFact",
+                            "resolution": {
+                              "kind": "import",
+                              "specifier": "./types.ts",
+                              "name": "StoredFact"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "deleteFact",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 5,
+                      "col": 2,
+                      "byteIndex": 152
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "fact",
+                        "optional": false,
+                        "tsType": {
+                          "repr": "StoredFact",
+                          "kind": "typeRef",
+                          "value": {
+                            "typeName": "StoredFact",
+                            "resolution": {
+                              "kind": "import",
+                              "specifier": "./types.ts",
+                              "name": "StoredFact"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "setFacts",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 6,
+                      "col": 2,
+                      "byteIndex": 199
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "facts",
+                        "optional": false,
+                        "tsType": {
+                          "kind": "array",
+                          "value": {
+                            "repr": "StoredFact",
+                            "kind": "typeRef",
+                            "value": {
+                              "typeName": "StoredFact",
+                              "resolution": {
+                                "kind": "import",
+                                "specifier": "./types.ts",
+                                "name": "StoredFact"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "deleteFacts",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 7,
+                      "col": 2,
+                      "byteIndex": 247
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "facts",
+                        "optional": false,
+                        "tsType": {
+                          "kind": "array",
+                          "value": {
+                            "repr": "StoredFact",
+                            "kind": "typeRef",
+                            "value": {
+                              "typeName": "StoredFact",
+                              "resolution": {
+                                "kind": "import",
+                                "specifier": "./types.ts",
+                                "name": "StoredFact"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "findFacts",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 8,
+                      "col": 2,
+                      "byteIndex": 298
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "matchers",
+                        "optional": false,
+                        "tsType": {
+                          "kind": "array",
+                          "value": {
+                            "repr": "StoredFact",
+                            "kind": "typeRef",
+                            "value": {
+                              "typeName": "StoredFact",
+                              "resolution": {
+                                "kind": "import",
+                                "specifier": "./types.ts",
+                                "name": "StoredFact"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "kind": "array",
+                            "value": {
+                              "repr": "StoredFact",
+                              "kind": "typeRef",
+                              "value": {
+                                "typeName": "StoredFact",
+                                "resolution": {
+                                  "kind": "import",
+                                  "specifier": "./types.ts",
+                                  "name": "StoredFact"
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "clear",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts",
+                      "line": 9,
+                      "col": 2,
+                      "byteIndex": 358
+                    },
+                    "params": [],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/store/store/interface.ts": {
+      "imports": [
+        {
+          "importedName": "FactStorage",
+          "originalName": "FactStorage",
+          "src": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/rdf/facts/interface.ts"
+        },
+        {
+          "importedName": "WorldReference",
+          "originalName": "WorldReference",
+          "src": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/openapi/generated/types.gen.ts"
+        }
+      ],
+      "symbols": [
+        {
+          "name": "WorldFactStorage",
+          "declarations": [
+            {
+              "location": {
+                "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/store/store/interface.ts",
+                "line": 3,
+                "col": 0,
+                "byteIndex": 141
+              },
+              "declarationKind": "export",
+              "kind": "interface",
+              "def": {
+                "methods": [
+                  {
+                    "name": "getFactStorage",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/store/store/interface.ts",
+                      "line": 4,
+                      "col": 2,
+                      "byteIndex": 179
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "reference",
+                        "optional": false,
+                        "tsType": {
+                          "repr": "WorldReference",
+                          "kind": "typeRef",
+                          "value": {
+                            "typeName": "WorldReference",
+                            "resolution": {
+                              "kind": "import",
+                              "specifier": "#/openapi/generated/types.gen.ts",
+                              "name": "WorldReference"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "FactStorage",
+                            "kind": "typeRef",
+                            "value": {
+                              "typeName": "FactStorage",
+                              "resolution": {
+                                "kind": "import",
+                                "specifier": "#/worlds/rdf/facts/interface.ts",
+                                "name": "FactStorage"
+                              }
+                            }
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  },
+                  {
+                    "name": "deleteFactStorage",
+                    "kind": "method",
+                    "location": {
+                      "filename": "file:///C:/Users/ethan/Documents/GitHub/worlds-api/src/worlds/store/store/interface.ts",
+                      "line": 5,
+                      "col": 2,
+                      "byteIndex": 246
+                    },
+                    "params": [
+                      {
+                        "kind": "identifier",
+                        "name": "reference",
+                        "optional": false,
+                        "tsType": {
+                          "repr": "WorldReference",
+                          "kind": "typeRef",
+                          "value": {
+                            "typeName": "WorldReference",
+                            "resolution": {
+                              "kind": "import",
+                              "specifier": "#/openapi/generated/types.gen.ts",
+                              "name": "WorldReference"
+                            }
+                          }
+                        }
+                      }
+                    ],
+                    "returnType": {
+                      "repr": "Promise",
+                      "kind": "typeRef",
+                      "value": {
+                        "typeParams": [
+                          {
+                            "repr": "void",
+                            "kind": "keyword",
+                            "value": "void"
+                          }
+                        ],
+                        "typeName": "Promise"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
