@@ -114,14 +114,18 @@ classDiagram
         +listWorlds(namespace?: string) Promise~StoredWorld[]~
     }
     
-    class ChunkStorage {
+    class ChunkIndex {
         +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world: WorldReference, quadId: string) Promise~void~
-        +getByWorld(world: WorldReference) Promise~ChunkRecord[]~
-        +search(input: ChunkSearchQuery) Promise~ChunkSearchRow[]~
+        +deleteChunk(quadId: string) Promise~void~
+        +getAll() Promise~ChunkRecord[]~
+        +search(input: ChunkIndexSearchQuery) Promise~ChunkSearchRow[]~
+    }
+    
+    class ChunkIndexManager {
+        +getChunkIndex(reference: WorldReference) Promise~ChunkIndex~
         +getIndexState(world: WorldReference) Promise~ChunkIndexState~
-        +markWorldIndexed(state: ChunkIndexState) Promise~void~
-        +clearWorld(world: WorldReference) Promise~void~
+        +setIndexState(state: ChunkIndexState) Promise~void~
+        +deleteChunkIndex(reference: WorldReference) Promise~void~
     }
     
     class EmbeddingsService {
@@ -135,10 +139,10 @@ classDiagram
     
     WorldReference --> QuadStorageManager
     WorldReference --> WorldStorage
-    WorldReference --> ChunkStorage
+    WorldReference --> ChunkIndexManager
     
     QuadStorage --> QuadStorageManager: managed by
-    ChunkStorage --> QuadStorageManager: indexed by
+    ChunkIndexManager --> QuadStorageManager: indexed by
     EmbeddingsService --> QuadStorageManager: vectorized by
     PatchHandler --> QuadStorage: wraps
     
@@ -155,7 +159,8 @@ sequenceDiagram
     participant IndexedQuadStorage
     participant SearchIndexHandler
     participant EmbeddingsService
-    participant ChunkStorage
+    participant ChunkIndex
+    participant ChunkIndexManager
     
     Client->>Worlds: sparql UPDATE (INSERT/DELETE)
     Worlds->>QuadStorageManager: getQuadStorage(ref)
@@ -168,15 +173,15 @@ sequenceDiagram
     alt insertions
         SearchIndexHandler->>EmbeddingsService: embed(text)
         EmbeddingsService-->>SearchIndexHandler: vector[]
-        SearchIndexHandler->>ChunkStorage: setChunk(record)
+        SearchIndexHandler->>ChunkIndex: setChunk(record)
     end
     
     alt deletions
-        SearchIndexHandler->>ChunkStorage: deleteChunk(world, quadId)
+        SearchIndexHandler->>ChunkIndex: deleteChunk(quadId)
     end
     
-    SearchIndexHandler->>ChunkStorage: markWorldIndexed(state)
-    ChunkStorage-->>Worlds: done
+    SearchIndexHandler->>ChunkIndexManager: setIndexState(state)
+    ChunkIndexManager-->>Worlds: done
     Worlds-->>Client: null (UPDATE result)
 ```
 
@@ -187,15 +192,18 @@ sequenceDiagram
     participant Client
     participant Worlds
     participant QuadStorageManager
-    participant ChunkStorage
+    participant ChunkIndexManager
+    participant ChunkIndex
     
     Client->>Worlds: search(query, sources)
     Worlds->>QuadStorageManager: getQuadStorage(refs)
     
     loop for each world
         alt world indexed
-            QuadStorageManager->>ChunkStorage: search(query, topK)
-            ChunkStorage-->>QuadStorageManager: ChunkSearchRow[]
+            Worlds->>ChunkIndexManager: getChunkIndex(ref)
+            ChunkIndexManager-->>Worlds: ChunkIndex
+            Worlds->>ChunkIndex: search(query)
+            ChunkIndex-->>Worlds: ChunkSearchRow[]
         else world not indexed
             QuadStorageManager->>QuadStorageManager: findQuads([]) - full scan
             QuadStorageManager-->>QuadStorageManager: score by term matches
@@ -245,31 +253,28 @@ classDiagram
     class IndexedQuadStorageManager {
         -Map~string, IndexedQuadStorage~ storage
         -EmbeddingsService embeddings
-        -ChunkStorage chunks
+        -ChunkIndexManager chunks
         +getQuadStorage(ref) Promise~IndexedQuadStorage~
         +deleteQuadStorage(ref) Promise~void~
     }
     
-    class InMemoryChunkStorage {
-        -Map~string, ChunkRecord~ chunks
-        +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world, quadId) Promise~void~
-        +getByWorld(world) Promise~ChunkRecord[]~
-        +search(query) Promise~ChunkSearchRow[]~
+    class InMemoryChunkIndexManager {
+        -Map~string, InMemoryChunkIndex~ indexesByWorld
+        -Map~string, ChunkIndexState~ indexStateByWorld
+        +getChunkIndex(ref) Promise~ChunkIndex~
         +getIndexState(world) Promise~ChunkIndexState~
-        +markWorldIndexed(state) Promise~void~
-        +clearWorld(world) Promise~void~
+        +setIndexState(state) Promise~void~
+        +deleteChunkIndex(ref) Promise~void~
     }
     
-    class OramaChunkStorage {
-        -RDMA orama
-        +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world, quadId) Promise~void~
-        +getByWorld(world) Promise~ChunkRecord[]~
-        +search(query) Promise~ChunkSearchRow[]~
+    class OramaChunkIndexManager {
+        -Map~string, ChunkOrama~ oramas
+        -Map~string, OramaChunkIndex~ indexes
+        -Map~string, ChunkIndexState~ indexStateByWorld
+        +getChunkIndex(ref) Promise~ChunkIndex~
         +getIndexState(world) Promise~ChunkIndexState~
-        +markWorldIndexed(state) Promise~void~
-        +clearWorld(world) Promise~void~
+        +setIndexState(state) Promise~void~
+        +deleteChunkIndex(ref) Promise~void~
     }
     
     class NoopEmbeddingsService {
@@ -298,10 +303,10 @@ classDiagram
     InMemoryQuadStorageManager --> InMemoryQuadStorage: creates
     IndexedQuadStorageManager --> IndexedQuadStorage: creates
     IndexedQuadStorageManager --> EmbeddingsService: uses
-    IndexedQuadStorageManager --> ChunkStorage: uses
+    IndexedQuadStorageManager --> ChunkIndexManager: uses
     
-    ChunkStorage <|-- InMemoryChunkStorage: implements
-    ChunkStorage <|-- OramaChunkStorage: implements
+    ChunkIndexManager <|-- InMemoryChunkIndexManager: implements
+    ChunkIndexManager <|-- OramaChunkIndexManager: implements
     EmbeddingsService <|-- NoopEmbeddingsService: implements
 ```
 
@@ -324,13 +329,13 @@ flowchart TB
         E --> G[InMemoryQuadStorage]
         F --> H[SearchIndexHandler]
         H --> I[EmbeddingsService]
-        H --> J[ChunkStorage]
+        H --> J[ChunkIndex]
     end
     
     subgraph Index Layer
         I --> K[NoopEmbeddingsService]
-        J --> L[InMemoryChunkStorage]
-        J --> M[OramaChunkStorage]
+        J --> L[InMemoryChunkIndex]
+        J --> M[OramaChunkIndex]
     end
     
     style A fill:#f9f,stroke:#333,stroke-width:2px
@@ -438,15 +443,15 @@ If you need vector search and chunking, use `IndexedQuadStorageManager`:
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
-import { InMemoryChunkStorage } from "#/indexing/storage/in-memory.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { OpenAIEmbeddingsService } from "#/indexing/embeddings/openai.ts";
 
-const chunkStorage = new InMemoryChunkStorage();
-const embeddings = new OpenAIEmbeddingsService("sk-...");
+const chunkIndexManager = new InMemoryChunkIndexManager();
+const embeddings = new OpenAIEmbeddingsService({ apiKey: "sk-..." });
 
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
-  new IndexedQuadStorageManager(embeddings, chunkStorage),
-  { chunkStorage, embeddings }, // Provide search deps for global querying
+  new IndexedQuadStorageManager(embeddings, chunkIndexManager),
+  { chunkIndexManager, embeddings }, // Provide search deps for global querying
 );
 ```
