@@ -112,6 +112,18 @@ Deno.test("handleRpc: listWorlds", async () => {
   }
 });
 
+Deno.test("handleRpc: listWorlds invalid pageToken returns INVALID_ARGUMENT", async () => {
+  const worlds = createWorlds();
+  const res = await handleRpc(worlds, {
+    action: "listWorlds",
+    request: { pageSize: 1, pageToken: "not-a-token" },
+  } as WorldsRpcRequest);
+  assertEquals(res.action, "listWorlds");
+  if ("error" in res) {
+    assertEquals(res.error.code, "INVALID_ARGUMENT");
+  }
+});
+
 Deno.test("handleRpc: importWorld then sparql", async () => {
   const worlds = createWorlds();
   await handleRpc(worlds, {

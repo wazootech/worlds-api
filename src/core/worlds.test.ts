@@ -77,6 +77,38 @@ Deno.test("Worlds: createWorld rejects duplicates", async () => {
   );
 });
 
+Deno.test("Worlds: listWorlds paginates with opaque tokens", async () => {
+  const worlds = createWorlds();
+
+  await worlds.createWorld({ namespace: "a", id: "w1" });
+  await worlds.createWorld({ namespace: "a", id: "w2" });
+  await worlds.createWorld({ namespace: "a", id: "w3" });
+
+  const first = await worlds.listWorlds({ parent: "a", pageSize: 2 });
+  assertEquals(first.worlds.length, 2);
+  assertEquals(typeof first.nextPageToken, "string");
+
+  const second = await worlds.listWorlds({
+    parent: "a",
+    pageSize: 2,
+    pageToken: first.nextPageToken,
+  });
+  assertEquals(second.worlds.length, 1);
+  assertEquals(second.nextPageToken, undefined);
+
+  // Token is bound to request params (parent); mismatch should reject.
+  await assertRejects(
+    () =>
+      worlds.listWorlds({
+        parent: "b",
+        pageSize: 2,
+        pageToken: first.nextPageToken,
+      }),
+    Error,
+    "Invalid page token",
+  );
+});
+
 Deno.test("Worlds: sparql SELECT query on world", async () => {
   const worlds = createWorlds();
 

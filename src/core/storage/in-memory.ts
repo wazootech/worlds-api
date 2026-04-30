@@ -20,6 +20,9 @@ export class InMemoryWorldStorage implements WorldStorage {
   async listWorlds(namespace?: string): Promise<StoredWorld[]> {
     return Array.from(this.worlds.values())
       .filter((w) => !namespace || w.reference.namespace === namespace)
-      .sort((a, b) => a.reference.id.localeCompare(b.reference.id));
+      .sort((a, b) =>
+        a.reference.namespace.localeCompare(b.reference.namespace) ||
+        a.reference.id.localeCompare(b.reference.id)
+      );
   }
 }

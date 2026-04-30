@@ -17,6 +17,12 @@ const ErrorCode = {
 function toRpcError(err: unknown): RpcError {
   if (err instanceof Error) {
     const message = err.message;
+    if (
+      message.includes("Invalid page token") ||
+      message.includes("Invalid page size")
+    ) {
+      return { code: ErrorCode.INVALID_ARGUMENT, message };
+    }
     if (message.includes("World not found")) {
       return { code: ErrorCode.NOT_FOUND, message };
     }

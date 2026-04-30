@@ -125,9 +125,23 @@ export const DeleteWorldResponse: OpenAPIV3_1.SchemaObject = {
 export const ListWorldsRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
   properties: {
-    parent: { type: "string" },
-    pageSize: { type: "number" },
-    pageToken: { type: "string" },
+    parent: {
+      type: "string",
+      description:
+        "Optional namespace filter. If provided, only worlds under this namespace are returned.",
+    },
+    pageSize: {
+      type: "integer",
+      format: "int32",
+      minimum: 0,
+      description:
+        "Maximum number of worlds to return. The server may return fewer than this value. If unspecified or 0, the server will choose a default. The server may cap this value.",
+    },
+    pageToken: {
+      type: "string",
+      description:
+        "A page token, received from a previous `listWorlds` call. Provide this to retrieve the subsequent page. Tokens are opaque.",
+    },
   },
   additionalProperties: false,
 };
@@ -137,7 +151,11 @@ export const ListWorldsResponse: OpenAPIV3_1.SchemaObject = {
   required: ["worlds"],
   properties: {
     worlds: { type: "array", items: { $ref: "#/components/schemas/World" } },
-    nextPageToken: { type: "string" },
+    nextPageToken: {
+      type: "string",
+      description:
+        "A token that can be sent as `pageToken` to retrieve the next page. If this field is omitted, there are no subsequent pages.",
+    },
   },
   additionalProperties: false,
 };

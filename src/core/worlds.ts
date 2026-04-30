@@ -22,6 +22,12 @@ import type { ChunkIndexManager } from "#/search/storage/interface.ts";
 import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
 import type { WorldsInterface } from "#/core/interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "#/core/resolve.ts";
+import {
+  assertPageTokenSig,
+  decodePageToken,
+  encodePageToken,
+  signPageTokenParams,
+} from "#/core/pagination.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { StoredWorld } from "#/core/storage/types.ts";
 import type { FactStorageManager } from "#/facts/storage/interface.ts";
@@ -59,6 +65,9 @@ function toWorld(stored: StoredWorld): World {
  */
 export class Worlds implements WorldsInterface {
   private readonly searchDeps: WorldsSearchDeps;
+  private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
+  private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
+  private static readonly MAX_PAGE_SIZE = 100;
 
   constructor(
     private readonly worldStorage: WorldStorage,
@@ -125,12 +134,33 @@ export class Worlds implements WorldsInterface {
     const namespaceFilter = input?.parent?.trim();
     const all = await this.worldStorage.listWorlds(namespaceFilter);
 
-    const pageSize = input?.pageSize && input.pageSize > 0
-      ? input.pageSize
-      : all.length;
-    const worlds = all.slice(0, pageSize).map(toWorld);
+    const requestedPageSize = input?.pageSize;
+    if (requestedPageSize !== undefined && requestedPageSize < 0) {
+      throw new Error("Invalid page size");
+    }
+    const pageSizeRaw = requestedPageSize === undefined || requestedPageSize === 0
+      ? Worlds.DEFAULT_LIST_PAGE_SIZE
+      : requestedPageSize;
+    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
 
-    return { worlds };
+    const sig = await signPageTokenParams({
+      method: "listWorlds",
+      parent: namespaceFilter ?? "",
+    });
+
+    const decoded = input?.pageToken?.trim()
+      ? decodePageToken(input.pageToken.trim())
+      : null;
+    if (decoded) assertPageTokenSig(decoded, sig);
+    const startIndex = decoded?.o ?? 0;
+
+    const worlds = all.slice(startIndex, startIndex + pageSize).map(toWorld);
+    const nextOffset = startIndex + pageSize;
+    const nextPageToken = nextOffset < all.length
+      ? encodePageToken({ v: 1, o: nextOffset, sig })
+      : undefined;
+
+    return { worlds, nextPageToken };
   }
 
   async sparql(input: SparqlRequest): Promise<SparqlResponse> {
@@ -249,19 +279,56 @@ export class Worlds implements WorldsInterface {
       ? await this.searchNaiveFts(unindexedRefs, queryTerms)
       : [];
     const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
-      b.ftsRank! - a.ftsRank! || b.score - a.score
+      (b.ftsRank! - a.ftsRank!) ||
+      (b.score - a.score) ||
+      // Stable deterministic tie-breakers so offset pagination is consistent.
+      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
+      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
+      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
+      ((a.object ?? "").localeCompare(b.object ?? ""))
     );
 
-    const pageSize = input.pageSize ?? 20;
-    const pageToken = input.pageToken ?? "";
-    const startIndex = pageToken ? parseInt(pageToken, 10) : 0;
-    const pagedResults = allResults.slice(startIndex, startIndex + pageSize);
+    const requestedPageSize = input.pageSize;
+    if (requestedPageSize !== undefined && requestedPageSize < 0) {
+      throw new Error("Invalid page size");
+    }
+    const pageSizeRaw = requestedPageSize === undefined || requestedPageSize === 0
+      ? Worlds.DEFAULT_SEARCH_PAGE_SIZE
+      : requestedPageSize;
+    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
 
-    const nextPageToken = startIndex + pageSize < allResults.length
-      ? String(startIndex + pageSize)
+    const normalizeStringArray = (arr?: string[]) =>
+      (arr ?? []).map((s) => s.trim()).filter((s) => s.length > 0).sort();
+
+    const sourcesSig = !sources || sources.length === 0
+      ? { mode: "all" as const }
+      : {
+        mode: "explicit" as const,
+        worlds: targetRefs.map(formatWorldName).sort(),
+      };
+
+    const sig = await signPageTokenParams({
+      method: "searchWorlds",
+      query: input.query,
+      sources: sourcesSig,
+      subjects: normalizeStringArray(input.subjects),
+      predicates: normalizeStringArray(input.predicates),
+      types: normalizeStringArray(input.types),
+    });
+
+    const decoded = input.pageToken?.trim()
+      ? decodePageToken(input.pageToken.trim())
+      : null;
+    if (decoded) assertPageTokenSig(decoded, sig);
+    const startIndex = decoded?.o ?? 0;
+
+    const results = allResults.slice(startIndex, startIndex + pageSize);
+    const nextOffset = startIndex + pageSize;
+    const nextPageToken = nextOffset < allResults.length
+      ? encodePageToken({ v: 1, o: nextOffset, sig })
       : undefined;
 
-    return { results: pagedResults, nextPageToken };
+    return { results, nextPageToken };
   }
 
   /**
