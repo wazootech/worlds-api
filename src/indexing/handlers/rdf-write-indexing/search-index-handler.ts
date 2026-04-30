@@ -1,10 +1,10 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
-import { storedFactToN3 } from "#/rdf/rdf/rdf.ts";
-import { skolemizeStoredFact } from "#/rdf/rdf/skolem.ts";
+import { storedQuadToN3 } from "#/rdf/rdf/rdf.ts";
+import { skolemizeStoredQuad } from "#/rdf/rdf/skolem.ts";
 import { META_PREDICATES } from "#/rdf/rdf/vocab.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import type { Patch, PatchHandler } from "./types.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 
@@ -14,10 +14,10 @@ function isMetaPredicate(predicate: string): boolean {
 
 /**
  * Whether to embed this triple in the chunk index. Object term type comes only from
- * {@link storedFactToN3} so it stays aligned with SPARQL round-trip.
+ * {@link storedQuadToN3} so it stays aligned with SPARQL round-trip.
  */
-function shouldIndexTriple(fact: StoredFact): boolean {
-  const quad = storedFactToN3(fact);
+function shouldIndexTriple(fact: StoredQuad): boolean {
+  const quad = storedQuadToN3(fact);
   const p = quad.predicate.value;
   if (isMetaPredicate(p)) return false;
   return quad.object.termType === "Literal" && quad.object.value.length > 0;
@@ -44,7 +44,7 @@ export class SearchIndexHandler implements PatchHandler {
     for (const patch of patches) {
       if (patch.deletions?.length) {
         for (const q of patch.deletions) {
-          const factId = await skolemizeStoredFact(q);
+          const factId = await skolemizeStoredQuad(q);
           await this.chunks.deleteChunk(factId);
         }
       }
@@ -54,7 +54,7 @@ export class SearchIndexHandler implements PatchHandler {
           if (!shouldIndexTriple(q)) continue;
           if (isMetaPredicate(q.predicate)) continue;
 
-          const tripleId = await skolemizeStoredFact(q);
+          const tripleId = await skolemizeStoredQuad(q);
           const subject = q.subject;
           const predicate = q.predicate;
           const objectText = q.object;

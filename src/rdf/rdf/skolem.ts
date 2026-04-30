@@ -1,8 +1,8 @@
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import type { Quad } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
-import { storedFactToN3 } from "#/rdf/rdf/rdf.ts";
+import { storedQuadToN3 } from "#/rdf/rdf/rdf.ts";
 
 function opaqueIdFromText(text: string): string {
   const encoded = new TextEncoder().encode(text);
@@ -35,11 +35,11 @@ export async function skolemizeQuad(quad: Quad): Promise<string> {
 }
 
 /**
- * Stable id for a {@link StoredFact}: RDFC-1.0 canonicalization of the same triple
- * {@link storedFactToN3} produces for the RDF store.
+ * Stable id for a {@link StoredQuad}: RDFC-1.0 canonicalization of the same triple
+ * {@link storedQuadToN3} produces for the RDF store.
  */
-export async function skolemizeStoredFact(fact: StoredFact): Promise<string> {
-  return skolemizeQuad(storedFactToN3(fact));
+export async function skolemizeStoredQuad(fact: StoredQuad): Promise<string> {
+  return skolemizeQuad(storedQuadToN3(fact));
 }
 
 /**

@@ -2,9 +2,9 @@ import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { OramaChunkIndexManager } from "#/indexing/storage/orama.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 
-function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
+function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",

@@ -1,11 +1,11 @@
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 
 /**
  * Patch batch for RDF fact insertions and deletions.
  */
 export interface Patch {
-  insertions: StoredFact[];
-  deletions: StoredFact[];
+  insertions: StoredQuad[];
+  deletions: StoredQuad[];
 }
 
 export interface PatchHandler {

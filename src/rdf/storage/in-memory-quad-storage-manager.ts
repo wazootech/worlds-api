@@ -1,10 +1,10 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import type { FactStorageManager } from "./interface.ts";
-import { InMemoryFactStorage } from "#/rdf/storage/in-memory.ts";
+import type { QuadStorageManager } from "./quad-storage.ts";
+import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
 
-export class InMemoryFactStorageManager implements FactStorageManager {
-  private readonly storage = new Map<string, InMemoryFactStorage>();
+export class InMemoryQuadStorageManager implements QuadStorageManager {
+  private readonly storage = new Map<string, InMemoryQuadStorage>();
 
   constructor(
     private readonly config?: {
@@ -12,19 +12,19 @@ export class InMemoryFactStorageManager implements FactStorageManager {
     },
   ) {}
 
-  async getFactStorage(
+  async getQuadStorage(
     reference: WorldReference,
-  ): Promise<InMemoryFactStorage> {
+  ): Promise<InMemoryQuadStorage> {
     const key = formatWorldName(reference);
     let s = this.storage.get(key);
     if (!s) {
-      s = new InMemoryFactStorage();
+      s = new InMemoryQuadStorage();
       this.storage.set(key, s);
     }
     return s;
   }
 
-  async deleteFactStorage(reference: WorldReference): Promise<void> {
+  async deleteQuadStorage(reference: WorldReference): Promise<void> {
     this.storage.delete(formatWorldName(reference));
   }
 }

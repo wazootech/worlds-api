@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 
 async function setup() {
   const embeddings = new FakeEmbeddingsService();
@@ -18,7 +18,7 @@ async function setup() {
   return { handler, chunkIndexManager, index, world };
 }
 
-function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
+function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -64,7 +64,7 @@ Deno.test("SearchIndexHandler: skips IRI-shaped objects without objectTermType",
   await handler.patch([{
     insertions: [makeFact({
       object: "urn:example:thing",
-      // objectTermType intentionally omitted; `storedFactToN3` infers NamedNode.
+      // objectTermType intentionally omitted; `storedQuadToN3` infers NamedNode.
     })],
     deletions: [],
   }]);
@@ -94,7 +94,7 @@ Deno.test("SearchIndexHandler: skips blank node objects without objectTermType",
   await handler.patch([{
     insertions: [makeFact({
       object: "_:b0",
-      // objectTermType intentionally omitted; `storedFactToN3` infers BlankNode.
+      // objectTermType intentionally omitted; `storedQuadToN3` infers BlankNode.
     })],
     deletions: [],
   }]);

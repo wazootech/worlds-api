@@ -5,14 +5,14 @@ import { Worlds } from "#/core/worlds.ts";
 import { handleRpc } from "#/api/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedFactStorageManager } from "#/rdf/storage/indexed-fact-storage-manager.ts";
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
 
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
   return new Worlds(
     new InMemoryWorldStorage(),
-    new IndexedFactStorageManager(embeddings, chunkIndexManager),
+    new IndexedQuadStorageManager(embeddings, chunkIndexManager),
     { chunkIndexManager, embeddings },
   );
 }

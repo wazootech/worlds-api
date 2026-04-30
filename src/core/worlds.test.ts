@@ -3,15 +3,15 @@ import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { Worlds } from "./worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedFactStorageManager } from "#/rdf/storage/indexed-fact-storage-manager.ts";
-import { InMemoryFactStorageManager } from "#/rdf/storage/in-memory-fact-storage-manager.ts";
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
+import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
 
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
   return new Worlds(
     new InMemoryWorldStorage(),
-    new IndexedFactStorageManager(embeddings, chunkIndexManager),
+    new IndexedQuadStorageManager(embeddings, chunkIndexManager),
     { chunkIndexManager, embeddings },
   );
 }
@@ -20,7 +20,7 @@ function createWorldsWithSharedDeps() {
   const worldStorage = new InMemoryWorldStorage();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
-  const storeStorage = new IndexedFactStorageManager(
+  const storeStorage = new IndexedQuadStorageManager(
     embeddings,
     chunkIndexManager,
   );
@@ -31,10 +31,10 @@ function createWorldsWithSharedDeps() {
   return { worlds, chunkIndexManager };
 }
 
-function createWorldsWithInMemoryFactStorage() {
+function createWorldsWithInMemoryQuadStorage() {
   return new Worlds(
     new InMemoryWorldStorage(),
-    new InMemoryFactStorageManager(),
+    new InMemoryQuadStorageManager(),
   );
 }
 
@@ -769,8 +769,8 @@ Deno.test("Worlds: empty sparql UPDATE does not mutate", async () => {
   assertEquals(result.results?.length, 1);
 });
 
-Deno.test("Worlds (InMemoryFactStorageManager): sparql SELECT query", async () => {
-  const worlds = createWorldsWithInMemoryFactStorage();
+Deno.test("Worlds (InMemoryQuadStorageManager): sparql SELECT query", async () => {
+  const worlds = createWorldsWithInMemoryQuadStorage();
 
   await worlds.createWorld({
     namespace: "ns",
@@ -798,8 +798,8 @@ Deno.test("Worlds (InMemoryFactStorageManager): sparql SELECT query", async () =
   assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o");
 });
 
-Deno.test("Worlds (InMemoryFactStorageManager): sparql UPDATE", async () => {
-  const worlds = createWorldsWithInMemoryFactStorage();
+Deno.test("Worlds (InMemoryQuadStorageManager): sparql UPDATE", async () => {
+  const worlds = createWorldsWithInMemoryQuadStorage();
 
   await worlds.createWorld({
     namespace: "ns",
@@ -826,8 +826,8 @@ Deno.test("Worlds (InMemoryFactStorageManager): sparql UPDATE", async () => {
   assertEquals(rows.results.bindings[0].o?.value, "value");
 });
 
-Deno.test("Worlds (InMemoryFactStorageManager): multi-world", async () => {
-  const worlds = createWorldsWithInMemoryFactStorage();
+Deno.test("Worlds (InMemoryQuadStorageManager): multi-world", async () => {
+  const worlds = createWorldsWithInMemoryQuadStorage();
 
   await worlds.createWorld({ namespace: "ns", id: "w1" });
   await worlds.createWorld({ namespace: "ns", id: "w2" });
@@ -854,8 +854,8 @@ Deno.test("Worlds (InMemoryFactStorageManager): multi-world", async () => {
   assertEquals(rows.results.bindings.length, 2);
 });
 
-Deno.test("Worlds (InMemoryFactStorageManager): isolated worlds", async () => {
-  const worlds = createWorldsWithInMemoryFactStorage();
+Deno.test("Worlds (InMemoryQuadStorageManager): isolated worlds", async () => {
+  const worlds = createWorldsWithInMemoryQuadStorage();
 
   await worlds.createWorld({ namespace: "ns", id: "w1" });
   await worlds.createWorld({ namespace: "ns", id: "w2" });

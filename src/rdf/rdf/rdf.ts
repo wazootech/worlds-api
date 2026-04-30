@@ -1,4 +1,4 @@
-import type { StoredFact } from "#/rdf/storage/types.ts";
+import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import type { Quad } from "n3";
 import { DataFactory, Parser, Store, Writer } from "n3";
 
@@ -6,9 +6,9 @@ const df = DataFactory;
 const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
 
 /**
- * Single source of truth: {@link StoredFact} to N3 term/quad.
+ * Single source of truth: {@link StoredQuad} to N3 term/quad.
  */
-export function storedFactToN3(fact: StoredFact): Quad {
+export function storedQuadToN3(fact: StoredQuad): Quad {
   const subject = fact.subject.startsWith("_:")
     ? df.blankNode(fact.subject.slice(2))
     : df.namedNode(fact.subject);
@@ -60,13 +60,13 @@ export function getFormat(contentType: string | undefined): RdfFormat {
 }
 
 export async function serialize(
-  facts: StoredFact[],
+  facts: StoredQuad[],
   contentType: string,
 ): Promise<string> {
   const { n3Format } = getFormat(contentType);
   const writer = new Writer({ format: n3Format });
   for (const q of facts) {
-    writer.addQuad(storedFactToN3(q));
+    writer.addQuad(storedQuadToN3(q));
   }
   const result = await new Promise<string>((resolve, reject) => {
     writer.end((err: Error | null, result?: string) => {
@@ -77,7 +77,7 @@ export async function serialize(
   return result;
 }
 
-export function deserialize(data: string, contentType: string): StoredFact[] {
+export function deserialize(data: string, contentType: string): StoredQuad[] {
   const { n3Format } = getFormat(contentType);
   const parser = new Parser({ format: n3Format });
   const n3Quads = parser.parse(data);
@@ -110,16 +110,16 @@ export function deserialize(data: string, contentType: string): StoredFact[] {
   }));
 }
 
-export function storeFromFacts(facts: StoredFact[]): Store {
+export function storeFromQuads(facts: StoredQuad[]): Store {
   const store = new Store();
   for (const q of facts) {
-    store.addQuad(storedFactToN3(q));
+    store.addQuad(storedQuadToN3(q));
   }
   return store;
 }
 
-export function factsFromStore(store: Store): StoredFact[] {
-  const facts: StoredFact[] = [];
+export function quadsFromStore(store: Store): StoredQuad[] {
+  const facts: StoredQuad[] = [];
 
   for (const q of store.getQuads(null, null, null, null)) {
     facts.push({

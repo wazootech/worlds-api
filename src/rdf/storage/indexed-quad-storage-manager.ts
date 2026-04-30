@@ -3,28 +3,28 @@ import { formatWorldName } from "#/core/resolve.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { SearchIndexHandler } from "#/indexing/handlers/rdf-write-indexing/search-index-handler.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
-import { InMemoryFactStorage } from "#/rdf/storage/in-memory.ts";
-import { IndexedFactStorage } from "#/rdf/storage/indexed.ts";
-import type { FactStorageManager } from "./interface.ts";
+import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
+import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
+import type { QuadStorageManager } from "./quad-storage.ts";
 
-export interface IndexedFactStorageManagerConfig {
+export interface IndexedQuadStorageManagerConfig {
   embeddings: EmbeddingsService;
   chunks: ChunkIndexManager;
 }
 
-export class IndexedFactStorageManager implements FactStorageManager {
-  private readonly wrapped = new Map<string, IndexedFactStorage>();
+export class IndexedQuadStorageManager implements QuadStorageManager {
+  private readonly wrapped = new Map<string, IndexedQuadStorage>();
 
   constructor(
     private readonly embeddings: EmbeddingsService,
     private readonly chunks: ChunkIndexManager,
   ) {}
 
-  async getFactStorage(reference: WorldReference): Promise<IndexedFactStorage> {
+  async getQuadStorage(reference: WorldReference): Promise<IndexedQuadStorage> {
     const key = formatWorldName(reference);
     let w = this.wrapped.get(key);
     if (!w) {
-      const inner = new InMemoryFactStorage();
+      const inner = new InMemoryQuadStorage();
       await this.chunks.setIndexState({
         world: reference,
         indexedAt: Date.now(),
@@ -36,13 +36,13 @@ export class IndexedFactStorageManager implements FactStorageManager {
         index,
         reference,
       );
-      w = new IndexedFactStorage(inner, [handler]);
+      w = new IndexedQuadStorage(inner, [handler]);
       this.wrapped.set(key, w);
     }
     return w;
   }
 
-  async deleteFactStorage(reference: WorldReference): Promise<void> {
+  async deleteQuadStorage(reference: WorldReference): Promise<void> {
     this.wrapped.delete(formatWorldName(reference));
     await this.chunks.deleteChunkIndex(reference);
   }

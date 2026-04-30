@@ -32,13 +32,13 @@ Code: `src/rdf/rdf/ingest.ts` uses `toSkolemizedQuad` + `resolveSkolemPrefix`.
 
 For storage/indexing keys, we use content-derived opaque identifiers:
 
-- **Fact id**: `skolemizeStoredFact(fact)` → canonicalize the corresponding quad
+- **Quad id**: `skolemizeStoredQuad(quad)` → canonicalize the corresponding quad
   (RDFC-1.0) → base64url
 - **Chunk id**: derived from the fact id + chunk ordinal (SHA-256)
 
 These IDs are used for deterministic delete/update behavior in the chunk index.
 
-Code: `src/rdf/rdf/skolem.ts` (`skolemizeQuad`, `skolemizeStoredFact`), and
+Code: `src/rdf/rdf/skolem.ts` (`skolemizeQuad`, `skolemizeStoredQuad`), and
 `src/indexing/handlers/rdf-write-indexing/search-index-handler.ts` (chunk ids).
 
 ### What gets indexed (chunked) for search
@@ -57,10 +57,10 @@ Code: `src/indexing/handlers/rdf-write-indexing/search-index-handler.ts`
 
 ### Indexing pipeline
 
-1. Fact writes go through `IndexedFactStorage` which emits patches
+1. Quad writes go through `IndexedQuadStorage` which emits patches
    (insertions/deletions).
 2. `SearchIndexHandler` consumes patches and:
-   - Computes fact id (`skolemizeStoredFact`)
+   - Computes quad id (`skolemizeStoredQuad`)
    - Chunks the literal object text (`splitTextRecursive`)
    - Embeds each chunk (`EmbeddingsService`)
    - Upserts/deletes chunk records in a per-world `ChunkIndex`
@@ -78,7 +78,7 @@ Backends:
 
 ```mermaid
 classDiagram
-    class StoredFact {
+    class StoredQuad {
         +string subject
         +string predicate
         +string object
@@ -88,12 +88,12 @@ classDiagram
         +string? objectLanguage
     }
     
-    class FactStorage {
-        +setFact(fact: StoredFact) Promise~void~
-        +deleteFact(fact: StoredFact) Promise~void~
-        +setFacts(facts: StoredFact[]) Promise~void~
-        +deleteFacts(facts: StoredFact[]) Promise~void~
-        +findFacts(matchers: StoredFact[]) Promise~StoredFact[]~
+    class QuadStorage {
+        +setQuad(quad: StoredQuad) Promise~void~
+        +deleteQuad(quad: StoredQuad) Promise~void~
+        +setQuads(quads: StoredQuad[]) Promise~void~
+        +deleteQuads(quads: StoredQuad[]) Promise~void~
+        +findQuads(matchers: StoredQuad[]) Promise~StoredQuad[]~
         +clear() Promise~void~
     }
     
@@ -102,9 +102,9 @@ classDiagram
         +string id
     }
     
-    class FactStorageManager {
-        +getFactStorage(reference: WorldReference) Promise~FactStorage~
-        +deleteFactStorage(reference: WorldReference) Promise~void~
+    class QuadStorageManager {
+        +getQuadStorage(reference: WorldReference) Promise~QuadStorage~
+        +deleteQuadStorage(reference: WorldReference) Promise~void~
     }
     
     class WorldStorage {
@@ -133,16 +133,16 @@ classDiagram
         +patch(patches: Patch[]) Promise~void~
     }
     
-    WorldReference --> FactStorageManager
+    WorldReference --> QuadStorageManager
     WorldReference --> WorldStorage
     WorldReference --> ChunkStorage
     
-    FactStorage --> FactStorageManager: managed by
-    ChunkStorage --> FactStorageManager: indexed by
-    EmbeddingsService --> FactStorageManager: vectorized by
-    PatchHandler --> FactStorage: wraps
+    QuadStorage --> QuadStorageManager: managed by
+    ChunkStorage --> QuadStorageManager: indexed by
+    EmbeddingsService --> QuadStorageManager: vectorized by
+    PatchHandler --> QuadStorage: wraps
     
-    FactStorageManager "1" *-- "many" FactStorage: creates
+    QuadStorageManager "1" *-- "many" QuadStorage: creates
 ```
 
 ## Data Flow - Search Index Pipeline
@@ -151,19 +151,19 @@ classDiagram
 sequenceDiagram
     participant Client
     participant Worlds
-    participant FactStorageManager
-    participant IndexedFactStorage
+    participant QuadStorageManager
+    participant IndexedQuadStorage
     participant SearchIndexHandler
     participant EmbeddingsService
     participant ChunkStorage
     
     Client->>Worlds: sparql UPDATE (INSERT/DELETE)
-    Worlds->>FactStorageManager: getFactStorage(ref)
-    FactStorageManager-->>IndexedFactStorage: returns
+    Worlds->>QuadStorageManager: getQuadStorage(ref)
+    QuadStorageManager-->>IndexedQuadStorage: returns
     
-    Note over IndexedFactStorage: Applies fact changes<br/>then notifies handlers
+    Note over IndexedQuadStorage: Applies quad changes<br/>then notifies handlers
     
-    IndexedFactStorage->>SearchIndexHandler: patch([{insertions, deletions}])
+    IndexedQuadStorage->>SearchIndexHandler: patch([{insertions, deletions}])
     
     alt insertions
         SearchIndexHandler->>EmbeddingsService: embed(text)
@@ -186,23 +186,23 @@ sequenceDiagram
 sequenceDiagram
     participant Client
     participant Worlds
-    participant FactStorageManager
+    participant QuadStorageManager
     participant ChunkStorage
     
     Client->>Worlds: search(query, sources)
-    Worlds->>FactStorageManager: getFactStorage(refs)
+    Worlds->>QuadStorageManager: getQuadStorage(refs)
     
     loop for each world
         alt world indexed
-            FactStorageManager->>ChunkStorage: search(query, topK)
-            ChunkStorage-->>FactStorageManager: ChunkSearchRow[]
+            QuadStorageManager->>ChunkStorage: search(query, topK)
+            ChunkStorage-->>QuadStorageManager: ChunkSearchRow[]
         else world not indexed
-            FactStorageManager->>FactStorageManager: findFacts([]) - full scan
-            FactStorageManager-->>FactStorageManager: score by term matches
+            QuadStorageManager->>QuadStorageManager: findQuads([]) - full scan
+            QuadStorageManager-->>QuadStorageManager: score by term matches
         end
     end
     
-    FactStorageManager-->>Worlds: results (ranked)
+    QuadStorageManager-->>Worlds: results (ranked)
     Worlds-->>Client: SearchResult[]
 ```
 
@@ -216,39 +216,39 @@ classDiagram
         +chunkStorage?: ChunkStorage
     }
     
-    class InMemoryFactStorage {
-        -Map~string, StoredFact~ facts
-        +setFact(fact: StoredFact) Promise~void~
-        +deleteFact(fact: StoredFact) Promise~void~
-        +setFacts(facts: StoredFact[]) Promise~void~
-        +deleteFacts(facts: StoredFact[]) Promise~void~
-        +findFacts(matchers: StoredFact[]) Promise~StoredFact[]~
+    class InMemoryQuadStorage {
+        -Map~string, StoredQuad~ quads
+        +setQuad(quad: StoredQuad) Promise~void~
+        +deleteQuad(quad: StoredQuad) Promise~void~
+        +setQuads(quads: StoredQuad[]) Promise~void~
+        +deleteQuads(quads: StoredQuad[]) Promise~void~
+        +findQuads(matchers: StoredQuad[]) Promise~StoredQuad[]~
         +clear() Promise~void~
     }
     
-    class IndexedFactStorage {
-        -FactStorage inner
+    class IndexedQuadStorage {
+        -QuadStorage inner
         -PatchHandler[] handlers
-        +setFact(fact: StoredFact) Promise~void~
-        +deleteFact(fact: StoredFact) Promise~void~
-        +setFacts(facts: StoredFact[]) Promise~void~
-        +deleteFacts(facts: StoredFact[]) Promise~void~
-        +findFacts(matchers: StoredFact[]) Promise~StoredFact[]~
+        +setQuad(quad: StoredQuad) Promise~void~
+        +deleteQuad(quad: StoredQuad) Promise~void~
+        +setQuads(quads: StoredQuad[]) Promise~void~
+        +deleteQuads(quads: StoredQuad[]) Promise~void~
+        +findQuads(matchers: StoredQuad[]) Promise~StoredQuad[]~
         +clear() Promise~void~
     }
     
-    class InMemoryFactStorageManager {
-        -Map~string, InMemoryFactStorage~ storage
-        +getFactStorage(ref) Promise~InMemoryFactStorage~
-        +deleteFactStorage(ref) Promise~void~
+    class InMemoryQuadStorageManager {
+        -Map~string, InMemoryQuadStorage~ storage
+        +getQuadStorage(ref) Promise~InMemoryQuadStorage~
+        +deleteQuadStorage(ref) Promise~void~
     }
     
-    class IndexedFactStorageManager {
-        -Map~string, IndexedFactStorage~ storage
+    class IndexedQuadStorageManager {
+        -Map~string, IndexedQuadStorage~ storage
         -EmbeddingsService embeddings
         -ChunkStorage chunks
-        +getFactStorage(ref) Promise~IndexedFactStorage~
-        +deleteFactStorage(ref) Promise~void~
+        +getQuadStorage(ref) Promise~IndexedQuadStorage~
+        +deleteQuadStorage(ref) Promise~void~
     }
     
     class InMemoryChunkStorage {
@@ -280,7 +280,7 @@ classDiagram
     
     class Worlds {
         -WorldStorage worldStorage
-        -FactStorageManager factStorageManager
+        -QuadStorageManager quadStorageManager
         +createWorld(ref) Promise~StoredWorld~
         +getWorld(ref) Promise~StoredWorld~
         +updateWorld(ref, world) Promise~void~
@@ -289,17 +289,17 @@ classDiagram
         +search(query, sources) Promise~SearchResult[]~
     }
     
-    FactStorage <|-- InMemoryFactStorage: implements
-    FactStorage <|-- IndexedFactStorage: implements
-    IndexedFactStorage --> InMemoryFactStorage: wraps
-    IndexedFactStorage --> SearchIndexHandler: notifies
+    QuadStorage <|-- InMemoryQuadStorage: implements
+    QuadStorage <|-- IndexedQuadStorage: implements
+    IndexedQuadStorage --> InMemoryQuadStorage: wraps
+    IndexedQuadStorage --> SearchIndexHandler: notifies
     
-    FactStorageManager <|-- InMemoryFactStorageManager: implements
-    FactStorageManager <|-- IndexedFactStorageManager: implements
-    InMemoryFactStorageManager --> InMemoryFactStorage: creates
-    IndexedFactStorageManager --> IndexedFactStorage: creates
-    IndexedFactStorageManager --> EmbeddingsService: uses
-    IndexedFactStorageManager --> ChunkStorage: uses
+    QuadStorageManager <|-- InMemoryQuadStorageManager: implements
+    QuadStorageManager <|-- IndexedQuadStorageManager: implements
+    InMemoryQuadStorageManager --> InMemoryQuadStorage: creates
+    IndexedQuadStorageManager --> IndexedQuadStorage: creates
+    IndexedQuadStorageManager --> EmbeddingsService: uses
+    IndexedQuadStorageManager --> ChunkStorage: uses
     
     ChunkStorage <|-- InMemoryChunkStorage: implements
     ChunkStorage <|-- OramaChunkStorage: implements
@@ -312,17 +312,17 @@ classDiagram
 flowchart TB
     subgraph Worlds
         A[Worlds] --> B[WorldStorage]
-        A --> C[FactStorageManager]
+        A --> C[QuadStorageManager]
     end
     
     subgraph Storage Managers
-        C --> D[IndexedFactStorageManager]
-        C --> E[InMemoryFactStorageManager]
+        C --> D[IndexedQuadStorageManager]
+        C --> E[InMemoryQuadStorageManager]
     end
     
     subgraph Fact Layer
-        D --> F[IndexedFactStorage]
-        E --> G[InMemoryFactStorage]
+        D --> F[IndexedQuadStorage]
+        E --> G[InMemoryQuadStorage]
         F --> H[SearchIndexHandler]
         H --> I[EmbeddingsService]
         H --> J[ChunkStorage]
@@ -361,10 +361,10 @@ interface FactStorageConfig {
 }
 ```
 
-### StoredFact
+### StoredQuad
 
 ```typescript
-interface StoredFact {
+interface StoredQuad {
   subject: string; // RDF subject (IRI or blank node)
   predicate: string; // RDF predicate (IRI)
   object: string; // RDF object (literal, IRI, or blank node)
@@ -414,7 +414,7 @@ src/
 
 ## Usage Examples
 
-### Setting up with InMemoryFactStorageManager
+### Setting up with InMemoryQuadStorageManager
 
 If you want a lightweight, in-memory implementation without search indexing
 (SPARQL-only):
@@ -422,24 +422,24 @@ If you want a lightweight, in-memory implementation without search indexing
 ```typescript
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { InMemoryFactStorageManager } from "#/rdf/storage/in-memory-fact-storage-manager.ts";
+import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
 
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
-  new InMemoryFactStorageManager(),
+  new InMemoryQuadStorageManager(),
 );
 
 await worlds.createWorld({ namespace: "demo", id: "w1", displayName: "Demo" });
 ```
 
-### Setting up with IndexedFactStorageManager
+### Setting up with IndexedQuadStorageManager
 
-If you need vector search and chunking, use `IndexedFactStorageManager`:
+If you need vector search and chunking, use `IndexedQuadStorageManager`:
 
 ```typescript
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedFactStorageManager } from "#/rdf/storage/indexed-fact-storage-manager.ts";
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
 import { InMemoryChunkStorage } from "#/indexing/storage/in-memory.ts";
 import { OpenAIEmbeddingsService } from "#/indexing/embeddings/openai.ts";
 
@@ -448,7 +448,7 @@ const embeddings = new OpenAIEmbeddingsService("sk-...");
 
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
-  new IndexedFactStorageManager(embeddings, chunkStorage),
+  new IndexedQuadStorageManager(embeddings, chunkStorage),
   { chunkStorage, embeddings }, // Provide search deps for global querying
 );
 ```

@@ -1,13 +1,13 @@
-import type { StoredFact } from "./types.ts";
+import type { StoredQuad } from "./quad.ts";
 
-function inferredObjectTermType(q: StoredFact): string {
+function inferredObjectTermType(q: StoredQuad): string {
   if (q.objectTermType) return q.objectTermType;
   if (q.object.startsWith("_:")) return "BlankNode";
   if (q.object.includes(":") || q.object.startsWith("urn:")) return "NamedNode";
   return "Literal";
 }
 
-export function storedFactKey(q: StoredFact): string {
+export function storedQuadKey(q: StoredQuad): string {
   return [
     q.subject,
     q.predicate,

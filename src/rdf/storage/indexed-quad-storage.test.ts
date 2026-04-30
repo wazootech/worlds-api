@@ -1,13 +1,13 @@
 import { assertEquals } from "@std/assert";
-import { IndexedFactStorage } from "./indexed.ts";
-import { InMemoryFactStorage } from "./in-memory.ts";
-import type { StoredFact } from "./types.ts";
+import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
+import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
+import type { StoredQuad } from "./quad.ts";
 import type {
   Patch,
   PatchHandler,
 } from "#/indexing/handlers/rdf-write-indexing/types.ts";
 
-function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
+function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -24,13 +24,13 @@ class SpyPatchHandler implements PatchHandler {
   }
 }
 
-Deno.test("IndexedFactStorage: setFact dispatches insertion patch", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: setQuad dispatches insertion patch", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
   const fact = makeFact();
-  await storage.setFact(fact);
+  await storage.setQuad(fact);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0].length, 1);
@@ -39,20 +39,20 @@ Deno.test("IndexedFactStorage: setFact dispatches insertion patch", async () => 
   assertEquals(spy.patches[0][0].insertions[0], fact);
 
   // Also stored in inner
-  const results = await inner.findFacts([]);
+  const results = await inner.findQuads([]);
   assertEquals(results.length, 1);
 });
 
-Deno.test("IndexedFactStorage: deleteFact dispatches deletion patch", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: deleteQuad dispatches deletion patch", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
   const fact = makeFact();
-  await storage.setFact(fact);
+  await storage.setQuad(fact);
   spy.patches = []; // reset
 
-  await storage.deleteFact(fact);
+  await storage.deleteQuad(fact);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].insertions.length, 0);
@@ -60,65 +60,65 @@ Deno.test("IndexedFactStorage: deleteFact dispatches deletion patch", async () =
   assertEquals(spy.patches[0][0].deletions[0], fact);
 });
 
-Deno.test("IndexedFactStorage: setFacts dispatches batch insertion patch", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: setQuads dispatches batch insertion patch", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
   const facts = [
     makeFact({ subject: "https://example.org/a" }),
     makeFact({ subject: "https://example.org/b" }),
   ];
-  await storage.setFacts(facts);
+  await storage.setQuads(facts);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].insertions.length, 2);
 });
 
-Deno.test("IndexedFactStorage: setFacts with empty array is no-op", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: setQuads with empty array is no-op", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
-  await storage.setFacts([]);
+  await storage.setQuads([]);
 
   assertEquals(spy.patches.length, 0);
 });
 
-Deno.test("IndexedFactStorage: deleteFacts dispatches batch deletion patch", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: deleteQuads dispatches batch deletion patch", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
   const facts = [
     makeFact({ subject: "https://example.org/a" }),
     makeFact({ subject: "https://example.org/b" }),
   ];
-  await storage.setFacts(facts);
+  await storage.setQuads(facts);
   spy.patches = [];
 
-  await storage.deleteFacts(facts);
+  await storage.deleteQuads(facts);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].deletions.length, 2);
 });
 
-Deno.test("IndexedFactStorage: deleteFacts with empty array is no-op", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: deleteQuads with empty array is no-op", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
-  await storage.deleteFacts([]);
+  await storage.deleteQuads([]);
 
   assertEquals(spy.patches.length, 0);
 });
 
-Deno.test("IndexedFactStorage: clear dispatches deletion patch for all existing facts", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: clear dispatches deletion patch for all existing quads", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
-  await storage.setFacts([
+  await storage.setQuads([
     makeFact({ subject: "https://example.org/a" }),
     makeFact({ subject: "https://example.org/b" }),
   ]);
@@ -131,42 +131,42 @@ Deno.test("IndexedFactStorage: clear dispatches deletion patch for all existing 
   assertEquals(spy.patches[0][0].insertions.length, 0);
 
   // Inner should be empty
-  const results = await inner.findFacts([]);
+  const results = await inner.findQuads([]);
   assertEquals(results.length, 0);
 });
 
-Deno.test("IndexedFactStorage: clear on empty store does not dispatch", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: clear on empty store does not dispatch", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
   await storage.clear();
 
   assertEquals(spy.patches.length, 0);
 });
 
-Deno.test("IndexedFactStorage: findFacts delegates to inner", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: findQuads delegates to inner", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy]);
+  const storage = new IndexedQuadStorage(inner, [spy]);
 
-  await storage.setFact(makeFact({ subject: "https://example.org/a" }));
-  await storage.setFact(makeFact({ subject: "https://example.org/b" }));
+  await storage.setQuad(makeFact({ subject: "https://example.org/a" }));
+  await storage.setQuad(makeFact({ subject: "https://example.org/b" }));
 
-  const all = await storage.findFacts([]);
+  const all = await storage.findQuads([]);
   assertEquals(all.length, 2);
 
   // findFacts should NOT dispatch any patches
   assertEquals(spy.patches.length, 2); // only the 2 setFact calls
 });
 
-Deno.test("IndexedFactStorage: dispatches to multiple handlers", async () => {
-  const inner = new InMemoryFactStorage();
+Deno.test("IndexedQuadStorage: dispatches to multiple handlers", async () => {
+  const inner = new InMemoryQuadStorage();
   const spy1 = new SpyPatchHandler();
   const spy2 = new SpyPatchHandler();
-  const storage = new IndexedFactStorage(inner, [spy1, spy2]);
+  const storage = new IndexedQuadStorage(inner, [spy1, spy2]);
 
-  await storage.setFact(makeFact());
+  await storage.setQuad(makeFact());
 
   assertEquals(spy1.patches.length, 1);
   assertEquals(spy2.patches.length, 1);
