@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { storedFactToN3 } from "#/facts/rdf/rdf.ts";
 import { skolemizeStoredFact } from "#/facts/rdf/skolem.ts";
-import { META_PREDICATES, RDF_TYPE } from "#/facts/rdf/vocab.ts";
+import { META_PREDICATES } from "#/facts/rdf/vocab.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/search/storage/interface.ts";
 import type { StoredFact } from "#/facts/storage/types.ts";
@@ -20,9 +20,6 @@ function shouldIndexTriple(fact: StoredFact): boolean {
   const quad = storedFactToN3(fact);
   const p = quad.predicate.value;
   if (isMetaPredicate(p)) return false;
-  if (p === RDF_TYPE) {
-    return quad.object.value.length > 0;
-  }
   return quad.object.termType === "Literal" && quad.object.value.length > 0;
 }
 

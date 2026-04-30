@@ -58,6 +58,21 @@ Deno.test("SearchIndexHandler: skips NamedNode objects", async () => {
   assertEquals(result.length, 0);
 });
 
+Deno.test("SearchIndexHandler: skips IRI-shaped objects without objectTermType", async () => {
+  const { handler, index } = await setup();
+
+  await handler.patch([{
+    insertions: [makeFact({
+      object: "urn:example:thing",
+      // objectTermType intentionally omitted; `storedFactToN3` infers NamedNode.
+    })],
+    deletions: [],
+  }]);
+
+  const result = await index.getAll();
+  assertEquals(result.length, 0);
+});
+
 Deno.test("SearchIndexHandler: skips BlankNode objects", async () => {
   const { handler, index } = await setup();
 
@@ -73,7 +88,22 @@ Deno.test("SearchIndexHandler: skips BlankNode objects", async () => {
   assertEquals(result.length, 0);
 });
 
-Deno.test("SearchIndexHandler: indexes rdf:type triples", async () => {
+Deno.test("SearchIndexHandler: skips blank node objects without objectTermType", async () => {
+  const { handler, index } = await setup();
+
+  await handler.patch([{
+    insertions: [makeFact({
+      object: "_:b0",
+      // objectTermType intentionally omitted; `storedFactToN3` infers BlankNode.
+    })],
+    deletions: [],
+  }]);
+
+  const result = await index.getAll();
+  assertEquals(result.length, 0);
+});
+
+Deno.test("SearchIndexHandler: skips rdf:type triples (object is typically an IRI)", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
@@ -85,8 +115,7 @@ Deno.test("SearchIndexHandler: indexes rdf:type triples", async () => {
   }]);
 
   const result = await index.getAll();
-  assertEquals(result.length, 1);
-  assertEquals(result[0].text, "https://example.org/Person");
+  assertEquals(result.length, 0);
 });
 
 Deno.test("SearchIndexHandler: skips meta predicates (rdfs:label, rdfs:comment)", async () => {
