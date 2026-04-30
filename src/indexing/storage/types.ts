@@ -2,7 +2,7 @@ import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 
 export interface ChunkRecord {
   id: string;
-  factId: string;
+  quadId: string;
   subject: string;
   predicate: string;
   text: string;

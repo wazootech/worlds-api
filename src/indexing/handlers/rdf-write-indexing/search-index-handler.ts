@@ -16,11 +16,11 @@ function isMetaPredicate(predicate: string): boolean {
  * Whether to embed this triple in the chunk index. Object term type comes only from
  * {@link storedQuadToN3} so it stays aligned with SPARQL round-trip.
  */
-function shouldIndexTriple(fact: StoredQuad): boolean {
-  const quad = storedQuadToN3(fact);
-  const p = quad.predicate.value;
+function shouldIndexTriple(quad: StoredQuad): boolean {
+  const n3Quad = storedQuadToN3(quad);
+  const p = n3Quad.predicate.value;
   if (isMetaPredicate(p)) return false;
-  return quad.object.termType === "Literal" && quad.object.value.length > 0;
+  return n3Quad.object.termType === "Literal" && n3Quad.object.value.length > 0;
 }
 
 async function sha256Hex(msg: string): Promise<string> {
@@ -44,8 +44,8 @@ export class SearchIndexHandler implements PatchHandler {
     for (const patch of patches) {
       if (patch.deletions?.length) {
         for (const q of patch.deletions) {
-          const factId = await skolemizeStoredQuad(q);
-          await this.chunks.deleteChunk(factId);
+          const quadId = await skolemizeStoredQuad(q);
+          await this.chunks.deleteChunk(quadId);
         }
       }
 
@@ -54,7 +54,7 @@ export class SearchIndexHandler implements PatchHandler {
           if (!shouldIndexTriple(q)) continue;
           if (isMetaPredicate(q.predicate)) continue;
 
-          const tripleId = await skolemizeStoredQuad(q);
+          const quadId = await skolemizeStoredQuad(q);
           const subject = q.subject;
           const predicate = q.predicate;
           const objectText = q.object;
@@ -71,10 +71,10 @@ export class SearchIndexHandler implements PatchHandler {
               chunkVec = Float32Array.from(v);
             }
 
-            const chunkId = await sha256Hex(`${tripleId}:chunk:${i}`);
+            const chunkId = await sha256Hex(`${quadId}:chunk:${i}`);
             const record: ChunkRecord = {
               id: chunkId,
-              factId: tripleId,
+              quadId,
               subject,
               predicate,
               text: chunkText,

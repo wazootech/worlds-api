@@ -6,7 +6,7 @@ This section captures two frequently-confused concepts:
 
 - **Skolemization for ingestion** (blank nodes → stable IRIs within an imported
   dataset)
-- **Stable identifiers for facts / chunks** (content-derived IDs used as keys)
+- **Stable identifiers for quads / chunks** (content-derived IDs used as keys)
 
 It also documents what gets added to the **chunk search index** and how that
 pipeline works.
@@ -28,13 +28,13 @@ During ingest we:
 
 Code: `src/rdf/rdf/ingest.ts` uses `toSkolemizedQuad` + `resolveSkolemPrefix`.
 
-#### 2) Content-derived stable IDs (fact / chunk keying)
+#### 2) Content-derived stable IDs (quad / chunk keying)
 
 For storage/indexing keys, we use content-derived opaque identifiers:
 
 - **Quad id**: `skolemizeStoredQuad(quad)` → canonicalize the corresponding quad
   (RDFC-1.0) → base64url
-- **Chunk id**: derived from the fact id + chunk ordinal (SHA-256)
+- **Chunk id**: derived from the quad id + chunk ordinal (SHA-256)
 
 These IDs are used for deterministic delete/update behavior in the chunk index.
 
@@ -43,7 +43,7 @@ Code: `src/rdf/rdf/skolem.ts` (`skolemizeQuad`, `skolemizeStoredQuad`), and
 
 ### What gets indexed (chunked) for search
 
-**Current policy:** a fact is added to the chunk search index **iff** its object
+**Current policy:** a quad is added to the chunk search index **iff** its object
 is a non-empty `Literal`. This aligns with the goal: **object values are the
 search interest**.
 
@@ -379,10 +379,10 @@ interface StoredQuad {
 
 ```typescript
 interface ChunkRecord {
-  id: string; // SHA-256 hash of factId:chunk:index
-  factId: string; // Skolemized fact identifier
-  subject: string; // From source fact
-  predicate: string; // From source fact
+  id: string; // SHA-256 hash of quadId:chunk:index
+  quadId: string; // Skolemized quad identifier
+  subject: string; // From source quad
+  predicate: string; // From source quad
   text: string; // Extracted/chunked text
   vector: Float32Array; // Embedding vector
   world: WorldReference;

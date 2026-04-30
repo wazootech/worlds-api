@@ -334,7 +334,7 @@ export class Worlds implements WorldsInterface {
   }
 
   /**
-   * Full fact scan + term counts (legacy path when no chunk index exists).
+   * Full quad scan + term counts (legacy path when no chunk index exists).
    */
   private async searchNaiveFts(
     targetRefs: WorldReference[],

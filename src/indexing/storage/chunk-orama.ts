@@ -9,7 +9,7 @@ import { create, type Orama, type Vector } from "@orama/orama";
  */
 export type ChunkOramaSchemaShape = {
   id: "string";
-  factId: "string";
+  quadId: "string";
   subject: "string";
   predicate: "string";
   text: "string";
@@ -20,7 +20,7 @@ export type ChunkOramaSchemaShape = {
 export function chunkOramaSchema(dimensions: number): ChunkOramaSchemaShape {
   return {
     id: "string",
-    factId: "string",
+    quadId: "string",
     subject: "string",
     predicate: "string",
     text: "string",

@@ -7,7 +7,7 @@ import type {
 
 export interface MakeChunkOverrides extends Partial<ChunkRecord> {
   id: string;
-  factId: string;
+  quadId: string;
 }
 
 export function makeChunk(overrides: MakeChunkOverrides): ChunkRecord {
@@ -29,7 +29,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   const index = await manager.getChunkIndex(world);
 
   // 1. setChunk and getAll
-  const chunk = makeChunk({ id: "c1", factId: "f1", world });
+  const chunk = makeChunk({ id: "c1", quadId: "q1", world });
   await index.setChunk(chunk);
   let result = await index.getAll();
   assertEquals(result.length, 1);
@@ -37,7 +37,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
 
   // 2. setChunk replaces existing
   await index.setChunk(
-    makeChunk({ id: "c1", factId: "f1", text: "updated", world }),
+    makeChunk({ id: "c1", quadId: "q1", text: "updated", world }),
   );
   result = await index.getAll();
   assertEquals(result.length, 1);
@@ -48,10 +48,10 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   const unknownIndex = await manager.getChunkIndex(unknownWorld);
   assertEquals(await unknownIndex.getAll(), []);
 
-  // 4. deleteChunk removes chunks for a fact
-  await index.setChunk(makeChunk({ id: "c2", factId: "f1", world })); // same fact, different chunk
-  await index.setChunk(makeChunk({ id: "c3", factId: "f2", world })); // different fact
-  await index.deleteChunk("f1");
+  // 4. deleteChunk removes chunks for a quad
+  await index.setChunk(makeChunk({ id: "c2", quadId: "q1", world })); // same quad, different chunk
+  await index.setChunk(makeChunk({ id: "c3", quadId: "q2", world })); // different quad
+  await index.deleteChunk("q1");
   result = await index.getAll();
   assertEquals(result.length, 1);
   assertEquals(result[0].id, "c3");
@@ -78,7 +78,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   await idx.setChunk(
     makeChunk({
       id: "s1",
-      factId: "f1",
+      quadId: "q1",
       text: "Alice is here",
       subject: "urn:alice",
       predicate: "urn:name",
@@ -88,7 +88,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   await idx.setChunk(
     makeChunk({
       id: "s2",
-      factId: "f2",
+      quadId: "q2",
       text: "Bob is here",
       subject: "urn:bob",
       predicate: "urn:name",
@@ -98,7 +98,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   await idx.setChunk(
     makeChunk({
       id: "s3",
-      factId: "f3",
+      quadId: "q3",
       text: "Alice is old",
       subject: "urn:alice",
       predicate: "urn:age",
@@ -146,7 +146,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
   await idx2.setChunk(
     makeChunk({
       id: "w2-c1",
-      factId: "f4",
+      quadId: "q4",
       text: "Charlie in world 2",
       world: world2,
     }),

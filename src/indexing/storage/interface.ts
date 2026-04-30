@@ -15,7 +15,7 @@ export type ChunkIndexSearchQuery = Omit<ChunkSearchQuery, "worlds">;
  */
 export interface ChunkIndex {
   setChunk(chunk: ChunkRecord): Promise<void>;
-  deleteChunk(factId: string): Promise<void>;
+  deleteChunk(quadId: string): Promise<void>;
   getAll(): Promise<ChunkRecord[]>;
   search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]>;
 }

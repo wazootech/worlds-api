@@ -154,12 +154,12 @@ Deno.test("SearchIndexHandler: skips empty object", async () => {
 
 Deno.test("SearchIndexHandler: deletion removes chunks", async () => {
   const { handler, index } = await setup();
-  const fact = makeFact({ object: "Some text" });
+  const quad = makeFact({ object: "Some text" });
 
-  await handler.patch([{ insertions: [fact], deletions: [] }]);
+  await handler.patch([{ insertions: [quad], deletions: [] }]);
   assertEquals((await index.getAll()).length, 1);
 
-  await handler.patch([{ insertions: [], deletions: [fact] }]);
+  await handler.patch([{ insertions: [], deletions: [quad] }]);
   assertEquals((await index.getAll()).length, 0);
 });
 

@@ -31,7 +31,7 @@ export class OramaChunkIndex implements ChunkIndex {
     if (existing) await remove(db, chunk.id);
     await insert(db, {
       id: chunk.id,
-      factId: chunk.factId,
+      quadId: chunk.quadId,
       subject: chunk.subject,
       predicate: chunk.predicate,
       text: chunk.text,
@@ -40,12 +40,12 @@ export class OramaChunkIndex implements ChunkIndex {
     });
   }
 
-  async deleteChunk(factId: string): Promise<void> {
+  async deleteChunk(quadId: string): Promise<void> {
     const db = await this.getOrama(0);
     if (!db) return;
     const results = await search(db, {
       term: "",
-      where: { factId },
+      where: { quadId },
     });
     for (const hit of results.hits) await remove(db, hit.id);
   }
@@ -58,7 +58,7 @@ export class OramaChunkIndex implements ChunkIndex {
       const doc = hit.document;
       return {
         id: doc.id,
-        factId: doc.factId,
+        quadId: doc.quadId,
         subject: doc.subject,
         predicate: doc.predicate,
         text: doc.text,
@@ -88,7 +88,7 @@ export class OramaChunkIndex implements ChunkIndex {
       const doc = hit.document;
       const chunk: ChunkRecord = {
         id: doc.id,
-        factId: doc.factId,
+        quadId: doc.quadId,
         subject: doc.subject,
         predicate: doc.predicate,
         text: doc.text,

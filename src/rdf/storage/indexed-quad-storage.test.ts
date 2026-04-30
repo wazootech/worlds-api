@@ -29,14 +29,14 @@ Deno.test("IndexedQuadStorage: setQuad dispatches insertion patch", async () => 
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const fact = makeFact();
-  await storage.setQuad(fact);
+  const quad = makeFact();
+  await storage.setQuad(quad);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0].length, 1);
   assertEquals(spy.patches[0][0].insertions.length, 1);
   assertEquals(spy.patches[0][0].deletions.length, 0);
-  assertEquals(spy.patches[0][0].insertions[0], fact);
+  assertEquals(spy.patches[0][0].insertions[0], quad);
 
   // Also stored in inner
   const results = await inner.findQuads([]);
@@ -48,16 +48,16 @@ Deno.test("IndexedQuadStorage: deleteQuad dispatches deletion patch", async () =
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const fact = makeFact();
-  await storage.setQuad(fact);
+  const quad = makeFact();
+  await storage.setQuad(quad);
   spy.patches = []; // reset
 
-  await storage.deleteQuad(fact);
+  await storage.deleteQuad(quad);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].insertions.length, 0);
   assertEquals(spy.patches[0][0].deletions.length, 1);
-  assertEquals(spy.patches[0][0].deletions[0], fact);
+  assertEquals(spy.patches[0][0].deletions[0], quad);
 });
 
 Deno.test("IndexedQuadStorage: setQuads dispatches batch insertion patch", async () => {

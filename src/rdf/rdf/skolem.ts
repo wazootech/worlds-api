@@ -38,8 +38,8 @@ export async function skolemizeQuad(quad: Quad): Promise<string> {
  * Stable id for a {@link StoredQuad}: RDFC-1.0 canonicalization of the same triple
  * {@link storedQuadToN3} produces for the RDF store.
  */
-export async function skolemizeStoredQuad(fact: StoredQuad): Promise<string> {
-  return skolemizeQuad(storedQuadToN3(fact));
+export async function skolemizeStoredQuad(quad: StoredQuad): Promise<string> {
+  return skolemizeQuad(storedQuadToN3(quad));
 }
 
 /**

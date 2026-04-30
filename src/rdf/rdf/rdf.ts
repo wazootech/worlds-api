@@ -8,30 +8,30 @@ const XSD_STRING = "http://www.w3.org/2001/XMLSchema#string";
 /**
  * Single source of truth: {@link StoredQuad} to N3 term/quad.
  */
-export function storedQuadToN3(fact: StoredQuad): Quad {
-  const subject = fact.subject.startsWith("_:")
-    ? df.blankNode(fact.subject.slice(2))
-    : df.namedNode(fact.subject);
-  const predicate = df.namedNode(fact.predicate);
-  const objectTermType = fact.objectTermType ??
-    (fact.object.startsWith("_:")
+export function storedQuadToN3(quad: StoredQuad): Quad {
+  const subject = quad.subject.startsWith("_:")
+    ? df.blankNode(quad.subject.slice(2))
+    : df.namedNode(quad.subject);
+  const predicate = df.namedNode(quad.predicate);
+  const objectTermType = quad.objectTermType ??
+    (quad.object.startsWith("_:")
       ? "BlankNode"
-      : fact.object.includes(":") || fact.object.startsWith("urn:")
+      : quad.object.includes(":") || quad.object.startsWith("urn:")
       ? "NamedNode"
       : "Literal");
   const object = objectTermType === "BlankNode"
     ? df.blankNode(
-      fact.object.startsWith("_:") ? fact.object.slice(2) : fact.object,
+      quad.object.startsWith("_:") ? quad.object.slice(2) : quad.object,
     )
     : objectTermType === "NamedNode"
-    ? df.namedNode(fact.object)
-    : fact.objectLanguage
-    ? df.literal(fact.object, fact.objectLanguage)
-    : fact.objectDatatype && fact.objectDatatype !== XSD_STRING
-    ? df.literal(fact.object, df.namedNode(fact.objectDatatype))
-    : df.literal(fact.object);
-  const graph = fact.graph && fact.graph !== ""
-    ? df.namedNode(fact.graph)
+    ? df.namedNode(quad.object)
+    : quad.objectLanguage
+    ? df.literal(quad.object, quad.objectLanguage)
+    : quad.objectDatatype && quad.objectDatatype !== XSD_STRING
+    ? df.literal(quad.object, df.namedNode(quad.objectDatatype))
+    : df.literal(quad.object);
+  const graph = quad.graph && quad.graph !== ""
+    ? df.namedNode(quad.graph)
     : df.defaultGraph();
   return df.quad(subject, predicate, object, graph);
 }

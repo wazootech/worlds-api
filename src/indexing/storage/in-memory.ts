@@ -32,7 +32,7 @@ function buildSubjectTypes(chunks: ChunkRecord[]): Map<string, Set<string>> {
 export class InMemoryChunkIndex implements ChunkIndex {
   private readonly chunksById = new Map<string, ChunkRecord>();
   private readonly chunkIds = new Set<string>();
-  private readonly chunkIdsByFactId = new Map<string, Set<string>>();
+  private readonly chunkIdsByQuadId = new Map<string, Set<string>>();
 
   constructor(private readonly world: WorldReference) {}
 
@@ -46,28 +46,28 @@ export class InMemoryChunkIndex implements ChunkIndex {
     const previous = this.chunksById.get(chunk.id);
     if (previous) {
       this.chunkIds.delete(previous.id);
-      this.chunkIdsByFactId.get(previous.factId)?.delete(previous.id);
+      this.chunkIdsByQuadId.get(previous.quadId)?.delete(previous.id);
     }
 
     this.chunksById.set(chunk.id, chunk);
     this.chunkIds.add(chunk.id);
 
-    let ids = this.chunkIdsByFactId.get(chunk.factId);
+    let ids = this.chunkIdsByQuadId.get(chunk.quadId);
     if (!ids) {
       ids = new Set();
-      this.chunkIdsByFactId.set(chunk.factId, ids);
+      this.chunkIdsByQuadId.set(chunk.quadId, ids);
     }
     ids.add(chunk.id);
   }
 
-  async deleteChunk(factId: string): Promise<void> {
-    const ids = this.chunkIdsByFactId.get(factId);
+  async deleteChunk(quadId: string): Promise<void> {
+    const ids = this.chunkIdsByQuadId.get(quadId);
     if (!ids) return;
     for (const id of ids) {
       this.chunksById.delete(id);
       this.chunkIds.delete(id);
     }
-    this.chunkIdsByFactId.delete(factId);
+    this.chunkIdsByQuadId.delete(quadId);
   }
 
   async getAll(): Promise<ChunkRecord[]> {
