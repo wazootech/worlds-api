@@ -1,5 +1,6 @@
 import { getByID, insert, remove, search } from "@orama/orama";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { formatWorldName } from "#/core/resolve.ts";
 import type {
   ChunkIndex,
   ChunkIndexManager,
@@ -11,10 +12,6 @@ import {
 } from "./orama-chunk-db.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
-function worldKey(ref: WorldReference): string {
-  return `${ref.namespace}/${ref.id}`;
-}
-
 export class OramaChunkIndex implements ChunkIndex {
   constructor(
     private readonly world: WorldReference,
@@ -24,7 +21,9 @@ export class OramaChunkIndex implements ChunkIndex {
   ) {}
 
   async setChunk(chunk: ChunkRecord): Promise<void> {
-    if (worldKey(chunk.world) !== worldKey(this.world)) {
+    if (
+      formatWorldName(chunk.world) !== formatWorldName(this.world)
+    ) {
       throw new Error("Chunk world does not match index world.");
     }
     const db = await this.getOrCreateDb(chunk.vector.length);
@@ -129,7 +128,7 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
   private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
 
   async getChunkIndex(reference: WorldReference): Promise<ChunkIndex> {
-    const key = worldKey(reference);
+    const key = formatWorldName(reference);
     let index = this.indexes.get(key);
     if (index) return index;
 
@@ -142,11 +141,11 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
   }
 
   async getIndexState(world: WorldReference): Promise<ChunkIndexState | null> {
-    return this.indexStateByWorld.get(worldKey(world)) ?? null;
+    return this.indexStateByWorld.get(formatWorldName(world)) ?? null;
   }
 
   async setIndexState(state: ChunkIndexState): Promise<void> {
-    const key = worldKey(state.world);
+    const key = formatWorldName(state.world);
     this.indexStateByWorld.set(key, state);
     await this.getOrCreateDb(state.world, state.embeddingDimensions);
     this.indexes.set(
@@ -159,7 +158,7 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
   }
 
   async deleteChunkIndex(reference: WorldReference): Promise<void> {
-    const key = worldKey(reference);
+    const key = formatWorldName(reference);
     this.dbs.delete(key);
     this.indexes.delete(key);
     this.indexStateByWorld.delete(key);
@@ -169,7 +168,7 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
     world: WorldReference,
     dimensions: number,
   ): Promise<ChunkOramaDb | null> {
-    const key = worldKey(world);
+    const key = formatWorldName(world);
     let db = this.dbs.get(key);
     if (!db) {
       if (!dimensions || dimensions <= 0) return null;

@@ -1,29 +1,29 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { storedFactToN3 } from "#/facts/rdf/rdf.ts";
+import { skolemizeStoredFact } from "#/facts/rdf/skolem.ts";
+import { META_PREDICATES, RDF_TYPE } from "#/facts/rdf/vocab.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/search/storage/interface.ts";
 import type { StoredFact } from "#/facts/storage/types.ts";
-import { META_PREDICATES, RDF_TYPE } from "#/facts/rdf/vocab.ts";
 import type { Patch, PatchHandler } from "./types.ts";
-import { skolemizeStoredFact } from "./skolem.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 
-function isMetaPredicate(p: string): boolean {
-  return META_PREDICATES.includes(p);
+function isMetaPredicate(predicate: string): boolean {
+  return META_PREDICATES.includes(predicate);
 }
 
-/** Align with `storeFromFacts` in rdf.ts: literals are not IRIs. */
+/**
+ * Whether to embed this triple in the chunk index. Object term type comes only from
+ * {@link storedFactToN3} so it stays aligned with SPARQL round-trip.
+ */
 function shouldIndexTriple(fact: StoredFact): boolean {
-  const obj = fact.object;
-  if (fact.predicate === RDF_TYPE) {
-    return obj.length > 0;
+  const quad = storedFactToN3(fact);
+  const p = quad.predicate.value;
+  if (isMetaPredicate(p)) return false;
+  if (p === RDF_TYPE) {
+    return quad.object.value.length > 0;
   }
-  const objectTermType = fact.objectTermType ??
-    (obj.startsWith("_:")
-      ? "BlankNode"
-      : obj.includes(":") || obj.startsWith("urn:")
-      ? "NamedNode"
-      : "Literal");
-  return objectTermType === "Literal" && obj.length > 0;
+  return quad.object.termType === "Literal" && quad.object.value.length > 0;
 }
 
 async function sha256Hex(msg: string): Promise<string> {

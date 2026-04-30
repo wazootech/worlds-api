@@ -50,7 +50,7 @@ export async function searchChunks(
   const worldByKey = new Map<string, World>();
   for (const ref of targetRefs) {
     const stored = await deps.worldStorage.getWorld(ref);
-    worldByKey.set(`${ref.namespace}/${ref.id}`, {
+    worldByKey.set(deps.formatWorldName(ref), {
       name: deps.formatWorldName(ref),
       namespace: ref.namespace,
       id: ref.id,
@@ -62,7 +62,7 @@ export async function searchChunks(
 
   return rows.map((row) => {
     const c = row.chunk;
-    const world = worldByKey.get(`${c.world.namespace}/${c.world.id}`);
+    const world = worldByKey.get(deps.formatWorldName(c.world));
     if (!world) {
       throw new Error(`Chunk result references untargeted world`);
     }

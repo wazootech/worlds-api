@@ -1,14 +1,11 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { formatWorldName } from "#/core/resolve.ts";
 import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
 import { SearchIndexHandler } from "#/facts/storage/index/search-index-handler.ts";
 import type { ChunkIndexManager } from "#/search/storage/interface.ts";
 import { InMemoryFactStorage } from "#/facts/storage/in-memory.ts";
 import { IndexedFactStorage } from "#/facts/storage/indexed.ts";
 import type { FactStorageManager } from "./interface.ts";
-
-function keyOfRef(reference: WorldReference): string {
-  return `${reference.namespace}/${reference.id}`;
-}
 
 export interface IndexedFactStorageManagerConfig {
   embeddings: EmbeddingsService;
@@ -24,7 +21,7 @@ export class IndexedFactStorageManager implements FactStorageManager {
   ) {}
 
   async getFactStorage(reference: WorldReference): Promise<IndexedFactStorage> {
-    const key = keyOfRef(reference);
+    const key = formatWorldName(reference);
     let w = this.wrapped.get(key);
     if (!w) {
       const inner = new InMemoryFactStorage();
@@ -46,7 +43,7 @@ export class IndexedFactStorageManager implements FactStorageManager {
   }
 
   async deleteFactStorage(reference: WorldReference): Promise<void> {
-    this.wrapped.delete(keyOfRef(reference));
+    this.wrapped.delete(formatWorldName(reference));
     await this.chunks.deleteChunkIndex(reference);
   }
 }

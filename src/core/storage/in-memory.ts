@@ -1,27 +1,20 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { formatWorldName } from "#/core/resolve.ts";
 import type { StoredWorld, WorldStorage } from "./interface.ts";
-
-function keyOfRef(reference: WorldReference): string {
-  return `${reference.namespace}/${reference.id}`;
-}
-
-function keyOfWorld(world: StoredWorld): string {
-  return keyOfRef(world.reference);
-}
 
 export class InMemoryWorldStorage implements WorldStorage {
   private readonly worlds = new Map<string, StoredWorld>();
 
   async getWorld(reference: WorldReference): Promise<StoredWorld | null> {
-    return this.worlds.get(keyOfRef(reference)) ?? null;
+    return this.worlds.get(formatWorldName(reference)) ?? null;
   }
 
   async updateWorld(world: StoredWorld): Promise<void> {
-    this.worlds.set(keyOfWorld(world), world);
+    this.worlds.set(formatWorldName(world.reference), world);
   }
 
   async deleteWorld(reference: WorldReference): Promise<void> {
-    this.worlds.delete(keyOfRef(reference));
+    this.worlds.delete(formatWorldName(reference));
   }
 
   async listWorld(namespace?: string): Promise<StoredWorld[]> {

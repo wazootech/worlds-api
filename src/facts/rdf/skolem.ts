@@ -1,6 +1,8 @@
+import type { StoredFact } from "#/facts/storage/types.ts";
 import type { Quad } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
+import { storedFactToN3 } from "#/facts/rdf/rdf.ts";
 
 export interface SkolemOptions {
   /**
@@ -26,6 +28,14 @@ export async function skolemizeQuad(quad: Quad): Promise<string> {
   const canonical = await canonizeQuad(quad);
   const encoded = new TextEncoder().encode(canonical);
   return encodeBase64Url(encoded);
+}
+
+/**
+ * Stable id for a {@link StoredFact}: RDFC-1.0 canonicalization of the same triple
+ * {@link storeFromFacts} would add to the RDF store.
+ */
+export async function skolemizeStoredFact(fact: StoredFact): Promise<string> {
+  return skolemizeQuad(storedFactToN3(fact));
 }
 
 /**

@@ -1,4 +1,5 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { formatWorldName } from "#/core/resolve.ts";
 import { RDF_TYPE } from "#/facts/rdf/vocab.ts";
 import { ftsTermHits } from "#/search/fts.ts";
 import type {
@@ -7,10 +8,6 @@ import type {
   ChunkIndexSearchQuery,
 } from "./interface.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
-
-function worldKey(ref: WorldReference): string {
-  return `${ref.namespace}/${ref.id}`;
-}
 
 function dotNormalized(
   a: Float32Array | number[],
@@ -40,7 +37,9 @@ export class InMemoryChunkIndex implements ChunkIndex {
   constructor(private readonly world: WorldReference) {}
 
   async setChunk(chunk: ChunkRecord): Promise<void> {
-    if (worldKey(chunk.world) !== worldKey(this.world)) {
+    if (
+      formatWorldName(chunk.world) !== formatWorldName(this.world)
+    ) {
       throw new Error("Chunk world does not match index world.");
     }
 
@@ -131,7 +130,7 @@ export class InMemoryChunkIndexManager implements ChunkIndexManager {
   private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
 
   async getChunkIndex(reference: WorldReference): Promise<ChunkIndex> {
-    const key = worldKey(reference);
+    const key = formatWorldName(reference);
     let index = this.indexesByWorld.get(key);
     if (!index) {
       index = new InMemoryChunkIndex(reference);
@@ -141,17 +140,17 @@ export class InMemoryChunkIndexManager implements ChunkIndexManager {
   }
 
   async getIndexState(world: WorldReference): Promise<ChunkIndexState | null> {
-    return this.indexStateByWorld.get(worldKey(world)) ?? null;
+    return this.indexStateByWorld.get(formatWorldName(world)) ?? null;
   }
 
   async setIndexState(state: ChunkIndexState): Promise<void> {
-    this.indexStateByWorld.set(worldKey(state.world), state);
+    this.indexStateByWorld.set(formatWorldName(state.world), state);
     // Ensure an index exists so data-plane writers can rely on it.
     await this.getChunkIndex(state.world);
   }
 
   async deleteChunkIndex(reference: WorldReference): Promise<void> {
-    const key = worldKey(reference);
+    const key = formatWorldName(reference);
     this.indexesByWorld.delete(key);
     this.indexStateByWorld.delete(key);
   }

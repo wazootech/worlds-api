@@ -1,10 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import { formatWorldName } from "#/core/resolve.ts";
 import type { FactStorageManager } from "./interface.ts";
 import { InMemoryFactStorage } from "#/facts/storage/in-memory.ts";
-
-function keyOfRef(reference: WorldReference): string {
-  return `${reference.namespace}/${reference.id}`;
-}
 
 export class InMemoryFactStorageManager implements FactStorageManager {
   private readonly storage = new Map<string, InMemoryFactStorage>();
@@ -18,7 +15,7 @@ export class InMemoryFactStorageManager implements FactStorageManager {
   async getFactStorage(
     reference: WorldReference,
   ): Promise<InMemoryFactStorage> {
-    const key = keyOfRef(reference);
+    const key = formatWorldName(reference);
     let s = this.storage.get(key);
     if (!s) {
       s = new InMemoryFactStorage();
@@ -28,6 +25,6 @@ export class InMemoryFactStorageManager implements FactStorageManager {
   }
 
   async deleteFactStorage(reference: WorldReference): Promise<void> {
-    this.storage.delete(keyOfRef(reference));
+    this.storage.delete(formatWorldName(reference));
   }
 }

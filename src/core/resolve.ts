@@ -14,9 +14,10 @@ export class WorldRefError extends Error {
 }
 
 /**
- * formatWorldName formats a canonical world resource name used by this API.
+ * Canonical string form of a world reference: `{namespace}/{id}` (see OpenAPI WorldName).
  *
- * We intentionally require both namespace and id (no defaults).
+ * Same value is used anywhere a stable Map key or index by world is needed; keep in sync with
+ * {@link parseWorldName}.
  */
 export function formatWorldName(reference: WorldReference): string {
   return `${reference.namespace}/${reference.id}`;
