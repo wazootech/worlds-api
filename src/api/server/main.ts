@@ -13,8 +13,8 @@ export type ApiServerDeps = {
 
 function createDefaultDeps(): ApiServerDeps {
   const worldStorage = new InMemoryWorldStorage();
-  const factStorageManager = new InMemoryQuadStorageManager();
-  const worlds = new Worlds(worldStorage, factStorageManager);
+  const quadStorageManager = new InMemoryQuadStorageManager();
+  const worlds = new Worlds(worldStorage, quadStorageManager);
   return { worlds };
 }
 

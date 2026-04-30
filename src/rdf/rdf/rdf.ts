@@ -60,12 +60,12 @@ export function getFormat(contentType: string | undefined): RdfFormat {
 }
 
 export async function serialize(
-  facts: StoredQuad[],
+  quads: StoredQuad[],
   contentType: string,
 ): Promise<string> {
   const { n3Format } = getFormat(contentType);
   const writer = new Writer({ format: n3Format });
-  for (const q of facts) {
+  for (const q of quads) {
     writer.addQuad(storedQuadToN3(q));
   }
   const result = await new Promise<string>((resolve, reject) => {
@@ -110,19 +110,19 @@ export function deserialize(data: string, contentType: string): StoredQuad[] {
   }));
 }
 
-export function storeFromQuads(facts: StoredQuad[]): Store {
+export function storeFromQuads(quads: StoredQuad[]): Store {
   const store = new Store();
-  for (const q of facts) {
+  for (const q of quads) {
     store.addQuad(storedQuadToN3(q));
   }
   return store;
 }
 
 export function quadsFromStore(store: Store): StoredQuad[] {
-  const facts: StoredQuad[] = [];
+  const quads: StoredQuad[] = [];
 
   for (const q of store.getQuads(null, null, null, null)) {
-    facts.push({
+    quads.push({
       subject: q.subject.termType === "BlankNode"
         ? `_:${q.subject.value}`
         : q.subject.value,
@@ -143,5 +143,5 @@ export function quadsFromStore(store: Store): StoredQuad[] {
     });
   }
 
-  return facts;
+  return quads;
 }

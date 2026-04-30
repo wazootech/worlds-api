@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
 import type { StoredQuad } from "./quad.ts";
 
-function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
+function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -12,12 +12,12 @@ function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
   };
 }
 
-// --- findFacts with partial matchers ---
+// --- findQuads with partial matchers ---
 
 Deno.test("InMemoryQuadStorage: findQuads with empty matcher returns all", async () => {
   const storage = new InMemoryQuadStorage();
-  await storage.setQuad(makeFact({ subject: "https://example.org/a" }));
-  await storage.setQuad(makeFact({ subject: "https://example.org/b" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/a" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/b" }));
 
   const results = await storage.findQuads([]);
   assertEquals(results.length, 2);
@@ -25,8 +25,8 @@ Deno.test("InMemoryQuadStorage: findQuads with empty matcher returns all", async
 
 Deno.test("InMemoryQuadStorage: findQuads filters by subject", async () => {
   const storage = new InMemoryQuadStorage();
-  await storage.setQuad(makeFact({ subject: "https://example.org/alice" }));
-  await storage.setQuad(makeFact({ subject: "https://example.org/bob" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/alice" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/bob" }));
 
   const results = await storage.findQuads([{
     subject: "https://example.org/alice",
@@ -40,9 +40,9 @@ Deno.test("InMemoryQuadStorage: findQuads filters by subject", async () => {
 
 Deno.test("InMemoryQuadStorage: findQuads filters by predicate", async () => {
   const storage = new InMemoryQuadStorage();
-  await storage.setQuad(makeFact({ predicate: "https://example.org/name" }));
+  await storage.setQuad(makeQuad({ predicate: "https://example.org/name" }));
   await storage.setQuad(
-    makeFact({
+    makeQuad({
       predicate: "https://example.org/age",
       subject: "https://example.org/s2",
     }),
@@ -60,9 +60,9 @@ Deno.test("InMemoryQuadStorage: findQuads filters by predicate", async () => {
 
 Deno.test("InMemoryQuadStorage: findQuads filters by graph", async () => {
   const storage = new InMemoryQuadStorage();
-  await storage.setQuad(makeFact({ graph: "g1" }));
+  await storage.setQuad(makeQuad({ graph: "g1" }));
   await storage.setQuad(
-    makeFact({ graph: "g2", subject: "https://example.org/s2" }),
+    makeQuad({ graph: "g2", subject: "https://example.org/s2" }),
   );
 
   const results = await storage.findQuads([{
@@ -77,11 +77,11 @@ Deno.test("InMemoryQuadStorage: findQuads filters by graph", async () => {
 
 Deno.test("InMemoryQuadStorage: deleteQuad removes the correct quad", async () => {
   const storage = new InMemoryQuadStorage();
-  const f1 = makeFact({ subject: "https://example.org/a" });
-  const f2 = makeFact({ subject: "https://example.org/b" });
-  await storage.setQuads([f1, f2]);
+  const q1 = makeQuad({ subject: "https://example.org/a" });
+  const q2 = makeQuad({ subject: "https://example.org/b" });
+  await storage.setQuads([q1, q2]);
 
-  await storage.deleteQuad(f1);
+  await storage.deleteQuad(q1);
 
   const results = await storage.findQuads([]);
   assertEquals(results.length, 1);
@@ -90,12 +90,12 @@ Deno.test("InMemoryQuadStorage: deleteQuad removes the correct quad", async () =
 
 Deno.test("InMemoryQuadStorage: deleteQuads removes multiple", async () => {
   const storage = new InMemoryQuadStorage();
-  const f1 = makeFact({ subject: "https://example.org/a" });
-  const f2 = makeFact({ subject: "https://example.org/b" });
-  const f3 = makeFact({ subject: "https://example.org/c" });
-  await storage.setQuads([f1, f2, f3]);
+  const q1 = makeQuad({ subject: "https://example.org/a" });
+  const q2 = makeQuad({ subject: "https://example.org/b" });
+  const q3 = makeQuad({ subject: "https://example.org/c" });
+  await storage.setQuads([q1, q2, q3]);
 
-  await storage.deleteQuads([f1, f3]);
+  await storage.deleteQuads([q1, q3]);
 
   const results = await storage.findQuads([]);
   assertEquals(results.length, 1);
@@ -105,8 +105,8 @@ Deno.test("InMemoryQuadStorage: deleteQuads removes multiple", async () => {
 Deno.test("InMemoryQuadStorage: clear empties the store", async () => {
   const storage = new InMemoryQuadStorage();
   await storage.setQuads([
-    makeFact({ subject: "https://example.org/a" }),
-    makeFact({ subject: "https://example.org/b" }),
+    makeQuad({ subject: "https://example.org/a" }),
+    makeQuad({ subject: "https://example.org/b" }),
   ]);
 
   await storage.clear();
@@ -117,11 +117,11 @@ Deno.test("InMemoryQuadStorage: clear empties the store", async () => {
 
 Deno.test("InMemoryQuadStorage: setQuad overwrites duplicate key", async () => {
   const storage = new InMemoryQuadStorage();
-  const f1 = makeFact({ object: "old" });
-  await storage.setQuad(f1);
+  const q1 = makeQuad({ object: "old" });
+  await storage.setQuad(q1);
   // Same s/p/g key, different object — but storedQuadKey likely uses s+p+o+g so this would be a different key
   // Let's test exact same key:
-  await storage.setQuad(f1);
+  await storage.setQuad(q1);
 
   const results = await storage.findQuads([]);
   assertEquals(results.length, 1);

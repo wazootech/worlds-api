@@ -471,7 +471,7 @@ Deno.test("Worlds: sparql rejects on non-existent world", async () => {
   );
 });
 
-Deno.test("Worlds: search finds facts matching query terms", async () => {
+Deno.test("Worlds: search finds quads matching query terms", async () => {
   const worlds = createWorlds();
 
   await worlds.createWorld({

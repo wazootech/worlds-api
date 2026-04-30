@@ -71,7 +71,7 @@ export class Worlds implements WorldsInterface {
 
   constructor(
     private readonly worldStorage: WorldStorage,
-    private readonly factStorageManager: QuadStorageManager,
+    private readonly quadStorageManager: QuadStorageManager,
     searchDeps?: WorldsSearchDeps,
   ) {
     this.searchDeps = searchDeps ?? {
@@ -123,7 +123,7 @@ export class Worlds implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.worldStorage.deleteWorld(reference);
-    await this.factStorageManager.deleteQuadStorage(reference);
+    await this.quadStorageManager.deleteQuadStorage(reference);
   }
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
@@ -174,15 +174,15 @@ export class Worlds implements WorldsInterface {
       }
     }
 
-    // Aggregate facts from all source worlds into a single store
-    let allFacts: StoredQuad[] = [];
+    // Aggregate quads from all source worlds into a single store
+    let allQuads: StoredQuad[] = [];
     for (const ref of references) {
-      const factStorage = await this.factStorageManager.getQuadStorage(ref);
-      const facts = await factStorage.findQuads([]);
-      allFacts = allFacts.concat(facts);
+      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
+      const quads = await quadStorage.findQuads([]);
+      allQuads = allQuads.concat(quads);
     }
 
-    const store = storeFromQuads(allFacts);
+    const store = storeFromQuads(allQuads);
 
     // Execute the query
     const result = await executeSparql(store, input.query, {
@@ -192,31 +192,31 @@ export class Worlds implements WorldsInterface {
     // Handle SPARQL UPDATE (void result) - check for INSERT/DELETE
     if (result === null) {
       const ref = references[0];
-      const factStorage = await this.factStorageManager.getQuadStorage(ref);
+      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
 
-      const currentFacts = await factStorage.findQuads([]);
+      const currentQuads = await quadStorage.findQuads([]);
       const newStore = store;
 
-      const newFacts = quadsFromStore(newStore);
-      const currentFactSet = new Set(
-        currentFacts.map(storedQuadKey),
+      const newQuads = quadsFromStore(newStore);
+      const currentQuadSet = new Set(
+        currentQuads.map(storedQuadKey),
       );
-      const newFactSet = new Set(
-        newFacts.map(storedQuadKey),
+      const newQuadSet = new Set(
+        newQuads.map(storedQuadKey),
       );
 
-      const toRemove = currentFacts.filter((q: StoredQuad) =>
-        !newFactSet.has(storedQuadKey(q))
+      const toRemove = currentQuads.filter((q: StoredQuad) =>
+        !newQuadSet.has(storedQuadKey(q))
       );
-      const toAdd = newFacts.filter((q: StoredQuad) =>
-        !currentFactSet.has(storedQuadKey(q))
+      const toAdd = newQuads.filter((q: StoredQuad) =>
+        !currentQuadSet.has(storedQuadKey(q))
       );
 
       if (toRemove.length > 0) {
-        await factStorage.deleteQuads(toRemove);
+        await quadStorage.deleteQuads(toRemove);
       }
       if (toAdd.length > 0) {
-        await factStorage.setQuads(toAdd);
+        await quadStorage.setQuads(toAdd);
       }
 
       return null;
@@ -345,8 +345,8 @@ export class Worlds implements WorldsInterface {
     }> = [];
 
     for (const ref of targetRefs) {
-      const factStorage = await this.factStorageManager.getQuadStorage(ref);
-      const facts = await factStorage.findQuads([]);
+      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
+      const quads = await quadStorage.findQuads([]);
 
       const meta = await this.worldStorage.getWorld(ref);
       const world: World = {
@@ -358,7 +358,7 @@ export class Worlds implements WorldsInterface {
         createTime: meta?.createTime ?? 0,
       };
 
-      for (const q of facts) {
+      for (const q of quads) {
         const score = ftsTermHits(
           queryTerms,
           q.subject,
@@ -402,10 +402,10 @@ export class Worlds implements WorldsInterface {
     const data = typeof input.data === "string"
       ? input.data
       : new TextDecoder().decode(input.data);
-    const facts = deserialize(data, contentType);
+    const quads = deserialize(data, contentType);
 
-    const factStorage = await this.factStorageManager.getQuadStorage(reference);
-    await factStorage.setQuads(facts);
+    const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
+    await quadStorage.setQuads(quads);
   }
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
@@ -415,11 +415,11 @@ export class Worlds implements WorldsInterface {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
 
-    const factStorage = await this.factStorageManager.getQuadStorage(reference);
-    const facts = await factStorage.findQuads([]);
+    const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
+    const quads = await quadStorage.findQuads([]);
 
     const contentType = input.contentType || "application/n-quads";
-    const serialized = await serialize(facts, contentType);
+    const serialized = await serialize(quads, contentType);
     return new TextEncoder().encode(serialized).buffer as ArrayBuffer;
   }
 }

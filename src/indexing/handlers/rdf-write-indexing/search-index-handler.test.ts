@@ -18,7 +18,7 @@ async function setup() {
   return { handler, chunkIndexManager, index, world };
 }
 
-function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
+function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -32,7 +32,7 @@ Deno.test("SearchIndexHandler: indexes literal object", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({ object: "Alice is a developer" })],
+    insertions: [makeQuad({ object: "Alice is a developer" })],
     deletions: [],
   }]);
 
@@ -47,7 +47,7 @@ Deno.test("SearchIndexHandler: skips NamedNode objects", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({
+    insertions: [makeQuad({
       object: "https://example.org/other",
       objectTermType: "NamedNode",
     })],
@@ -62,7 +62,7 @@ Deno.test("SearchIndexHandler: skips IRI-shaped objects without objectTermType",
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({
+    insertions: [makeQuad({
       object: "urn:example:thing",
       // objectTermType intentionally omitted; `storedQuadToN3` infers NamedNode.
     })],
@@ -77,7 +77,7 @@ Deno.test("SearchIndexHandler: skips BlankNode objects", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({
+    insertions: [makeQuad({
       object: "_:b0",
       objectTermType: "BlankNode",
     })],
@@ -92,7 +92,7 @@ Deno.test("SearchIndexHandler: skips blank node objects without objectTermType",
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({
+    insertions: [makeQuad({
       object: "_:b0",
       // objectTermType intentionally omitted; `storedQuadToN3` infers BlankNode.
     })],
@@ -107,7 +107,7 @@ Deno.test("SearchIndexHandler: skips rdf:type triples (object is typically an IR
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({
+    insertions: [makeQuad({
       predicate: "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
       object: "https://example.org/Person",
     })],
@@ -123,11 +123,11 @@ Deno.test("SearchIndexHandler: skips meta predicates (rdfs:label, rdfs:comment)"
 
   await handler.patch([{
     insertions: [
-      makeFact({
+      makeQuad({
         predicate: "http://www.w3.org/2000/01/rdf-schema#label",
         object: "My Label",
       }),
-      makeFact({
+      makeQuad({
         predicate: "http://www.w3.org/2000/01/rdf-schema#comment",
         object: "My Comment",
         subject: "https://example.org/s2",
@@ -144,7 +144,7 @@ Deno.test("SearchIndexHandler: skips empty object", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
-    insertions: [makeFact({ object: "" })],
+    insertions: [makeQuad({ object: "" })],
     deletions: [],
   }]);
 
@@ -154,7 +154,7 @@ Deno.test("SearchIndexHandler: skips empty object", async () => {
 
 Deno.test("SearchIndexHandler: deletion removes chunks", async () => {
   const { handler, index } = await setup();
-  const quad = makeFact({ object: "Some text" });
+  const quad = makeQuad({ object: "Some text" });
 
   await handler.patch([{ insertions: [quad], deletions: [] }]);
   assertEquals((await index.getAll()).length, 1);
@@ -168,7 +168,7 @@ Deno.test("SearchIndexHandler: does not mutate index state", async () => {
   const before = await chunkIndexManager.getIndexState(world);
 
   await handler.patch([{
-    insertions: [makeFact()],
+    insertions: [makeQuad()],
     deletions: [],
   }]);
 

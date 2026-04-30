@@ -7,7 +7,7 @@ import type {
   PatchHandler,
 } from "#/indexing/handlers/rdf-write-indexing/types.ts";
 
-function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
+function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -29,7 +29,7 @@ Deno.test("IndexedQuadStorage: setQuad dispatches insertion patch", async () => 
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const quad = makeFact();
+  const quad = makeQuad();
   await storage.setQuad(quad);
 
   assertEquals(spy.patches.length, 1);
@@ -48,7 +48,7 @@ Deno.test("IndexedQuadStorage: deleteQuad dispatches deletion patch", async () =
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const quad = makeFact();
+  const quad = makeQuad();
   await storage.setQuad(quad);
   spy.patches = []; // reset
 
@@ -65,11 +65,11 @@ Deno.test("IndexedQuadStorage: setQuads dispatches batch insertion patch", async
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const facts = [
-    makeFact({ subject: "https://example.org/a" }),
-    makeFact({ subject: "https://example.org/b" }),
+  const quads = [
+    makeQuad({ subject: "https://example.org/a" }),
+    makeQuad({ subject: "https://example.org/b" }),
   ];
-  await storage.setQuads(facts);
+  await storage.setQuads(quads);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].insertions.length, 2);
@@ -90,14 +90,14 @@ Deno.test("IndexedQuadStorage: deleteQuads dispatches batch deletion patch", asy
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  const facts = [
-    makeFact({ subject: "https://example.org/a" }),
-    makeFact({ subject: "https://example.org/b" }),
+  const quads = [
+    makeQuad({ subject: "https://example.org/a" }),
+    makeQuad({ subject: "https://example.org/b" }),
   ];
-  await storage.setQuads(facts);
+  await storage.setQuads(quads);
   spy.patches = [];
 
-  await storage.deleteQuads(facts);
+  await storage.deleteQuads(quads);
 
   assertEquals(spy.patches.length, 1);
   assertEquals(spy.patches[0][0].deletions.length, 2);
@@ -119,8 +119,8 @@ Deno.test("IndexedQuadStorage: clear dispatches deletion patch for all existing 
   const storage = new IndexedQuadStorage(inner, [spy]);
 
   await storage.setQuads([
-    makeFact({ subject: "https://example.org/a" }),
-    makeFact({ subject: "https://example.org/b" }),
+    makeQuad({ subject: "https://example.org/a" }),
+    makeQuad({ subject: "https://example.org/b" }),
   ]);
   spy.patches = [];
 
@@ -150,14 +150,14 @@ Deno.test("IndexedQuadStorage: findQuads delegates to inner", async () => {
   const spy = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy]);
 
-  await storage.setQuad(makeFact({ subject: "https://example.org/a" }));
-  await storage.setQuad(makeFact({ subject: "https://example.org/b" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/a" }));
+  await storage.setQuad(makeQuad({ subject: "https://example.org/b" }));
 
   const all = await storage.findQuads([]);
   assertEquals(all.length, 2);
 
-  // findFacts should NOT dispatch any patches
-  assertEquals(spy.patches.length, 2); // only the 2 setFact calls
+  // findQuads should NOT dispatch any patches
+  assertEquals(spy.patches.length, 2); // only the 2 setQuad calls
 });
 
 Deno.test("IndexedQuadStorage: dispatches to multiple handlers", async () => {
@@ -166,7 +166,7 @@ Deno.test("IndexedQuadStorage: dispatches to multiple handlers", async () => {
   const spy2 = new SpyPatchHandler();
   const storage = new IndexedQuadStorage(inner, [spy1, spy2]);
 
-  await storage.setQuad(makeFact());
+  await storage.setQuad(makeQuad());
 
   assertEquals(spy1.patches.length, 1);
   assertEquals(spy2.patches.length, 1);

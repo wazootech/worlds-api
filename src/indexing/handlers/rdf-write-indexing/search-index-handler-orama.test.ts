@@ -4,7 +4,7 @@ import { OramaChunkIndexManager } from "#/indexing/storage/orama.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
 
-function makeFact(overrides: Partial<StoredQuad> = {}): StoredQuad {
+function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {
     subject: "https://example.org/s",
     predicate: "https://example.org/p",
@@ -29,8 +29,8 @@ Deno.test("SearchIndexHandler with Orama: renders and keeps in sync", async () =
   // 1. Initial population (Insert)
   await handler.patch([{
     insertions: [
-      makeFact({ subject: "s1", object: "The quick brown fox" }),
-      makeFact({ subject: "s2", object: "Jumps over the lazy dog" }),
+      makeQuad({ subject: "s1", object: "The quick brown fox" }),
+      makeQuad({ subject: "s2", object: "Jumps over the lazy dog" }),
     ],
     deletions: [],
   }]);
@@ -50,10 +50,10 @@ Deno.test("SearchIndexHandler with Orama: renders and keeps in sync", async () =
   // 2. Sync (Update/Delete)
   await handler.patch([{
     insertions: [
-      makeFact({ subject: "s3", object: "Fresh data" }),
+      makeQuad({ subject: "s3", object: "Fresh data" }),
     ],
     deletions: [
-      makeFact({ subject: "s1", object: "The quick brown fox" }),
+      makeQuad({ subject: "s1", object: "The quick brown fox" }),
     ],
   }]);
 
