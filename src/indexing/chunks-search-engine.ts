@@ -4,10 +4,10 @@ import type {
   World,
   WorldReference,
 } from "#/api/openapi/generated/types.gen.ts";
-import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type { ChunkIndexManager } from "#/search/storage/interface.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
-import { tokenizeSearchQuery } from "#/search/fts.ts";
+import { tokenizeSearchQuery } from "#/indexing/fts.ts";
 
 export interface ChunkSearchDeps {
   chunkIndexManager: ChunkIndexManager;

@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { FactStorageManager } from "./interface.ts";
-import { InMemoryFactStorage } from "#/facts/storage/in-memory.ts";
+import { InMemoryFactStorage } from "#/rdf/storage/in-memory.ts";
 
 export class InMemoryFactStorageManager implements FactStorageManager {
   private readonly storage = new Map<string, InMemoryFactStorage>();

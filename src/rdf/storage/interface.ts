@@ -1,5 +1,5 @@
-import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type { ChunkIndexManager } from "#/search/storage/interface.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type { StoredFact } from "./types.ts";
 

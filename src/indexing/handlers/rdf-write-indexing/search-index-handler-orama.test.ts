@@ -1,8 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { OramaChunkIndexManager } from "#/search/storage/orama.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { OramaChunkIndexManager } from "#/indexing/storage/orama.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
-import type { StoredFact } from "#/facts/storage/types.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
 
 function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
   return {

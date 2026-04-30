@@ -15,11 +15,11 @@ import type {
   World,
   WorldReference,
 } from "#/api/openapi/generated/types.gen.ts";
-import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { searchChunks } from "#/search/chunks-search-engine.ts";
-import type { ChunkIndexManager } from "#/search/storage/interface.ts";
-import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { searchChunks } from "#/indexing/chunks-search-engine.ts";
+import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import type { WorldsInterface } from "#/core/interfaces.ts";
 import { formatWorldName, resolveWorldReference } from "#/core/resolve.ts";
 import {
@@ -30,17 +30,17 @@ import {
 } from "#/core/pagination.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { StoredWorld } from "#/core/storage/types.ts";
-import type { FactStorageManager } from "#/facts/storage/interface.ts";
+import type { FactStorageManager } from "#/rdf/storage/interface.ts";
 import {
   deserialize,
   factsFromStore,
   serialize,
   storeFromFacts,
-} from "#/facts/rdf/rdf.ts";
-import { ftsTermHits, tokenizeSearchQuery } from "#/search/fts.ts";
-import { storedFactKey } from "#/facts/storage/key.ts";
-import type { StoredFact } from "#/facts/storage/types.ts";
-import { executeSparql } from "#/facts/sparql/sparql.ts";
+} from "#/rdf/rdf/rdf.ts";
+import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
+import { storedFactKey } from "#/rdf/storage/key.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
+import { executeSparql } from "#/rdf/sparql/sparql.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedFactStorageManager} deps when used). */
 export interface WorldsSearchDeps {

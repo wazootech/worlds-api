@@ -1,5 +1,5 @@
 import type { FactStorage, StoredFact } from "./interface.ts";
-import type { PatchHandler } from "#/facts/storage/index/types.ts";
+import type { PatchHandler } from "#/indexing/handlers/rdf-write-indexing/types.ts";
 
 export class IndexedFactStorage implements FactStorage {
   constructor(

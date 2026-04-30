@@ -2,7 +2,7 @@ import { Hono } from "jsr:@hono/hono@^4.7.0";
 import type { WorldsInterface } from "#/core/interfaces.ts";
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { InMemoryFactStorageManager } from "#/facts/storage/in-memory-fact-storage-manager.ts";
+import { InMemoryFactStorageManager } from "#/rdf/storage/in-memory-fact-storage-manager.ts";
 import { handleRpc } from "#/api/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
 import type { WorldsRpcError } from "#/api/openapi/generated/types.gen.ts";

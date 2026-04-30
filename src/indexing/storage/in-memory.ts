@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import { RDF_TYPE } from "#/facts/rdf/vocab.ts";
-import { ftsTermHits } from "#/search/fts.ts";
+import { RDF_TYPE } from "#/rdf/rdf/vocab.ts";
+import { ftsTermHits } from "#/indexing/fts.ts";
 import type {
   ChunkIndex,
   ChunkIndexManager,

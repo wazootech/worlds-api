@@ -1,8 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
-import type { StoredFact } from "#/facts/storage/types.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
 
 async function setup() {
   const embeddings = new FakeEmbeddingsService();

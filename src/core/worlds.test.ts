@@ -1,10 +1,10 @@
 import { assertEquals, assertRejects } from "@std/assert";
-import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { Worlds } from "./worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedFactStorageManager } from "#/facts/storage/indexed-fact-storage-manager.ts";
-import { InMemoryFactStorageManager } from "#/facts/storage/in-memory-fact-storage-manager.ts";
+import { IndexedFactStorageManager } from "#/rdf/storage/indexed-fact-storage-manager.ts";
+import { InMemoryFactStorageManager } from "#/rdf/storage/in-memory-fact-storage-manager.ts";
 
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();

@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
-import { FakeEmbeddingsService } from "#/search/embeddings/fake.ts";
-import { InMemoryChunkIndexManager } from "#/search/storage/in-memory.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { IndexedFactStorageManager } from "./indexed-fact-storage-manager.ts";
 
 Deno.test("IndexedFactStorageManager: getFactStorage returns same instance for same world", async () => {

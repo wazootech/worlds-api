@@ -1,4 +1,4 @@
-import type { StoredFact } from "#/facts/storage/types.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
 
 /**
  * Patch batch for RDF fact insertions and deletions.

@@ -1,10 +1,10 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
-import { storedFactToN3 } from "#/facts/rdf/rdf.ts";
-import { skolemizeStoredFact } from "#/facts/rdf/skolem.ts";
-import { META_PREDICATES } from "#/facts/rdf/vocab.ts";
-import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import type { ChunkIndex, ChunkRecord } from "#/search/storage/interface.ts";
-import type { StoredFact } from "#/facts/storage/types.ts";
+import { storedFactToN3 } from "#/rdf/rdf/rdf.ts";
+import { skolemizeStoredFact } from "#/rdf/rdf/skolem.ts";
+import { META_PREDICATES } from "#/rdf/rdf/vocab.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
 import type { Patch, PatchHandler } from "./types.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 

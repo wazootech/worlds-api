@@ -1,8 +1,8 @@
-import type { StoredFact } from "#/facts/storage/types.ts";
+import type { StoredFact } from "#/rdf/storage/types.ts";
 import type { Quad } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
-import { storedFactToN3 } from "#/facts/rdf/rdf.ts";
+import { storedFactToN3 } from "#/rdf/rdf/rdf.ts";
 
 function opaqueIdFromText(text: string): string {
   const encoded = new TextEncoder().encode(text);

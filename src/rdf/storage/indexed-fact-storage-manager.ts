@@ -1,10 +1,10 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import type { EmbeddingsService } from "#/search/embeddings/interface.ts";
-import { SearchIndexHandler } from "#/facts/storage/index/search-index-handler.ts";
-import type { ChunkIndexManager } from "#/search/storage/interface.ts";
-import { InMemoryFactStorage } from "#/facts/storage/in-memory.ts";
-import { IndexedFactStorage } from "#/facts/storage/indexed.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import { SearchIndexHandler } from "#/indexing/handlers/rdf-write-indexing/search-index-handler.ts";
+import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
+import { InMemoryFactStorage } from "#/rdf/storage/in-memory.ts";
+import { IndexedFactStorage } from "#/rdf/storage/indexed.ts";
 import type { FactStorageManager } from "./interface.ts";
 
 export interface IndexedFactStorageManagerConfig {

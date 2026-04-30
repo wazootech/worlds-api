@@ -2,7 +2,10 @@ import { assertEquals } from "@std/assert";
 import { IndexedFactStorage } from "./indexed.ts";
 import { InMemoryFactStorage } from "./in-memory.ts";
 import type { StoredFact } from "./types.ts";
-import type { Patch, PatchHandler } from "./index/types.ts";
+import type {
+  Patch,
+  PatchHandler,
+} from "#/indexing/handlers/rdf-write-indexing/types.ts";
 
 function makeFact(overrides: Partial<StoredFact> = {}): StoredFact {
   return {

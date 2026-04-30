@@ -8,14 +8,14 @@
   ],
   "tasks": {
     "dev": "deno run --watch main.ts",
-    "bundle:browser": "deno bundle --no-check --platform=browser src/facts/rdf/rdf.ts; deno bundle --no-check --platform=browser src/facts/sparql/sparql.ts",
-    "check:browser": "deno check -c deno.browser.json src/facts/rdf/rdf.ts src/facts/sparql/sparql.ts",
+    "bundle:browser": "deno bundle --no-check --platform=browser src/rdf/rdf/rdf.ts; deno bundle --no-check --platform=browser src/rdf/sparql/sparql.ts",
+    "check:browser": "deno check -c deno.browser.json src/rdf/rdf/rdf.ts src/rdf/sparql/sparql.ts",
     "test": "deno test --allow-all",
     "generate": "deno run -A src/api/openapi/openapi.ts && deno fmt ./src/api/openapi/generated"
   },
   "exports": {
     ".": "./src/mod.ts",
-    "./rdf": "./src/facts/rdf/mod.ts"
+    "./rdf": "./src/rdf/rdf/rdf.ts"
   },
   "lint": {
     "exclude": [

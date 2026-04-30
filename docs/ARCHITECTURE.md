@@ -26,7 +26,7 @@ During ingest we:
 - Replace any `BlankNode` terms in quads with `NamedNode` IRIs under a
   configured prefix
 
-Code: `src/facts/rdf/ingest.ts` uses `toSkolemizedQuad` + `resolveSkolemPrefix`.
+Code: `src/rdf/rdf/ingest.ts` uses `toSkolemizedQuad` + `resolveSkolemPrefix`.
 
 #### 2) Content-derived stable IDs (fact / chunk keying)
 
@@ -38,8 +38,8 @@ For storage/indexing keys, we use content-derived opaque identifiers:
 
 These IDs are used for deterministic delete/update behavior in the chunk index.
 
-Code: `src/facts/rdf/skolem.ts` (`skolemizeQuad`, `skolemizeStoredFact`), and
-`src/facts/storage/index/search-index-handler.ts` (chunk ids).
+Code: `src/rdf/rdf/skolem.ts` (`skolemizeQuad`, `skolemizeStoredFact`), and
+`src/indexing/handlers/rdf-write-indexing/search-index-handler.ts` (chunk ids).
 
 ### What gets indexed (chunked) for search
 
@@ -52,7 +52,8 @@ Notes:
 - Meta predicates (`rdfs:label`, `rdfs:comment`) are excluded from indexing.
 - `NamedNode` / `BlankNode` objects are not embedded or chunked.
 
-Code: `src/facts/storage/index/search-index-handler.ts` (`shouldIndexTriple`).
+Code: `src/indexing/handlers/rdf-write-indexing/search-index-handler.ts`
+(`shouldIndexTriple`).
 
 ### Indexing pipeline
 
@@ -65,12 +66,13 @@ Code: `src/facts/storage/index/search-index-handler.ts` (`shouldIndexTriple`).
    - Upserts/deletes chunk records in a per-world `ChunkIndex`
 3. Queries go through:
    - `ChunkIndex.search(...)` (backend-specific)
-   - `search/chunks-search-engine.ts` for multi-world fan-out + ranking/merge
+
+- `indexing/chunks-search-engine.ts` for multi-world fan-out + ranking/merge
 
 Backends:
 
-- `src/search/storage/in-memory.ts`
-- `src/search/storage/orama.ts`
+- `src/indexing/storage/in-memory.ts`
+- `src/indexing/storage/orama.ts`
 
 ## Interface Relationships
 
@@ -400,14 +402,14 @@ src/
 │   ├── storage/           # Core metadata storage
 │   ├── worlds.ts          # Main implementation
 │   └── interfaces.ts      # Core interfaces
-├── facts/                 # Facts Bounded Context (RDF, SPARQL, Storage)
+├── rdf/                   # RDF substrate (RDFJS conversion, SPARQL, quad storage)
 │   ├── rdf/               # Serialization and parsing
 │   ├── sparql/            # Query execution
-│   └── storage/           # RDF triple persistence
-│       └── index/         # Indexing handlers (Facts -> Search)
-└── search/                # Search Bounded Context (Embeddings, Vector/FTS)
+│   └── storage/           # Quad persistence (writes can be wrapped to emit indexing patches)
+└── indexing/              # Indexing subsystem (embeddings, chunk indexes, FTS helpers)
     ├── embeddings/        # Embedding providers
-    └── storage/           # Chunk storage
+    ├── handlers/          # Index-on-write handlers (RDF writes -> chunk index)
+    └── storage/           # Chunk index implementations
 ```
 
 ## Usage Examples
@@ -420,7 +422,7 @@ If you want a lightweight, in-memory implementation without search indexing
 ```typescript
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { InMemoryFactStorageManager } from "#/facts/storage/in-memory-fact-storage-manager.ts";
+import { InMemoryFactStorageManager } from "#/rdf/storage/in-memory-fact-storage-manager.ts";
 
 const worlds = new Worlds(
   new InMemoryWorldStorage(),
@@ -437,9 +439,9 @@ If you need vector search and chunking, use `IndexedFactStorageManager`:
 ```typescript
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedFactStorageManager } from "#/facts/storage/indexed-fact-storage-manager.ts";
-import { InMemoryChunkStorage } from "#/search/storage/in-memory.ts";
-import { OpenAIEmbeddingsService } from "#/search/embeddings/openai.ts";
+import { IndexedFactStorageManager } from "#/rdf/storage/indexed-fact-storage-manager.ts";
+import { InMemoryChunkStorage } from "#/indexing/storage/in-memory.ts";
+import { OpenAIEmbeddingsService } from "#/indexing/embeddings/openai.ts";
 
 const chunkStorage = new InMemoryChunkStorage();
 const embeddings = new OpenAIEmbeddingsService("sk-...");
