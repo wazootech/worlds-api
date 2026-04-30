@@ -123,11 +123,7 @@ export class Worlds implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.worldStorage.deleteWorld(reference);
-    if ("deleteFactStorage" in this.factStorageManager) {
-      await (this.factStorageManager as {
-        deleteFactStorage(reference: WorldReference): Promise<void>;
-      }).deleteFactStorage(reference);
-    }
+    await this.factStorageManager.deleteQuadStorage(reference);
   }
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
