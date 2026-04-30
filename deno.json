@@ -16,6 +16,7 @@
   "exports": {
     ".": "./src/mod.ts",
     "./rdf": "./src/rdf/rdf/rdf.ts",
+    "./sparql": "./src/rdf/sparql/sparql.ts",
     "./indexing": "./src/indexing/mod.ts"
   },
   "lint": {
