@@ -6,16 +6,13 @@ import type {
   ChunkIndexManager,
   ChunkIndexSearchQuery,
 } from "./interface.ts";
-import {
-  createChunkOramaDb,
-  type ChunkOramaDb,
-} from "./orama-chunk-db.ts";
+import { type ChunkOramaDb, createChunkOramaDb } from "./orama-chunk-db.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
 export class OramaChunkIndex implements ChunkIndex {
   constructor(
     private readonly world: WorldReference,
-    private readonly getOrCreateDb: (
+    private readonly getOrama: (
       dimensions: number,
     ) => Promise<ChunkOramaDb | null>,
   ) {}
@@ -26,7 +23,7 @@ export class OramaChunkIndex implements ChunkIndex {
     ) {
       throw new Error("Chunk world does not match index world.");
     }
-    const db = await this.getOrCreateDb(chunk.vector.length);
+    const db = await this.getOrama(chunk.vector.length);
     if (!db) {
       throw new Error("Failed to initialize Orama DB for chunk index.");
     }
@@ -44,7 +41,7 @@ export class OramaChunkIndex implements ChunkIndex {
   }
 
   async deleteChunk(factId: string): Promise<void> {
-    const db = await this.getOrCreateDb(0);
+    const db = await this.getOrama(0);
     if (!db) return;
     const results = await search(db, {
       term: "",
@@ -54,7 +51,7 @@ export class OramaChunkIndex implements ChunkIndex {
   }
 
   async getAll(): Promise<ChunkRecord[]> {
-    const db = await this.getOrCreateDb(0);
+    const db = await this.getOrama(0);
     if (!db) return [];
     const results = await search(db, { term: "" });
     return results.hits.map((hit) => {
@@ -72,7 +69,7 @@ export class OramaChunkIndex implements ChunkIndex {
   }
 
   async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
-    const db = await this.getOrCreateDb(0);
+    const db = await this.getOrama(0);
     if (!db) return [];
     const results = await search(db, {
       term: input.queryText,
