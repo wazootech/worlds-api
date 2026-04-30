@@ -11,7 +11,7 @@ export interface IngestOptions {
   /**
    * skolemPrefix is the IRI prefix used when turning blank nodes into NamedNodes.
    *
-   * Default: "urn:worlds:fact:"
+   * Default: "urn:worlds:quad:"
    */
   skolemPrefix?: string;
 }

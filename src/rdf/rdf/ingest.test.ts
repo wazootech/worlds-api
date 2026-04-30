@@ -50,5 +50,5 @@ Deno.test("materializeStoreFromRdfBytes: parses N-Triples and skolemizes bnodes"
   const stored = store.getQuads(null, null, null, null);
   assertEquals(stored.length, 1);
   assertEquals(stored[0].subject.termType, "NamedNode");
-  assertStringIncludes(stored[0].subject.value, "urn:worlds:fact:");
+  assertStringIncludes(stored[0].subject.value, "urn:worlds:quad:");
 });

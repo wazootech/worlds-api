@@ -13,7 +13,7 @@ export interface SkolemOptions {
   /**
    * skolemPrefix is the IRI prefix used when turning blank nodes into NamedNodes.
    *
-   * Default: "urn:worlds:fact:"
+   * Default: "urn:worlds:quad:"
    */
   skolemPrefix?: string;
 }
@@ -22,7 +22,7 @@ export interface SkolemOptions {
  * resolveSkolemPrefix resolves the skolem prefix from the options.
  */
 export function resolveSkolemPrefix(opts?: SkolemOptions): string {
-  return opts?.skolemPrefix ?? "urn:worlds:fact:";
+  return opts?.skolemPrefix ?? "urn:worlds:quad:";
 }
 
 /**

@@ -104,10 +104,10 @@ Deno.test("Same SPARQL query works on bnodes vs processed (canonicalized + subje
         if (!q) continue;
 
         // Blank node subject skolemization:
-        // input subject = "_:a" becomes NamedNode("urn:worlds:fact:" + base64url(RDFC-1.0(canonicalQuad))).
+        // input subject = "_:a" becomes NamedNode("urn:worlds:quad:" + base64url(RDFC-1.0(canonicalQuad))).
         const subject = q.subject.termType === "BlankNode"
           ? DataFactory.namedNode(
-            `urn:worlds:fact:${
+            `urn:worlds:quad:${
               encodeBase64Url(new TextEncoder().encode(statement))
             }`,
           )
