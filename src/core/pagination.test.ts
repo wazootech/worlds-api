@@ -16,7 +16,11 @@ Deno.test("pagination: token roundtrip", async () => {
 });
 
 Deno.test("pagination: invalid token rejects", () => {
-  assertThrows(() => decodePageToken("not-a-token"), Error, "Invalid page token");
+  assertThrows(
+    () => decodePageToken("not-a-token"),
+    Error,
+    "Invalid page token",
+  );
 });
 
 Deno.test("pagination: signature mismatch rejects", async () => {
@@ -24,6 +28,9 @@ Deno.test("pagination: signature mismatch rejects", async () => {
   const sig2 = await signPageTokenParams({ method: "listWorlds", parent: "b" });
   const token = encodePageToken({ v: 1, o: 0, sig: sig1 });
   const decoded = decodePageToken(token);
-  assertThrows(() => assertPageTokenSig(decoded, sig2), Error, "Invalid page token");
+  assertThrows(
+    () => assertPageTokenSig(decoded, sig2),
+    Error,
+    "Invalid page token",
+  );
 });
-

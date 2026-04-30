@@ -38,7 +38,9 @@ function stableJson(value: unknown): string {
   }
   if (isRecord(value)) {
     const keys = Object.keys(value).sort();
-    return `{${keys.map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`).join(",")}}`;
+    return `{${
+      keys.map((k) => `${JSON.stringify(k)}:${stableJson(value[k])}`).join(",")
+    }}`;
   }
   // undefined / symbol / function
   return "null";

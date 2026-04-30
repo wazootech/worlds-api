@@ -138,9 +138,10 @@ export class Worlds implements WorldsInterface {
     if (requestedPageSize !== undefined && requestedPageSize < 0) {
       throw new Error("Invalid page size");
     }
-    const pageSizeRaw = requestedPageSize === undefined || requestedPageSize === 0
-      ? Worlds.DEFAULT_LIST_PAGE_SIZE
-      : requestedPageSize;
+    const pageSizeRaw =
+      requestedPageSize === undefined || requestedPageSize === 0
+        ? Worlds.DEFAULT_LIST_PAGE_SIZE
+        : requestedPageSize;
     const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
 
     const sig = await signPageTokenParams({
@@ -292,9 +293,10 @@ export class Worlds implements WorldsInterface {
     if (requestedPageSize !== undefined && requestedPageSize < 0) {
       throw new Error("Invalid page size");
     }
-    const pageSizeRaw = requestedPageSize === undefined || requestedPageSize === 0
-      ? Worlds.DEFAULT_SEARCH_PAGE_SIZE
-      : requestedPageSize;
+    const pageSizeRaw =
+      requestedPageSize === undefined || requestedPageSize === 0
+        ? Worlds.DEFAULT_SEARCH_PAGE_SIZE
+        : requestedPageSize;
     const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
 
     const normalizeStringArray = (arr?: string[]) =>
