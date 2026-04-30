@@ -26,6 +26,7 @@ Deno.test("round-trips n-quads", async () => {
   assertEquals(quads[0].predicate, "http://example.org/p");
   assertEquals(quads[0].object, "o");
   assertEquals(quads[0].graph, "http://example.org/g");
+  assertEquals(output, input);
 });
 
 Deno.test("preserves URL-shaped literals as literals", async () => {
