@@ -116,7 +116,7 @@ classDiagram
     
     class ChunkStorage {
         +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world: WorldReference, factId: string) Promise~void~
+        +deleteChunk(world: WorldReference, quadId: string) Promise~void~
         +getByWorld(world: WorldReference) Promise~ChunkRecord[]~
         +search(input: ChunkSearchQuery) Promise~ChunkSearchRow[]~
         +getIndexState(world: WorldReference) Promise~ChunkIndexState~
@@ -172,7 +172,7 @@ sequenceDiagram
     end
     
     alt deletions
-        SearchIndexHandler->>ChunkStorage: deleteChunk(world, factId)
+        SearchIndexHandler->>ChunkStorage: deleteChunk(world, quadId)
     end
     
     SearchIndexHandler->>ChunkStorage: markWorldIndexed(state)
@@ -210,10 +210,9 @@ sequenceDiagram
 
 ```mermaid
 classDiagram
-    class FactStorageConfig {
-        +search?: boolean
+    class QuadStorageConfig {
         +embeddings?: EmbeddingsService
-        +chunkStorage?: ChunkStorage
+        +chunks?: ChunkIndexManager
     }
     
     class InMemoryQuadStorage {
@@ -254,7 +253,7 @@ classDiagram
     class InMemoryChunkStorage {
         -Map~string, ChunkRecord~ chunks
         +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world, factId) Promise~void~
+        +deleteChunk(world, quadId) Promise~void~
         +getByWorld(world) Promise~ChunkRecord[]~
         +search(query) Promise~ChunkSearchRow[]~
         +getIndexState(world) Promise~ChunkIndexState~
@@ -265,7 +264,7 @@ classDiagram
     class OramaChunkStorage {
         -RDMA orama
         +setChunk(chunk: ChunkRecord) Promise~void~
-        +deleteChunk(world, factId) Promise~void~
+        +deleteChunk(world, quadId) Promise~void~
         +getByWorld(world) Promise~ChunkRecord[]~
         +search(query) Promise~ChunkSearchRow[]~
         +getIndexState(world) Promise~ChunkIndexState~
@@ -320,7 +319,7 @@ flowchart TB
         C --> E[InMemoryQuadStorageManager]
     end
     
-    subgraph Fact Layer
+    subgraph Quad Layer
         D --> F[IndexedQuadStorage]
         E --> G[InMemoryQuadStorage]
         F --> H[SearchIndexHandler]
@@ -351,13 +350,12 @@ flowchart TB
 
 ## Key Types
 
-### FactStorageConfig
+### QuadStorageConfig
 
 ```typescript
-interface FactStorageConfig {
-  search?: boolean; // undefined = use search (indexed), false = SPARQL only
-  embeddings?: EmbeddingsService; // undefined = NoopEmbeddingsService
-  chunkStorage?: ChunkStorage; // undefined = InMemoryChunkStorage
+interface QuadStorageConfig {
+  embeddings?: EmbeddingsService | null;
+  chunks?: ChunkIndexManager | null;
 }
 ```
 
