@@ -17,7 +17,7 @@ export class InMemoryWorldStorage implements WorldStorage {
     this.worlds.delete(formatWorldName(reference));
   }
 
-  async listWorld(namespace?: string): Promise<StoredWorld[]> {
+  async listWorlds(namespace?: string): Promise<StoredWorld[]> {
     return Array.from(this.worlds.values())
       .filter((w) => !namespace || w.reference.namespace === namespace)
       .sort((a, b) => a.reference.id.localeCompare(b.reference.id));

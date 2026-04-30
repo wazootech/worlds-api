@@ -29,11 +29,11 @@ export function chunkOramaSchema(dimensions: number): ChunkOramaSchemaShape {
   };
 }
 
-/** Single place that runs `create({ schema })` for per-world chunk Orama databases. */
-export async function createChunkOramaDb(
+/** Single place that runs `create({ schema })` for per-world chunk Orama instances. */
+export async function createChunkOrama(
   dimensions: number,
 ): Promise<Orama<ChunkOramaSchemaShape>> {
   return create({ schema: chunkOramaSchema(dimensions) });
 }
 
-export type ChunkOramaDb = Awaited<ReturnType<typeof createChunkOramaDb>>;
+export type ChunkOrama = Awaited<ReturnType<typeof createChunkOrama>>;

@@ -6,7 +6,7 @@ import type {
   ChunkIndexManager,
   ChunkIndexSearchQuery,
 } from "./interface.ts";
-import { type ChunkOramaDb, createChunkOramaDb } from "./orama-chunk-db.ts";
+import { type ChunkOrama, createChunkOrama } from "./chunk-orama.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 
 export class OramaChunkIndex implements ChunkIndex {
@@ -14,7 +14,7 @@ export class OramaChunkIndex implements ChunkIndex {
     private readonly world: WorldReference,
     private readonly getOrama: (
       dimensions: number,
-    ) => Promise<ChunkOramaDb | null>,
+    ) => Promise<ChunkOrama | null>,
   ) {}
 
   async setChunk(chunk: ChunkRecord): Promise<void> {
@@ -120,7 +120,7 @@ export class OramaChunkIndex implements ChunkIndex {
 }
 
 export class OramaChunkIndexManager implements ChunkIndexManager {
-  private readonly dbs = new Map<string, ChunkOramaDb>();
+  private readonly oramas = new Map<string, ChunkOrama>();
   private readonly indexes = new Map<string, OramaChunkIndex>();
   private readonly indexStateByWorld = new Map<string, ChunkIndexState>();
 
@@ -131,7 +131,7 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
 
     index = new OramaChunkIndex(
       reference,
-      (dimensions) => this.getOrCreateDb(reference, dimensions),
+      (dimensions) => this.getOrCreateOrama(reference, dimensions),
     );
     this.indexes.set(key, index);
     return index;
@@ -144,34 +144,34 @@ export class OramaChunkIndexManager implements ChunkIndexManager {
   async setIndexState(state: ChunkIndexState): Promise<void> {
     const key = formatWorldName(state.world);
     this.indexStateByWorld.set(key, state);
-    await this.getOrCreateDb(state.world, state.embeddingDimensions);
+    await this.getOrCreateOrama(state.world, state.embeddingDimensions);
     this.indexes.set(
       key,
       new OramaChunkIndex(
         state.world,
-        (dimensions) => this.getOrCreateDb(state.world, dimensions),
+        (dimensions) => this.getOrCreateOrama(state.world, dimensions),
       ),
     );
   }
 
   async deleteChunkIndex(reference: WorldReference): Promise<void> {
     const key = formatWorldName(reference);
-    this.dbs.delete(key);
+    this.oramas.delete(key);
     this.indexes.delete(key);
     this.indexStateByWorld.delete(key);
   }
 
-  private async getOrCreateDb(
+  private async getOrCreateOrama(
     world: WorldReference,
     dimensions: number,
-  ): Promise<ChunkOramaDb | null> {
+  ): Promise<ChunkOrama | null> {
     const key = formatWorldName(world);
-    let db = this.dbs.get(key);
-    if (!db) {
+    let orama = this.oramas.get(key);
+    if (!orama) {
       if (!dimensions || dimensions <= 0) return null;
-      db = await createChunkOramaDb(dimensions);
-      this.dbs.set(key, db);
+      orama = await createChunkOrama(dimensions);
+      this.oramas.set(key, orama);
     }
-    return db;
+    return orama;
   }
 }

@@ -7,5 +7,5 @@ export interface WorldStorage {
   getWorld(reference: WorldReference): Promise<StoredWorld | null>;
   updateWorld(world: StoredWorld): Promise<void>;
   deleteWorld(reference: WorldReference): Promise<void>;
-  listWorld(namespace?: string): Promise<StoredWorld[]>;
+  listWorlds(namespace?: string): Promise<StoredWorld[]>;
 }

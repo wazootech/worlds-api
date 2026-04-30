@@ -62,7 +62,7 @@ export class Worlds implements WorldsInterface {
 
   constructor(
     private readonly worldStorage: WorldStorage,
-    private readonly worldFactStorage: FactStorageManager,
+    private readonly factStorageManager: FactStorageManager,
     searchDeps?: WorldsSearchDeps,
   ) {
     this.searchDeps = searchDeps ?? {
@@ -114,8 +114,8 @@ export class Worlds implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.worldStorage.deleteWorld(reference);
-    if ("deleteFactStorage" in this.worldFactStorage) {
-      await (this.worldFactStorage as {
+    if ("deleteFactStorage" in this.factStorageManager) {
+      await (this.factStorageManager as {
         deleteFactStorage(reference: WorldReference): Promise<void>;
       }).deleteFactStorage(reference);
     }
@@ -123,7 +123,7 @@ export class Worlds implements WorldsInterface {
 
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
     const namespaceFilter = input?.parent?.trim();
-    const all = await this.worldStorage.listWorld(namespaceFilter);
+    const all = await this.worldStorage.listWorlds(namespaceFilter);
 
     const pageSize = input?.pageSize && input.pageSize > 0
       ? input.pageSize
@@ -150,7 +150,7 @@ export class Worlds implements WorldsInterface {
     // Aggregate facts from all source worlds into a single store
     let allFacts: StoredFact[] = [];
     for (const ref of references) {
-      const factStorage = await this.worldFactStorage.getFactStorage(ref);
+      const factStorage = await this.factStorageManager.getFactStorage(ref);
       const facts = await factStorage.findFacts([]);
       allFacts = allFacts.concat(facts);
     }
@@ -165,7 +165,7 @@ export class Worlds implements WorldsInterface {
     // Handle SPARQL UPDATE (void result) - check for INSERT/DELETE
     if (result === null) {
       const ref = references[0];
-      const factStorage = await this.worldFactStorage.getFactStorage(ref);
+      const factStorage = await this.factStorageManager.getFactStorage(ref);
 
       const currentFacts = await factStorage.findFacts([]);
       const newStore = store;
@@ -203,7 +203,7 @@ export class Worlds implements WorldsInterface {
     const targetRefs: WorldReference[] = [];
 
     if (!sources || sources.length === 0) {
-      const all = await this.worldStorage.listWorld(undefined);
+      const all = await this.worldStorage.listWorlds(undefined);
       for (const w of all) {
         targetRefs.push(w.reference);
       }
@@ -280,7 +280,7 @@ export class Worlds implements WorldsInterface {
     }> = [];
 
     for (const ref of targetRefs) {
-      const factStorage = await this.worldFactStorage.getFactStorage(ref);
+      const factStorage = await this.factStorageManager.getFactStorage(ref);
       const facts = await factStorage.findFacts([]);
 
       const meta = await this.worldStorage.getWorld(ref);
@@ -339,7 +339,7 @@ export class Worlds implements WorldsInterface {
       : new TextDecoder().decode(input.data);
     const facts = deserialize(data, contentType);
 
-    const factStorage = await this.worldFactStorage.getFactStorage(reference);
+    const factStorage = await this.factStorageManager.getFactStorage(reference);
     await factStorage.setFacts(facts);
   }
 
@@ -350,7 +350,7 @@ export class Worlds implements WorldsInterface {
       throw new Error(`World not found: ${formatWorldName(reference)}`);
     }
 
-    const factStorage = await this.worldFactStorage.getFactStorage(reference);
+    const factStorage = await this.factStorageManager.getFactStorage(reference);
     const facts = await factStorage.findFacts([]);
 
     const contentType = input.contentType || "application/n-quads";
