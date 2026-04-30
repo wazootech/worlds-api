@@ -15,7 +15,8 @@
   },
   "exports": {
     ".": "./src/mod.ts",
-    "./rdf": "./src/rdf/rdf/rdf.ts"
+    "./rdf": "./src/rdf/rdf/rdf.ts",
+    "./indexing": "./src/indexing/mod.ts"
   },
   "lint": {
     "exclude": [
