@@ -6,6 +6,12 @@ import type {
   WorldsRpcResponse,
 } from "#/api/openapi/generated/types.gen.ts";
 import { zWorldsRpcRequest } from "#/api/openapi/generated/zod.gen.ts";
+import {
+  InvalidArgumentError,
+  InvalidPageTokenError,
+  WorldAlreadyExistsError,
+  WorldNotFoundError,
+} from "#/errors.ts";
 
 const ErrorCode = {
   INVALID_ARGUMENT: "INVALID_ARGUMENT",
@@ -15,21 +21,19 @@ const ErrorCode = {
 } as const;
 
 function toRpcError(err: unknown): RpcError {
+  if (
+    err instanceof InvalidArgumentError || err instanceof InvalidPageTokenError
+  ) {
+    return { code: ErrorCode.INVALID_ARGUMENT, message: err.message };
+  }
+  if (err instanceof WorldNotFoundError) {
+    return { code: ErrorCode.NOT_FOUND, message: err.message };
+  }
+  if (err instanceof WorldAlreadyExistsError) {
+    return { code: ErrorCode.ALREADY_EXISTS, message: err.message };
+  }
   if (err instanceof Error) {
-    const message = err.message;
-    if (
-      message.includes("Invalid page token") ||
-      message.includes("Invalid page size")
-    ) {
-      return { code: ErrorCode.INVALID_ARGUMENT, message };
-    }
-    if (message.includes("World not found")) {
-      return { code: ErrorCode.NOT_FOUND, message };
-    }
-    if (message.includes("World already exists")) {
-      return { code: ErrorCode.ALREADY_EXISTS, message };
-    }
-    return { code: ErrorCode.INTERNAL, message };
+    return { code: ErrorCode.INTERNAL, message: err.message };
   }
   return { code: ErrorCode.INTERNAL, message: String(err) };
 }

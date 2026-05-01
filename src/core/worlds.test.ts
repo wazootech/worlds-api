@@ -5,6 +5,12 @@ import { Worlds } from "./worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
 import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
+import {
+  InvalidArgumentError,
+  InvalidPageTokenError,
+  WorldAlreadyExistsError,
+  WorldNotFoundError,
+} from "#/errors.ts";
 
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();
@@ -72,8 +78,7 @@ Deno.test("Worlds: createWorld rejects duplicates", async () => {
   await worlds.createWorld({ namespace: "ns", id: "w1" });
   await assertRejects(
     () => worlds.createWorld({ namespace: "ns", id: "w1" }),
-    Error,
-    "World already exists",
+    WorldAlreadyExistsError,
   );
 });
 
@@ -104,8 +109,7 @@ Deno.test("Worlds: listWorlds paginates with opaque tokens", async () => {
         pageSize: 2,
         pageToken: first.nextPageToken,
       }),
-    Error,
-    "Invalid page token",
+    InvalidPageTokenError,
   );
 });
 
@@ -452,8 +456,7 @@ Deno.test("Worlds: sparql rejects with no sources", async () => {
 
   await assertRejects(
     () => worlds.sparql({ query: "SELECT * WHERE { ?s ?p ?o }" }),
-    Error,
-    "sparql requires at least one source",
+    InvalidArgumentError,
   );
 });
 
@@ -466,8 +469,7 @@ Deno.test("Worlds: sparql rejects on non-existent world", async () => {
         sources: ["ns/nonexistent"],
         query: "SELECT * WHERE { ?s ?p ?o }",
       }),
-    Error,
-    "World not found",
+    WorldNotFoundError,
   );
 });
 
@@ -611,8 +613,7 @@ Deno.test("Worlds: search rejects on non-existent world", async () => {
         query: "test",
         sources: ["ns/nonexistent"],
       }),
-    Error,
-    "World not found",
+    WorldNotFoundError,
   );
 });
 

@@ -41,6 +41,11 @@ import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
+import {
+  InvalidArgumentError,
+  WorldAlreadyExistsError,
+  WorldNotFoundError,
+} from "#/errors.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} deps when used). */
 export interface WorldsSearchDeps {
@@ -93,7 +98,7 @@ export class Worlds implements WorldsInterface {
     };
     const existing = await this.worldStorage.getWorld(reference);
     if (existing) {
-      throw new Error(`World already exists: ${formatWorldName(reference)}`);
+      throw new WorldAlreadyExistsError(reference);
     }
     const stored: StoredWorld = {
       reference,
@@ -109,7 +114,7 @@ export class Worlds implements WorldsInterface {
     const reference = resolveWorldReference(input.source);
     const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
-      throw new Error(`World not found: ${formatWorldName(reference)}`);
+      throw new WorldNotFoundError(reference);
     }
     const updated: StoredWorld = {
       ...existing,
@@ -122,6 +127,10 @@ export class Worlds implements WorldsInterface {
 
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
+    const existing = await this.worldStorage.getWorld(reference);
+    if (!existing) {
+      throw new WorldNotFoundError(reference);
+    }
     await this.worldStorage.deleteWorld(reference);
     await this.quadStorageManager.deleteQuadStorage(reference);
   }
@@ -132,7 +141,7 @@ export class Worlds implements WorldsInterface {
 
     const requestedPageSize = input?.pageSize;
     if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new Error("Invalid page size");
+      throw new InvalidArgumentError("Invalid page size");
     }
     const pageSizeRaw =
       requestedPageSize === undefined || requestedPageSize === 0
@@ -163,14 +172,14 @@ export class Worlds implements WorldsInterface {
   async sparql(input: SparqlRequest): Promise<SparqlResponse> {
     const sources = input.sources;
     if (!sources || sources.length === 0) {
-      throw new Error("sparql requires at least one source");
+      throw new InvalidArgumentError("sparql requires at least one source");
     }
 
     const references = sources.map((s) => resolveWorldReference(s));
     for (const ref of references) {
       const existing = await this.worldStorage.getWorld(ref);
       if (!existing) {
-        throw new Error(`World not found: ${formatWorldName(ref)}`);
+        throw new WorldNotFoundError(ref);
       }
     }
 
@@ -239,7 +248,7 @@ export class Worlds implements WorldsInterface {
         const ref = resolveWorldReference(src);
         const existing = await this.worldStorage.getWorld(ref);
         if (!existing) {
-          throw new Error(`World not found: ${formatWorldName(ref)}`);
+          throw new WorldNotFoundError(ref);
         }
         targetRefs.push(ref);
       }
@@ -287,7 +296,7 @@ export class Worlds implements WorldsInterface {
 
     const requestedPageSize = input.pageSize;
     if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new Error("Invalid page size");
+      throw new InvalidArgumentError("Invalid page size");
     }
     const pageSizeRaw =
       requestedPageSize === undefined || requestedPageSize === 0
@@ -395,7 +404,7 @@ export class Worlds implements WorldsInterface {
     const reference = resolveWorldReference(input.source);
     const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
-      throw new Error(`World not found: ${formatWorldName(reference)}`);
+      throw new WorldNotFoundError(reference);
     }
 
     const contentType = input.contentType || "application/n-quads";
@@ -412,7 +421,7 @@ export class Worlds implements WorldsInterface {
     const reference = resolveWorldReference(input.source);
     const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
-      throw new Error(`World not found: ${formatWorldName(reference)}`);
+      throw new WorldNotFoundError(reference);
     }
 
     const quadStorage = await this.quadStorageManager.getQuadStorage(reference);

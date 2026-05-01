@@ -1,3 +1,5 @@
+import { InvalidPageTokenError } from "#/errors.ts";
+
 export type PageTokenVersion = 1;
 
 export type PageTokenPayloadV1 = {
@@ -76,19 +78,20 @@ export function decodePageToken(token: string): PageTokenPayloadV1 {
     const bytes = base64UrlDecodeToBytes(token);
     const json = new TextDecoder().decode(bytes);
     const parsed = JSON.parse(json) as unknown;
-    if (!isRecord(parsed)) throw new Error("Invalid page token");
-    if (parsed.v !== 1) throw new Error("Invalid page token");
+    if (!isRecord(parsed)) throw new InvalidPageTokenError();
+    if (parsed.v !== 1) throw new InvalidPageTokenError();
     const o = parsed.o;
     const sig = parsed.sig;
     if (
       typeof o !== "number" || !Number.isInteger(o) || o < 0 ||
       typeof sig !== "string" || sig.length === 0
     ) {
-      throw new Error("Invalid page token");
+      throw new InvalidPageTokenError();
     }
     return { v: 1, o, sig };
-  } catch {
-    throw new Error("Invalid page token");
+  } catch (err) {
+    if (err instanceof InvalidPageTokenError) throw err;
+    throw new InvalidPageTokenError();
   }
 }
 
@@ -97,6 +100,6 @@ export function assertPageTokenSig(
   expectedSig: string,
 ): void {
   if (decoded.sig !== expectedSig) {
-    throw new Error("Invalid page token");
+    throw new InvalidPageTokenError("Invalid page token signature");
   }
 }
