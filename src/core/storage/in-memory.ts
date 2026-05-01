@@ -1,12 +1,21 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { StoredWorld, WorldStorage } from "./interface.ts";
+import { WorldAlreadyExistsError } from "#/errors.ts";
 
 export class InMemoryWorldStorage implements WorldStorage {
   private readonly worlds = new Map<string, StoredWorld>();
 
   async getWorld(reference: WorldReference): Promise<StoredWorld | null> {
     return this.worlds.get(formatWorldName(reference)) ?? null;
+  }
+
+  async createWorld(world: StoredWorld): Promise<void> {
+    const key = formatWorldName(world.reference);
+    if (this.worlds.has(key)) {
+      throw new WorldAlreadyExistsError(world.reference);
+    }
+    this.worlds.set(key, world);
   }
 
   async updateWorld(world: StoredWorld): Promise<void> {

@@ -41,11 +41,7 @@ import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
-import {
-  InvalidArgumentError,
-  WorldAlreadyExistsError,
-  WorldNotFoundError,
-} from "#/errors.ts";
+import { InvalidArgumentError, WorldNotFoundError } from "#/errors.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} deps when used). */
 export interface WorldsSearchDeps {
@@ -96,17 +92,13 @@ export class Worlds implements WorldsInterface {
       namespace: input.namespace,
       id: input.id,
     };
-    const existing = await this.worldStorage.getWorld(reference);
-    if (existing) {
-      throw new WorldAlreadyExistsError(reference);
-    }
     const stored: StoredWorld = {
       reference,
       displayName: input.displayName,
       description: input.description,
       createTime: Date.now(),
     };
-    await this.worldStorage.updateWorld(stored);
+    await this.worldStorage.createWorld(stored);
     return toWorld(stored);
   }
 
