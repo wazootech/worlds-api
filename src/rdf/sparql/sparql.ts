@@ -1,70 +1,103 @@
 import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import { Store } from "n3";
 import type {
-  SparqlBinding,
-  SparqlQuad,
-  SparqlResponse,
+  SparqlAskResults,
+  SparqlSelectResults,
   SparqlValue,
 } from "#/api/openapi/generated/types.gen.ts";
+import {
+  SparqlSyntaxError,
+  SparqlUnsupportedOperationError,
+} from "#/errors.ts";
+
+/** Default timeout for SPARQL queries (30 seconds). */
+const DEFAULT_SPARQL_TIMEOUT_MS = 30_000;
 
 /**
  * queryEngine is a singleton instance of the Comunica QueryEngine.
- *
- * It's generally OK (and common) to share one `QueryEngine` instance across calls.
- * Reusing it can be slightly more efficient than constructing a new engine per query.
  */
 export const queryEngine: QueryEngine = new QueryEngine();
 
 /**
  * executeSparql executes a SPARQL query or update on a given store.
+ *
+ * UPDATE queries must target a single source (the first source in the request).
+ * Multi-source UPDATE is not supported and will throw SparqlUnsupportedOperationError.
+ *
+ * @param timeoutMs - Optional timeout in ms (default: 30000).
  */
 export async function executeSparql(
   store: Store,
   query: string,
-  options?: { baseIRI?: string },
-): Promise<SparqlResponse> {
-  const queryType = await queryEngine.query(query, {
-    sources: [store],
-    baseIRI: options?.baseIRI,
+  options?: { baseIRI?: string; timeoutMs?: number },
+): Promise<SparqlSelectResults | SparqlAskResults | null> {
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_SPARQL_TIMEOUT_MS;
+
+  return new Promise((resolve, reject) => {
+    let timer: number | undefined = undefined;
+
+    const clearTimer = () => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+
+    // Set timeout
+    timer = setTimeout(() => {
+      clearTimer();
+      reject(new SparqlSyntaxError("SPARQL query timed out"));
+    }, timeoutMs);
+
+    queryEngine.query(query, {
+      sources: [store],
+      baseIRI: options?.baseIRI,
+    }).then((queryType) => {
+      clearTimer();
+
+      try {
+        if (queryType.resultType === "void") {
+          return queryType.execute().then(() => resolve(null));
+        }
+
+        if (queryType.resultType === "bindings") {
+          return handleBindings(
+            queryType as unknown as {
+              execute(): Promise<unknown>;
+              metadata(): Promise<{ variables: { value: string }[] }>;
+            },
+          ).then(resolve).catch(reject);
+        }
+
+        if (queryType.resultType === "boolean") {
+          return handleBoolean(
+            queryType as unknown as { execute(): Promise<boolean> },
+          ).then(resolve).catch(reject);
+        }
+
+        reject(
+          new SparqlUnsupportedOperationError(
+            "CONSTRUCT and DESCRIBE queries are not supported",
+          ),
+        );
+      } catch (err) {
+        reject(err);
+      }
+    }).catch((err) => {
+      clearTimer();
+      reject(err);
+    });
   });
-
-  if (queryType.resultType === "void") {
-    await queryType.execute();
-    return null;
-  }
-
-  if (queryType.resultType === "bindings") {
-    return await handleBindings(
-      queryType as unknown as {
-        execute(): Promise<unknown>;
-        metadata(): Promise<{ variables: { value: string }[] }>;
-      },
-    );
-  }
-
-  if (queryType.resultType === "boolean") {
-    return await handleBoolean(
-      queryType as unknown as { execute(): Promise<boolean> },
-    );
-  }
-
-  if (queryType.resultType === "quads") {
-    return await handleQuads(
-      queryType as unknown as { execute(): Promise<unknown> },
-    );
-  }
-
-  throw new Error("Unsupported query type");
 }
 
 async function handleBindings(queryType: {
   execute(): Promise<unknown>;
   metadata(): Promise<{ variables: { value: string }[] }>;
-}): Promise<SparqlResponse> {
+}): Promise<SparqlSelectResults> {
   const bindingsStream = await queryType.execute();
-  const vars = (await queryType.metadata()).variables.map((
-    v: { value: string },
-  ) => v.value);
+  const vars = (await queryType.metadata()).variables.map(
+    (v: { value: string }) => v.value,
+  );
 
   const bindings = await new Promise<SparqlBinding[]>((resolve, reject) => {
     const b: SparqlBinding[] = [];
@@ -75,7 +108,7 @@ async function handleBindings(queryType: {
       const bindingObj: SparqlBinding = {};
       for (const v of vars) {
         // @ts-ignore - Comunica bindings are map-like with .get(varName)
-        const term = binding.get(v);
+        const term = (binding as Record<string, unknown>).get(v);
         if (term) {
           bindingObj[v] = toSparqlValue(
             term as {
@@ -129,86 +162,15 @@ async function handleBindings(queryType: {
 
 async function handleBoolean(queryType: {
   execute(): Promise<boolean>;
-}): Promise<SparqlResponse> {
-  const booleanResult = await queryType.execute();
+}): Promise<SparqlAskResults> {
+  const boolean = await queryType.execute();
   return {
     head: { link: undefined },
-    boolean: booleanResult,
+    boolean,
   };
 }
 
-async function handleQuads(queryType: {
-  execute(): Promise<unknown>;
-}): Promise<SparqlResponse> {
-  const quadsStream = await queryType.execute();
-  const quads = await new Promise<SparqlQuad[]>((resolve, reject) => {
-    const q: SparqlQuad[] = [];
-    let finished = false;
-
-    const onData = (quad: unknown) => {
-      if (finished) return;
-      // @ts-ignore: Comunica quad structure
-      const subject = quad.subject;
-      // @ts-ignore: Comunica quad structure
-      const predicate = quad.predicate;
-      // @ts-ignore: Comunica quad structure
-      const object = quad.object;
-      // @ts-ignore: Comunica quad structure
-      const graph = quad.graph;
-
-      q.push({
-        subject: {
-          type: subject.termType === "NamedNode" ? "uri" : "bnode",
-          value: subject.value,
-        },
-        predicate: {
-          type: "uri",
-          value: predicate.value,
-        },
-        object: toSparqlValue(object),
-        graph: {
-          type: graph.termType === "DefaultGraph" ? "default" : "uri",
-          value: graph.value,
-        },
-      });
-    };
-
-    const onEnd = () => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      resolve(q);
-    };
-
-    const onError = (err: unknown) => {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      reject(err);
-    };
-
-    const cleanup = () => {
-      // @ts-ignore - event emitter
-      quadsStream.off("data", onData);
-      // @ts-ignore - event emitter
-      quadsStream.off("end", onEnd);
-      // @ts-ignore - event emitter
-      quadsStream.off("error", onError);
-    };
-
-    // @ts-ignore - event emitter
-    quadsStream.on("data", onData);
-    // @ts-ignore - event emitter
-    quadsStream.on("end", onEnd);
-    // @ts-ignore - event emitter
-    quadsStream.on("error", onError);
-  });
-
-  return {
-    head: { link: undefined },
-    results: { quads },
-  };
-}
+type SparqlBinding = Record<string, SparqlValue>;
 
 function toSparqlValue(term: {
   termType: string;

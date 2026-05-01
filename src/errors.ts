@@ -33,6 +33,20 @@ export class InvalidArgumentError extends Error {
   }
 }
 
+export class SparqlSyntaxError extends Error {
+  override name = "SparqlSyntaxError";
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export class SparqlUnsupportedOperationError extends Error {
+  override name = "SparqlUnsupportedOperationError";
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 export class SparqlError extends Error {
   override name = "SparqlError";
   constructor(message: string) {

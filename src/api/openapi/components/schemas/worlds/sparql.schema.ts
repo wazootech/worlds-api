@@ -178,7 +178,6 @@ export const SparqlResponse: OpenAPIV3_1.SchemaObject = {
   oneOf: [
     { $ref: "#/components/schemas/SparqlSelectResults" },
     { $ref: "#/components/schemas/SparqlAskResults" },
-    { $ref: "#/components/schemas/SparqlQuadsResults" },
     { type: "null" },
   ],
 };

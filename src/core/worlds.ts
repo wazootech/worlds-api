@@ -41,7 +41,11 @@ import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
-import { InvalidArgumentError, WorldNotFoundError } from "#/errors.ts";
+import {
+  InvalidArgumentError,
+  SparqlUnsupportedOperationError,
+  WorldNotFoundError,
+} from "#/errors.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} deps when used). */
 export interface WorldsSearchDeps {
@@ -190,8 +194,13 @@ export class Worlds implements WorldsInterface {
       baseIRI: input.defaultGraphUris?.[0],
     });
 
-    // Handle SPARQL UPDATE (void result) - check for INSERT/DELETE
+    // Handle SPARQL UPDATE (void result) - only supported for single source
     if (result === null) {
+      if (references.length > 1) {
+        throw new SparqlUnsupportedOperationError(
+          "SPARQL UPDATE is only supported for a single source world",
+        );
+      }
       const ref = references[0];
       const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
 
