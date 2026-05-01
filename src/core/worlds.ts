@@ -388,7 +388,14 @@ export class Worlds implements WorldsInterface {
       }
     }
 
-    allResults.sort((a, b) => b.ftsRank - a.ftsRank);
+    allResults.sort((a, b) =>
+      (b.ftsRank! - a.ftsRank!) ||
+      // Stable deterministic tie-breakers so offset pagination is consistent.
+      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
+      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
+      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
+      ((a.object ?? "").localeCompare(b.object ?? ""))
+    );
 
     return allResults.map((r) => ({
       subject: r.subject,
