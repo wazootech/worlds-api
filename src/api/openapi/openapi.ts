@@ -67,7 +67,7 @@ if (import.meta.main) {
     {
       input: document,
       output: {
-        path: "./src/openapi/generated",
+        path: "./src/api/openapi/generated",
         entryFile: false,
       },
       plugins: [

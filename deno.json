@@ -11,7 +11,7 @@
     "bundle:browser": "deno bundle --no-check --platform=browser src/rdf/rdf/rdf.ts; deno bundle --no-check --platform=browser src/rdf/sparql/sparql.ts",
     "check:browser": "deno check -c deno.browser.json src/rdf/rdf/rdf.ts src/rdf/sparql/sparql.ts",
     "test": "deno test --allow-all",
-    "generate": "deno run -A src/api/openapi/openapi.ts && deno fmt ./src/api/openapi/generated"
+    "generate": "deno run -A src/api/openapi/openapi.ts"
   },
   "exports": {
     ".": "./src/mod.ts",
@@ -21,13 +21,11 @@
   },
   "fmt": {
     "exclude": [
-      "src/openapi/generated/**",
       "src/api/openapi/generated/**"
     ]
   },
   "lint": {
     "exclude": [
-      "src/openapi/generated/**",
       "src/api/openapi/generated/**",
       "vendor/jsonld-context-parser/**"
     ],
