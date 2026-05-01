@@ -19,10 +19,17 @@
     "./sparql": "./src/rdf/sparql/sparql.ts",
     "./indexing": "./src/indexing/mod.ts"
   },
+  "fmt": {
+    "exclude": [
+      "src/openapi/generated/**",
+      "src/api/openapi/generated/**"
+    ]
+  },
   "lint": {
     "exclude": [
-      "./src/api/openapi/generated",
-      "./vendor/jsonld-context-parser"
+      "src/openapi/generated/**",
+      "src/api/openapi/generated/**",
+      "vendor/jsonld-context-parser/**"
     ],
     "rules": {
       "tags": ["recommended"],

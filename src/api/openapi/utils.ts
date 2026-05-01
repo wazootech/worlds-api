@@ -9,7 +9,9 @@ export async function importGlob(glob: URL) {
     const path = entry.path;
     if (!path) return null;
     return await import(new URL(`file:///${path}`).href);
-  }).then((modules) => modules.filter((m): m is NonNullable<typeof m> => m !== null));
+  }).then((modules) =>
+    modules.filter((m): m is NonNullable<typeof m> => m !== null)
+  );
 }
 
 /**

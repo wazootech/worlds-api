@@ -1,5 +1,8 @@
 # Worlds API - Architecture Diagrams
 
+> **Contracts**: See [CONTRACTS.md](./CONTRACTS.md) for API invariants, error
+> taxonomy, and storage contracts.
+
 ## Indexing and identifiers
 
 This section captures two frequently-confused concepts:
