@@ -19,9 +19,12 @@ function createDefaultDeps(): ApiServerDeps {
 }
 
 /**
- * Constructs the main Hono app for the API server.
+ * Reference HTTP API: **single route** `POST /rpc`, JSON body validated by
+ * {@link ../rpc/handler.ts handleRpc}.
  *
- * - Mounts `POST /rpc` for the generated Worlds RPC transport.
+ * Successful RPC returns HTTP **200**; any RPC-level failure (including
+ * `NOT_FOUND`) returns **400** with a JSON error envelope — clients must read
+ * `error.code`. No auth, CORS, rate limits, or body-size caps (add at deploy time).
  */
 export function createMainApp(deps: Partial<ApiServerDeps> = {}) {
   const { worlds } = { ...createDefaultDeps(), ...deps };

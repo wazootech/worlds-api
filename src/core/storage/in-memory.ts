@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { StoredWorld, WorldStorage } from "./interface.ts";
-import { WorldAlreadyExistsError } from "#/errors.ts";
+import { WorldAlreadyExistsError } from "#/core/errors.ts";
 
 export class InMemoryWorldStorage implements WorldStorage {
   private readonly worlds = new Map<string, StoredWorld>();

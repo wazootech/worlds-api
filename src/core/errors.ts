@@ -1,10 +1,19 @@
 /**
- * Typed error classes for the Worlds API.
+ * Typed error classes for the Worlds domain layer.
  *
- * Using explicit types (instead of string-matched messages) so that RPC error
- * mapping is reliable and consumers can programmatically distinguish errors.
+ * Explicit subclasses (not string-matched messages) let {@link ../api/rpc/handler.ts}
+ * map failures to stable RPC `error.code` values:
+ *
+ * | Class | RPC code |
+ * | ----- | -------- |
+ * | {@link WorldAlreadyExistsError} | `ALREADY_EXISTS` |
+ * | {@link WorldNotFoundError} | `NOT_FOUND` |
+ * | {@link InvalidArgumentError}, {@link InvalidPageTokenError} | `INVALID_ARGUMENT` |
+ * | {@link SparqlSyntaxError}, {@link SparqlUnsupportedOperationError}, {@link SparqlError} | `INVALID_ARGUMENT` |
+ * | Other `Error` | `INTERNAL` |
  */
 
+/** Thrown when `createWorld` targets an existing `namespace`/`id`. */
 export class WorldAlreadyExistsError extends Error {
   override name = "WorldAlreadyExistsError";
   constructor(reference: { namespace: string; id: string }) {
@@ -12,6 +21,10 @@ export class WorldAlreadyExistsError extends Error {
   }
 }
 
+/**
+ * Thrown when an operation requires an existing world. Not used for `getWorld`
+ * (that returns `null`).
+ */
 export class WorldNotFoundError extends Error {
   override name = "WorldNotFoundError";
   constructor(reference: { namespace: string; id: string }) {
@@ -19,6 +32,7 @@ export class WorldNotFoundError extends Error {
   }
 }
 
+/** Opaque pagination token missing, malformed, or signature mismatch. */
 export class InvalidPageTokenError extends Error {
   override name = "InvalidPageTokenError";
   constructor(message = "Invalid page token") {
@@ -26,6 +40,7 @@ export class InvalidPageTokenError extends Error {
   }
 }
 
+/** Validation failures (e.g. empty SPARQL sources, invalid page size). */
 export class InvalidArgumentError extends Error {
   override name = "InvalidArgumentError";
   constructor(message: string) {
@@ -33,6 +48,7 @@ export class InvalidArgumentError extends Error {
   }
 }
 
+/** Malformed SPARQL or query timeout from the engine layer. */
 export class SparqlSyntaxError extends Error {
   override name = "SparqlSyntaxError";
   constructor(message: string) {
@@ -40,6 +56,7 @@ export class SparqlSyntaxError extends Error {
   }
 }
 
+/** e.g. CONSTRUCT/DESCRIBE; multi-source UPDATE is enforced in {@link ./worlds.ts}. */
 export class SparqlUnsupportedOperationError extends Error {
   override name = "SparqlUnsupportedOperationError";
   constructor(message: string) {
@@ -47,6 +64,7 @@ export class SparqlUnsupportedOperationError extends Error {
   }
 }
 
+/** Reserved for explicit SPARQL engine failures when introduced in call paths. */
 export class SparqlError extends Error {
   override name = "SparqlError";
   constructor(message: string) {

@@ -45,7 +45,7 @@ import {
   InvalidArgumentError,
   SparqlUnsupportedOperationError,
   WorldNotFoundError,
-} from "#/errors.ts";
+} from "#/core/errors.ts";
 
 /** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} deps when used). */
 export interface WorldsSearchDeps {
@@ -65,8 +65,18 @@ function toWorld(stored: StoredWorld): World {
 }
 
 /**
- * Worlds is the in-process reference implementation of WorldsInterface.
- * Accepts WorldStorage and QuadStorageManager for all persistence.
+ * Reference {@link WorldsInterface} implementation: world metadata, SPARQL over
+ * aggregated quad stores, import/export, and hybrid search (chunk index +
+ * naive FTS fallback).
+ *
+ * **Paging**
+ * - `listWorlds`: default page size **50**, max **100** (`DEFAULT_LIST_PAGE_SIZE`, `MAX_PAGE_SIZE`).
+ * - `search`: default **20**, max **100** (`DEFAULT_SEARCH_PAGE_SIZE`). Tokens bind to
+ *   query + source/subject/predicate/type filters via {@link signPageTokenParams}.
+ *
+ * **Search ordering** merges indexed + naive hits, sorted by `ftsRank`, `score`, then
+ * stable lexicographic tiebreakers (`world.name`, `subject`, `predicate`, `object`) for
+ * consistent offset paging.
  */
 export class Worlds implements WorldsInterface {
   private readonly searchDeps: WorldsSearchDeps;

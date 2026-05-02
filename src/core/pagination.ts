@@ -1,4 +1,4 @@
-import { InvalidPageTokenError } from "#/errors.ts";
+import { InvalidPageTokenError } from "#/core/errors.ts";
 
 export type PageTokenVersion = 1;
 
@@ -57,7 +57,10 @@ async function sha256Base64Url(input: string): Promise<string> {
 export type PageTokenSignatureParams = Record<string, unknown>;
 
 /**
- * Produce a stable signature for a request parameter set.
+ * Produce a stable signature for a request parameter set used with opaque page
+ * tokens (`encodePageToken` / `decodePageToken`). Call sites bind tokens to
+ * list/search filters so tampering or mismatched queries fail at
+ * `assertPageTokenSig`.
  *
  * Intentionally excludes pageSize/pageToken; tokens remain valid if the caller
  * changes pageSize between requests (common AIP behavior).

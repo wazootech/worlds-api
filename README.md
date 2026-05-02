@@ -3,6 +3,9 @@
 Worlds Platform is a context layer for agents. The engine manages, queries, and
 proves knowledge using SPARQL standards at the edge.
 
+API request/response shapes live in **OpenAPI** under `src/api/openapi/`;
+explore the public surface with `deno doc src/mod.ts`.
+
 ## Development
 
 This repo uses Deno and npm dependencies (via Deno's npm compatibility layer).

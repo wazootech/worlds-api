@@ -124,6 +124,26 @@ Deno.test("handleRpc: listWorlds invalid pageToken returns INVALID_ARGUMENT", as
   }
 });
 
+Deno.test("handleRpc: sparql unsupported query returns INVALID_ARGUMENT", async () => {
+  const worlds = createWorlds();
+  await handleRpc(worlds, {
+    action: "createWorld",
+    request: { namespace: "ns", id: "spq" },
+  } as WorldsRpcRequest);
+
+  const res = await handleRpc(worlds, {
+    action: "sparql",
+    request: {
+      sources: ["ns/spq"],
+      query: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
+    },
+  } as WorldsRpcRequest);
+  assertEquals(res.action, "sparql");
+  if ("error" in res) {
+    assertEquals(res.error.code, "INVALID_ARGUMENT");
+  }
+});
+
 Deno.test("handleRpc: importWorld then sparql", async () => {
   const worlds = createWorlds();
   await handleRpc(worlds, {

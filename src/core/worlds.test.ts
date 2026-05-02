@@ -10,7 +10,7 @@ import {
   InvalidPageTokenError,
   WorldAlreadyExistsError,
   WorldNotFoundError,
-} from "#/errors.ts";
+} from "#/core/errors.ts";
 
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();

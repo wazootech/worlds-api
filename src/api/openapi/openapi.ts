@@ -24,6 +24,12 @@ export const document: OpenAPIV3_1.Document = {
     "/rpc": {
       post: {
         summary: "Unified RPC endpoint for Worlds.",
+        description:
+          "JSON body: discriminated `{ action, request }` per `WorldsRpcRequest`. " +
+          "Success: HTTP 200 with `{ action, response }`. Any RPC failure (including " +
+          "`NOT_FOUND`): HTTP 400 with `{ action, error: { code, message } }` — use " +
+          "`error.code`, not HTTP status alone. The reference server does not add " +
+          "authentication, CORS, or quotas; configure those at the edge.",
         operationId: "rpc",
         requestBody: {
           required: true,

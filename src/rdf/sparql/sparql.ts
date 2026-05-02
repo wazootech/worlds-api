@@ -8,7 +8,7 @@ import type {
 import {
   SparqlSyntaxError,
   SparqlUnsupportedOperationError,
-} from "#/errors.ts";
+} from "#/core/errors.ts";
 
 /** Default timeout for SPARQL queries (30 seconds). */
 const DEFAULT_SPARQL_TIMEOUT_MS = 30_000;
@@ -19,12 +19,23 @@ const DEFAULT_SPARQL_TIMEOUT_MS = 30_000;
 export const queryEngine: QueryEngine = new QueryEngine();
 
 /**
- * executeSparql executes a SPARQL query or update on a given store.
+ * Execute SPARQL on a single in-memory `Store` (one world's quads or an
+ * aggregate built by the caller).
  *
- * UPDATE queries must target a single source (the first source in the request).
- * Multi-source UPDATE is not supported and will throw SparqlUnsupportedOperationError.
+ * **Supported**
+ * - `SELECT` → bindings stream
+ * - `ASK` → boolean
+ * - `UPDATE` with `void` result → `null` (caller persists quad diffs; see {@link ../../core/worlds.ts})
  *
- * @param timeoutMs - Optional timeout in ms (default: 30000).
+ * **Not supported here**
+ * - `CONSTRUCT` / `DESCRIBE` → throws {@link SparqlUnsupportedOperationError}
+ * - Multi-store UPDATE: enforced at {@link ../../core/worlds.ts} (`sparql`): multiple
+ *   sources allowed for read-only queries; UPDATE requires a single source.
+ *
+ * Malformed queries surface as whatever `QueryEngine` rejects; timeouts use
+ * {@link SparqlSyntaxError} (default **30000** ms, override `timeoutMs`).
+ *
+ * @param options.timeoutMs - Query timeout in ms (default 30000).
  */
 export async function executeSparql(
   store: Store,

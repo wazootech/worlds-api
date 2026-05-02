@@ -17,7 +17,9 @@ export interface ChunkSearchDeps {
 }
 
 /**
- * Semantic + FTS search over chunk index (prior worlds ChunksSearchEngine behavior, adapted).
+ * Vector + full-text search over per-world {@link ChunkIndexManager} indexes.
+ * Worlds **without** chunk indexes fall back to naive FTS inside
+ * {@link ../core/worlds.ts}; merged ordering happens there.
  */
 export async function searchChunks(
   input: SearchRequest,

@@ -9,9 +9,12 @@ import { zWorldsRpcRequest } from "#/api/openapi/generated/zod.gen.ts";
 import {
   InvalidArgumentError,
   InvalidPageTokenError,
+  SparqlError,
+  SparqlSyntaxError,
+  SparqlUnsupportedOperationError,
   WorldAlreadyExistsError,
   WorldNotFoundError,
-} from "#/errors.ts";
+} from "#/core/errors.ts";
 
 const ErrorCode = {
   INVALID_ARGUMENT: "INVALID_ARGUMENT",
@@ -20,6 +23,18 @@ const ErrorCode = {
   INTERNAL: "INTERNAL",
 } as const;
 
+/**
+ * Maps caught exceptions to stable {@link RpcError} codes for JSON clients.
+ *
+ * | Input | `code` |
+ * | ----- | ------ |
+ * | {@link InvalidArgumentError}, {@link InvalidPageTokenError} | `INVALID_ARGUMENT` |
+ * | {@link WorldNotFoundError} | `NOT_FOUND` |
+ * | {@link WorldAlreadyExistsError} | `ALREADY_EXISTS` |
+ * | {@link SparqlSyntaxError}, {@link SparqlUnsupportedOperationError}, {@link SparqlError} | `INVALID_ARGUMENT` |
+ * | Any other `Error` | `INTERNAL` |
+ * | Non-Error | `INTERNAL` |
+ */
 function toRpcError(err: unknown): RpcError {
   if (
     err instanceof InvalidArgumentError || err instanceof InvalidPageTokenError
@@ -32,6 +47,13 @@ function toRpcError(err: unknown): RpcError {
   if (err instanceof WorldAlreadyExistsError) {
     return { code: ErrorCode.ALREADY_EXISTS, message: err.message };
   }
+  if (
+    err instanceof SparqlSyntaxError ||
+    err instanceof SparqlUnsupportedOperationError ||
+    err instanceof SparqlError
+  ) {
+    return { code: ErrorCode.INVALID_ARGUMENT, message: err.message };
+  }
   if (err instanceof Error) {
     return { code: ErrorCode.INTERNAL, message: err.message };
   }
@@ -39,9 +61,15 @@ function toRpcError(err: unknown): RpcError {
 }
 
 /**
- * handleRpc routes a single /rpc request to the provided WorldsInterface.
+ * Routes one JSON-RPC-shaped request to {@link WorldsInterface}.
  *
- * It returns either a typed success envelope (200) or error envelope (400).
+ * - Validates the body with `zWorldsRpcRequest`; on failure returns
+ *   `{ action, error: { code: INVALID_ARGUMENT, message: "Invalid RPC request" } }`
+ *   (HTTP layer typically responds with 400 — see {@link ../server/main.ts}).
+ * - Success: `{ action, response }` per discriminated `action`.
+ * - Domain failure: `{ action, error }` with `action` preserved for client unions.
+ *
+ * `exportWorld` encodes bytes as base64 in `response.data` (full buffer in memory).
  */
 export async function handleRpc(
   worlds: WorldsInterface,
