@@ -43,7 +43,6 @@
   "lint": {
     "exclude": [
       "src/rpc/openapi/generated/**",
-      "src/api/openapi/generated/**",
       "vendor/jsonld-context-parser/**"
     ],
     "rules": {
