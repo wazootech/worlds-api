@@ -26,12 +26,21 @@ export class InMemoryWorldStorage implements WorldStorage {
     this.worlds.delete(formatWorldName(reference));
   }
 
-  async listWorlds(namespace?: string): Promise<StoredWorld[]> {
+  async listWorlds(namespace?: string, owner?: string): Promise<StoredWorld[]> {
     return Array.from(this.worlds.values())
-      .filter((w) => !namespace || w.reference.namespace === namespace)
+      .filter((w) =>
+        (!namespace || w.reference.namespace === namespace) &&
+        (!owner || w.owner === owner)
+      )
       .sort((a, b) =>
         a.reference.namespace.localeCompare(b.reference.namespace) ||
         a.reference.id.localeCompare(b.reference.id)
       );
+  }
+
+  async getNamespaceOwner(namespace: string): Promise<string | null> {
+    const worlds = Array.from(this.worlds.values())
+      .filter((w) => w.reference.namespace === namespace);
+    return worlds.length > 0 ? worlds[0].owner : null;
   }
 }
