@@ -11,53 +11,30 @@ response to indicate that you have read the file.
 
 Use `deno -h` to get a list of commands if you need more context.
 
-## Packages
+## Modules and exports
 
-### `./src/api`
+This project exports the following primary modules (as mapped in `deno.json`):
 
-**Worlds RPC** is the JSON-over-HTTP API surface in this tree: the OpenAPI
-document and codegen (`openapi/`), the discriminated action handler (`rpc/`),
-and the optional Hono +
-[`deno serve`](https://docs.deno.com/runtime/reference/cli/serve/) entry
-(`server/`). Together they define how clients call `WorldsInterface` over
-`POST /rpc`.
+- **`.` (`./src/mod.ts`)**: Main entrypoint exposing the core `WorldsInterface`
+  and business logic.
+- **`./rdf` (`./src/rdf/rdf.ts`)**: Core RDF parsing, serialization, and
+  skolemization utilities.
+- **`./sparql` (`./src/rdf/sparql/sparql.ts`)**: SPARQL execution handler and
+  engines.
+- **`./indexing` (`./src/indexing/mod.ts`)**: Full-text and vector chunk
+  indexers, search logic, and embeddings.
 
-Note: Requests resolve through the core Worlds class implementing
-`WorldsInterface`.
+Additional directories include:
 
-- `./openapi`: OpenAPI specification and codegen. Generates request/response
-  types and validators under `./openapi/generated/`.
-- `./rpc`: RPC handler. Routes JSON envelopes to `WorldsInterface` and maps
-  typed errors to stable RPC codes.
-- `./server`: Standalone HTTP server (`POST /rpc`). Entry uses
-  [`deno serve`](https://docs.deno.com/runtime/reference/cli/serve/) with a
-  default `fetch` export. Default stack enables CORS, a JSON body-size cap
-  (**413**), and `/rpc` rate limiting (**429**); tune via env
-  (`loadTransportConfigFromEnv`) or `MainAppOptions.transport`. **Authentication
-  is not included.** For embedding, `createRpcApp` exposes RPC only;
-  `applyTransportPreset` wires transport middleware from an explicit
-  `TransportConfig` before you mount `/rpc`.
+- `src/core/`: Domain API implementation, error types, and pagination.
+- `src/rpc/`: RPC handler (`POST /rpc`), OpenAPI schema, generated types, and
+  transport (`app.ts`).
 
 ### Documentation policy
 
 Normative behavior lives in source code (JSDoc on enforcing modules), OpenAPI
 schemas for wire shapes, and tests. Use `deno doc` and read the enforcing
 modules rather than maintaining separate architecture markdown files.
-
-### Where to look
-
-| Concern                                            | Primary locations  |
-| -------------------------------------------------- | ------------------ |
-| Domain API (worlds, SPARQL, search, import/export) | `src/core/`        |
-| Typed errors                                       | `src/core/`        |
-| Page tokens (list/search)                          | `src/core/`        |
-| OpenAPI schema and generated types                 | `src/api/openapi/` |
-| Worlds RPC handler (`POST /rpc`)                   | `src/api/rpc/`     |
-| HTTP transport (`deno serve`, Hono)                | `src/api/server/`  |
-| SPARQL execution and unsupported shapes            | `src/rdf/sparql/`  |
-| Quad storage invariants                            | `src/rdf/storage/` |
-| Chunk indexing + search                            | `src/indexing/`    |
-| Embedding models                                   | `src/embeddings/`  |
 
 ### Worlds RPC errors vs transport-only HTTP status
 
@@ -70,10 +47,6 @@ are not contractual).
 That is separate from **transport-only** responses: the default HTTP stack may
 return **413** (body too large) or **429** (rate limited) with bodies that are
 not the Worlds RPC error shape.
-
-### `./src/embeddings`
-
-Embedding models and vector storage logic.
 
 ## Style guidelines
 
@@ -97,7 +70,6 @@ Embedding models and vector storage logic.
 - Separate case statements using brackets.
 - Use `===` instead of `==` for equality comparisons.
 - Use `!==` instead of `!=` for inequality comparisons.
-- Use `===` instead of `==` for equality comparisons.
 
 ## Contribution guidelines
 
