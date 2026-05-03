@@ -121,8 +121,8 @@ export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
     const result = await handleRpc(worlds, req);
     if ("error" in result) {
       const err = result as WorldsRpcError;
-      const status = getHttpStatus(err.error.code);
-      return c.json(err, status as any);
+      const status = getHttpStatus(err.error.code) as 400 | 404 | 409 | 500;
+      return c.json(err, status);
     }
     return c.json(result, 200);
   });

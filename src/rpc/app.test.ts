@@ -79,12 +79,18 @@ Deno.test({
   });
   await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, bodyCreate),
+    headers: withContentLength(
+      { "Content-Type": "application/json" },
+      bodyCreate,
+    ),
     body: bodyCreate,
   });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, bodyCreate),
+    headers: withContentLength(
+      { "Content-Type": "application/json" },
+      bodyCreate,
+    ),
     body: bodyCreate,
   });
   assertEquals(res.status, 409);

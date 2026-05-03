@@ -4,7 +4,7 @@ import type {
   World,
   WorldReference,
 } from "#/rpc/openapi/generated/types.gen.ts";
-import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
+import type { EmbeddingsService as embeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import { tokenizeSearchQuery } from "#/indexing/fts.ts";
@@ -15,7 +15,7 @@ import { tokenizeSearchQuery } from "#/indexing/fts.ts";
  */
 export interface ChunkSearchOptions {
   chunkIndexManager: ChunkIndexManager;
-  embeddings: EmbeddingsService;
+  embeddings: embeddingsService;
   worldStorage: WorldStorage;
   formatWorldName: (ref: WorldReference) => string;
 }
