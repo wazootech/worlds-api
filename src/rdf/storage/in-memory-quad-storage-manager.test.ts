@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { InMemoryQuadStorageManager } from "./in-memory-quad-storage-manager.ts";
-import { testQuadStorageManager } from "./contract.test.ts";
+import { testQuadStorageManager } from "./testing.ts";
 
 testQuadStorageManager(
   "InMemoryQuadStorageManager",

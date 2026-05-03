@@ -6,7 +6,6 @@
     "#/": "./src/",
     "@comunica/query-sparql-rdfjs-lite": "npm:@comunica/query-sparql-rdfjs-lite@^5.2.1",
     "@hey-api/openapi-ts": "npm:@hey-api/openapi-ts@^0.97.0",
-    "@hono-rate-limiter/hono-rate-limiter": "jsr:@hono-rate-limiter/hono-rate-limiter@^0.4.2",
     "@hono/hono": "npm:hono@^4.12.16",
     "@libsql/client": "npm:@libsql/client@^0.17.3",
     "@orama/orama": "npm:@orama/orama@^3.1.18",

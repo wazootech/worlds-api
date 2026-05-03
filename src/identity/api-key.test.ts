@@ -4,7 +4,7 @@ import { ApiKeyStorage, type StoredApiKey } from "./api-key-storage.ts";
 import { createClient } from "@libsql/client";
 
 // Use in-memory libsql for testing
-const TEST_DB_URL = "file::memory:";
+const TEST_DB_URL = ":memory:";
 
 async function createTestStorage() {
   const client = createClient({ url: TEST_DB_URL });

@@ -28,8 +28,11 @@ export interface ChunkSearchQuery {
 }
 
 export interface ChunkSearchRow {
-  chunk: ChunkRecord;
+  subject: string;
+  predicate: string;
+  object: string;
   vecRank: number | null;
   ftsRank: number | null;
   score: number;
+  world: WorldReference;
 }

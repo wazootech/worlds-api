@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "./indexed-quad-storage-manager.ts";
-import { testQuadStorageManager } from "./contract.test.ts";
+import { testQuadStorageManager } from "./testing.ts";
 
 testQuadStorageManager("IndexedQuadStorageManager", (_suffix: string) => {
   const embeddings = new FakeEmbeddingsService();

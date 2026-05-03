@@ -4,9 +4,6 @@ import { generateApiKey, hashKey } from "#/identity/api-key.ts";
 import { ApiKeyStorage } from "#/identity/api-key-storage.ts";
 import { createClient } from "@libsql/client";
 
-/** `hono-rate-limiter` installs a housekeeping interval on first use — disable op sanitization here. */
-const rpcAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };
-
 function withContentLength(
   headers: HeadersInit | undefined,
   body: string,
@@ -19,10 +16,9 @@ function withContentLength(
 
 Deno.test({
   name: "createRpcApp: POST /rpc listWorlds returns 200",
-  ...rpcAppLeakOpts,
 }, async () => {
   const apiKeyStorage = new ApiKeyStorage(
-    createClient({ url: "file::memory:" }),
+    createClient({ url: ":memory:" }),
   );
   const rawKey = generateApiKey("wk");
   const hashedKey = await hashKey(rawKey);
@@ -52,10 +48,9 @@ Deno.test({
 
 Deno.test({
   name: "createRpcApp: invalid RPC body returns 400 envelope",
-  ...rpcAppLeakOpts,
 }, async () => {
   const apiKeyStorage = new ApiKeyStorage(
-    createClient({ url: "file::memory:" }),
+    createClient({ url: ":memory:" }),
   );
   const rawKey = generateApiKey("wk");
   const hashedKey = await hashKey(rawKey);
@@ -88,10 +83,9 @@ Deno.test({
 
 Deno.test({
   name: "createRpcApp: missing world returns 404 envelope",
-  ...rpcAppLeakOpts,
 }, async () => {
   const apiKeyStorage = new ApiKeyStorage(
-    createClient({ url: "file::memory:" }),
+    createClient({ url: ":memory:" }),
   );
   const rawKey = generateApiKey("wk");
   const hashedKey = await hashKey(rawKey);
@@ -124,10 +118,9 @@ Deno.test({
 
 Deno.test({
   name: "createRpcApp: duplicate world returns 409 envelope",
-  ...rpcAppLeakOpts,
 }, async () => {
   const apiKeyStorage = new ApiKeyStorage(
-    createClient({ url: "file::memory:" }),
+    createClient({ url: ":memory:" }),
   );
   const rawKey = generateApiKey("wk");
   const hashedKey = await hashKey(rawKey);
@@ -168,7 +161,6 @@ Deno.test({
 
 Deno.test({
   name: "createRpcApp: oversized JSON body returns 413",
-  ...rpcAppLeakOpts,
 }, async () => {
   const app = createRpcApp({ transport: {} }); // with transport (triggers 413)
   const padLen = 2_200_000;
@@ -185,7 +177,7 @@ Deno.test({
 
 Deno.test("createRpcApp: without transport, oversized body is not rejected", async () => {
   const apiKeyStorage = new ApiKeyStorage(
-    createClient({ url: "file::memory:" }),
+    createClient({ url: ":memory:" }),
   );
   const rawKey = generateApiKey("wk");
   const hashedKey = await hashKey(rawKey);
@@ -219,7 +211,6 @@ Deno.test("createRpcApp: without transport, oversized body is not rejected", asy
 
 Deno.test({
   name: "createRpcApp: OPTIONS /rpc includes CORS allow headers",
-  ...rpcAppLeakOpts,
 }, async () => {
   const app = createRpcApp({ transport: {} }); // with transport (CORS applied)
   const res = await app.request("http://localhost/rpc", {

@@ -45,7 +45,7 @@ Deno.test("SearchIndexHandler with Orama: renders and keeps in sync", async () =
     queryVector: await embeddings.embed("quick fox"),
   });
   assertEquals(searchRes.length, 1);
-  assertEquals(searchRes[0].chunk.subject, "s1");
+  assertEquals(searchRes[0].subject, "s1");
 
   // 2. Sync (Update/Delete)
   await handler.patch([{

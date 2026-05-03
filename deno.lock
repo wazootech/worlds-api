@@ -3978,7 +3978,6 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
       "jsr:@std/assert@^1.0.19",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/fs@^1.0.23",

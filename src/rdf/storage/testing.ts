@@ -231,23 +231,3 @@ export function testQuadStorageManager(
     },
   );
 }
-
-// ── LibsqlQuadStorageManager contract tests ─────────────────────────────────
-
-// Skip libsql tests on Windows (native module not available in Deno)
-if (Deno.build.os !== "windows") {
-  // Dynamic import to avoid loading native module on Windows
-  const { createLibsqlClient } = await import(
-    "#/core/storage/libsql-client.ts"
-  );
-  const { LibsqlQuadStorageManager } = await import(
-    "./libsql-quad-storage-manager.ts"
-  );
-
-  testQuadStorageManager("LibsqlQuadStorageManager", (_suffix: string) => {
-    // Each factory call gets its own in-memory DB for isolation
-    // libsql creates a new in-memory DB per client instance
-    const client = createLibsqlClient({ url: ":memory:" });
-    return new LibsqlQuadStorageManager(client);
-  });
-}

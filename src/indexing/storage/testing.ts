@@ -126,7 +126,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
     } satisfies ChunkIndexSearchQuery,
   );
   assertEquals(rows.length, 2);
-  assertEquals(rows.every((r) => r.chunk.subject === "urn:alice"), true);
+  assertEquals(rows.every((r) => r.subject === "urn:alice"), true);
 
   // Filter by predicate
   rows = await idx.search(
@@ -138,7 +138,7 @@ export async function testChunkIndexManager(manager: ChunkIndexManager) {
     } satisfies ChunkIndexSearchQuery,
   );
   assertEquals(rows.length, 1);
-  assertEquals(rows[0].chunk.id, "s1");
+  assertEquals(rows[0].subject, "urn:alice");
 
   // Multi-world search
   const world2 = { namespace: "ns", id: "w2" };

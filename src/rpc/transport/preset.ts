@@ -81,7 +81,7 @@ function rateLimitKey(
 }
 
 /**
- * Self-implemented simple rate limiter (replaces @hono-rate-limiter/hono-rate-limiter).
+ * Simple in-memory rate limiter.
  */
 function applyRateLimiter(app: Hono, config: TransportConfig): void {
   app.use("/rpc", async (c, next) => {

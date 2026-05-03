@@ -86,31 +86,25 @@ export class OramaChunkIndex implements ChunkIndex {
     const rows: ChunkSearchRow[] = [];
     for (const hit of results.hits) {
       const doc = hit.document;
-      const chunk: ChunkRecord = {
-        id: doc.id,
-        quadId: doc.quadId,
-        subject: doc.subject,
-        predicate: doc.predicate,
-        text: doc.text,
-        vector: Float32Array.from(doc.vector_blob),
-        world: this.world,
-      };
 
       // Defensive: Orama `where` should already handle these.
-      if (input.subjects?.length && !input.subjects.includes(chunk.subject)) {
+      if (input.subjects?.length && !input.subjects.includes(doc.subject)) {
         continue;
       }
       if (
-        input.predicates?.length && !input.predicates.includes(chunk.predicate)
+        input.predicates?.length && !input.predicates.includes(doc.predicate)
       ) {
         continue;
       }
 
       rows.push({
-        chunk,
+        subject: doc.subject,
+        predicate: doc.predicate,
+        object: doc.text,
         vecRank: hit.score,
         ftsRank: hit.score,
         score: hit.score,
+        world: this.world,
       });
     }
 

@@ -113,10 +113,13 @@ export class InMemoryChunkIndex implements ChunkIndex {
       const score = fts * 1000 + (vecRank ?? 0);
 
       rows.push({
-        chunk,
+        subject: chunk.subject,
+        predicate: chunk.predicate,
+        object: chunk.text,
         vecRank,
         ftsRank: fts > 0 ? fts : null,
         score,
+        world: chunk.world,
       });
     }
 

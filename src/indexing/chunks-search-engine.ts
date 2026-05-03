@@ -67,15 +67,14 @@ export async function searchChunks(
   }
 
   return rows.map((row) => {
-    const c = row.chunk;
-    const world = worldByKey.get(options.formatWorldName(c.world));
+    const world = worldByKey.get(options.formatWorldName(row.world));
     if (!world) {
       throw new Error(`Chunk result references untargeted world`);
     }
     return {
-      subject: c.subject,
-      predicate: c.predicate,
-      object: c.text,
+      subject: row.subject,
+      predicate: row.predicate,
+      object: row.object,
       vecRank: row.vecRank,
       ftsRank: row.ftsRank,
       score: row.score,
