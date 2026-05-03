@@ -71,3 +71,19 @@ export class SparqlError extends Error {
     super(message);
   }
 }
+
+/** Thrown when request lacks authentication. */
+export class UnauthenticatedError extends Error {
+  override name = "UnauthenticatedError";
+  constructor(message = "Authentication required") {
+    super(message);
+  }
+}
+
+/** Thrown when user lacks permission to access a resource. */
+export class PermissionDeniedError extends Error {
+  override name = "PermissionDeniedError";
+  constructor(resource?: string) {
+    super(resource ? `Access denied to: ${resource}` : "Permission denied");
+  }
+}
