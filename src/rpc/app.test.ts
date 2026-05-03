@@ -1,5 +1,8 @@
 import { assertEquals } from "@std/assert";
 import { createRpcApp } from "#/rpc/mod.ts";
+import { generateApiKey, hashKey } from "#/identity/api-key.ts";
+import { ApiKeyStorage } from "#/identity/api-key-storage.ts";
+import { createClient } from "@libsql/client";
 
 /** `hono-rate-limiter` installs a housekeeping interval on first use — disable op sanitization here. */
 const rpcAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };
@@ -7,7 +10,7 @@ const rpcAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };
 function withContentLength(
   headers: HeadersInit | undefined,
   body: string,
-): HeadersInit {
+): Headers {
   const merged = new Headers(headers);
   const bytes = new TextEncoder().encode(body);
   merged.set("Content-Length", String(bytes.byteLength));
@@ -18,11 +21,28 @@ Deno.test({
   name: "createRpcApp: POST /rpc listWorlds returns 200",
   ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcApp();
+  const apiKeyStorage = new ApiKeyStorage(
+    createClient({ url: "file::memory:" }),
+  );
+  const rawKey = generateApiKey("wk");
+  const hashedKey = await hashKey(rawKey);
+  await apiKeyStorage.createKey({
+    id: "wk_test1",
+    keyHash: hashedKey,
+    userId: "test-user",
+    scopes: ["read", "write"],
+    createdAt: Date.now(),
+  });
+  const app = createRpcApp({
+    identity: { apiKeyStorage },
+  });
   const body = JSON.stringify({ action: "listWorlds", request: {} });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, body),
+    headers: withContentLength(
+      { "Content-Type": "application/json", "X-Api-Key": rawKey },
+      body,
+    ),
     body,
   });
   assertEquals(res.status, 200);
@@ -34,14 +54,31 @@ Deno.test({
   name: "createRpcApp: invalid RPC body returns 400 envelope",
   ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcApp();
+  const apiKeyStorage = new ApiKeyStorage(
+    createClient({ url: "file::memory:" }),
+  );
+  const rawKey = generateApiKey("wk");
+  const hashedKey = await hashKey(rawKey);
+  await apiKeyStorage.createKey({
+    id: "wk_test2",
+    keyHash: hashedKey,
+    userId: "test-user",
+    scopes: ["read", "write"],
+    createdAt: Date.now(),
+  });
+  const app = createRpcApp({
+    identity: { apiKeyStorage },
+  });
   const body = JSON.stringify({
     action: "listWorlds",
     request: { pageSize: -1 },
   });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, body),
+    headers: withContentLength(
+      { "Content-Type": "application/json", "X-Api-Key": rawKey },
+      body,
+    ),
     body,
   });
   assertEquals(res.status, 400);
@@ -53,14 +90,31 @@ Deno.test({
   name: "createRpcApp: missing world returns 404 envelope",
   ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcApp();
+  const apiKeyStorage = new ApiKeyStorage(
+    createClient({ url: "file::memory:" }),
+  );
+  const rawKey = generateApiKey("wk");
+  const hashedKey = await hashKey(rawKey);
+  await apiKeyStorage.createKey({
+    id: "wk_test3",
+    keyHash: hashedKey,
+    userId: "test-user",
+    scopes: ["read", "write"],
+    createdAt: Date.now(),
+  });
+  const app = createRpcApp({
+    identity: { apiKeyStorage },
+  });
   const body = JSON.stringify({
     action: "deleteWorld",
     request: { source: "non-existent/world" },
   });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, body),
+    headers: withContentLength(
+      { "Content-Type": "application/json", "X-Api-Key": rawKey },
+      body,
+    ),
     body,
   });
   assertEquals(res.status, 404);
@@ -72,7 +126,21 @@ Deno.test({
   name: "createRpcApp: duplicate world returns 409 envelope",
   ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcApp();
+  const apiKeyStorage = new ApiKeyStorage(
+    createClient({ url: "file::memory:" }),
+  );
+  const rawKey = generateApiKey("wk");
+  const hashedKey = await hashKey(rawKey);
+  await apiKeyStorage.createKey({
+    id: "wk_test4",
+    keyHash: hashedKey,
+    userId: "test-user",
+    scopes: ["read", "write"],
+    createdAt: Date.now(),
+  });
+  const app = createRpcApp({
+    identity: { apiKeyStorage },
+  });
   const bodyCreate = JSON.stringify({
     action: "createWorld",
     request: { namespace: "test", id: "dupe" },
@@ -80,7 +148,7 @@ Deno.test({
   await app.request("http://localhost/rpc", {
     method: "POST",
     headers: withContentLength(
-      { "Content-Type": "application/json" },
+      { "Content-Type": "application/json", "X-Api-Key": rawKey },
       bodyCreate,
     ),
     body: bodyCreate,
@@ -88,7 +156,7 @@ Deno.test({
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
     headers: withContentLength(
-      { "Content-Type": "application/json" },
+      { "Content-Type": "application/json", "X-Api-Key": rawKey },
       bodyCreate,
     ),
     body: bodyCreate,
@@ -116,14 +184,34 @@ Deno.test({
 });
 
 Deno.test("createRpcApp: without transport, oversized body is not rejected", async () => {
-  const app = createRpcApp(); // no transport
+  const apiKeyStorage = new ApiKeyStorage(
+    createClient({ url: "file::memory:" }),
+  );
+  const rawKey = generateApiKey("wk");
+  const hashedKey = await hashKey(rawKey);
+  await apiKeyStorage.createKey({
+    id: "wk_test5",
+    keyHash: hashedKey,
+    userId: "test-user",
+    scopes: ["read", "write"],
+    createdAt: Date.now(),
+  });
+  const app = createRpcApp({
+    identity: { apiKeyStorage },
+  }); // no transport
   const padLen = 2_200_000;
   const body = '{"action":"listWorlds","request":{},"pad":"' +
     "a".repeat(padLen) +
     '"}';
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
-    headers: withContentLength({ "Content-Type": "application/json" }, body),
+    headers: withContentLength(
+      {
+        "Content-Type": "application/json",
+        "X-Api-Key": rawKey,
+      },
+      body,
+    ),
     body,
   });
   assertEquals(res.status, 200);

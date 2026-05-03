@@ -18,8 +18,19 @@ export const document: OpenAPIV3_1.Document = {
     description: "API for managing decentralized, multi-model semantic Worlds.",
   },
   components: {
+    securitySchemes: {
+      apiKey: {
+        type: "apiKey",
+        in: "header",
+        name: "X-Api-Key",
+        description:
+          "API key for authentication. Obtain via your dashboard or admin API. " +
+          "The key is verified on every request and scopes the Worlds instance to the owner.",
+      },
+    },
     schemas,
   },
+  security: [{ apiKey: [] }],
   paths: {
     "/rpc": {
       post: {
@@ -29,10 +40,11 @@ export const document: OpenAPIV3_1.Document = {
           "Success: HTTP 200 with `{ action, response }`. Any RPC failure (including " +
           "`NOT_FOUND`): HTTP 400 with `{ action, error: { code, message } }` — classify " +
           "RPC failures with `error.code`, not HTTP status alone. With the default " +
-          "transport preset (see `src/api/server`), CORS is enabled, JSON body size is " +
+          "transport preset (see `src/rpc/transport`), CORS is enabled, JSON body size is " +
           "capped (HTTP **413** when exceeded), and `/rpc` is rate limited (HTTP **429**); " +
-          "tune via env or TransportConfig. This stack does **not** authenticate callers — " +
-          "add middleware or enforce auth upstream.",
+          "tune via env or TransportConfig. Auth is enforced via API keys — " +
+          "include `X-Api-Key` header on every request; missing/invalid keys return HTTP **401** " +
+          "(RPC code `UNAUTHENTICATED`), and unauthorized access returns HTTP **403** (RPC code `PERMISSION_DENIED`).",
         operationId: "rpc",
         requestBody: {
           required: true,
@@ -56,7 +68,50 @@ export const document: OpenAPIV3_1.Document = {
             },
           },
           "400": {
-            description: "RPC error",
+            description:
+              "RPC error (e.g., INVALID_ARGUMENT, default for RPC-level failures)",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/WorldsRpcError",
+                },
+              },
+            },
+          },
+          "401": {
+            description:
+              "Unauthenticated — missing or invalid API key (RPC code UNAUTHENTICATED)",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/WorldsRpcError",
+                },
+              },
+            },
+          },
+          "403": {
+            description:
+              "Permission denied — user does not own the resource (RPC code PERMISSION_DENIED)",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/WorldsRpcError",
+                },
+              },
+            },
+          },
+          "404": {
+            description: "Resource not found (RPC code NOT_FOUND)",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/WorldsRpcError",
+                },
+              },
+            },
+          },
+          "409": {
+            description: "Resource already exists (RPC code ALREADY_EXISTS)",
             content: {
               "application/json": {
                 schema: {
@@ -73,6 +128,16 @@ export const document: OpenAPIV3_1.Document = {
             description:
               "Too many requests (HTTP transport rate limiting on `/rpc`)",
           },
+          "500": {
+            description: "Internal error (RPC code INTERNAL)",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/WorldsRpcError",
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -84,7 +149,7 @@ if (import.meta.main) {
     {
       input: document,
       output: {
-        path: "./src/api/openapi/generated",
+        path: "./src/rpc/openapi/generated",
         entryFile: false,
       },
       plugins: [

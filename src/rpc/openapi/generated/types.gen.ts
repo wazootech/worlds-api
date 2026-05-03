@@ -512,9 +512,25 @@ export type RpcData = {
 
 export type RpcErrors = {
     /**
-     * RPC error
+     * RPC error (e.g., INVALID_ARGUMENT, default for RPC-level failures)
      */
     400: WorldsRpcError;
+    /**
+     * Unauthenticated — missing or invalid API key (RPC code UNAUTHENTICATED)
+     */
+    401: WorldsRpcError;
+    /**
+     * Permission denied — user does not own the resource (RPC code PERMISSION_DENIED)
+     */
+    403: WorldsRpcError;
+    /**
+     * Resource not found (RPC code NOT_FOUND)
+     */
+    404: WorldsRpcError;
+    /**
+     * Resource already exists (RPC code ALREADY_EXISTS)
+     */
+    409: WorldsRpcError;
     /**
      * Request body too large (HTTP transport body-size limit)
      */
@@ -523,6 +539,10 @@ export type RpcErrors = {
      * Too many requests (HTTP transport rate limiting on `/rpc`)
      */
     429: unknown;
+    /**
+     * Internal error (RPC code INTERNAL)
+     */
+    500: WorldsRpcError;
 };
 
 export type RpcError2 = RpcErrors[keyof RpcErrors];

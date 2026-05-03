@@ -12,7 +12,7 @@ import {
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
-function createWorlds() {
+function createWorlds(userId: string = "test-user") {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
   return new Worlds({
@@ -23,10 +23,10 @@ function createWorlds() {
     ),
     chunkIndexManager,
     embeddings,
-  });
+  }, userId);
 }
 
-function createWorldsWithSharedOptions() {
+function createWorldsWithSharedOptions(userId: string = "test-user") {
   const worldStorage = new InMemoryWorldStorage();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
@@ -39,15 +39,15 @@ function createWorldsWithSharedOptions() {
     quadStorageManager: storeStorage,
     chunkIndexManager,
     embeddings,
-  });
+  }, userId);
   return { worlds, chunkIndexManager };
 }
 
-function createWorldsWithInMemoryQuadStorage() {
+function createWorldsWithInMemoryQuadStorage(userId: string = "test-user") {
   return new Worlds({
     worldStorage: new InMemoryWorldStorage(),
     quadStorageManager: new InMemoryQuadStorageManager(),
-  });
+  }, userId);
 }
 
 Deno.test("Worlds: create/get/update/delete world", async () => {

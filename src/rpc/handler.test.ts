@@ -7,7 +7,7 @@ import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
 
-function createWorlds() {
+function createWorlds(userId: string = "test-user") {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
   return new Worlds({
@@ -18,7 +18,7 @@ function createWorlds() {
     ),
     chunkIndexManager,
     embeddings,
-  });
+  }, userId);
 }
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {

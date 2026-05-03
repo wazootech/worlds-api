@@ -44,8 +44,8 @@ import { executeSparql } from "#/rdf/sparql/sparql.ts";
 import {
   InvalidArgumentError,
   PermissionDeniedError,
-  UnauthenticatedError,
   SparqlUnsupportedOperationError,
+  UnauthenticatedError,
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
@@ -140,9 +140,17 @@ export class Worlds implements WorldsInterface {
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
     const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
+    this.assertAuthenticated();
     const stored = await this.worldStorage.getWorld(reference);
-    return stored ? toWorld(stored) : null;
+    if (!stored) {
+      return null;
+    }
+    if (stored.owner !== this.userId) {
+      throw new PermissionDeniedError(
+        `${reference.namespace}/${reference.id}`,
+      );
+    }
+    return toWorld(stored);
   }
 
   async createWorld(input: CreateWorldRequest): Promise<World> {
@@ -189,11 +197,16 @@ export class Worlds implements WorldsInterface {
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
     this.assertAuthenticated();
     const namespaceFilter = input?.parent?.trim();
-    const all = await this.worldStorage.listWorlds(namespaceFilter, this.userId!);
+    const all = await this.worldStorage.listWorlds(
+      namespaceFilter,
+      this.userId!,
+    );
     const pageSizeRaw = input?.pageSize === undefined || input.pageSize === 0
       ? DEFAULT_LIST_PAGE_SIZE
       : input.pageSize < 0
-      ? (() => { throw new InvalidArgumentError("Invalid page size"); })()
+      ? (() => {
+        throw new InvalidArgumentError("Invalid page size");
+      })()
       : input.pageSize;
     const pageSize = Math.min(pageSizeRaw, MAX_PAGE_SIZE);
     const sig = await signPageTokenParams({
@@ -275,7 +288,9 @@ export class Worlds implements WorldsInterface {
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(ref);
+      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(
+        ref,
+      );
       if (indexState) indexedRefs.push(ref);
       else unindexedRefs.push(ref);
     }
@@ -301,14 +316,19 @@ export class Worlds implements WorldsInterface {
     const pageSizeRaw = input.pageSize === undefined || input.pageSize === 0
       ? DEFAULT_SEARCH_PAGE_SIZE
       : input.pageSize < 0
-      ? (() => { throw new InvalidArgumentError("Invalid page size"); })()
+      ? (() => {
+        throw new InvalidArgumentError("Invalid page size");
+      })()
       : input.pageSize;
     const pageSize = Math.min(pageSizeRaw, MAX_PAGE_SIZE);
     const normalizeStringArray = (arr?: string[]) =>
       (arr ?? []).map((s) => s.trim()).filter((s) => s.length > 0).sort();
     const sourcesSig = !sources || sources.length === 0
       ? { mode: "all" as const }
-      : { mode: "explicit" as const, worlds: targetRefs.map(formatWorldName).sort() };
+      : {
+        mode: "explicit" as const,
+        worlds: targetRefs.map(formatWorldName).sort(),
+      };
     const sig = await signPageTokenParams({
       method: "searchWorlds",
       query: input.query,
@@ -355,7 +375,13 @@ export class Worlds implements WorldsInterface {
       for (const q of quads) {
         const score = ftsTermHits(queryTerms, q.subject, q.predicate, q.object);
         if (score > 0) {
-          allResults.push({ subject: q.subject, predicate: q.predicate, object: q.object, ftsRank: score, world });
+          allResults.push({
+            subject: q.subject,
+            predicate: q.predicate,
+            object: q.object,
+            ftsRank: score,
+            world,
+          });
         }
       }
     }

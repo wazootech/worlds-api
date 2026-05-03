@@ -9,9 +9,11 @@ import { zWorldsRpcRequest } from "#/rpc/openapi/generated/zod.gen.ts";
 import {
   InvalidArgumentError,
   InvalidPageTokenError,
+  PermissionDeniedError,
   SparqlError,
   SparqlSyntaxError,
   SparqlUnsupportedOperationError,
+  UnauthenticatedError,
   WorldAlreadyExistsError,
   WorldNotFoundError,
 } from "#/core/errors.ts";
@@ -21,6 +23,8 @@ const ErrorCode = {
   NOT_FOUND: "NOT_FOUND",
   ALREADY_EXISTS: "ALREADY_EXISTS",
   INTERNAL: "INTERNAL",
+  UNAUTHENTICATED: "UNAUTHENTICATED",
+  PERMISSION_DENIED: "PERMISSION_DENIED",
 } as const;
 
 /**
@@ -46,6 +50,12 @@ function toRpcError(err: unknown): RpcError {
   }
   if (err instanceof WorldAlreadyExistsError) {
     return { code: ErrorCode.ALREADY_EXISTS, message: err.message };
+  }
+  if (err instanceof UnauthenticatedError) {
+    return { code: ErrorCode.UNAUTHENTICATED, message: err.message };
+  }
+  if (err instanceof PermissionDeniedError) {
+    return { code: ErrorCode.PERMISSION_DENIED, message: err.message };
   }
   if (
     err instanceof SparqlSyntaxError ||

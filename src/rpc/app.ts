@@ -42,7 +42,7 @@
  * {@link applyTransportPreset} applies CORS, `/rpc` body limits, and rate limiting from a
  * {@link TransportConfig}. Production defaults load from the environment via
  * {@link loadTransportConfigFromEnv}; pass {@link RpcAppOptions.transport} to override
- * programmatically (tests, embedding). Auth is enforced via `X-User-Id` header.
+ * programmatically (tests, embedding). Auth is enforced via API keys (`X-Api-Key` header).
  */
 import { Hono } from "@hono/hono";
 import { Worlds } from "#/core/worlds.ts";
@@ -61,6 +61,8 @@ import {
 import { applyTransportPreset } from "./transport/preset.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
+import type { ApiKeyStorage } from "#/identity/api-key-storage.ts";
+import { verifyApiKey } from "#/identity/api-key.ts";
 
 export type { TransportConfig } from "./transport/types.ts";
 export {
@@ -74,6 +76,8 @@ export type RpcAppOptions = {
   worldStorage?: WorldStorage;
   quadStorageManager?: QuadStorageManager;
   transport?: Partial<TransportConfig>;
+  /** Identity/API key auth config */
+  identity?: { apiKeyStorage: ApiKeyStorage };
 };
 
 function createDefaultOptions() {
@@ -132,25 +136,45 @@ export function mountRpcPost(
   app: Hono,
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
+  apiKeyStorage?: ApiKeyStorage,
 ): void {
   const worldsFactory = createWorldsFactory(worldStorage, quadStorageManager);
 
   app.post("/rpc", async (c) => {
-    const userId = c.req.header("X-User-Id");
-    if (!userId) {
+    const apiKey = c.req.header("X-Api-Key");
+    if (!apiKey) {
       return c.json(
         {
           action: "unknown",
           error: {
             code: "UNAUTHENTICATED",
-            message: "Missing X-User-Id header",
+            message: "Missing X-Api-Key header",
           },
         },
         401,
       );
     }
 
-    const scopedWorlds = worldsFactory(userId);
+    let verified: { keyId: string; userId: string; scopes: string[] };
+    try {
+      if (!apiKeyStorage) {
+        throw new Error("API key storage not configured");
+      }
+      verified = await verifyApiKey(apiKey, apiKeyStorage);
+    } catch (e) {
+      return c.json(
+        {
+          action: "unknown",
+          error: {
+            code: "UNAUTHENTICATED",
+            message: e instanceof Error ? e.message : "Invalid API key",
+          },
+        },
+        401,
+      );
+    }
+
+    const scopedWorlds = worldsFactory(verified.userId);
     const req = (await c.req.json()) as WorldsRpcRequest;
     const result = await handleRpc(scopedWorlds, req);
     if ("error" in result) {
@@ -172,12 +196,13 @@ function createHonoRpcApp(
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
   transport: TransportConfig | null,
+  apiKeyStorage?: ApiKeyStorage,
 ): Hono {
   const app = new Hono();
   if (transport !== null) {
     applyTransportPreset(app, transport);
   }
-  mountRpcPost(app, worldStorage, quadStorageManager);
+  mountRpcPost(app, worldStorage, quadStorageManager, apiKeyStorage);
   return app;
 }
 
@@ -194,20 +219,21 @@ function createHonoRpcApp(
  * {@code ALREADY_EXISTS}, **401** for {@code UNAUTHENTICATED}, **403** for {@code PERMISSION_DENIED})
  * with a JSON error envelope.
  *
- * Auth is enforced via `X-User-Id` header on every request.
+ * Auth is enforced via `X-Api-Key` header on every request.
  */
 export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const { transport: transportOverrides, ...rest } = options;
   const { worldStorage, quadStorageManager } = createDefaultOptions();
   const finalWorldStorage = rest.worldStorage ?? worldStorage;
-  const finalQuadStorageManager =
-    rest.quadStorageManager ?? quadStorageManager;
+  const finalQuadStorageManager = rest.quadStorageManager ?? quadStorageManager;
   const transport = transportOverrides
     ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
     : null;
+  const apiKeyStorage = options.identity?.apiKeyStorage;
   return createHonoRpcApp(
     finalWorldStorage,
     finalQuadStorageManager,
     transport,
+    apiKeyStorage,
   );
 }

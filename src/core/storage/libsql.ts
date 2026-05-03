@@ -106,7 +106,8 @@ export class LibsqlWorldStorage implements WorldStorage {
     let result;
     if (namespace && owner) {
       result = await this.client.execute({
-        sql: `SELECT * FROM worlds WHERE namespace = ? AND owner = ? ORDER BY namespace, id`,
+        sql:
+          `SELECT * FROM worlds WHERE namespace = ? AND owner = ? ORDER BY namespace, id`,
         args: [namespace, owner],
       });
     } else if (namespace) {
