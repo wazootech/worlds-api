@@ -9,6 +9,11 @@ import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import { tokenizeSearchQuery } from "#/indexing/fts.ts";
 
+/**
+ * Dependency injection for {@link searchChunks}.
+ * Extends {@link WorldsSearchOptions} with world-storage and formatting needed
+ * to hydrate per-chunk world metadata at the search layer.
+ */
 export interface ChunkSearchOptions {
   chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;

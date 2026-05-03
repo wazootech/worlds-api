@@ -15,11 +15,14 @@ import {
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
-  return new Worlds(
-    new InMemoryWorldStorage(),
-    new IndexedQuadStorageManager(embeddings, chunkIndexManager),
-    { chunkIndexManager, embeddings },
-  );
+  return new Worlds({
+    worldStorage: new InMemoryWorldStorage(),
+    quadStorageManager: new IndexedQuadStorageManager(
+      embeddings,
+      chunkIndexManager,
+    ),
+    searchOptions: { chunkIndexManager, embeddings },
+  });
 }
 
 function createWorldsWithSharedOptions() {
@@ -30,18 +33,19 @@ function createWorldsWithSharedOptions() {
     embeddings,
     chunkIndexManager,
   );
-  const worlds = new Worlds(worldStorage, storeStorage, {
-    chunkIndexManager,
-    embeddings,
+  const worlds = new Worlds({
+    worldStorage,
+    quadStorageManager: storeStorage,
+    searchOptions: { chunkIndexManager, embeddings },
   });
   return { worlds, chunkIndexManager };
 }
 
 function createWorldsWithInMemoryQuadStorage() {
-  return new Worlds(
-    new InMemoryWorldStorage(),
-    new InMemoryQuadStorageManager(),
-  );
+  return new Worlds({
+    worldStorage: new InMemoryWorldStorage(),
+    quadStorageManager: new InMemoryQuadStorageManager(),
+  });
 }
 
 Deno.test("Worlds: create/get/update/delete world", async () => {

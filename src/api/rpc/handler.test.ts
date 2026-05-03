@@ -10,11 +10,14 @@ import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-ma
 function createWorlds() {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
-  return new Worlds(
-    new InMemoryWorldStorage(),
-    new IndexedQuadStorageManager(embeddings, chunkIndexManager),
-    { chunkIndexManager, embeddings },
-  );
+  return new Worlds({
+    worldStorage: new InMemoryWorldStorage(),
+    quadStorageManager: new IndexedQuadStorageManager(
+      embeddings,
+      chunkIndexManager,
+    ),
+    searchOptions: { chunkIndexManager, embeddings },
+  });
 }
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {

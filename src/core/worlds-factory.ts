@@ -61,5 +61,5 @@ export function createWorldsWithLibsql(config?: WorldsFactoryConfig): Worlds {
     embeddings,
   };
 
-  return new Worlds(worldStorage, quadStorageManager, searchOptions);
+  return new Worlds({ worldStorage, quadStorageManager, searchOptions });
 }

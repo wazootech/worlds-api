@@ -67,9 +67,10 @@ export {
 } from "#/api/server/transport/env.ts";
 export { applyTransportPreset } from "#/api/server/transport/preset.ts";
 
-export type ApiServerOptions = {
+/** Dependency injection for the API server: the Worlds instance backing `POST /rpc`. */
+export interface ApiServerOptions {
   worlds: WorldsInterface;
-};
+}
 
 /** Options for {@link createMainApp}: optional `worlds` plus transport overrides. */
 export type MainAppOptions = Partial<ApiServerOptions> & {
@@ -79,7 +80,7 @@ export type MainAppOptions = Partial<ApiServerOptions> & {
 function createDefaultOptions(): ApiServerOptions {
   const worldStorage = new InMemoryWorldStorage();
   const quadStorageManager = new InMemoryQuadStorageManager();
-  const worlds = new Worlds(worldStorage, quadStorageManager);
+  const worlds = new Worlds({ worldStorage, quadStorageManager });
   return { worlds };
 }
 

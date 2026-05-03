@@ -47,10 +47,20 @@ import {
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
-/** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} options when used). */
+/**
+ * Shared chunk index + embeddings for vector search.
+ * Used as {@link Worlds} constructor options; also the base for {@link ChunkSearchOptions}.
+ */
 export interface WorldsSearchOptions {
   chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;
+}
+
+/** Dependency injection for {@link Worlds}. Replaces separate constructor params. */
+export interface WorldsOptions {
+  worldStorage: WorldStorage;
+  quadStorageManager: QuadStorageManager;
+  searchOptions?: WorldsSearchOptions;
 }
 
 function toWorld(stored: StoredWorld): World {
@@ -79,17 +89,17 @@ function toWorld(stored: StoredWorld): World {
  * consistent offset paging.
  */
 export class Worlds implements WorldsInterface {
+  private readonly worldStorage: WorldStorage;
+  private readonly quadStorageManager: QuadStorageManager;
   private readonly searchOptions: WorldsSearchOptions;
   private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
   private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
   private static readonly MAX_PAGE_SIZE = 100;
 
-  constructor(
-    private readonly worldStorage: WorldStorage,
-    private readonly quadStorageManager: QuadStorageManager,
-    searchOptions?: WorldsSearchOptions,
-  ) {
-    this.searchOptions = searchOptions ?? {
+  constructor(options: WorldsOptions) {
+    this.worldStorage = options.worldStorage;
+    this.quadStorageManager = options.quadStorageManager;
+    this.searchOptions = options.searchOptions ?? {
       chunkIndexManager: new InMemoryChunkIndexManager(),
       embeddings: new FakeEmbeddingsService(),
     };
