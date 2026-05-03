@@ -48,5 +48,6 @@
       "tags": ["recommended"],
       "exclude": ["require-await"]
     }
-  }
+  },
+  "exclude": ["vendor/**"]
 }
