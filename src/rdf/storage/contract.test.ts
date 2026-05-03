@@ -247,8 +247,9 @@ if (Deno.build.os !== "windows") {
   testQuadStorageManager("LibsqlQuadStorageManager",
     (suffix: string) => {
       // Each factory call gets its own in-memory DB for isolation
+      // Use unique URL per client (libsql treats different URLs as separate DBs)
       const client = createLibsqlClient(
-        { url: `file:memory:${suffix}?mode=memory&cache=shared` },
+        { url: `file:memory:${suffix}` },
       );
       return new LibsqlQuadStorageManager(client);
     });
