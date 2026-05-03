@@ -21,7 +21,7 @@
  * import { createRpcApp } from "#/rpc/mod.ts";
  * import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
  *
- * const app = createRpcApp({ worlds: createWorldsWithLibsql() });
+ * const app = createRpcApp({ worldStorage: createWorldsWithLibsql().worldStorage, ... });
  * export default {
  *   fetch: (req: Request) => app.fetch(req),
  * } satisfies Deno.ServeDefaultExport;
@@ -42,14 +42,14 @@
  * {@link applyTransportPreset} applies CORS, `/rpc` body limits, and rate limiting from a
  * {@link TransportConfig}. Production defaults load from the environment via
  * {@link loadTransportConfigFromEnv}; pass {@link RpcAppOptions.transport} to override
- * programmatically (tests, embedding). **Authentication is not enforced here** — add
- * Hono middleware or enforce auth/TLS at your edge.
+ * programmatically (tests, embedding). Auth is enforced via `X-User-Id` header.
  */
 import { Hono } from "@hono/hono";
-import type { WorldsInterface } from "#/core/interfaces.ts";
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
+import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
+import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { handleRpc } from "./handler.ts";
 import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
 import type { WorldsRpcError } from "#/rpc/openapi/generated/types.gen.ts";
@@ -59,6 +59,8 @@ import {
   mergeTransportConfig,
 } from "./transport/env.ts";
 import { applyTransportPreset } from "./transport/preset.ts";
+import type { WorldStorage } from "#/core/storage/interface.ts";
+import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
 
 export type { TransportConfig } from "./transport/types.ts";
 export {
@@ -67,36 +69,17 @@ export {
 } from "./transport/env.ts";
 export { applyTransportPreset } from "./transport/preset.ts";
 
-/** Options for {@link createRpcApp}: worlds instance plus transport overrides. */
+/** Options for {@link createRpcApp}: storage/deps plus transport overrides. */
 export type RpcAppOptions = {
-  worlds?: WorldsInterface;
+  worldStorage?: WorldStorage;
+  quadStorageManager?: QuadStorageManager;
   transport?: Partial<TransportConfig>;
 };
 
-function createDefaultOptions(): RpcAppOptions {
+function createDefaultOptions() {
   const worldStorage = new InMemoryWorldStorage();
   const quadStorageManager = new InMemoryQuadStorageManager();
-  const worlds = new Worlds({ worldStorage, quadStorageManager });
-  return { worlds };
-}
-
-function resolveRpcAppOptions(
-  partial: RpcAppOptions,
-): Required<Pick<RpcAppOptions, "worlds">> {
-  const resolved = { ...createDefaultOptions(), ...partial };
-  return resolved as Required<Pick<RpcAppOptions, "worlds">>;
-}
-
-function createHonoRpcApp(
-  worlds: WorldsInterface,
-  transport: TransportConfig | null,
-): Hono {
-  const app = new Hono();
-  if (transport !== null) {
-    applyTransportPreset(app, transport);
-  }
-  mountRpcPost(app, worlds);
-  return app;
+  return { worldStorage, quadStorageManager };
 }
 
 function getHttpStatus(errorCode: string | undefined): number {
@@ -107,6 +90,10 @@ function getHttpStatus(errorCode: string | undefined): number {
       return 409;
     case "INVALID_ARGUMENT":
       return 400;
+    case "UNAUTHENTICATED":
+      return 401;
+    case "PERMISSION_DENIED":
+      return 403;
     case "INTERNAL":
       return 500;
     default:
@@ -114,18 +101,84 @@ function getHttpStatus(errorCode: string | undefined): number {
   }
 }
 
-/** Mounts `POST /rpc` JSON-RPC handling. Compose with {@link applyTransportPreset} as needed. */
-export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
+/**
+ * Creates a factory function that returns a Worlds instance scoped to a user.
+ * This allows request-level auth scoping without changing WorldsInterface.
+ */
+function createWorldsFactory(
+  worldStorage: WorldStorage,
+  quadStorageManager: QuadStorageManager,
+): (userId: string) => Worlds {
+  const searchDeps = {
+    chunkIndexManager: new InMemoryChunkIndexManager(),
+    embeddings: new FakeEmbeddingsService(),
+  };
+
+  return (userId: string) => {
+    return new Worlds(
+      {
+        worldStorage,
+        quadStorageManager,
+        chunkIndexManager: searchDeps.chunkIndexManager,
+        embeddings: searchDeps.embeddings,
+      },
+      userId,
+    );
+  };
+}
+
+/** Mounts `POST /rpc` JSON-RPC handling with auth. Compose with {@link applyTransportPreset} as needed. */
+export function mountRpcPost(
+  app: Hono,
+  worldStorage: WorldStorage,
+  quadStorageManager: QuadStorageManager,
+): void {
+  const worldsFactory = createWorldsFactory(worldStorage, quadStorageManager);
+
   app.post("/rpc", async (c) => {
+    const userId = c.req.header("X-User-Id");
+    if (!userId) {
+      return c.json(
+        {
+          action: "unknown",
+          error: {
+            code: "UNAUTHENTICATED",
+            message: "Missing X-User-Id header",
+          },
+        },
+        401,
+      );
+    }
+
+    const scopedWorlds = worldsFactory(userId);
     const req = (await c.req.json()) as WorldsRpcRequest;
-    const result = await handleRpc(worlds, req);
+    const result = await handleRpc(scopedWorlds, req);
     if ("error" in result) {
       const err = result as WorldsRpcError;
-      const status = getHttpStatus(err.error.code) as 400 | 404 | 409 | 500;
+      const status = getHttpStatus(err.error.code) as
+        | 400
+        | 401
+        | 403
+        | 404
+        | 409
+        | 500;
       return c.json(err, status);
     }
     return c.json(result, 200);
   });
+}
+
+function createHonoRpcApp(
+  worldStorage: WorldStorage,
+  quadStorageManager: QuadStorageManager,
+  transport: TransportConfig | null,
+): Hono {
+  const app = new Hono();
+  if (transport !== null) {
+    applyTransportPreset(app, transport);
+  }
+  mountRpcPost(app, worldStorage, quadStorageManager);
+  return app;
 }
 
 /**
@@ -138,15 +191,23 @@ export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
  *
  * Successful RPC returns HTTP **200**; RPC-level failures return an HTTP status matching
  * the error code category (e.g., **404** for {@code NOT_FOUND}, **409** for
- * {@code ALREADY_EXISTS}) with a JSON error envelope.
+ * {@code ALREADY_EXISTS}, **401** for {@code UNAUTHENTICATED}, **403** for {@code PERMISSION_DENIED})
+ * with a JSON error envelope.
  *
- * **Auth** must be enforced out-of-band unless you compose additional middleware yourself.
+ * Auth is enforced via `X-User-Id` header on every request.
  */
 export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const { transport: transportOverrides, ...rest } = options;
-  const { worlds } = resolveRpcAppOptions(rest);
+  const { worldStorage, quadStorageManager } = createDefaultOptions();
+  const finalWorldStorage = rest.worldStorage ?? worldStorage;
+  const finalQuadStorageManager =
+    rest.quadStorageManager ?? quadStorageManager;
   const transport = transportOverrides
     ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
     : null;
-  return createHonoRpcApp(worlds, transport);
+  return createHonoRpcApp(
+    finalWorldStorage,
+    finalQuadStorageManager,
+    transport,
+  );
 }

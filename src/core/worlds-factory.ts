@@ -1,7 +1,6 @@
 import type { Client } from "@libsql/client";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
-import { Worlds } from "./worlds.ts";
 import type { WorldStorage } from "./storage/interface.ts";
 import { LibsqlWorldStorage } from "./storage/libsql.ts";
 import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
@@ -21,25 +20,34 @@ export interface WorldsFactoryConfig {
   embeddings?: EmbeddingsService;
 }
 
+export interface WorldsFactoryResult {
+  worldStorage: WorldStorage;
+  quadStorageManager: QuadStorageManager;
+  chunkIndexManager: ChunkIndexManager;
+  embeddings: EmbeddingsService;
+}
+
 /**
- * Create a Worlds instance wired with libsql/Turso persistent storage.
+ * Create libsql/Turso storage components for use with createRpcApp.
  *
  * Usage:
  * ```typescript
  * // Local file-based (default: file:./data/worlds.db)
- * const worlds = createWorldsWithLibsql();
+ * const { worldStorage, quadStorageManager } = createWorldsWithLibsql();
  *
  * // Custom file path
- * const worlds = createWorldsWithLibsql({ url: "file:./my.db" });
+ * const result = createWorldsWithLibsql({ url: "file:./my.db" });
  *
  * // Remote Turso
- * const worlds = createWorldsWithLibsql({
+ * const result = createWorldsWithLibsql({
  *   url: "libsql://my-db.turso.io",
  *   authToken: "my-token",
  * });
  * ```
  */
-export function createWorldsWithLibsql(config?: WorldsFactoryConfig): Worlds {
+export function createWorldsWithLibsql(
+  config?: WorldsFactoryConfig,
+): WorldsFactoryResult {
   const client = config?.client ??
     createLibsqlClient({
       url: config?.url,
@@ -55,10 +63,10 @@ export function createWorldsWithLibsql(config?: WorldsFactoryConfig): Worlds {
   );
   const embeddings = config?.embeddings ?? new FakeEmbeddingsService();
 
-  return new Worlds({
+  return {
     worldStorage,
     quadStorageManager,
     chunkIndexManager,
     embeddings,
-  });
+  };
 }

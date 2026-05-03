@@ -13,6 +13,7 @@ import type {
   SparqlResponse,
   UpdateWorldRequest,
   World,
+  WorldReference,
 } from "#/rpc/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
@@ -67,22 +68,12 @@ function toWorld(stored: StoredWorld): World {
   };
 }
 
+const DEFAULT_LIST_PAGE_SIZE = 50;
+const DEFAULT_SEARCH_PAGE_SIZE = 20;
+const MAX_PAGE_SIZE = 100;
+
 /**
- * Reference {@link WorldsInterface} implementation: world metadata, SPARQL over
- * aggregated quad stores, import/export, and hybrid search (chunk index +
- * naive FTS fallback).
- *
- * **Paging**
- * - `listWorlds`: default page size **50**, max **100** (`DEFAULT_LIST_PAGE_SIZE`, `MAX_PAGE_SIZE`).
- * - `search`: default **20**, max **100** (`DEFAULT_SEARCH_PAGE_SIZE`). Tokens bind to
- *   query + source/subject/predicate/type filters via {@link signPageTokenParams}.
- *
- * **Search ordering** merges indexed + naive hits, sorted by `ftsRank`, `score`, then
- * stable lexicographic tiebreakers (`world.name`, `subject`, `predicate`, `object`) for
- * consistent offset paging.
- *
- * **Auth**: When `userId` is set, all operations enforce ownership. Use `forUser()` to
- * create a scoped instance. Without `userId`, all operations throw `UnauthenticatedError`.
+ * Reference {@link WorldsInterface} implementation with auth enforcement.
  */
 export class Worlds implements WorldsInterface {
   private readonly worldStorage: WorldStorage;
@@ -92,9 +83,6 @@ export class Worlds implements WorldsInterface {
     embeddings: EmbeddingsService;
   };
   private readonly userId: string | null;
-  private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
-  private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
-  private static readonly MAX_PAGE_SIZE = 100;
 
   constructor(options: WorldsOptions, userId: string | null = null) {
     this.worldStorage = options.worldStorage;
@@ -111,7 +99,6 @@ export class Worlds implements WorldsInterface {
       };
   }
 
-  /** Returns a new Worlds instance scoped to the given user. */
   forUser(userId: string): Worlds {
     return new Worlds(
       {
@@ -164,9 +151,7 @@ export class Worlds implements WorldsInterface {
       namespace: input.namespace,
       id: input.id,
     };
-
     await this.assertOwnsNamespace(input.namespace);
-
     const stored: StoredWorld = {
       reference,
       displayName: input.displayName,
@@ -181,7 +166,6 @@ export class Worlds implements WorldsInterface {
   async updateWorld(input: UpdateWorldRequest): Promise<World> {
     const reference = resolveWorldReference(input.source);
     await this.assertOwnsWorld(reference);
-
     const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
       throw new WorldNotFoundError(reference);
@@ -198,11 +182,6 @@ export class Worlds implements WorldsInterface {
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.assertOwnsWorld(reference);
-
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
     await this.worldStorage.deleteWorld(reference);
     await this.quadStorageManager.deleteQuadStorage(reference);
   }
@@ -211,65 +190,47 @@ export class Worlds implements WorldsInterface {
     this.assertAuthenticated();
     const namespaceFilter = input?.parent?.trim();
     const all = await this.worldStorage.listWorlds(namespaceFilter, this.userId!);
-
-    const requestedPageSize = input?.pageSize;
-    if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new InvalidArgumentError("Invalid page size");
-    }
-    const pageSizeRaw =
-      requestedPageSize === undefined || requestedPageSize === 0
-        ? Worlds.DEFAULT_LIST_PAGE_SIZE
-        : requestedPageSize;
-    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
-
+    const pageSizeRaw = input?.pageSize === undefined || input.pageSize === 0
+      ? DEFAULT_LIST_PAGE_SIZE
+      : input.pageSize < 0
+      ? (() => { throw new InvalidArgumentError("Invalid page size"); })()
+      : input.pageSize;
+    const pageSize = Math.min(pageSizeRaw, MAX_PAGE_SIZE);
     const sig = await signPageTokenParams({
       method: "listWorlds",
       parent: namespaceFilter ?? "",
     });
-
     const decoded = input?.pageToken?.trim()
       ? decodePageToken(input.pageToken.trim())
       : null;
     if (decoded) assertPageTokenSig(decoded, sig);
     const startIndex = decoded?.o ?? 0;
-
     const worlds = all.slice(startIndex, startIndex + pageSize).map(toWorld);
-    const nextOffset = startIndex + pageSize;
-    const nextPageToken = nextOffset < all.length
-      ? encodePageToken({ v: 1, o: nextOffset, sig })
+    const nextPageToken = startIndex + pageSize < all.length
+      ? encodePageToken({ v: 1, o: startIndex + pageSize, sig })
       : undefined;
-
     return { worlds, nextPageToken };
   }
 
   async sparql(input: SparqlRequest): Promise<SparqlResponse> {
     this.assertAuthenticated();
-    const sources = input.sources;
-    if (!sources || sources.length === 0) {
+    if (!input.sources || input.sources.length === 0) {
       throw new InvalidArgumentError("sparql requires at least one source");
     }
-
-    const references = sources.map((s) => resolveWorldReference(s));
+    const references = input.sources.map((s) => resolveWorldReference(s));
     for (const ref of references) {
       await this.assertOwnsWorld(ref);
     }
-
-    // Aggregate quads from all source worlds into a single store
     let allQuads: StoredQuad[] = [];
     for (const ref of references) {
       const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
       const quads = await quadStorage.findQuads([]);
       allQuads = allQuads.concat(quads);
     }
-
     const store = storeFromQuads(allQuads);
-
-    // Execute the query
     const result = await executeSparql(store, input.query, {
       baseIRI: input.defaultGraphUris?.[0],
     });
-
-    // Handle SPARQL UPDATE (void result) - only supported for single source
     if (result === null) {
       if (references.length > 1) {
         throw new SparqlUnsupportedOperationError(
@@ -278,35 +239,20 @@ export class Worlds implements WorldsInterface {
       }
       const ref = references[0];
       const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-
       const currentQuads = await quadStorage.findQuads([]);
-      const newStore = store;
-
-      const newQuads = quadsFromStore(newStore);
-      const currentQuadSet = new Set(
-        currentQuads.map(storedQuadKey),
-      );
-      const newQuadSet = new Set(
-        newQuads.map(storedQuadKey),
-      );
-
+      const newQuads = quadsFromStore(store);
+      const currentQuadSet = new Set(currentQuads.map(storedQuadKey));
+      const newQuadSet = new Set(newQuads.map(storedQuadKey));
       const toRemove = currentQuads.filter((q: StoredQuad) =>
         !newQuadSet.has(storedQuadKey(q))
       );
       const toAdd = newQuads.filter((q: StoredQuad) =>
         !currentQuadSet.has(storedQuadKey(q))
       );
-
-      if (toRemove.length > 0) {
-        await quadStorage.deleteQuads(toRemove);
-      }
-      if (toAdd.length > 0) {
-        await quadStorage.setQuads(toAdd);
-      }
-
+      if (toRemove.length > 0) await quadStorage.deleteQuads(toRemove);
+      if (toAdd.length > 0) await quadStorage.setQuads(toAdd);
       return null;
     }
-
     return result;
   }
 
@@ -314,12 +260,9 @@ export class Worlds implements WorldsInterface {
     this.assertAuthenticated();
     const sources = input.sources;
     const targetRefs: WorldReference[] = [];
-
     if (!sources || sources.length === 0) {
       const all = await this.worldStorage.listWorlds(undefined, this.userId!);
-      for (const w of all) {
-        targetRefs.push(w.reference);
-      }
+      for (const w of all) targetRefs.push(w.reference);
     } else {
       for (const src of sources) {
         const ref = resolveWorldReference(src);
@@ -327,438 +270,15 @@ export class Worlds implements WorldsInterface {
         targetRefs.push(ref);
       }
     }
-
     const queryTerms = tokenizeSearchQuery(input.query);
-
-    if (queryTerms.length === 0) {
-      return { results: [] };
-    }
-
+    if (queryTerms.length === 0) return { results: [] };
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkIndexManager
-        .getIndexState(
-          ref,
-        );
-      if (indexState) {
-        indexedRefs.push(ref);
-      } else {
-        unindexedRefs.push(ref);
-      }
+      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(ref);
+      if (indexState) indexedRefs.push(ref);
+      else unindexedRefs.push(ref);
     }
-
-    const chunkResults = indexedRefs.length > 0
-      ? await searchChunks(input, indexedRefs, {
-        chunkIndexManager: this.searchDeps.chunkIndexManager,
-        embeddings: this.searchDeps.embeddings,
-        worldStorage: this.worldStorage,
-        formatWorldName,
-      })
-      : [];
-    const naiveResults = unindexedRefs.length > 0
-      ? await this.searchNaiveFts(unindexedRefs, queryTerms)
-      : [];
-    const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
-      (b.ftsRank! - a.ftsRank!) ||
-      (b.score - a.score) ||
-      // Stable deterministic tie-breakers so offset pagination is consistent.
-      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
-      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
-      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
-      ((a.object ?? "").localeCompare(b.object ?? ""))
-    );
-
-    const requestedPageSize = input.pageSize;
-    if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new InvalidArgumentError("Invalid page size");
-    }
-    const pageSizeRaw =
-      requestedPageSize === undefined || requestedPageSize === 0
-        ? Worlds.DEFAULT_SEARCH_PAGE_SIZE
-        : requestedPageSize;
-    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
-
-    const normalizeStringArray = (arr?: string[]) =>
-      (arr ?? []).map((s) => s.trim()).filter((s) => s.length > 0).sort();
-
-    const sourcesSig = !sources || sources.length === 0
-      ? { mode: "all" as const }
-      : {
-        mode: "explicit" as const,
-        worlds: targetRefs.map(formatWorldName).sort(),
-      };
-
-    const sig = await signPageTokenParams({
-      method: "searchWorlds",
-      query: input.query,
-      sources: sourcesSig,
-      subjects: normalizeStringArray(input.subjects),
-      predicates: normalizeStringArray(input.predicates),
-      types: normalizeStringArray(input.types),
-    });
-
-    const decoded = input.pageToken?.trim()
-      ? decodePageToken(input.pageToken.trim())
-      : null;
-    if (decoded) assertPageTokenSig(decoded, sig);
-    const startIndex = decoded?.o ?? 0;
-
-    const results = allResults.slice(startIndex, startIndex + pageSize);
-    const nextOffset = startIndex + pageSize;
-    const nextPageToken = nextOffset < allResults.length
-      ? encodePageToken({ v: 1, o: nextOffset, sig })
-      : undefined;
-
-    return { results, nextPageToken };
-  }
-
-  /**
-   * Full quad scan + term counts (legacy path when no chunk index exists).
-   */
-  private async searchNaiveFts(
-    targetRefs: WorldReference[],
-    queryTerms: string[],
-  ): Promise<SearchResult[]> {
-    const allResults: Array<{
-      subject: string;
-      predicate: string;
-      object: string;
-      ftsRank: number;
-      world: World;
-    }> = [];
-
-    for (const ref of targetRefs) {
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
-
-      const meta = await this.worldStorage.getWorld(ref);
-      const world: World = {
-        name: formatWorldName(ref),
-        namespace: ref.namespace,
-        id: ref.id,
-        displayName: meta?.displayName ?? "",
-        description: meta?.description,
-        createTime: meta?.createTime ?? 0,
-      };
-
-      for (const q of quads) {
-        const score = ftsTermHits(
-          queryTerms,
-          q.subject,
-          q.predicate,
-          q.object,
-        );
-
-        if (score > 0) {
-          allResults.push({
-            subject: q.subject,
-            predicate: q.predicate,
-            object: q.object,
-            ftsRank: score,
-            world,
-          });
-        }
-      }
-    }
-
-    allResults.sort((a, b) =>
-      (b.ftsRank! - a.ftsRank!) ||
-      // Stable deterministic tie-breakers so offset pagination is consistent.
-      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
-      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
-      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
-      ((a.object ?? "").localeCompare(b.object ?? ""))
-    );
-
-    return allResults.map((r) => ({
-      subject: r.subject,
-      predicate: r.predicate,
-      object: r.object,
-      vecRank: null,
-      ftsRank: r.ftsRank,
-      score: r.ftsRank,
-      world: r.world,
-    }));
-  }
-
-  async import(input: ImportWorldRequest): Promise<void> {
-    const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
-
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-
-    const contentType = input.contentType || "application/n-quads";
-    const data = typeof input.data === "string"
-      ? input.data
-      : new TextDecoder().decode(input.data);
-    const quads = deserialize(data, contentType);
-
-    const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
-    await quadStorage.setQuads(quads);
-  }
-
-  async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
-    const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
-
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-
-    const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
-    const quads = await quadStorage.findQuads([]);
-
-    const contentType = input.contentType || "application/n-quads";
-    const serialized = await serialize(quads, contentType);
-    return new TextEncoder().encode(serialized).buffer as ArrayBuffer;
-  }
-}
-
-function toWorld(stored: StoredWorld): World {
-  return {
-    name: formatWorldName(stored.reference),
-    namespace: stored.reference.namespace,
-    id: stored.reference.id,
-    displayName: stored.displayName,
-    description: stored.description,
-    createTime: stored.createTime,
-  };
-}
-
-/**
- * Reference {@link WorldsInterface} implementation: world metadata, SPARQL over
- * aggregated quad stores, import/export, and hybrid search (chunk index +
- * naive FTS fallback).
- *
- * **Paging**
- * - `listWorlds`: default page size **50**, max **100** (`DEFAULT_LIST_PAGE_SIZE`, `MAX_PAGE_SIZE`).
- * - `search`: default **20**, max **100** (`DEFAULT_SEARCH_PAGE_SIZE`). Tokens bind to
- *   query + source/subject/predicate/type filters via {@link signPageTokenParams}.
- *
- * **Search ordering** merges indexed + naive hits, sorted by `ftsRank`, `score`, then
- * stable lexicographic tiebreakers (`world.name`, `subject`, `predicate`, `object`) for
- * consistent offset paging.
- */
-export class Worlds implements WorldsInterface {
-  private readonly worldStorage: WorldStorage;
-  private readonly quadStorageManager: QuadStorageManager;
-  private readonly searchDeps: {
-    chunkIndexManager: ChunkIndexManager;
-    embeddings: EmbeddingsService;
-  };
-  private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
-  private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
-  private static readonly MAX_PAGE_SIZE = 100;
-
-  constructor(options: WorldsOptions) {
-    this.worldStorage = options.worldStorage;
-    this.quadStorageManager = options.quadStorageManager;
-    this.searchDeps = options.chunkIndexManager && options.embeddings
-      ? {
-        chunkIndexManager: options.chunkIndexManager,
-        embeddings: options.embeddings,
-      }
-      : {
-        chunkIndexManager: new InMemoryChunkIndexManager(),
-        embeddings: new FakeEmbeddingsService(),
-      };
-  }
-
-  async getWorld(input: GetWorldRequest): Promise<World | null> {
-    const reference = resolveWorldReference(input.source);
-    const stored = await this.worldStorage.getWorld(reference);
-    return stored ? toWorld(stored) : null;
-  }
-
-  async createWorld(input: CreateWorldRequest): Promise<World> {
-    const reference: WorldReference = {
-      namespace: input.namespace,
-      id: input.id,
-    };
-    const stored: StoredWorld = {
-      reference,
-      displayName: input.displayName,
-      description: input.description,
-      createTime: Date.now(),
-    };
-    await this.worldStorage.createWorld(stored);
-    return toWorld(stored);
-  }
-
-  async updateWorld(input: UpdateWorldRequest): Promise<World> {
-    const reference = resolveWorldReference(input.source);
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-    const updated: StoredWorld = {
-      ...existing,
-      displayName: input.displayName ?? existing.displayName,
-      description: input.description ?? existing.description,
-    };
-    await this.worldStorage.updateWorld(updated);
-    return toWorld(updated);
-  }
-
-  async deleteWorld(input: DeleteWorldRequest): Promise<void> {
-    const reference = resolveWorldReference(input.source);
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-    await this.worldStorage.deleteWorld(reference);
-    await this.quadStorageManager.deleteQuadStorage(reference);
-  }
-
-  async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
-    const namespaceFilter = input?.parent?.trim();
-    const all = await this.worldStorage.listWorlds(namespaceFilter);
-
-    const requestedPageSize = input?.pageSize;
-    if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new InvalidArgumentError("Invalid page size");
-    }
-    const pageSizeRaw =
-      requestedPageSize === undefined || requestedPageSize === 0
-        ? Worlds.DEFAULT_LIST_PAGE_SIZE
-        : requestedPageSize;
-    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
-
-    const sig = await signPageTokenParams({
-      method: "listWorlds",
-      parent: namespaceFilter ?? "",
-    });
-
-    const decoded = input?.pageToken?.trim()
-      ? decodePageToken(input.pageToken.trim())
-      : null;
-    if (decoded) assertPageTokenSig(decoded, sig);
-    const startIndex = decoded?.o ?? 0;
-
-    const worlds = all.slice(startIndex, startIndex + pageSize).map(toWorld);
-    const nextOffset = startIndex + pageSize;
-    const nextPageToken = nextOffset < all.length
-      ? encodePageToken({ v: 1, o: nextOffset, sig })
-      : undefined;
-
-    return { worlds, nextPageToken };
-  }
-
-  async sparql(input: SparqlRequest): Promise<SparqlResponse> {
-    const sources = input.sources;
-    if (!sources || sources.length === 0) {
-      throw new InvalidArgumentError("sparql requires at least one source");
-    }
-
-    const references = sources.map((s) => resolveWorldReference(s));
-    for (const ref of references) {
-      const existing = await this.worldStorage.getWorld(ref);
-      if (!existing) {
-        throw new WorldNotFoundError(ref);
-      }
-    }
-
-    // Aggregate quads from all source worlds into a single store
-    let allQuads: StoredQuad[] = [];
-    for (const ref of references) {
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
-      allQuads = allQuads.concat(quads);
-    }
-
-    const store = storeFromQuads(allQuads);
-
-    // Execute the query
-    const result = await executeSparql(store, input.query, {
-      baseIRI: input.defaultGraphUris?.[0],
-    });
-
-    // Handle SPARQL UPDATE (void result) - only supported for single source
-    if (result === null) {
-      if (references.length > 1) {
-        throw new SparqlUnsupportedOperationError(
-          "SPARQL UPDATE is only supported for a single source world",
-        );
-      }
-      const ref = references[0];
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-
-      const currentQuads = await quadStorage.findQuads([]);
-      const newStore = store;
-
-      const newQuads = quadsFromStore(newStore);
-      const currentQuadSet = new Set(
-        currentQuads.map(storedQuadKey),
-      );
-      const newQuadSet = new Set(
-        newQuads.map(storedQuadKey),
-      );
-
-      const toRemove = currentQuads.filter((q: StoredQuad) =>
-        !newQuadSet.has(storedQuadKey(q))
-      );
-      const toAdd = newQuads.filter((q: StoredQuad) =>
-        !currentQuadSet.has(storedQuadKey(q))
-      );
-
-      if (toRemove.length > 0) {
-        await quadStorage.deleteQuads(toRemove);
-      }
-      if (toAdd.length > 0) {
-        await quadStorage.setQuads(toAdd);
-      }
-
-      return null;
-    }
-
-    return result;
-  }
-
-  async search(input: SearchRequest): Promise<SearchResponse> {
-    const sources = input.sources;
-    const targetRefs: WorldReference[] = [];
-
-    if (!sources || sources.length === 0) {
-      const all = await this.worldStorage.listWorlds(undefined);
-      for (const w of all) {
-        targetRefs.push(w.reference);
-      }
-    } else {
-      for (const src of sources) {
-        const ref = resolveWorldReference(src);
-        const existing = await this.worldStorage.getWorld(ref);
-        if (!existing) {
-          throw new WorldNotFoundError(ref);
-        }
-        targetRefs.push(ref);
-      }
-    }
-
-    const queryTerms = tokenizeSearchQuery(input.query);
-
-    if (queryTerms.length === 0) {
-      return { results: [] };
-    }
-
-    const indexedRefs: WorldReference[] = [];
-    const unindexedRefs: WorldReference[] = [];
-    for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkIndexManager
-        .getIndexState(
-          ref,
-        );
-      if (indexState) {
-        indexedRefs.push(ref);
-      } else {
-        unindexedRefs.push(ref);
-      }
-    }
-
     const chunkResults = indexedRefs.length > 0
       ? await searchChunks(input, indexedRefs, {
         chunkIndexManager: this.searchDeps.chunkIndexManager,
@@ -773,33 +293,22 @@ export class Worlds implements WorldsInterface {
     const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
       (b.ftsRank! - a.ftsRank!) ||
       (b.score - a.score) ||
-      // Stable deterministic tie-breakers so offset pagination is consistent.
-      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
-      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
-      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
-      ((a.object ?? "").localeCompare(b.object ?? ""))
+      (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
+      (a.subject ?? "").localeCompare(b.subject ?? "") ||
+      (a.predicate ?? "").localeCompare(b.predicate ?? "") ||
+      (a.object ?? "").localeCompare(b.object ?? "")
     );
-
-    const requestedPageSize = input.pageSize;
-    if (requestedPageSize !== undefined && requestedPageSize < 0) {
-      throw new InvalidArgumentError("Invalid page size");
-    }
-    const pageSizeRaw =
-      requestedPageSize === undefined || requestedPageSize === 0
-        ? Worlds.DEFAULT_SEARCH_PAGE_SIZE
-        : requestedPageSize;
-    const pageSize = Math.min(pageSizeRaw, Worlds.MAX_PAGE_SIZE);
-
+    const pageSizeRaw = input.pageSize === undefined || input.pageSize === 0
+      ? DEFAULT_SEARCH_PAGE_SIZE
+      : input.pageSize < 0
+      ? (() => { throw new InvalidArgumentError("Invalid page size"); })()
+      : input.pageSize;
+    const pageSize = Math.min(pageSizeRaw, MAX_PAGE_SIZE);
     const normalizeStringArray = (arr?: string[]) =>
       (arr ?? []).map((s) => s.trim()).filter((s) => s.length > 0).sort();
-
     const sourcesSig = !sources || sources.length === 0
       ? { mode: "all" as const }
-      : {
-        mode: "explicit" as const,
-        worlds: targetRefs.map(formatWorldName).sort(),
-      };
-
+      : { mode: "explicit" as const, worlds: targetRefs.map(formatWorldName).sort() };
     const sig = await signPageTokenParams({
       method: "searchWorlds",
       query: input.query,
@@ -808,25 +317,18 @@ export class Worlds implements WorldsInterface {
       predicates: normalizeStringArray(input.predicates),
       types: normalizeStringArray(input.types),
     });
-
     const decoded = input.pageToken?.trim()
       ? decodePageToken(input.pageToken.trim())
       : null;
     if (decoded) assertPageTokenSig(decoded, sig);
     const startIndex = decoded?.o ?? 0;
-
     const results = allResults.slice(startIndex, startIndex + pageSize);
-    const nextOffset = startIndex + pageSize;
-    const nextPageToken = nextOffset < allResults.length
-      ? encodePageToken({ v: 1, o: nextOffset, sig })
+    const nextPageToken = startIndex + pageSize < allResults.length
+      ? encodePageToken({ v: 1, o: startIndex + pageSize, sig })
       : undefined;
-
     return { results, nextPageToken };
   }
 
-  /**
-   * Full quad scan + term counts (legacy path when no chunk index exists).
-   */
   private async searchNaiveFts(
     targetRefs: WorldReference[],
     queryTerms: string[],
@@ -838,11 +340,9 @@ export class Worlds implements WorldsInterface {
       ftsRank: number;
       world: World;
     }> = [];
-
     for (const ref of targetRefs) {
       const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
       const quads = await quadStorage.findQuads([]);
-
       const meta = await this.worldStorage.getWorld(ref);
       const world: World = {
         name: formatWorldName(ref),
@@ -852,36 +352,20 @@ export class Worlds implements WorldsInterface {
         description: meta?.description,
         createTime: meta?.createTime ?? 0,
       };
-
       for (const q of quads) {
-        const score = ftsTermHits(
-          queryTerms,
-          q.subject,
-          q.predicate,
-          q.object,
-        );
-
+        const score = ftsTermHits(queryTerms, q.subject, q.predicate, q.object);
         if (score > 0) {
-          allResults.push({
-            subject: q.subject,
-            predicate: q.predicate,
-            object: q.object,
-            ftsRank: score,
-            world,
-          });
+          allResults.push({ subject: q.subject, predicate: q.predicate, object: q.object, ftsRank: score, world });
         }
       }
     }
-
     allResults.sort((a, b) =>
       (b.ftsRank! - a.ftsRank!) ||
-      // Stable deterministic tie-breakers so offset pagination is consistent.
-      ((a.world.name ?? "").localeCompare(b.world.name ?? "")) ||
-      ((a.subject ?? "").localeCompare(b.subject ?? "")) ||
-      ((a.predicate ?? "").localeCompare(b.predicate ?? "")) ||
-      ((a.object ?? "").localeCompare(b.object ?? ""))
+      (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
+      (a.subject ?? "").localeCompare(b.subject ?? "") ||
+      (a.predicate ?? "").localeCompare(b.predicate ?? "") ||
+      (a.object ?? "").localeCompare(b.object ?? "")
     );
-
     return allResults.map((r) => ({
       subject: r.subject,
       predicate: r.predicate,
@@ -895,31 +379,21 @@ export class Worlds implements WorldsInterface {
 
   async import(input: ImportWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-
+    await this.assertOwnsWorld(reference);
     const contentType = input.contentType || "application/n-quads";
     const data = typeof input.data === "string"
       ? input.data
       : new TextDecoder().decode(input.data);
     const quads = deserialize(data, contentType);
-
     const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
     await quadStorage.setQuads(quads);
   }
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
     const reference = resolveWorldReference(input.source);
-    const existing = await this.worldStorage.getWorld(reference);
-    if (!existing) {
-      throw new WorldNotFoundError(reference);
-    }
-
+    await this.assertOwnsWorld(reference);
     const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
     const quads = await quadStorage.findQuads([]);
-
     const contentType = input.contentType || "application/n-quads";
     const serialized = await serialize(quads, contentType);
     return new TextEncoder().encode(serialized).buffer as ArrayBuffer;

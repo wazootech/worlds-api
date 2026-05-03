@@ -1,8 +1,11 @@
 import { createRpcApp } from "#/rpc/mod.ts";
 import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
 
+const { worldStorage, quadStorageManager } = createWorldsWithLibsql();
+
 const app = createRpcApp({
-  worlds: createWorldsWithLibsql(),
+  worldStorage,
+  quadStorageManager,
 });
 
 export default {
