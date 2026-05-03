@@ -18,7 +18,7 @@
  * `src/core/worlds-factory.ts`, or your own implementation.
  *
  * ```typescript
- * import { createRpcApp } from "#/api/server/mod.ts";
+ * import { createRpcApp } from "#/api/rpc/mod.ts";
  * import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
  *
  * const app = createRpcApp({ worlds: createWorldsWithLibsql() });
@@ -50,22 +50,22 @@ import type { WorldsInterface } from "#/core/interfaces.ts";
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
-import { handleRpc } from "#/api/rpc/handler.ts";
+import { handleRpc } from "./handler.ts";
 import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
 import type { WorldsRpcError } from "#/api/openapi/generated/types.gen.ts";
-import type { TransportConfig } from "#/api/server/transport/types.ts";
+import type { TransportConfig } from "./transport/types.ts";
 import {
   loadTransportConfigFromEnv,
   mergeTransportConfig,
-} from "#/api/server/transport/env.ts";
-import { applyTransportPreset } from "#/api/server/transport/preset.ts";
+} from "./transport/env.ts";
+import { applyTransportPreset } from "./transport/preset.ts";
 
-export type { TransportConfig } from "#/api/server/transport/types.ts";
+export type { TransportConfig } from "./transport/types.ts";
 export {
   loadTransportConfigFromEnv,
   mergeTransportConfig,
-} from "#/api/server/transport/env.ts";
-export { applyTransportPreset } from "#/api/server/transport/preset.ts";
+} from "./transport/env.ts";
+export { applyTransportPreset } from "./transport/preset.ts";
 
 /** Options for {@link createRpcApp}: worlds instance plus transport overrides. */
 export type RpcAppOptions = {
