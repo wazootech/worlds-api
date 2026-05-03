@@ -38,8 +38,15 @@
  * ## HTTP hardening
  *
  * {@link applyReferenceServingPreset} applies CORS, `/rpc` body size limits, and
- * rate limiting (env vars documented there). **Authentication is not enforced in
- * this module** — add Hono middleware or enforce auth/TLS at your edge.
+ * rate limiting via **environment variables** (see its table). **Authentication is not
+ * enforced here** — add Hono middleware or enforce auth/TLS at your edge.
+ *
+ * Env-first tuning matches typical **deployed** setups (Kubernetes, systemd, Fly,
+ * Docker, etc.): configuration is injected per process without reading a repo file.
+ * Secrets stay out of config files; flags would duplicate env in production. For fixed
+ * local defaults, wrapper scripts can `export` vars before importing this module.
+ * Embedding this library with hard-coded transport policy is supported by composing
+ * your own Hono app and calling {@link mountRpcPost} (or cloning the preset logic).
  */
 import { Hono } from "@hono/hono";
 import type { Context } from "@hono/hono";
@@ -66,6 +73,21 @@ function createDefaultOptions(): ApiServerOptions {
   const quadStorageManager = new InMemoryQuadStorageManager();
   const worlds = new Worlds(worldStorage, quadStorageManager);
   return { worlds };
+}
+
+function resolveApiServerOptions(
+  partial: Partial<ApiServerOptions>,
+): ApiServerOptions {
+  return { ...createDefaultOptions(), ...partial };
+}
+
+function createHonoRpcApp(worlds: WorldsInterface, preset: boolean): Hono {
+  const app = new Hono();
+  if (preset) {
+    applyReferenceServingPreset(app);
+  }
+  mountRpcPost(app, worlds);
+  return app;
 }
 
 function readBodyLimitBytes(): number {
@@ -131,6 +153,9 @@ function rateLimitKey(c: Context): string {
  * | `WORLDS_RATE_LIMIT_MAX` | Max requests per window per key |
  *
  * **Auth is not enforced here** — add middleware or terminate TLS/auth at your edge as needed.
+ *
+ * Values are read from the environment **when middleware is wired** — not from a CLI or JSON
+ * file — so deployments can inject tuning without rebuilding the artifact.
  */
 export function applyReferenceServingPreset(app: Hono): void {
   app.use(
@@ -171,7 +196,8 @@ export function applyReferenceServingPreset(app: Hono): void {
   );
 }
 
-function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
+/** Mounts `POST /rpc` JSON-RPC handling. Compose with {@link applyReferenceServingPreset} as needed. */
+export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
   app.post("/rpc", async (c) => {
     const req = (await c.req.json()) as WorldsRpcRequest;
     const result = await handleRpc(worlds, req);
@@ -189,10 +215,8 @@ function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
  * {@link createMainApp} for defaults.
  */
 export function createRpcApp(options: Partial<ApiServerOptions> = {}) {
-  const { worlds } = { ...createDefaultOptions(), ...options };
-  const app = new Hono();
-  mountRpcPost(app, worlds);
-  return app;
+  const { worlds } = resolveApiServerOptions(options);
+  return createHonoRpcApp(worlds, false);
 }
 
 /**
@@ -209,11 +233,8 @@ export function createRpcApp(options: Partial<ApiServerOptions> = {}) {
  * ({@code 413} when exceeded), and in-process `/rpc` rate limiting ({@code 429} when exceeded).
  */
 export function createMainApp(options: Partial<ApiServerOptions> = {}) {
-  const { worlds } = { ...createDefaultOptions(), ...options };
-  const app = new Hono();
-  applyReferenceServingPreset(app);
-  mountRpcPost(app, worlds);
-  return app;
+  const { worlds } = resolveApiServerOptions(options);
+  return createHonoRpcApp(worlds, true);
 }
 
 export const mainApp = createMainApp();
