@@ -1,3 +1,5 @@
 import { mainApp } from "#/api/server/mod.ts";
 
-Deno.serve((req) => mainApp.fetch(req));
+export default {
+  fetch: (req: Request) => mainApp.fetch(req),
+} satisfies Deno.ServeDefaultExport;

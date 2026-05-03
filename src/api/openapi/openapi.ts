@@ -28,10 +28,10 @@ export const document: OpenAPIV3_1.Document = {
           "JSON body: discriminated `{ action, request }` per `WorldsRpcRequest`. " +
           "Success: HTTP 200 with `{ action, response }`. Any RPC failure (including " +
           "`NOT_FOUND`): HTTP 400 with `{ action, error: { code, message } }` — classify " +
-          "RPC failures with `error.code`, not HTTP status alone. The bundled reference " +
-          "server enables CORS, caps JSON body size (HTTP **413** when exceeded), applies " +
-          "in-process rate limiting on `/rpc` (HTTP **429**); tune via env (see Worlds " +
-          "HTTP server module JSDoc). It does **not** authenticate callers — " +
+          "RPC failures with `error.code`, not HTTP status alone. With the default " +
+          "transport preset (see `src/api/server`), CORS is enabled, JSON body size is " +
+          "capped (HTTP **413** when exceeded), and `/rpc` is rate limited (HTTP **429**); " +
+          "tune via env or TransportConfig. This stack does **not** authenticate callers — " +
           "add middleware or enforce auth upstream.",
         operationId: "rpc",
         requestBody: {
@@ -67,11 +67,11 @@ export const document: OpenAPIV3_1.Document = {
           },
           "413": {
             description:
-              "Request body too large (bundled reference server body-size cap)",
+              "Request body too large (HTTP transport body-size limit)",
           },
           "429": {
             description:
-              "Too many requests (bundled reference server rate limiting on `/rpc`)",
+              "Too many requests (HTTP transport rate limiting on `/rpc`)",
           },
         },
       },

@@ -15,6 +15,13 @@ Use `deno -h` to get a list of commands if you need more context.
 
 ### `./src/api`
 
+**Worlds RPC** is the JSON-over-HTTP API surface in this tree: the OpenAPI
+document and codegen (`openapi/`), the discriminated action handler (`rpc/`),
+and the optional Hono +
+[`deno serve`](https://docs.deno.com/runtime/reference/cli/serve/) entry
+(`server/`). Together they define how clients call `WorldsInterface` over
+`POST /rpc`.
+
 Note: Requests resolve through the core Worlds class implementing
 `WorldsInterface`.
 
@@ -22,11 +29,14 @@ Note: Requests resolve through the core Worlds class implementing
   types and validators under `./openapi/generated/`.
 - `./rpc`: RPC handler. Routes JSON envelopes to `WorldsInterface` and maps
   typed errors to stable RPC codes.
-- `./server`: Standalone HTTP server (`POST /rpc`). Default stack enables CORS,
-  a JSON body-size cap (**413**), and `/rpc` rate limiting (**429**); tune via
-  env in the module JSDoc. **Authentication is not included.** For embedding,
-  `createRpcApp` exposes RPC only; `applyReferenceServingPreset` adds the same
-  middleware chain on any `Hono` before you mount `/rpc`.
+- `./server`: Standalone HTTP server (`POST /rpc`). Entry uses
+  [`deno serve`](https://docs.deno.com/runtime/reference/cli/serve/) with a
+  default `fetch` export. Default stack enables CORS, a JSON body-size cap
+  (**413**), and `/rpc` rate limiting (**429**); tune via env
+  (`loadTransportConfigFromEnv`) or `MainAppOptions.transport`. **Authentication
+  is not included.** For embedding, `createRpcApp` exposes RPC only;
+  `applyTransportPreset` wires transport middleware from an explicit
+  `TransportConfig` before you mount `/rpc`.
 
 ### Documentation policy
 
@@ -42,27 +52,24 @@ modules rather than maintaining separate architecture markdown files.
 | Typed errors                                       | `src/core/`        |
 | Page tokens (list/search)                          | `src/core/`        |
 | OpenAPI schema and generated types                 | `src/api/openapi/` |
-| Request handlers and error mapping                 | `src/api/rpc/`     |
+| Worlds RPC handler (`POST /rpc`)                   | `src/api/rpc/`     |
+| HTTP transport (`deno serve`, Hono)                | `src/api/server/`  |
 | SPARQL execution and unsupported shapes            | `src/rdf/sparql/`  |
 | Quad storage invariants                            | `src/rdf/storage/` |
 | Chunk indexing + search                            | `src/indexing/`    |
 | Embedding models                                   | `src/embeddings/`  |
 
-### Reference HTTP server vs RPC errors
+### Worlds RPC errors vs transport-only HTTP status
 
-The bundled server returns **HTTP 400** for every RPC-level failure (including
-`NOT_FOUND` and `INTERNAL`). Clients must classify those outcomes using the JSON
-field **`error.code`**, not HTTP status alone (`error.code` values are stable
-for clients; `message` strings are not contractual).
+For **`POST /rpc`**, application-level failures are returned as **HTTP 400**
+with the Worlds RPC error envelope (including `NOT_FOUND` and `INTERNAL`).
+Clients must classify those outcomes using the JSON field **`error.code`**, not
+HTTP status alone (`error.code` values are stable for clients; `message` strings
+are not contractual).
 
-Separate transport limits may use other statuses (e.g. **413** body too large,
-**429** rate limited) with non-RPC JSON bodies.
-
-### Package version vs OpenAPI `info.version`
-
-**Breaking behavior** follows SemVer on the package version in **`deno.json`**.
-The OpenAPI `info.version` labels the generated OpenAPI document for tooling and
-may differ until intentionally aligned.
+That is separate from **transport-only** responses: the default HTTP stack may
+return **413** (body too large) or **429** (rate limited) with bodies that are
+not the Worlds RPC error shape.
 
 ### `./src/embeddings`
 

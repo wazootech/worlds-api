@@ -516,11 +516,11 @@ export type RpcErrors = {
      */
     400: WorldsRpcError;
     /**
-     * Request body too large (bundled reference server body-size cap)
+     * Request body too large (HTTP transport body-size limit)
      */
     413: unknown;
     /**
-     * Too many requests (bundled reference server rate limiting on `/rpc`)
+     * Too many requests (HTTP transport rate limiting on `/rpc`)
      */
     429: unknown;
 };

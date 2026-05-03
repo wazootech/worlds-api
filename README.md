@@ -28,17 +28,21 @@ deno install
 
 ### Run the API in watch mode
 
+Uses [`deno serve`](https://docs.deno.com/runtime/reference/cli/serve/)
+(`main.ts` default-exports `fetch`). Default port is **8000**; use
+`deno serve --port=3000 main.ts` to override.
+
 ```bash
 deno task dev
 ```
 
 ### Production and deployment
 
-The default root `main.ts` serves `mainApp` with **in-memory** storage (data
-does not survive restart). For **Turso / libSQL-backed** persistence,
-environment variables (`LIBSQL_URL`, `LIBSQL_AUTH_TOKEN`), and why the stack
-standardizes on **`@libsql/client`**, see the module documentation on the
-reference server:
+The default root `main.ts` default-exports `fetch` for **`deno serve`** and
+serves `mainApp` with **in-memory** storage (data does not survive restart). For
+**Turso / libSQL-backed** persistence, environment variables (`LIBSQL_URL`,
+`LIBSQL_AUTH_TOKEN`), and why the stack standardizes on **`@libsql/client`**,
+see the HTTP server module docs:
 
 ```bash
 deno doc src/api/server/main.ts

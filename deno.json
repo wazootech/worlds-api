@@ -22,7 +22,8 @@
     "./vendor/jsonld-context-parser"
   ],
   "tasks": {
-    "dev": "deno run --watch main.ts",
+    "dev": "deno serve --watch main.ts",
+    "serve": "deno serve main.ts",
     "bundle:browser": "deno bundle --no-check --platform=browser src/rdf/rdf/rdf.ts; deno bundle --no-check --platform=browser src/rdf/sparql/sparql.ts",
     "test": "deno test --allow-all",
     "generate": "deno run -A src/api/openapi/openapi.ts"
