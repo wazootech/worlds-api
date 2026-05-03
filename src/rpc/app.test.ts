@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { createRpcApp } from "#/api/rpc/mod.ts";
+import { createRpcApp } from "#/rpc/mod.ts";
 
 /** `hono-rate-limiter` installs a housekeeping interval on first use — disable op sanitization here. */
 const rpcAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };

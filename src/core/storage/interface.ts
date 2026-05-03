@@ -1,4 +1,4 @@
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 export type { WorldReference };
 import type { StoredWorld } from "./types.ts";
 export type { StoredWorld };

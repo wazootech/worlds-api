@@ -4,7 +4,7 @@ import type {
   ChunkIndexState,
   ChunkRecord,
 } from "./interface.ts";
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 
 /** Shared contract tests for any ChunkIndexManager implementation. */

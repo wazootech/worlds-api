@@ -18,7 +18,7 @@
  * `src/core/worlds-factory.ts`, or your own implementation.
  *
  * ```typescript
- * import { createRpcApp } from "#/api/rpc/mod.ts";
+ * import { createRpcApp } from "#/rpc/mod.ts";
  * import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
  *
  * const app = createRpcApp({ worlds: createWorldsWithLibsql() });
@@ -51,8 +51,8 @@ import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
 import { handleRpc } from "./handler.ts";
-import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
-import type { WorldsRpcError } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
+import type { WorldsRpcError } from "#/rpc/openapi/generated/types.gen.ts";
 import type { TransportConfig } from "./transport/types.ts";
 import {
   loadTransportConfigFromEnv,

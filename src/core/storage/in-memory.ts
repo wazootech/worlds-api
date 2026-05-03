@@ -1,4 +1,4 @@
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { StoredWorld, WorldStorage } from "./interface.ts";
 import { WorldAlreadyExistsError } from "#/core/errors.ts";

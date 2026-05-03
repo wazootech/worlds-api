@@ -4,7 +4,7 @@ import type {
   SparqlAskResults,
   SparqlSelectResults,
   SparqlValue,
-} from "#/api/openapi/generated/types.gen.ts";
+} from "#/rpc/openapi/generated/types.gen.ts";
 import {
   SparqlSyntaxError,
   SparqlUnsupportedOperationError,

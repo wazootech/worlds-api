@@ -1,4 +1,4 @@
-import { createRpcApp } from "#/api/rpc/mod.ts";
+import { createRpcApp } from "#/rpc/mod.ts";
 import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
 
 const app = createRpcApp({

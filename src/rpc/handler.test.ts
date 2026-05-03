@@ -2,8 +2,8 @@ import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { Worlds } from "#/core/worlds.ts";
-import { handleRpc } from "#/api/rpc/handler.ts";
-import type { WorldsRpcRequest } from "#/api/openapi/generated/types.gen.ts";
+import { handleRpc } from "#/rpc/handler.ts";
+import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
 

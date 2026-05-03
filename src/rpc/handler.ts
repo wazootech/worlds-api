@@ -4,8 +4,8 @@ import type {
   WorldsRpcError,
   WorldsRpcRequest,
   WorldsRpcResponse,
-} from "#/api/openapi/generated/types.gen.ts";
-import { zWorldsRpcRequest } from "#/api/openapi/generated/zod.gen.ts";
+} from "#/rpc/openapi/generated/types.gen.ts";
+import { zWorldsRpcRequest } from "#/rpc/openapi/generated/zod.gen.ts";
 import {
   InvalidArgumentError,
   InvalidPageTokenError,

@@ -14,7 +14,7 @@ import type {
   UpdateWorldRequest,
   World,
   WorldReference,
-} from "#/api/openapi/generated/types.gen.ts";
+} from "#/rpc/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { searchChunks } from "#/indexing/chunks-search-engine.ts";

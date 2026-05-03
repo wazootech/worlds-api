@@ -3,7 +3,7 @@ import type {
   SearchResult,
   World,
   WorldReference,
-} from "#/api/openapi/generated/types.gen.ts";
+} from "#/rpc/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";

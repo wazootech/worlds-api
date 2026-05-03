@@ -1,7 +1,7 @@
 import { DataFactory, Parser, Store } from "n3";
 import type { BlankNode, NamedNode, Quad, Term } from "n3";
 import { canonize } from "rdf-canonize";
-import type { ContentType } from "#/api/openapi/generated/types.gen.ts";
+import type { ContentType } from "#/rpc/openapi/generated/types.gen.ts";
 import { resolveSkolemPrefix, skolemizeBlankNodeLabel } from "./skolem.ts";
 
 /**

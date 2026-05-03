@@ -1,5 +1,5 @@
 import { type Client } from "@libsql/client";
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import type { StoredWorld } from "./types.ts";
 import type { WorldStorage } from "./interface.ts";
 import { WorldAlreadyExistsError, WorldNotFoundError } from "#/core/errors.ts";

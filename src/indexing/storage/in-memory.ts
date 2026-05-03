@@ -1,4 +1,4 @@
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import { RDF_TYPE } from "#/rdf/rdf/vocab.ts";
 import { ftsTermHits } from "#/indexing/fts.ts";

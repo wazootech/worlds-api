@@ -1,4 +1,4 @@
-import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
+import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { storedQuadToN3 } from "#/rdf/rdf/rdf.ts";
 import { skolemizeStoredQuad } from "#/rdf/rdf/skolem.ts";
 import { META_PREDICATES } from "#/rdf/rdf/vocab.ts";

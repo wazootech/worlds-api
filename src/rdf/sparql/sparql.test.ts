@@ -3,7 +3,7 @@ import type { Quad } from "n3";
 import { DataFactory, Parser, Store } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
-import type { SparqlSelectResults } from "#/api/openapi/generated/types.gen.ts";
+import type { SparqlSelectResults } from "#/rpc/openapi/generated/types.gen.ts";
 import { executeSparql } from "./sparql.ts";
 
 Deno.test("Comunica QueryEngine can query an n3 Store (RDFJS)", async () => {

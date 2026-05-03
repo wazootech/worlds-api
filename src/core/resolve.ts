@@ -1,7 +1,7 @@
 import type {
   Source,
   WorldReference,
-} from "#/api/openapi/generated/types.gen.ts";
+} from "#/rpc/openapi/generated/types.gen.ts";
 
 /**
  * WorldRefError is an error that occurs when a world reference is invalid.
