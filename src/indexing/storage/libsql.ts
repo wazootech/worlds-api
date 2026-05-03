@@ -7,7 +7,7 @@ import type {
   ChunkIndexSearchQuery,
 } from "./interface.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
-import { RDF_TYPE } from "#/rdf/rdf/vocab.ts";
+import { RDF_TYPE } from "#/rdf/vocab.ts";
 import { ftsTermHits } from "#/indexing/fts.ts";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

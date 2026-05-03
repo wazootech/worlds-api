@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
-import { storedQuadToN3 } from "#/rdf/rdf/rdf.ts";
-import { skolemizeStoredQuad } from "#/rdf/rdf/skolem.ts";
-import { META_PREDICATES } from "#/rdf/rdf/vocab.ts";
+import { storedQuadToN3 } from "#/rdf/rdf.ts";
+import { skolemizeStoredQuad } from "#/rdf/skolem.ts";
+import { META_PREDICATES } from "#/rdf/vocab.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
@@ -37,7 +37,7 @@ async function sha256Hex(msg: string): Promise<string> {
  * Patch handler: maintains chunk + embedding records for **literal** object
  * values (non-empty). Skips `META_PREDICATES` and non-literal objects;
  * subject IRIs and blank nodes are not embedded as searchable text. Ingest-time
- * blank skolemization vs content-derived quad ids live in `src/rdf/rdf/`
+ * blank skolemization vs content-derived quad ids live in `src/rdf/`
  * (`skolemizeStoredQuad`, ingest).
  */
 export class SearchIndexHandler implements PatchHandler {

@@ -36,7 +36,7 @@ import {
   quadsFromStore,
   serialize,
   storeFromQuads,
-} from "#/rdf/rdf/rdf.ts";
+} from "#/rdf/rdf.ts";
 import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";

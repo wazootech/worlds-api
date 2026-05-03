@@ -2,7 +2,7 @@ import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import type { Quad } from "n3";
 import { canonize } from "rdf-canonize";
 import { encodeBase64Url } from "@std/encoding/base64url";
-import { storedQuadToN3 } from "#/rdf/rdf/rdf.ts";
+import { storedQuadToN3 } from "#/rdf/rdf.ts";
 
 function opaqueIdFromText(text: string): string {
   const encoded = new TextEncoder().encode(text);
