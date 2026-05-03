@@ -7,21 +7,21 @@
  *
  * The workspace root `main.ts` [default-exports](https://docs.deno.com/runtime/reference/cli/serve/)
  * a `fetch` handler for **`deno serve`** (`deno task dev` wraps `deno serve --watch`).
- * {@link createRpcServer} builds the default {@link rpcServer}.
+ * {@link createRpcApp} builds the default app.
  *
  * ## Deployment and persistence
  *
- * {@link createRpcServer} and {@link createRpcApp} default to a {@link Worlds}
+ * {@link createRpcApp} defaults to a {@link Worlds}
  * instance backed by **in-memory** storage (single process; **data is lost on
  * restart**). For production, pass a {@link WorldsInterface} built with libSQL /
  * Turso — typically via `createWorldsWithLibsql()` from
  * `src/core/worlds-factory.ts`, or your own implementation.
  *
  * ```typescript
- * import { createRpcServer } from "#/api/server/mod.ts";
+ * import { createRpcApp } from "#/api/server/mod.ts";
  * import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
  *
- * const app = createRpcServer({ worlds: createWorldsWithLibsql() });
+ * const app = createRpcApp({ worlds: createWorldsWithLibsql() });
  * export default {
  *   fetch: (req: Request) => app.fetch(req),
  * } satisfies Deno.ServeDefaultExport;
@@ -41,7 +41,7 @@
  *
  * {@link applyTransportPreset} applies CORS, `/rpc` body limits, and rate limiting from a
  * {@link TransportConfig}. Production defaults load from the environment via
- * {@link loadTransportConfigFromEnv}; pass {@link MainAppOptions.transport} to override
+ * {@link loadTransportConfigFromEnv}; pass {@link RpcAppOptions.transport} to override
  * programmatically (tests, embedding). **Authentication is not enforced here** — add
  * Hono middleware or enforce auth/TLS at your edge.
  */
@@ -67,27 +67,24 @@ export {
 } from "#/api/server/transport/env.ts";
 export { applyTransportPreset } from "#/api/server/transport/preset.ts";
 
-/** Dependency injection for the API server: the Worlds instance backing `POST /rpc`. */
-export interface ApiServerOptions {
-  worlds: WorldsInterface;
-}
-
-/** Options for {@link createMainApp}: optional `worlds` plus transport overrides. */
-export type MainAppOptions = Partial<ApiServerOptions> & {
+/** Options for {@link createRpcApp}: worlds instance plus transport overrides. */
+export type RpcAppOptions = {
+  worlds?: WorldsInterface;
   transport?: Partial<TransportConfig>;
 };
 
-function createDefaultOptions(): ApiServerOptions {
+function createDefaultOptions(): RpcAppOptions {
   const worldStorage = new InMemoryWorldStorage();
   const quadStorageManager = new InMemoryQuadStorageManager();
   const worlds = new Worlds({ worldStorage, quadStorageManager });
   return { worlds };
 }
 
-function resolveApiServerOptions(
-  partial: Partial<ApiServerOptions>,
-): ApiServerOptions {
-  return { ...createDefaultOptions(), ...partial };
+function resolveRpcAppOptions(
+  partial: RpcAppOptions,
+): Required<Pick<RpcAppOptions, "worlds">> {
+  const resolved = { ...createDefaultOptions(), ...partial };
+  return resolved as Required<Pick<RpcAppOptions, "worlds">>;
 }
 
 function createHonoRpcApp(
@@ -115,37 +112,24 @@ export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
 }
 
 /**
- * Minimal Hono app: **only** `POST /rpc` (no CORS, body cap, or rate limiting).
- * For custom stacks call {@link applyTransportPreset} with a {@link TransportConfig},
- * then {@link mountRpcPost}, or use {@link createMainApp} for defaults.
- */
-export function createRpcApp(options: Partial<ApiServerOptions> = {}) {
-  const { worlds } = resolveApiServerOptions(options);
-  return createHonoRpcApp(worlds, null);
-}
-
-/**
  * Worlds HTTP API: `POST /rpc` with JSON body validated by
  * {@link ../rpc/handler.ts handleRpc}.
+ *
+ * Applies {@link applyTransportPreset}: CORS, bounded body size ({@code 413} when exceeded),
+ * and in-process `/rpc` rate limiting ({@code 429} when exceeded). Configure via env (see
+ * {@link loadTransportConfigFromEnv}) or {@link RpcAppOptions.transport}.
  *
  * Successful RPC returns HTTP **200**; any RPC-level failure (including
  * {@code NOT_FOUND}) returns **400** with a JSON error envelope — clients must read
  * {@code error.code}, not HTTP status alone.
  *
  * **Auth** must be enforced out-of-band unless you compose additional middleware yourself.
- *
- * Applies {@link applyTransportPreset}: CORS, bounded body size ({@code 413} when exceeded),
- * and in-process `/rpc` rate limiting ({@code 429} when exceeded). Configure via env (see
- * {@link loadTransportConfigFromEnv}) or {@link MainAppOptions.transport}.
  */
-export function createRpcServer(options: MainAppOptions = {}) {
+export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const { transport: transportOverrides, ...rest } = options;
-  const { worlds } = resolveApiServerOptions(rest);
-  const transport = mergeTransportConfig(
-    loadTransportConfigFromEnv(),
-    transportOverrides,
-  );
+  const { worlds } = resolveRpcAppOptions(rest);
+  const transport = transportOverrides
+    ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
+    : null;
   return createHonoRpcApp(worlds, transport);
 }
-
-export const rpcServer = createRpcServer();

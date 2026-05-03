@@ -1,5 +1,10 @@
-import { rpcServer } from "#/api/server/mod.ts";
+import { createRpcApp } from "#/api/server/mod.ts";
+import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
+
+const app = createRpcApp({
+  worlds: createWorldsWithLibsql(),
+});
 
 export default {
-  fetch: (req: Request) => rpcServer.fetch(req),
+  fetch: (req: Request) => app.fetch(req),
 } satisfies Deno.ServeDefaultExport;

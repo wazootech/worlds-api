@@ -1,8 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { createRpcApp, createRpcServer } from "#/api/server/main.ts";
+import { createRpcApp } from "#/api/server/main.ts";
 
 /** `hono-rate-limiter` installs a housekeeping interval on first use — disable op sanitization here. */
-const rpcServerLeakOpts = { sanitizeOps: false, sanitizeResources: false };
+const rpcAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };
 
 function withContentLength(
   headers: HeadersInit | undefined,
@@ -15,10 +15,10 @@ function withContentLength(
 }
 
 Deno.test({
-  name: "createRpcServer: POST /rpc listWorlds returns 200",
-  ...rpcServerLeakOpts,
+  name: "createRpcApp: POST /rpc listWorlds returns 200",
+  ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcServer();
+  const app = createRpcApp();
   const body = JSON.stringify({ action: "listWorlds", request: {} });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
@@ -31,10 +31,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "createRpcServer: invalid RPC body returns 400 envelope",
-  ...rpcServerLeakOpts,
+  name: "createRpcApp: invalid RPC body returns 400 envelope",
+  ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcServer();
+  const app = createRpcApp();
   const body = JSON.stringify({
     action: "listWorlds",
     request: { pageSize: -1 },
@@ -50,10 +50,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "createRpcServer: oversized JSON body returns 413",
-  ...rpcServerLeakOpts,
+  name: "createRpcApp: oversized JSON body returns 413",
+  ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcServer();
+  const app = createRpcApp({ transport: {} }); // with transport (triggers 413)
   const padLen = 2_200_000;
   const body = '{"action":"listWorlds","request":{},"pad":"' +
     "a".repeat(padLen) +
@@ -66,8 +66,8 @@ Deno.test({
   assertEquals(res.status, 413);
 });
 
-Deno.test("createRpcApp: same oversized body is not rejected at transport layer", async () => {
-  const app = createRpcApp();
+Deno.test("createRpcApp: without transport, oversized body is not rejected", async () => {
+  const app = createRpcApp(); // no transport
   const padLen = 2_200_000;
   const body = '{"action":"listWorlds","request":{},"pad":"' +
     "a".repeat(padLen) +
@@ -81,10 +81,10 @@ Deno.test("createRpcApp: same oversized body is not rejected at transport layer"
 });
 
 Deno.test({
-  name: "createRpcServer: OPTIONS /rpc includes CORS allow headers",
-  ...rpcServerLeakOpts,
+  name: "createRpcApp: OPTIONS /rpc includes CORS allow headers",
+  ...rpcAppLeakOpts,
 }, async () => {
-  const app = createRpcServer();
+  const app = createRpcApp({ transport: {} }); // with transport (CORS applied)
   const res = await app.request("http://localhost/rpc", {
     method: "OPTIONS",
     headers: {
