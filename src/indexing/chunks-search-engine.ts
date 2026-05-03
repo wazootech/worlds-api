@@ -4,7 +4,7 @@ import type {
   World,
   WorldReference,
 } from "#/rpc/openapi/generated/types.gen.ts";
-import type { EmbeddingsService as embeddingsService } from "#/indexing/embeddings/interface.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import { tokenizeSearchQuery } from "#/indexing/fts.ts";
@@ -15,7 +15,7 @@ import { tokenizeSearchQuery } from "#/indexing/fts.ts";
  */
 export interface ChunkSearchOptions {
   chunkIndexManager: ChunkIndexManager;
-  embeddings: embeddingsService;
+  embeddingsService: EmbeddingsService;
   worldStorage: WorldStorage;
   formatWorldName: (ref: WorldReference) => string;
 }
@@ -36,7 +36,7 @@ export async function searchChunks(
     return [];
   }
 
-  const queryVector = await options.embeddings.embed(input.query);
+  const queryVector = await options.embeddingsService.embed(input.query);
   const rows = (
     await Promise.all(targetRefs.map(async (ref) => {
       const index = await options.chunkIndexManager.getChunkIndex(ref);

@@ -298,7 +298,7 @@ export class Worlds implements WorldsInterface {
     const chunkResults = indexedRefs.length > 0
       ? await searchChunks(input, indexedRefs, {
         chunkIndexManager: this.searchDeps.chunkIndexManager,
-        embeddings: this.searchDeps.embeddings,
+        embeddingsService: this.searchDeps.embeddings,
         worldStorage: this.worldStorage,
         formatWorldName,
       })
