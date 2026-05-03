@@ -15,20 +15,19 @@ Use `deno -h` to get a list of commands if you need more context.
 
 This project exports the following primary modules (as mapped in `deno.json`):
 
-- **`.` (`./src/mod.ts`)**: Main entrypoint exposing the core `WorldsInterface`
-  and business logic.
-- **`./rdf` (`./src/rdf/rdf.ts`)**: Core RDF parsing, serialization, and
-  skolemization utilities.
-- **`./sparql` (`./src/rdf/sparql/sparql.ts`)**: SPARQL execution handler and
-  engines.
-- **`./indexing` (`./src/indexing/mod.ts`)**: Full-text and vector chunk
-  indexers, search logic, and embeddings.
+- **`.` (`./src/`)**: Main entrypoint exposing the core `WorldsInterface` and
+  business logic.
+- **`./rdf` (`./src/rdf/`)**: Core RDF parsing, serialization, and skolemization
+  utilities.
+- **`./sparql` (`./src/rdf/sparql/`)**: SPARQL execution handler and engines.
+- **`./indexing` (`./src/indexing/`)**: Full-text and vector chunk indexers,
+  search logic, and embeddings.
 
 Additional directories include:
 
 - `src/core/`: Domain API implementation, error types, and pagination.
 - `src/rpc/`: RPC handler (`POST /rpc`), OpenAPI schema, generated types, and
-  transport (`app.ts`).
+  transport.
 
 ### Documentation policy
 
