@@ -22,7 +22,7 @@ function createWorlds() {
   );
 }
 
-function createWorldsWithSharedDeps() {
+function createWorldsWithSharedOptions() {
   const worldStorage = new InMemoryWorldStorage();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
@@ -563,7 +563,7 @@ Deno.test("Worlds: search returns results from multiple worlds", async () => {
 });
 
 Deno.test("Worlds: search falls back per unindexed world", async () => {
-  const { worlds, chunkIndexManager } = createWorldsWithSharedDeps();
+  const { worlds, chunkIndexManager } = createWorldsWithSharedOptions();
 
   await worlds.createWorld({
     namespace: "ns",

@@ -1,6 +1,10 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@hono-rate-limiter/hono-rate-limiter@0.4.2": "0.4.2",
+    "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2": "0.4.2",
+    "jsr:@hono/hono@^4.12.16": "4.12.16",
+    "jsr:@hono/hono@^4.6.12": "4.12.16",
     "jsr:@hono/hono@^4.7.0": "4.12.15",
     "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
@@ -10,16 +14,26 @@
     "npm:@comunica/context-entries@5.2.0": "5.2.0",
     "npm:@comunica/query-sparql-rdfjs-lite@^5.2.1": "5.2.1",
     "npm:@hey-api/openapi-ts@0.97": "0.97.0_typescript@6.0.3",
+    "npm:@libsql/client@~0.17.3": "0.17.3",
     "npm:@orama/orama@^3.1.18": "3.1.18",
     "npm:cross-fetch@3.2.0": "3.2.0",
     "npm:n3@^2.0.3": "2.0.3",
     "npm:openapi-types@^12.1.3": "12.1.3",
     "npm:rdf-canonize@5": "5.0.0",
-    "npm:zod@^4.3.6": "4.3.6"
+    "npm:zod@^4.4.2": "4.4.2"
   },
   "jsr": {
+    "@hono-rate-limiter/hono-rate-limiter@0.4.2": {
+      "integrity": "028c2ded3d21be30fb787044ddac3e656b24a9d3a06e42241a5a693409210217",
+      "dependencies": [
+        "jsr:@hono/hono@^4.6.12"
+      ]
+    },
     "@hono/hono@4.12.15": {
       "integrity": "06a0aef73d9072e73b8db570b81a5b56a94095d697578202a87fccdf04ce352d"
+    },
+    "@hono/hono@4.12.16": {
+      "integrity": "d3a3ca0d713852c91881541e74d5ffac0b4af38b8c1285e8ed5ee47b68c58f94"
     },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
@@ -2734,8 +2748,86 @@
     "@jsdevtools/ono@7.1.3": {
       "integrity": "sha512-4JQNk+3mVzK3xh2rqd6RB4J46qUR19azEHBneZyTZM+c456qOrbbM/5xcR8huNCCcbVt7+UmizG6GuUvPvKUYg=="
     },
+    "@libsql/client@0.17.3": {
+      "integrity": "sha512-HXk9wiAoJbKFbyBH4O+aEhN6ir5ERXuXvwE5OD2eR4/5RUa3Pw/8L9zrnVdU+iNJitRvisPWaIwmhkO3bH7giA==",
+      "dependencies": [
+        "@libsql/core",
+        "@libsql/hrana-client",
+        "js-base64",
+        "libsql",
+        "promise-limit"
+      ]
+    },
+    "@libsql/core@0.17.3": {
+      "integrity": "sha512-2UjK1i7JBkMduJo4WdvvBxMMvVJ31pArBZNONyz/GCJJAH+1UHat2X6vn10S/WpY5fKzIT98WqYFl2vzWRLOfg==",
+      "dependencies": [
+        "js-base64"
+      ]
+    },
+    "@libsql/darwin-arm64@0.5.29": {
+      "integrity": "sha512-K+2RIB1OGFPYQbfay48GakLhqf3ArcbHqPFu7EZiaUcRgFcdw8RoltsMyvbj5ix2fY0HV3Q3Ioa/ByvQdaSM0A==",
+      "os": ["darwin"],
+      "cpu": ["arm64"]
+    },
+    "@libsql/darwin-x64@0.5.29": {
+      "integrity": "sha512-OtT+KFHsKFy1R5FVadr8FJ2Bb1mghtXTyJkxv0trocq7NuHntSki1eUbxpO5ezJesDvBlqFjnWaYYY516QNLhQ==",
+      "os": ["darwin"],
+      "cpu": ["x64"]
+    },
+    "@libsql/hrana-client@0.10.0": {
+      "integrity": "sha512-OoA4EMqRAC7kn7V2P6EQqRcpZf2W+AjsNIyCizBg339Tq/aMC7sRnzs3SklderhmQWAqEzvv8A2vhxVmWpkVvw==",
+      "dependencies": [
+        "@libsql/isomorphic-ws",
+        "js-base64"
+      ]
+    },
+    "@libsql/isomorphic-ws@0.1.5": {
+      "integrity": "sha512-DtLWIH29onUYR00i0GlQ3UdcTRC6EP4u9w/h9LxpUZJWRMARk6dQwZ6Jkd+QdwVpuAOrdxt18v0K2uIYR3fwFg==",
+      "dependencies": [
+        "@types/ws",
+        "ws"
+      ]
+    },
+    "@libsql/linux-arm-gnueabihf@0.5.29": {
+      "integrity": "sha512-CD4n4zj7SJTHso4nf5cuMoWoMSS7asn5hHygsDuhRl8jjjCTT3yE+xdUvI4J7zsyb53VO5ISh4cwwOtf6k2UhQ==",
+      "os": ["linux"],
+      "cpu": ["arm"]
+    },
+    "@libsql/linux-arm-musleabihf@0.5.29": {
+      "integrity": "sha512-2Z9qBVpEJV7OeflzIR3+l5yAd4uTOLxklScYTwpZnkm2vDSGlC1PRlueLaufc4EFITkLKXK2MWBpexuNJfMVcg==",
+      "os": ["linux"],
+      "cpu": ["arm"]
+    },
+    "@libsql/linux-arm64-gnu@0.5.29": {
+      "integrity": "sha512-gURBqaiXIGGwFNEaUj8Ldk7Hps4STtG+31aEidCk5evMMdtsdfL3HPCpvys+ZF/tkOs2MWlRWoSq7SOuCE9k3w==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@libsql/linux-arm64-musl@0.5.29": {
+      "integrity": "sha512-fwgYZ0H8mUkyVqXZHF3mT/92iIh1N94Owi/f66cPVNsk9BdGKq5gVpoKO+7UxaNzuEH1roJp2QEwsCZMvBLpqg==",
+      "os": ["linux"],
+      "cpu": ["arm64"]
+    },
+    "@libsql/linux-x64-gnu@0.5.29": {
+      "integrity": "sha512-y14V0vY0nmMC6G0pHeJcEarcnGU2H6cm21ZceRkacWHvQAEhAG0latQkCtoS2njFOXiYIg+JYPfAoWKbi82rkg==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@libsql/linux-x64-musl@0.5.29": {
+      "integrity": "sha512-gquqwA/39tH4pFl+J9n3SOMSymjX+6kZ3kWgY3b94nXFTwac9bnFNMffIomgvlFaC4ArVqMnOZD3nuJ3H3VO1w==",
+      "os": ["linux"],
+      "cpu": ["x64"]
+    },
+    "@libsql/win32-x64-msvc@0.5.29": {
+      "integrity": "sha512-4/0CvEdhi6+KjMxMaVbFM2n2Z44escBRoEYpR+gZg64DdetzGnYm8mcNLcoySaDJZNaBd6wz5DNdgRmcI4hXcg==",
+      "os": ["win32"],
+      "cpu": ["x64"]
+    },
     "@lukeed/ms@2.0.2": {
       "integrity": "sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA=="
+    },
+    "@neon-rs/load@0.0.4": {
+      "integrity": "sha512-kTPhdZyTQxB+2wpiRcFWrDcejc4JI6tkPuS7UZCG4l6Zvc5kU/gGQ/ozvHTh1XR5tS+UlfAfGuPajjzQjCiHCw=="
     },
     "@orama/orama@3.1.18": {
       "integrity": "sha512-a61ljmRVVyG5MC/698C8/FfFDw5a8LOIvyOLW5fztgUXqUpc1jOfQzOitSCbge657OgXXThmY3Tk8fpiDb4UcA=="
@@ -2892,6 +2984,12 @@
     },
     "@types/uuid@10.0.0": {
       "integrity": "sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ=="
+    },
+    "@types/ws@8.18.1": {
+      "integrity": "sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==",
+      "dependencies": [
+        "@types/node"
+      ]
     },
     "@types/yargs-parser@21.0.3": {
       "integrity": "sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ=="
@@ -3082,6 +3180,9 @@
     "destr@2.0.5": {
       "integrity": "sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA=="
     },
+    "detect-libc@2.0.2": {
+      "integrity": "sha512-UX6sGumvvqSaXgdKGUsgZWqcUyIXZ/vZTrlRT/iobiKhGL0zL4d3osHj3uqllWJK+i+sixDS/3COVEOFbupFyw=="
+    },
     "dom-serializer@2.0.0": {
       "integrity": "sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==",
       "dependencies": [
@@ -3232,6 +3333,9 @@
       "integrity": "sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==",
       "bin": true
     },
+    "js-base64@3.7.8": {
+      "integrity": "sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow=="
+    },
     "jsonld-context-parser@2.4.0": {
       "dependencies": [
         "@types/http-link-header",
@@ -3269,6 +3373,26 @@
     },
     "kuler@2.0.0": {
       "integrity": "sha512-Xq9nH7KlWZmXAtodXDDRE7vs6DU1gTU8zYDHDiWLSip45Egwq3plLHzPn27NgvzL2r1LMPC1vdqh98sQxtqj4A=="
+    },
+    "libsql@0.5.29": {
+      "integrity": "sha512-8lMP8iMgiBzzoNbAPQ59qdVcj6UaE/Vnm+fiwX4doX4Narook0a4GPKWBEv+CR8a1OwbfkgL18uBfBjWdF0Fzg==",
+      "dependencies": [
+        "@neon-rs/load",
+        "detect-libc"
+      ],
+      "optionalDependencies": [
+        "@libsql/darwin-arm64",
+        "@libsql/darwin-x64",
+        "@libsql/linux-arm-gnueabihf",
+        "@libsql/linux-arm-musleabihf",
+        "@libsql/linux-arm64-gnu",
+        "@libsql/linux-arm64-musl",
+        "@libsql/linux-x64-gnu",
+        "@libsql/linux-x64-musl",
+        "@libsql/win32-x64-msvc"
+      ],
+      "os": ["darwin", "linux", "win32"],
+      "cpu": ["x64", "arm64", "wasm32", "arm"]
     },
     "logform@2.7.0": {
       "integrity": "sha512-TFYA4jnP7PVbmlBIfhlSe+WKxs9dklXMTEGcBCIvLhE/Tn3H6Gk1norupVW7m5Cnd4bLcr08AytbyV/xj7f/kQ==",
@@ -3377,6 +3501,9 @@
     },
     "process@0.11.10": {
       "integrity": "sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A=="
+    },
+    "promise-limit@2.7.0": {
+      "integrity": "sha512-7nJ6v5lnJsXwGprnGXga4wx6d1POjvi5Qmf1ivTRxTjH4Z/9Czja/UCMLVmB9N93GeWOU93XaFaEt6jbuoagNw=="
     },
     "promise-polyfill@1.1.6": {
       "integrity": "sha512-7rrONfyLkDEc7OJ5QBkqa4KI4EBhCd340xRuIUPGCfu13znS+vx+VDdrT9ODAJHlXm7w4lbxN3DRjyv58EuzDg=="
@@ -3714,6 +3841,9 @@
         "strip-ansi"
       ]
     },
+    "ws@8.20.0": {
+      "integrity": "sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA=="
+    },
     "wsl-utils@0.3.1": {
       "integrity": "sha512-g/eziiSUNBSsdDJtCLB8bdYEUMj4jR7AGeUo96p/3dTafgjHhpF4RiCFPiRILwjQoDXx5MqkBr4fwWtR3Ky4Wg==",
       "dependencies": [
@@ -3746,9 +3876,23 @@
         "yargs-parser"
       ]
     },
-    "zod@4.3.6": {
-      "integrity": "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="
+    "zod@4.4.2": {
+      "integrity": "sha512-IynmDyxsEsb9RKzO3J9+4SxXnl2FTFSzNBaKKaMV6tsSk0rw9gYw9gs+JFCq/qk2LCZ78KDwyj+Z289TijSkUw=="
     }
+  },
+  "redirects": {
+    "https://esm.sh/@libsql/client@^0.17.3": "https://esm.sh/@libsql/client@0.17.3",
+    "https://esm.sh/@libsql/core@^0.17.3/api?target=denonext": "https://esm.sh/@libsql/core@0.17.3/api?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.3/config?target=denonext": "https://esm.sh/@libsql/core@0.17.3/config?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.3/uri?target=denonext": "https://esm.sh/@libsql/core@0.17.3/uri?target=denonext",
+    "https://esm.sh/@libsql/core@^0.17.3/util?target=denonext": "https://esm.sh/@libsql/core@0.17.3/util?target=denonext",
+    "https://esm.sh/@libsql/hrana-client@^0.10.0?target=denonext": "https://esm.sh/@libsql/hrana-client@0.10.0?target=denonext",
+    "https://esm.sh/@libsql/isomorphic-ws@^0.1.5?target=denonext": "https://esm.sh/@libsql/isomorphic-ws@0.1.5?target=denonext",
+    "https://esm.sh/@neon-rs/load@^0.0.4?target=denonext": "https://esm.sh/@neon-rs/load@0.0.4?target=denonext",
+    "https://esm.sh/@types/ws@~8.18.1/index.d.mts": "https://esm.sh/@types/ws@8.18.1/index.d.mts",
+    "https://esm.sh/js-base64@^3.7.5?target=denonext": "https://esm.sh/js-base64@3.7.8?target=denonext",
+    "https://esm.sh/libsql@^0.5.28?target=denonext": "https://esm.sh/libsql@0.5.29?target=denonext",
+    "https://esm.sh/promise-limit@^2.7.0?target=denonext": "https://esm.sh/promise-limit@2.7.0?target=denonext"
   },
   "remote": {
     "https://deno.land/std@0.224.0/assert/_constants.ts": "a271e8ef5a573f1df8e822a6eb9d09df064ad66a4390f21b3e31f820a38e0975",
@@ -3808,22 +3952,53 @@
     "https://deno.land/std@0.224.0/path/windows/basename.ts": "6bbc57bac9df2cec43288c8c5334919418d784243a00bc10de67d392ab36d660",
     "https://deno.land/std@0.224.0/path/windows/from_file_url.ts": "ced2d587b6dff18f963f269d745c4a599cf82b0c4007356bd957cb4cb52efc01",
     "https://deno.land/std@0.224.0/path/windows/join.ts": "8d03530ab89195185103b7da9dfc6327af13eabdcd44c7c63e42e27808f50ecf",
-    "https://deno.land/std@0.224.0/path/windows/normalize.ts": "78126170ab917f0ca355a9af9e65ad6bfa5be14d574c5fb09bb1920f52577780"
+    "https://deno.land/std@0.224.0/path/windows/normalize.ts": "78126170ab917f0ca355a9af9e65ad6bfa5be14d574c5fb09bb1920f52577780",
+    "https://esm.sh/@libsql/client@0.17.3": "5ff907787924c2e8b3e1935a5e57d08a861e6a2b340b6ef07d84a26eb3d76e50",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/client.mjs": "037d0b8aeeef52aaf225ee1ac64df77c3f4045e51238dc97c46ca58682fe7b43",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/http.mjs": "ea3c3a03ef7651926a701720619d60c0103837f994c837ba8f8804f36e9c559d",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/lib-esm/hrana.mjs": "730028ae026f48038e66aa9d92c4b728e09fde92612322cc02dea7973bc6800b",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/lib-esm/sql_cache.mjs": "4f93dc7674a61b5162901381df8928af1661621ab24f45e6c01961f9aa91895e",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/sqlite3.mjs": "750f8601755ebe0b6ff4f1ad57654775c76756f25640eee634c8e759832ebd8c",
+    "https://esm.sh/@libsql/client@0.17.3/denonext/ws.mjs": "6f1c64eeb1c1a9d90c34645f039f8018c5db791a435150d553c3c8d622041980",
+    "https://esm.sh/@libsql/core@0.17.3/api?target=denonext": "9144c1690efd5cdc866a5b14f8a970bbe2a22f2e7c02473075d865edcda84888",
+    "https://esm.sh/@libsql/core@0.17.3/config?target=denonext": "060543097ff288098c0e95ef0e06cdbfc7ff2b4c92ade33935e0ad9ba1f0f1d9",
+    "https://esm.sh/@libsql/core@0.17.3/denonext/api.mjs": "0cd8828f403537a3d543113fc2443e1976c133b73033b650364a70f986641fcf",
+    "https://esm.sh/@libsql/core@0.17.3/denonext/config.mjs": "20ffda34b85267e6e9c4106936b323de025fbd7bf3709f34368cd342da78094f",
+    "https://esm.sh/@libsql/core@0.17.3/denonext/uri.mjs": "4844603bca8de401d7f88ce52ca98ee14b51134486f71cc15d1d72af7eeb9a15",
+    "https://esm.sh/@libsql/core@0.17.3/denonext/util.mjs": "068a77e40e9166b74a3af1f040a12eadcc6a7872c9881ebc66ecbac8f9f7e67d",
+    "https://esm.sh/@libsql/core@0.17.3/uri?target=denonext": "ec5e7b32a39b2058108b8a2240d804c7b323274ec8e6f86c6fc808fbaebcc71b",
+    "https://esm.sh/@libsql/core@0.17.3/util?target=denonext": "d6cf57cb464ef139f209cc396dd9689a006fdd6066f1fed39e03843c50196a7b",
+    "https://esm.sh/@libsql/hrana-client@0.10.0/denonext/hrana-client.mjs": "61cbcbefebbe926001fb7f95ac9da519a6d0320a39247f92fe86aaa347aaab0c",
+    "https://esm.sh/@libsql/hrana-client@0.10.0?target=denonext": "0ca20f75e0a2a5dd32c04c400e81034f02e3c01b838002320ddc498c8701b62b",
+    "https://esm.sh/@libsql/isomorphic-ws@0.1.5/denonext/isomorphic-ws.mjs": "9d104b6fe80cb913bd8b09e76a6e7e83e5d7537bd7dbf1d593da5842888cd2b2",
+    "https://esm.sh/@libsql/isomorphic-ws@0.1.5?target=denonext": "0d1a1aa981e92234677ee9b98e72d31125bde45d08cb653917dd2c5144001c9a",
+    "https://esm.sh/@neon-rs/load@0.0.4/denonext/load.mjs": "c403533d52f3f6f488b3a228da37405186ba8d8663b9d610f63310c97d5dfb8d",
+    "https://esm.sh/@neon-rs/load@0.0.4?target=denonext": "4d9b3aa41082a22cba98b2fe628b79e655fd9d750d887057928e2da51a5c5686",
+    "https://esm.sh/detect-libc@2.0.2/denonext/detect-libc.mjs": "850e0dedd25b4d5d76fbd399c94c23219481006c878fc767462e9addc1422320",
+    "https://esm.sh/js-base64@3.7.8/denonext/js-base64.mjs": "ccf0b96c1ebd19736340ad9465fe131b89f6d4600266c1d1c865b09e2552f20b",
+    "https://esm.sh/js-base64@3.7.8?target=denonext": "370dcd4bb3446e481af0844569a77f475f1580794f4fdf034f5d89a9cb6f7c9f",
+    "https://esm.sh/libsql@0.5.29/denonext/auth.mjs": "30cb242dfe062738e54fb20e1e6d374a886c8ab0815853f0e8064dac520dc9da",
+    "https://esm.sh/libsql@0.5.29/denonext/libsql.mjs": "3e7211da0fe8dc7ddc6a34dfb9d115d7fedf57759f2aa504f44e7f03e9a9d123",
+    "https://esm.sh/libsql@0.5.29/denonext/sqlite-error.mjs": "13651910932f3a9717a26cb302670010c702bcf952dc28b76691c567a6d1320d",
+    "https://esm.sh/libsql@0.5.29?target=denonext": "af9e77faa64f2c6d9c366fe71f44b647a3545f72225f1ba1855dac5996acfc11",
+    "https://esm.sh/promise-limit@2.7.0/denonext/promise-limit.mjs": "31155ca06e5efeac06f2c83fd35cf40bd836ebdbb56d3002004f619dfef9d886",
+    "https://esm.sh/promise-limit@2.7.0?target=denonext": "4939fc289aa872c6232bf9a5596d7d889f342abd4efda65a9c29b77c5e4f3191"
   },
   "workspace": {
     "dependencies": [
+      "jsr:@hono-rate-limiter/hono-rate-limiter@~0.4.2",
+      "jsr:@hono/hono@^4.12.16",
       "jsr:@std/assert@^1.0.19",
-      "jsr:@std/async@^1.0.23",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/fs@^1.0.23",
-      "jsr:@std/path@^1.1.4",
       "npm:@comunica/query-sparql-rdfjs-lite@^5.2.1",
       "npm:@hey-api/openapi-ts@0.97",
+      "npm:@libsql/client@~0.17.3",
       "npm:@orama/orama@^3.1.18",
       "npm:n3@^2.0.3",
       "npm:openapi-types@^12.1.3",
       "npm:rdf-canonize@5",
-      "npm:zod@^4.3.6"
+      "npm:zod@^4.4.2"
     ],
     "links": {
       "npm:jsonld-context-parser@2.4.0": {

@@ -1,7 +1,6 @@
 import { type Client } from "@libsql/client";
 import type { StoredQuad } from "./quad.ts";
-import type { QuadStorage } from "./quad-storage.ts";
-import type { QuadStorage } from "./quad-storage.ts";
+import type { QuadStorage, QuadStorageConfig } from "./quad-storage.ts";
 
 const BATCH_SIZE = 100;
 
@@ -172,12 +171,16 @@ export class LibsqlQuadStorage implements QuadStorage {
   }
 
   private rowToQuad(row: Record<string, unknown>): StoredQuad {
+    const termType = row["object_term_type"] as string | undefined;
     return {
       subject: row["subject"] as string,
       predicate: row["predicate"] as string,
       object: row["object"] as string,
       graph: row["graph"] as string,
-      objectTermType: row["object_term_type"] as string | undefined,
+      objectTermType: termType === "NamedNode" || termType === "BlankNode" ||
+          termType === "Literal"
+        ? termType
+        : undefined,
       objectDatatype: row["object_datatype"] as string | undefined,
       objectLanguage: row["object_language"] as string | undefined,
     };

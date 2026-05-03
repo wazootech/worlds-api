@@ -1,5 +1,5 @@
 export { searchChunks } from "./chunks-search-engine.ts";
-export type { ChunkSearchDeps } from "./chunks-search-engine.ts";
+export type { ChunkSearchOptions } from "./chunks-search-engine.ts";
 
 export { ftsTermHits, tokenizeSearchQuery } from "./fts.ts";
 

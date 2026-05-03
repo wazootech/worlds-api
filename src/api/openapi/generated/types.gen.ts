@@ -515,6 +515,14 @@ export type RpcErrors = {
      * RPC error
      */
     400: WorldsRpcError;
+    /**
+     * Request body too large (bundled reference server body-size cap)
+     */
+    413: unknown;
+    /**
+     * Too many requests (bundled reference server rate limiting on `/rpc`)
+     */
+    429: unknown;
 };
 
 export type RpcError2 = RpcErrors[keyof RpcErrors];

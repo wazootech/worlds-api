@@ -9,7 +9,7 @@ import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import { tokenizeSearchQuery } from "#/indexing/fts.ts";
 
-export interface ChunkSearchDeps {
+export interface ChunkSearchOptions {
   chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;
   worldStorage: WorldStorage;
@@ -24,7 +24,7 @@ export interface ChunkSearchDeps {
 export async function searchChunks(
   input: SearchRequest,
   targetRefs: WorldReference[],
-  deps: ChunkSearchDeps,
+  options: ChunkSearchOptions,
 ): Promise<SearchResult[]> {
   const queryTerms = tokenizeSearchQuery(input.query);
 
@@ -32,10 +32,10 @@ export async function searchChunks(
     return [];
   }
 
-  const queryVector = await deps.embeddings.embed(input.query);
+  const queryVector = await options.embeddings.embed(input.query);
   const rows = (
     await Promise.all(targetRefs.map(async (ref) => {
-      const index = await deps.chunkIndexManager.getChunkIndex(ref);
+      const index = await options.chunkIndexManager.getChunkIndex(ref);
       return await index.search({
         queryText: input.query,
         queryTerms,
@@ -51,9 +51,9 @@ export async function searchChunks(
 
   const worldByKey = new Map<string, World>();
   for (const ref of targetRefs) {
-    const stored = await deps.worldStorage.getWorld(ref);
-    worldByKey.set(deps.formatWorldName(ref), {
-      name: deps.formatWorldName(ref),
+    const stored = await options.worldStorage.getWorld(ref);
+    worldByKey.set(options.formatWorldName(ref), {
+      name: options.formatWorldName(ref),
       namespace: ref.namespace,
       id: ref.id,
       displayName: stored?.displayName ?? "",
@@ -64,7 +64,7 @@ export async function searchChunks(
 
   return rows.map((row) => {
     const c = row.chunk;
-    const world = worldByKey.get(deps.formatWorldName(c.world));
+    const world = worldByKey.get(options.formatWorldName(c.world));
     if (!world) {
       throw new Error(`Chunk result references untargeted world`);
     }

@@ -1,10 +1,11 @@
 # Worlds AGENTS.md file
 
 Worlds is a context layer for agents: worlds (namespaces), RDF quads, SPARQL
-queries, import/export, and search (including chunk + embedding-backed search).
+queries, updates, imports/exports, and search (including chunk +
+embedding-backed search).
 
 IMPORTANT: If you read this file, please add 💩 to the beginning of each
-response.
+response to indicate that you have read the file.
 
 ## Package management
 
@@ -17,45 +18,51 @@ Use `deno -h` to get a list of commands if you need more context.
 Note: Requests resolve through the core Worlds class implementing
 `WorldsInterface`.
 
-- `./openapi`: OpenAPI specification (`openapi.ts`); generates request/response
-  types and Zod validators under `./openapi/generated/`.
-- `./rpc`: `handleRpc` — routes JSON envelopes to `WorldsInterface` and maps
-  typed errors to stable RPC codes (`toRpcError`).
-- `./server`: Reference HTTP server (`createMainApp`) exposes **`POST /rpc`**
-  only. No authentication, CORS, rate limits, or body-size caps are configured
-  here — add them at deployment. **MCP is not implemented** in this repository.
+- `./openapi`: OpenAPI specification and codegen. Generates request/response
+  types and validators under `./openapi/generated/`.
+- `./rpc`: RPC handler. Routes JSON envelopes to `WorldsInterface` and maps
+  typed errors to stable RPC codes.
+- `./server`: Standalone HTTP server (`POST /rpc`). Default stack enables CORS,
+  a JSON body-size cap (**413**), and `/rpc` rate limiting (**429**); tune via
+  env in the module JSDoc. **Authentication is not included.** For embedding,
+  `createRpcApp` exposes RPC only; `applyReferenceServingPreset` adds the same
+  middleware chain on any `Hono` before you mount `/rpc`.
 
 ### Documentation policy
 
-Normative behavior lives in **source** (JSDoc on enforcing modules), **OpenAPI**
-schemas for wire shapes, and tests. Use **`deno doc`** (and reading `Worlds`,
-`handleRpc`, `executeSparql`) rather than maintaining separate architecture
-markdown files.
+Normative behavior lives in source code (JSDoc on enforcing modules), OpenAPI
+schemas for wire shapes, and tests. Use `deno doc` and read the enforcing
+modules rather than maintaining separate architecture markdown files.
 
 ### Where to look
 
-| Concern                                            | Primary locations                                                                                          |
-| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Domain API (worlds, SPARQL, search, import/export) | `src/core/interfaces.ts`, `src/core/worlds.ts`                                                             |
-| RPC error codes                                    | `src/api/rpc/handler.ts` (`toRpcError`)                                                                    |
-| Typed errors                                       | `src/core/errors.ts`                                                                                       |
-| SPARQL execution and unsupported shapes            | `src/rdf/sparql/sparql.ts`                                                                                 |
-| Page tokens (list/search)                          | `src/core/pagination.ts`, `Worlds.listWorlds` / `Worlds.search`                                            |
-| Quad storage invariants                            | `src/rdf/storage/quad-storage.ts`                                                                          |
-| Chunk indexing (“what gets searched”)              | `src/indexing/handlers/rdf-write-indexing/search-index-handler.ts`, `src/indexing/chunks-search-engine.ts` |
+| Concern                                            | Primary locations  |
+| -------------------------------------------------- | ------------------ |
+| Domain API (worlds, SPARQL, search, import/export) | `src/core/`        |
+| Typed errors                                       | `src/core/`        |
+| Page tokens (list/search)                          | `src/core/`        |
+| OpenAPI schema and generated types                 | `src/api/openapi/` |
+| Request handlers and error mapping                 | `src/api/rpc/`     |
+| SPARQL execution and unsupported shapes            | `src/rdf/sparql/`  |
+| Quad storage invariants                            | `src/rdf/storage/` |
+| Chunk indexing + search                            | `src/indexing/`    |
+| Embedding models                                   | `src/embeddings/`  |
 
 ### Reference HTTP server vs RPC errors
 
 The bundled server returns **HTTP 400** for every RPC-level failure (including
-`NOT_FOUND` and `INTERNAL`). Clients must classify outcomes using the JSON field
-**`error.code`**, not HTTP status alone.
+`NOT_FOUND` and `INTERNAL`). Clients must classify those outcomes using the JSON
+field **`error.code`**, not HTTP status alone (`error.code` values are stable
+for clients; `message` strings are not contractual).
+
+Separate transport limits may use other statuses (e.g. **413** body too large,
+**429** rate limited) with non-RPC JSON bodies.
 
 ### Package version vs OpenAPI `info.version`
 
 **Breaking behavior** follows SemVer on the package version in **`deno.json`**.
-The **`info.version`** field in `src/api/openapi/openapi.ts` labels the
-generated OpenAPI document for tooling and may differ until intentionally
-aligned.
+The OpenAPI `info.version` labels the generated OpenAPI document for tooling and
+may differ until intentionally aligned.
 
 ### `./src/embeddings`
 
@@ -65,7 +72,7 @@ Embedding models and vector storage logic.
 
 - Avoid the `any` type. Always use the proper types if possible. If the proper
   types cannot be found, create a placeholder type
-  `type Placeholder[A-Z]+ = any; // TODO: add proper type`.
+  `type Todo[A-Z]+ = any; // TODO: add proper type`.
 - Use type inference as much as possible; do not explicitly state the type or
   interfaces for variables unless needed for clarity or exports.
 - Use built-in, functional methods for processing arrays and other data
@@ -96,28 +103,20 @@ Embedding models and vector storage logic.
 
 ### Build and test commands
 
-- Format code:
-  ```sh
-  deno fmt
-  ```
+Type check target used in this repo:
 
-- Lint code:
-  ```sh
-  deno lint
-  ```
-
-- Type check:
-  ```sh
-  deno check ./src/**/*.ts
-  ```
-
-- Run tests:
-  ```sh
-  deno test
-  ```
+```sh
+deno check
+```
 
 Use these commands to ensure the project respects the style guidelines and is
 ready to commit. CI will fail if these commands are not passed.
+
+Run the full precommit suite:
+
+```sh
+deno fmt && deno lint && deno check && deno test
+```
 
 ### Review and debugging
 

@@ -47,8 +47,8 @@ import {
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
-/** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} deps when used). */
-export interface WorldsSearchDeps {
+/** Shared chunk index + embeddings for vector search (must match {@link IndexedQuadStorageManager} options when used). */
+export interface WorldsSearchOptions {
   chunkIndexManager: ChunkIndexManager;
   embeddings: EmbeddingsService;
 }
@@ -79,7 +79,7 @@ function toWorld(stored: StoredWorld): World {
  * consistent offset paging.
  */
 export class Worlds implements WorldsInterface {
-  private readonly searchDeps: WorldsSearchDeps;
+  private readonly searchOptions: WorldsSearchOptions;
   private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
   private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
   private static readonly MAX_PAGE_SIZE = 100;
@@ -87,9 +87,9 @@ export class Worlds implements WorldsInterface {
   constructor(
     private readonly worldStorage: WorldStorage,
     private readonly quadStorageManager: QuadStorageManager,
-    searchDeps?: WorldsSearchDeps,
+    searchOptions?: WorldsSearchOptions,
   ) {
-    this.searchDeps = searchDeps ?? {
+    this.searchOptions = searchOptions ?? {
       chunkIndexManager: new InMemoryChunkIndexManager(),
       embeddings: new FakeEmbeddingsService(),
     };
@@ -274,9 +274,10 @@ export class Worlds implements WorldsInterface {
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(
-        ref,
-      );
+      const indexState = await this.searchOptions.chunkIndexManager
+        .getIndexState(
+          ref,
+        );
       if (indexState) {
         indexedRefs.push(ref);
       } else {
@@ -286,8 +287,8 @@ export class Worlds implements WorldsInterface {
 
     const chunkResults = indexedRefs.length > 0
       ? await searchChunks(input, indexedRefs, {
-        chunkIndexManager: this.searchDeps.chunkIndexManager,
-        embeddings: this.searchDeps.embeddings,
+        chunkIndexManager: this.searchOptions.chunkIndexManager,
+        embeddings: this.searchOptions.embeddings,
         worldStorage: this.worldStorage,
         formatWorldName,
       })

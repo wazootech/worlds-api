@@ -32,6 +32,18 @@ deno install
 deno task dev
 ```
 
+### Production and deployment
+
+The default root `main.ts` serves `mainApp` with **in-memory** storage (data
+does not survive restart). For **Turso / libSQL-backed** persistence,
+environment variables (`LIBSQL_URL`, `LIBSQL_AUTH_TOKEN`), and why the stack
+standardizes on **`@libsql/client`**, see the module documentation on the
+reference server:
+
+```bash
+deno doc src/api/server/main.ts
+```
+
 ### Run tests
 
 ```bash
@@ -48,7 +60,11 @@ deno fmt --check
 deno lint
 ```
 
-### Browser guard rails
+### Browser bundles (optional)
 
-- `deno task check:browser`: type-check the browser entrypoints against DOM libs
-- `deno task bundle:browser`: bundles the browser entrypoints (smoke test)
+- `deno task bundle:browser`: bundle the browser entrypoints (smoke test;
+  `--no-check`)
+
+Type-checking uses the default Deno config (`deno check ./src/**/*.ts`), not DOM
+`lib` targets. If you need strict browser-lib checking again, add a dedicated
+config or use `deno check` with inline `--config` / compiler options.

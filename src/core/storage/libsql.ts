@@ -2,7 +2,7 @@ import { type Client } from "@libsql/client";
 import type { WorldReference } from "#/api/openapi/generated/types.gen.ts";
 import type { StoredWorld } from "./types.ts";
 import type { WorldStorage } from "./interface.ts";
-import { WorldAlreadyExistsError, WorldNotFoundError } from "#/errors.ts";
+import { WorldAlreadyExistsError, WorldNotFoundError } from "#/core/errors.ts";
 
 export class LibsqlWorldStorage implements WorldStorage {
   private initialized = false;
