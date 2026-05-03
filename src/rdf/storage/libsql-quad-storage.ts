@@ -135,6 +135,10 @@ export class LibsqlQuadStorage implements QuadStorage {
 
     const rows: StoredQuad[] = [];
     for (const m of matchers) {
+      const subject = m.subject ?? "";
+      const predicate = m.predicate ?? "";
+      const object = m.object ?? "";
+      const graph = m.graph ?? "";
       const result = await this.client.execute({
         sql: `SELECT * FROM quads
               WHERE world_namespace = ? AND world_id = ?
@@ -145,14 +149,14 @@ export class LibsqlQuadStorage implements QuadStorage {
         args: [
           ns,
           id,
-          m.subject,
-          m.subject,
-          m.predicate,
-          m.predicate,
-          m.object,
-          m.object,
-          m.graph ?? "",
-          m.graph ?? "",
+          subject,
+          subject,
+          predicate,
+          predicate,
+          object,
+          object,
+          graph,
+          graph,
         ],
       });
       rows.push(...result.rows.map((row) => this.rowToQuad(row)));
@@ -171,18 +175,18 @@ export class LibsqlQuadStorage implements QuadStorage {
   }
 
   private rowToQuad(row: Record<string, unknown>): StoredQuad {
-    const termType = row["object_term_type"] as string | undefined;
+    const termType = row["object_term_type"] as string | null;
     return {
       subject: row["subject"] as string,
       predicate: row["predicate"] as string,
       object: row["object"] as string,
       graph: row["graph"] as string,
-      objectTermType: termType === "NamedNode" || termType === "BlankNode" ||
-          termType === "Literal"
+      objectTermType: termType === "NamedNode" ||
+          termType === "BlankNode" || termType === "Literal"
         ? termType
         : undefined,
-      objectDatatype: row["object_datatype"] as string | undefined,
-      objectLanguage: row["object_language"] as string | undefined,
+      objectDatatype: row["object_datatype"] as string | null ?? undefined,
+      objectLanguage: row["object_language"] as string | null ?? undefined,
     };
   }
 }
