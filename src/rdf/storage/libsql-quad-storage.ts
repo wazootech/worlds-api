@@ -176,17 +176,20 @@ export class LibsqlQuadStorage implements QuadStorage {
 
   private rowToQuad(row: Record<string, unknown>): StoredQuad {
     const termType = row["object_term_type"] as string | null;
-    return {
+    const datatype = row["object_datatype"] as string | null;
+    const language = row["object_language"] as string | null;
+    const quad: StoredQuad = {
       subject: row["subject"] as string,
       predicate: row["predicate"] as string,
       object: row["object"] as string,
       graph: row["graph"] as string,
-      objectTermType: termType === "NamedNode" ||
-          termType === "BlankNode" || termType === "Literal"
-        ? termType
-        : undefined,
-      objectDatatype: row["object_datatype"] as string | null ?? undefined,
-      objectLanguage: row["object_language"] as string | null ?? undefined,
     };
+    if (termType === "NamedNode" || termType === "BlankNode" ||
+        termType === "Literal") {
+      quad.objectTermType = termType;
+    }
+    if (datatype) quad.objectDatatype = datatype;
+    if (language) quad.objectLanguage = language;
+    return quad;
   }
 }
