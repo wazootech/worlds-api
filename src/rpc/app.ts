@@ -99,13 +99,30 @@ function createHonoRpcApp(
   return app;
 }
 
+function getHttpStatus(errorCode: string | undefined): number {
+  switch (errorCode) {
+    case "NOT_FOUND":
+      return 404;
+    case "ALREADY_EXISTS":
+      return 409;
+    case "INVALID_ARGUMENT":
+      return 400;
+    case "INTERNAL":
+      return 500;
+    default:
+      return 400;
+  }
+}
+
 /** Mounts `POST /rpc` JSON-RPC handling. Compose with {@link applyTransportPreset} as needed. */
 export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
   app.post("/rpc", async (c) => {
     const req = (await c.req.json()) as WorldsRpcRequest;
     const result = await handleRpc(worlds, req);
     if ("error" in result) {
-      return c.json(result as WorldsRpcError, 400);
+      const err = result as WorldsRpcError;
+      const status = getHttpStatus(err.error.code);
+      return c.json(err, status as any);
     }
     return c.json(result, 200);
   });
@@ -119,9 +136,9 @@ export function mountRpcPost(app: Hono, worlds: WorldsInterface): void {
  * and in-process `/rpc` rate limiting ({@code 429} when exceeded). Configure via env (see
  * {@link loadTransportConfigFromEnv}) or {@link RpcAppOptions.transport}.
  *
- * Successful RPC returns HTTP **200**; any RPC-level failure (including
- * {@code NOT_FOUND}) returns **400** with a JSON error envelope — clients must read
- * {@code error.code}, not HTTP status alone.
+ * Successful RPC returns HTTP **200**; RPC-level failures return an HTTP status matching
+ * the error code category (e.g., **404** for {@code NOT_FOUND}, **409** for
+ * {@code ALREADY_EXISTS}) with a JSON error envelope.
  *
  * **Auth** must be enforced out-of-band unless you compose additional middleware yourself.
  */

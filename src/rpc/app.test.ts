@@ -50,6 +50,49 @@ Deno.test({
 });
 
 Deno.test({
+  name: "createRpcApp: missing world returns 404 envelope",
+  ...rpcAppLeakOpts,
+}, async () => {
+  const app = createRpcApp();
+  const body = JSON.stringify({
+    action: "deleteWorld",
+    request: { source: "non-existent/world" },
+  });
+  const res = await app.request("http://localhost/rpc", {
+    method: "POST",
+    headers: withContentLength({ "Content-Type": "application/json" }, body),
+    body,
+  });
+  assertEquals(res.status, 404);
+  const json = (await res.json()) as { error?: { code: string } };
+  assertEquals(json.error?.code, "NOT_FOUND");
+});
+
+Deno.test({
+  name: "createRpcApp: duplicate world returns 409 envelope",
+  ...rpcAppLeakOpts,
+}, async () => {
+  const app = createRpcApp();
+  const bodyCreate = JSON.stringify({
+    action: "createWorld",
+    request: { namespace: "test", id: "dupe" },
+  });
+  await app.request("http://localhost/rpc", {
+    method: "POST",
+    headers: withContentLength({ "Content-Type": "application/json" }, bodyCreate),
+    body: bodyCreate,
+  });
+  const res = await app.request("http://localhost/rpc", {
+    method: "POST",
+    headers: withContentLength({ "Content-Type": "application/json" }, bodyCreate),
+    body: bodyCreate,
+  });
+  assertEquals(res.status, 409);
+  const json = (await res.json()) as { error?: { code: string } };
+  assertEquals(json.error?.code, "ALREADY_EXISTS");
+});
+
+Deno.test({
   name: "createRpcApp: oversized JSON body returns 413",
   ...rpcAppLeakOpts,
 }, async () => {
