@@ -249,7 +249,7 @@ if (Deno.build.os !== "windows") {
       // Each factory call gets its own in-memory DB for isolation
       // Use unique URL per client (libsql treats different URLs as separate DBs)
       const client = createLibsqlClient(
-        { url: `file:memory:${suffix}` },
+        { url: `:memory:${suffix}` },
       );
       return new LibsqlQuadStorageManager(client);
     });
