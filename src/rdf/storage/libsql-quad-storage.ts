@@ -184,8 +184,10 @@ export class LibsqlQuadStorage implements QuadStorage {
       object: row["object"] as string,
       graph: row["graph"] as string,
     };
-    if (termType === "NamedNode" || termType === "BlankNode" ||
-        termType === "Literal") {
+    if (
+      termType === "NamedNode" || termType === "BlankNode" ||
+      termType === "Literal"
+    ) {
       quad.objectTermType = termType;
     }
     if (datatype) quad.objectDatatype = datatype;

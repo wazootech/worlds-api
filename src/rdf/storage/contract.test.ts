@@ -244,11 +244,10 @@ if (Deno.build.os !== "windows") {
     "./libsql-quad-storage-manager.ts"
   );
 
-  testQuadStorageManager("LibsqlQuadStorageManager",
-    (_suffix: string) => {
-      // Each factory call gets its own in-memory DB for isolation
-      // libsql creates a new in-memory DB per client instance
-      const client = createLibsqlClient({ url: ":memory:" });
-      return new LibsqlQuadStorageManager(client);
-    });
+  testQuadStorageManager("LibsqlQuadStorageManager", (_suffix: string) => {
+    // Each factory call gets its own in-memory DB for isolation
+    // libsql creates a new in-memory DB per client instance
+    const client = createLibsqlClient({ url: ":memory:" });
+    return new LibsqlQuadStorageManager(client);
+  });
 }
