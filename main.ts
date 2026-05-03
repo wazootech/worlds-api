@@ -1,5 +1,5 @@
-import { mainApp } from "#/api/server/mod.ts";
+import { rpcServer } from "#/api/server/mod.ts";
 
 export default {
-  fetch: (req: Request) => mainApp.fetch(req),
+  fetch: (req: Request) => rpcServer.fetch(req),
 } satisfies Deno.ServeDefaultExport;

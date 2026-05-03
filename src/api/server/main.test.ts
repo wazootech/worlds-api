@@ -1,8 +1,8 @@
 import { assertEquals } from "@std/assert";
-import { createMainApp, createRpcApp } from "#/api/server/main.ts";
+import { createRpcApp, createRpcServer } from "#/api/server/main.ts";
 
 /** `hono-rate-limiter` installs a housekeeping interval on first use — disable op sanitization here. */
-const mainAppLeakOpts = { sanitizeOps: false, sanitizeResources: false };
+const rpcServerLeakOpts = { sanitizeOps: false, sanitizeResources: false };
 
 function withContentLength(
   headers: HeadersInit | undefined,
@@ -15,10 +15,10 @@ function withContentLength(
 }
 
 Deno.test({
-  name: "createMainApp: POST /rpc listWorlds returns 200",
-  ...mainAppLeakOpts,
+  name: "createRpcServer: POST /rpc listWorlds returns 200",
+  ...rpcServerLeakOpts,
 }, async () => {
-  const app = createMainApp();
+  const app = createRpcServer();
   const body = JSON.stringify({ action: "listWorlds", request: {} });
   const res = await app.request("http://localhost/rpc", {
     method: "POST",
@@ -31,10 +31,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "createMainApp: invalid RPC body returns 400 envelope",
-  ...mainAppLeakOpts,
+  name: "createRpcServer: invalid RPC body returns 400 envelope",
+  ...rpcServerLeakOpts,
 }, async () => {
-  const app = createMainApp();
+  const app = createRpcServer();
   const body = JSON.stringify({
     action: "listWorlds",
     request: { pageSize: -1 },
@@ -50,10 +50,10 @@ Deno.test({
 });
 
 Deno.test({
-  name: "createMainApp: oversized JSON body returns 413",
-  ...mainAppLeakOpts,
+  name: "createRpcServer: oversized JSON body returns 413",
+  ...rpcServerLeakOpts,
 }, async () => {
-  const app = createMainApp();
+  const app = createRpcServer();
   const padLen = 2_200_000;
   const body = '{"action":"listWorlds","request":{},"pad":"' +
     "a".repeat(padLen) +
@@ -81,10 +81,10 @@ Deno.test("createRpcApp: same oversized body is not rejected at transport layer"
 });
 
 Deno.test({
-  name: "createMainApp: OPTIONS /rpc includes CORS allow headers",
-  ...mainAppLeakOpts,
+  name: "createRpcServer: OPTIONS /rpc includes CORS allow headers",
+  ...rpcServerLeakOpts,
 }, async () => {
-  const app = createMainApp();
+  const app = createRpcServer();
   const res = await app.request("http://localhost/rpc", {
     method: "OPTIONS",
     headers: {

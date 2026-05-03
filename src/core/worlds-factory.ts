@@ -1,7 +1,6 @@
 import type { Client } from "@libsql/client";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
-import type { WorldsSearchOptions } from "./worlds.ts";
 import { Worlds } from "./worlds.ts";
 import type { WorldStorage } from "./storage/interface.ts";
 import { LibsqlWorldStorage } from "./storage/libsql.ts";
@@ -56,10 +55,10 @@ export function createWorldsWithLibsql(config?: WorldsFactoryConfig): Worlds {
   );
   const embeddings = config?.embeddings ?? new FakeEmbeddingsService();
 
-  const searchOptions: WorldsSearchOptions = {
+  return new Worlds({
+    worldStorage,
+    quadStorageManager,
     chunkIndexManager,
     embeddings,
-  };
-
-  return new Worlds({ worldStorage, quadStorageManager, searchOptions });
+  });
 }

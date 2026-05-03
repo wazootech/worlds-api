@@ -7,21 +7,21 @@
  *
  * The workspace root `main.ts` [default-exports](https://docs.deno.com/runtime/reference/cli/serve/)
  * a `fetch` handler for **`deno serve`** (`deno task dev` wraps `deno serve --watch`).
- * {@link createMainApp} builds the default {@link mainApp}.
+ * {@link createRpcServer} builds the default {@link rpcServer}.
  *
  * ## Deployment and persistence
  *
- * {@link createMainApp} and {@link createRpcApp} default to a {@link Worlds}
+ * {@link createRpcServer} and {@link createRpcApp} default to a {@link Worlds}
  * instance backed by **in-memory** storage (single process; **data is lost on
  * restart**). For production, pass a {@link WorldsInterface} built with libSQL /
  * Turso — typically via `createWorldsWithLibsql()` from
  * `src/core/worlds-factory.ts`, or your own implementation.
  *
  * ```typescript
- * import { createMainApp } from "#/api/server/mod.ts";
+ * import { createRpcServer } from "#/api/server/mod.ts";
  * import { createWorldsWithLibsql } from "#/core/worlds-factory.ts";
  *
- * const app = createMainApp({ worlds: createWorldsWithLibsql() });
+ * const app = createRpcServer({ worlds: createWorldsWithLibsql() });
  * export default {
  *   fetch: (req: Request) => app.fetch(req),
  * } satisfies Deno.ServeDefaultExport;
@@ -138,7 +138,7 @@ export function createRpcApp(options: Partial<ApiServerOptions> = {}) {
  * and in-process `/rpc` rate limiting ({@code 429} when exceeded). Configure via env (see
  * {@link loadTransportConfigFromEnv}) or {@link MainAppOptions.transport}.
  */
-export function createMainApp(options: MainAppOptions = {}) {
+export function createRpcServer(options: MainAppOptions = {}) {
   const { transport: transportOverrides, ...rest } = options;
   const { worlds } = resolveApiServerOptions(rest);
   const transport = mergeTransportConfig(
@@ -148,4 +148,4 @@ export function createMainApp(options: MainAppOptions = {}) {
   return createHonoRpcApp(worlds, transport);
 }
 
-export const mainApp = createMainApp();
+export const rpcServer = createRpcServer();

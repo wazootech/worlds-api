@@ -47,20 +47,12 @@ import {
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
-/**
- * Shared chunk index + embeddings for vector search.
- * Used as {@link Worlds} constructor options; also the base for {@link ChunkSearchOptions}.
- */
-export interface WorldsSearchOptions {
-  chunkIndexManager: ChunkIndexManager;
-  embeddings: EmbeddingsService;
-}
-
 /** Dependency injection for {@link Worlds}. Replaces separate constructor params. */
 export interface WorldsOptions {
   worldStorage: WorldStorage;
   quadStorageManager: QuadStorageManager;
-  searchOptions?: WorldsSearchOptions;
+  chunkIndexManager?: ChunkIndexManager;
+  embeddings?: EmbeddingsService;
 }
 
 function toWorld(stored: StoredWorld): World {
@@ -91,7 +83,10 @@ function toWorld(stored: StoredWorld): World {
 export class Worlds implements WorldsInterface {
   private readonly worldStorage: WorldStorage;
   private readonly quadStorageManager: QuadStorageManager;
-  private readonly searchOptions: WorldsSearchOptions;
+  private readonly searchDeps: {
+    chunkIndexManager: ChunkIndexManager;
+    embeddings: EmbeddingsService;
+  };
   private static readonly DEFAULT_LIST_PAGE_SIZE = 50;
   private static readonly DEFAULT_SEARCH_PAGE_SIZE = 20;
   private static readonly MAX_PAGE_SIZE = 100;
@@ -99,10 +94,15 @@ export class Worlds implements WorldsInterface {
   constructor(options: WorldsOptions) {
     this.worldStorage = options.worldStorage;
     this.quadStorageManager = options.quadStorageManager;
-    this.searchOptions = options.searchOptions ?? {
-      chunkIndexManager: new InMemoryChunkIndexManager(),
-      embeddings: new FakeEmbeddingsService(),
-    };
+    this.searchDeps = options.chunkIndexManager && options.embeddings
+      ? {
+        chunkIndexManager: options.chunkIndexManager,
+        embeddings: options.embeddings,
+      }
+      : {
+        chunkIndexManager: new InMemoryChunkIndexManager(),
+        embeddings: new FakeEmbeddingsService(),
+      };
   }
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
@@ -284,7 +284,7 @@ export class Worlds implements WorldsInterface {
     const indexedRefs: WorldReference[] = [];
     const unindexedRefs: WorldReference[] = [];
     for (const ref of targetRefs) {
-      const indexState = await this.searchOptions.chunkIndexManager
+      const indexState = await this.searchDeps.chunkIndexManager
         .getIndexState(
           ref,
         );
@@ -297,8 +297,8 @@ export class Worlds implements WorldsInterface {
 
     const chunkResults = indexedRefs.length > 0
       ? await searchChunks(input, indexedRefs, {
-        chunkIndexManager: this.searchOptions.chunkIndexManager,
-        embeddings: this.searchOptions.embeddings,
+        chunkIndexManager: this.searchDeps.chunkIndexManager,
+        embeddings: this.searchDeps.embeddings,
         worldStorage: this.worldStorage,
         formatWorldName,
       })

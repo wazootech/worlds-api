@@ -16,7 +16,8 @@ function createWorlds() {
       embeddings,
       chunkIndexManager,
     ),
-    searchOptions: { chunkIndexManager, embeddings },
+    chunkIndexManager,
+    embeddings,
   });
 }
 

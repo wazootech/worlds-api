@@ -11,8 +11,7 @@ import { tokenizeSearchQuery } from "#/indexing/fts.ts";
 
 /**
  * Dependency injection for {@link searchChunks}.
- * Extends {@link WorldsSearchOptions} with world-storage and formatting needed
- * to hydrate per-chunk world metadata at the search layer.
+ * Flat deps: chunk index, embeddings, world storage, and name formatting.
  */
 export interface ChunkSearchOptions {
   chunkIndexManager: ChunkIndexManager;

@@ -21,7 +21,8 @@ function createWorlds() {
       embeddings,
       chunkIndexManager,
     ),
-    searchOptions: { chunkIndexManager, embeddings },
+    chunkIndexManager,
+    embeddings,
   });
 }
 
@@ -36,7 +37,8 @@ function createWorldsWithSharedOptions() {
   const worlds = new Worlds({
     worldStorage,
     quadStorageManager: storeStorage,
-    searchOptions: { chunkIndexManager, embeddings },
+    chunkIndexManager,
+    embeddings,
   });
   return { worlds, chunkIndexManager };
 }
