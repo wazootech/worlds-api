@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { DataFactory } from "n3";
-import { parseStoreFromRdfBytes, toSkolemizedQuad } from "./ingest.ts";
+import { parseStoreFromRdfBytes, toSkolemizedQuad } from "./materialize.ts";
 import { resolveSkolemPrefix } from "./skolem.ts";
 
 Deno.test("toSkolemizedQuad: keeps named nodes unchanged", () => {
@@ -42,7 +42,7 @@ Deno.test("toSkolemizedQuad: skolem prefix is configurable", () => {
   assertStringIncludes(out.subject.value, "urn:custom:");
 });
 
-Deno.test("materializeStoreFromRdfBytes: parses N-Triples and skolemizes bnodes", async () => {
+Deno.test("parseStoreFromRdfBytes: parses N-Triples and skolemizes bnodes", async () => {
   const ntriples = "_:a <https://example.com/p> <https://example.com/o> .\n";
   const bytes = new TextEncoder().encode(ntriples).buffer;
 

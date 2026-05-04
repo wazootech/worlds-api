@@ -38,7 +38,7 @@ async function sha256Hex(msg: string): Promise<string> {
  * values (non-empty). Skips `META_PREDICATES` and non-literal objects;
  * subject IRIs and blank nodes are not embedded as searchable text. Ingest-time
  * blank skolemization vs content-derived quad ids live in `src/rdf/`
- * (`skolemizeStoredQuad`, ingest).
+ * (`skolemizeStoredQuad`, `src/rdf/materialize.ts`).
  */
 export class SearchIndexHandler implements PatchHandler {
   constructor(

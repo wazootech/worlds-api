@@ -358,6 +358,89 @@ Deno.test("Worlds: sparql with blank nodes", async () => {
   );
 });
 
+Deno.test(
+  "Worlds: SPARQL parity — IRI-only vs blank-node equivalent datasets",
+  async () => {
+    const worlds = createWorlds();
+    const ex = "https://example.com/parity/";
+    const nameIri = `${ex}name`;
+    const knowsIri = `${ex}knows`;
+    const p1 = `${ex}p1`;
+    const p2 = `${ex}p2`;
+
+    await worlds.createWorld({
+      namespace: "ns",
+      id: "iriParity",
+      displayName: "IRI parity",
+    });
+    await worlds.createWorld({
+      namespace: "ns",
+      id: "bnodeParity",
+      displayName: "BNode parity",
+    });
+
+    await worlds.import({
+      source: "ns/iriParity",
+      data: `<${p1}> <${nameIri}> "Alice" .\n` +
+        `<${p1}> <${knowsIri}> <${p2}> .\n`,
+      contentType: "application/n-quads",
+    });
+
+    await worlds.import({
+      source: "ns/bnodeParity",
+      data: `_:a <${nameIri}> "Alice" .\n` +
+        `_:a <${knowsIri}> <${p2}> .\n`,
+      contentType: "application/n-quads",
+    });
+
+    const query = [
+      `PREFIX ex: <${ex}>`,
+      "SELECT ?kind ?value WHERE {",
+      "  {",
+      "    ?s ex:name ?value .",
+      '    BIND("name" AS ?kind)',
+      "  } UNION {",
+      "    ?s ex:knows ?value .",
+      '    BIND("knows" AS ?kind)',
+      "  }",
+      "} ORDER BY ?kind ?value",
+    ].join("\n");
+
+    const iriResult = await worlds.sparql({
+      source: "ns/iriParity",
+      query,
+    });
+    const bnodeResult = await worlds.sparql({
+      source: "ns/bnodeParity",
+      query,
+    });
+
+    type Term = { type?: string; value: string };
+    type Row = { kind?: Term; value?: Term };
+    const bindingsKey = (rows: Row[]) =>
+      rows
+        .map((b) => {
+          const kind = b.kind?.value ?? "";
+          const value = b.value?.value ?? "";
+          return `${kind}\t${value}`;
+        })
+        .toSorted();
+
+    const iriRows = bindingsKey(
+      (iriResult as { results: { bindings: Row[] } }).results.bindings,
+    );
+    const bnodeRows = bindingsKey(
+      (bnodeResult as { results: { bindings: Row[] } }).results.bindings,
+    );
+
+    assertEquals(iriRows, bnodeRows);
+    assertEquals(iriRows, [
+      "knows\thttps://example.com/parity/p2",
+      "name\tAlice",
+    ]);
+  },
+);
+
 Deno.test("Worlds: sparql rejects with no sources", async () => {
   const worlds = createWorlds();
 
