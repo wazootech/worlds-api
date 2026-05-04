@@ -78,6 +78,19 @@ not the Worlds RPC error shape.
 - Use `===` instead of `==` for equality comparisons.
 - Use `!==` instead of `!=` for inequality comparisons.
 
+## Testing guidelines
+
+- Prefer **fakes** over **mocks**. Fakes are working implementations of an
+  interface (e.g., `FakeEmbeddingsService`, `InMemoryChunkIndexManager`)
+  that can be used in tests without configuration. Mocks are test-specific
+  objects that record interactions or return canned responses.
+  See: https://tyrrrz.me/blog/fakes-over-mocks
+- Use existing fakes in the codebase (`#/indexing/embeddings/fake.ts`,
+  `#/indexing/storage/in-memory.ts`, etc.) before creating test doubles.
+- Never write mocks inline in test files. If a fake doesn't exist for an
+  interface, create a proper fake in a dedicated file (e.g.,
+  `fake.ts`) rather than mocking inline.
+
 ## Contribution guidelines
 
 ### Precommit checks
