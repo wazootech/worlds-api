@@ -40,6 +40,7 @@ import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
+import { searchNaiveFts } from "./search-naive-fts.ts";
 import {
   InvalidArgumentError,
   PermissionDeniedError,
@@ -348,7 +349,12 @@ export class Worlds implements WorldsInterface {
       ? await this.searchChunks(input, indexedRefs)
       : [];
     const naiveResults = unindexedRefs.length > 0
-      ? await this.searchNaiveFts(unindexedRefs, queryTerms)
+      ? await searchNaiveFts({
+          targetRefs: unindexedRefs,
+          queryTerms,
+          quadStorageManager: this.quadStorageManager,
+          worldStorage: this.worldStorage,
+        })
       : [];
     const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
       (b.ftsRank! - a.ftsRank!) ||
@@ -450,60 +456,6 @@ export class Worlds implements WorldsInterface {
         world,
       };
     });
-  }
-
-  private async searchNaiveFts(
-    targetRefs: WorldReference[],
-    queryTerms: string[],
-  ): Promise<SearchResult[]> {
-    const allResults: Array<{
-      subject: string;
-      predicate: string;
-      object: string;
-      ftsRank: number;
-      world: World;
-    }> = [];
-    for (const ref of targetRefs) {
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
-      const meta = await this.worldStorage.getWorld(ref);
-      const world: World = {
-        name: formatWorldName(ref),
-        namespace: ref.namespace,
-        id: ref.id,
-        displayName: meta?.displayName ?? "",
-        description: meta?.description,
-        createTime: meta?.createTime ?? 0,
-      };
-      for (const q of quads) {
-        const score = ftsTermHits(queryTerms, q.subject, q.predicate, q.object);
-        if (score > 0) {
-          allResults.push({
-            subject: q.subject,
-            predicate: q.predicate,
-            object: q.object,
-            ftsRank: score,
-            world,
-          });
-        }
-      }
-    }
-    allResults.sort((a, b) =>
-      (b.ftsRank! - a.ftsRank!) ||
-      (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
-      (a.subject ?? "").localeCompare(b.subject ?? "") ||
-      (a.predicate ?? "").localeCompare(b.predicate ?? "") ||
-      (a.object ?? "").localeCompare(b.object ?? "")
-    );
-    return allResults.map((r) => ({
-      subject: r.subject,
-      predicate: r.predicate,
-      object: r.object,
-      vecRank: null,
-      ftsRank: r.ftsRank,
-      score: r.ftsRank,
-      world: r.world,
-    }));
   }
 
   async import(input: ImportWorldRequest): Promise<void> {
