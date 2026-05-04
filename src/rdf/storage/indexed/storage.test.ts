@@ -1,6 +1,6 @@
 import { assertEquals } from "@std/assert";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
-import { InMemoryQuadStorage } from "#/rdf/storage/in-memory/storage.ts";
+import { FakeQuadStorage } from "#/rdf/storage/fake.ts";
 import { IndexedQuadStorage } from "./storage.ts";
 import type { PatchHandler } from "#/indexing/search/types.ts";
 
@@ -14,7 +14,7 @@ class FakePatchHandler implements PatchHandler {
 }
 
 Deno.test("IndexedQuadStorage: setQuad calls inner and handlers", async () => {
-  const inner = new InMemoryQuadStorage();
+  const inner = new FakeQuadStorage();
   const handler = new FakePatchHandler();
   const s = new IndexedQuadStorage(inner, [handler]);
   const quad: StoredQuad = {
@@ -30,7 +30,7 @@ Deno.test("IndexedQuadStorage: setQuad calls inner and handlers", async () => {
 });
 
 Deno.test("IndexedQuadStorage: deleteQuad calls inner and handlers", async () => {
-  const inner = new InMemoryQuadStorage();
+  const inner = new FakeQuadStorage();
   const handler = new FakePatchHandler();
   const s = new IndexedQuadStorage(inner, [handler]);
   const quad: StoredQuad = {
@@ -47,7 +47,7 @@ Deno.test("IndexedQuadStorage: deleteQuad calls inner and handlers", async () =>
 });
 
 Deno.test("IndexedQuadStorage: clear calls inner and handlers", async () => {
-  const inner = new InMemoryQuadStorage();
+  const inner = new FakeQuadStorage();
   const handler = new FakePatchHandler();
   const s = new IndexedQuadStorage(inner, [handler]);
   const quad: StoredQuad = {
@@ -64,7 +64,7 @@ Deno.test("IndexedQuadStorage: clear calls inner and handlers", async () => {
 });
 
 Deno.test("IndexedQuadStorage: findQuads delegates to inner", async () => {
-  const inner = new InMemoryQuadStorage();
+  const inner = new FakeQuadStorage();
   const s = new IndexedQuadStorage(inner, []);
   const q1: StoredQuad = {
     subject: "s1",
