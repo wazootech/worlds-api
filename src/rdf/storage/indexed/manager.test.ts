@@ -1,11 +1,11 @@
 import { assertEquals } from "@std/assert";
-import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
-import { InMemoryQuadStorage } from "../in-memory/storage.ts";
 import { IndexedQuadStorageManager } from "./manager.ts";
 
 // Minimal mocks for testing
 function createMockEmbeddings() {
-  return { dimensions: 384 } as unknown as import("#/indexing/embeddings/interface.ts").EmbeddingsService;
+  return {
+    dimensions: 384,
+  } as unknown as import("#/indexing/embeddings/interface.ts").EmbeddingsService;
 }
 
 function createMockChunks() {
@@ -17,20 +17,29 @@ function createMockChunks() {
 }
 
 Deno.test("IndexedQuadStorageManager: getQuadStorage returns IndexedQuadStorage", async () => {
-  const mgr = new IndexedQuadStorageManager(createMockEmbeddings(), createMockChunks());
+  const mgr = new IndexedQuadStorageManager(
+    createMockEmbeddings(),
+    createMockChunks(),
+  );
   const s = await mgr.getQuadStorage({ namespace: "ns", id: "w1" });
   assertEquals(s !== null, true);
 });
 
 Deno.test("IndexedQuadStorageManager: getQuadStorage returns same instance for same ref", async () => {
-  const mgr = new IndexedQuadStorageManager(createMockEmbeddings(), createMockChunks());
+  const mgr = new IndexedQuadStorageManager(
+    createMockEmbeddings(),
+    createMockChunks(),
+  );
   const a = await mgr.getQuadStorage({ namespace: "ns", id: "w1" });
   const b = await mgr.getQuadStorage({ namespace: "ns", id: "w1" });
   assertEquals(a, b);
 });
 
 Deno.test("IndexedQuadStorageManager: deleteQuadStorage clears storage", async () => {
-  const mgr = new IndexedQuadStorageManager(createMockEmbeddings(), createMockChunks());
+  const mgr = new IndexedQuadStorageManager(
+    createMockEmbeddings(),
+    createMockChunks(),
+  );
   await mgr.getQuadStorage({ namespace: "ns", id: "w1" });
   await mgr.deleteQuadStorage({ namespace: "ns", id: "w1" });
   const s = await mgr.getQuadStorage({ namespace: "ns", id: "w1" });

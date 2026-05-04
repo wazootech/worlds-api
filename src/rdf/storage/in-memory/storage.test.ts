@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import type { StoredQuad } from "../types.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 import { InMemoryQuadStorage } from "./storage.ts";
 
 Deno.test("InMemoryQuadStorage: setQuad stores and findQuads retrieves", async () => {

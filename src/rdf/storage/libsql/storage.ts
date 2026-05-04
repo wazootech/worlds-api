@@ -1,6 +1,9 @@
 import { type Client } from "@libsql/client";
-import type { StoredQuad } from "../types.ts";
-import type { QuadStorage, QuadStorageConfig } from "../interface.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
+import type {
+  QuadStorage,
+  QuadStorageConfig,
+} from "#/rdf/storage/interface.ts";
 
 const BATCH_SIZE = 100;
 

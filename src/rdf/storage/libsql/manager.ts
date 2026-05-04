@@ -1,6 +1,9 @@
 import { type Client } from "@libsql/client";
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
-import type { QuadStorage, QuadStorageManager } from "../interface.ts";
+import type {
+  QuadStorage,
+  QuadStorageManager,
+} from "#/rdf/storage/interface.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import { LibsqlQuadStorage } from "./storage.ts";
 

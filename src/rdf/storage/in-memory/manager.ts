@@ -1,6 +1,6 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import type { QuadStorageManager } from "../interface.ts";
+import type { QuadStorageManager } from "#/rdf/storage/interface.ts";
 import { InMemoryQuadStorage } from "./storage.ts";
 
 export class InMemoryQuadStorageManager implements QuadStorageManager {

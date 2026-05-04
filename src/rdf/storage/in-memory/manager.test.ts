@@ -1,5 +1,4 @@
 import { assertEquals } from "@std/assert";
-import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { InMemoryQuadStorageManager } from "./manager.ts";
 
 Deno.test("InMemoryQuadStorageManager: getQuadStorage returns same instance for same ref", async () => {

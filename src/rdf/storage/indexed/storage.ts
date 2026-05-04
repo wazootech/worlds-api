@@ -1,4 +1,4 @@
-import type { QuadStorage, StoredQuad } from "../interface.ts";
+import type { QuadStorage, StoredQuad } from "#/rdf/storage/interface.ts";
 import type { PatchHandler } from "#/indexing/search/types.ts";
 
 export class IndexedQuadStorage implements QuadStorage {

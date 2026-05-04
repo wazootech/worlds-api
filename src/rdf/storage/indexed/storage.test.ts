@@ -1,14 +1,19 @@
 import { assertEquals } from "@std/assert";
-import type { StoredQuad } from "../types.ts";
-import { InMemoryQuadStorage } from "../in-memory/storage.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
+import { InMemoryQuadStorage } from "#/rdf/storage/in-memory/storage.ts";
 import { IndexedQuadStorage } from "./storage.ts";
 
 // Mock PatchHandler for testing
-function createMockHandler(): { handler: { patch: (patches: unknown[]) => Promise<void> }; patches: unknown[] } {
+function createMockHandler(): {
+  handler: { patch: (patches: unknown[]) => Promise<void> };
+  patches: unknown[];
+} {
   const patches: unknown[] = [];
   return {
     handler: {
-      patch: async (p: unknown[]) => { patches.push(...p); },
+      patch: async (p: unknown[]) => {
+        patches.push(...p);
+      },
     },
     patches,
   };
