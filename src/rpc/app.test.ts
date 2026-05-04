@@ -30,7 +30,7 @@ Deno.test({
     createdAt: Date.now(),
   });
   const app = createRpcApp({
-    apiKeys: { apiKeyStorage },
+    apiKeyStorage,
   });
   const body = JSON.stringify({ action: "listWorlds", request: {} });
   const res = await app.request("http://localhost/rpc", {
@@ -62,7 +62,7 @@ Deno.test({
     createdAt: Date.now(),
   });
   const app = createRpcApp({
-    apiKeys: { apiKeyStorage },
+    apiKeyStorage,
   });
   const body = JSON.stringify({
     action: "listWorlds",
@@ -97,7 +97,7 @@ Deno.test({
     createdAt: Date.now(),
   });
   const app = createRpcApp({
-    apiKeys: { apiKeyStorage },
+    apiKeyStorage,
   });
   const body = JSON.stringify({
     action: "deleteWorld",
@@ -132,7 +132,7 @@ Deno.test({
     createdAt: Date.now(),
   });
   const app = createRpcApp({
-    apiKeys: { apiKeyStorage },
+    apiKeyStorage,
   });
   const bodyCreate = JSON.stringify({
     action: "createWorld",
@@ -189,7 +189,7 @@ Deno.test("createRpcApp: without transport, oversized body is not rejected", asy
     createdAt: Date.now(),
   });
   const app = createRpcApp({
-    apiKeys: { apiKeyStorage },
+    apiKeyStorage,
   }); // no transport
   const padLen = 2_200_000;
   const body = '{"action":"listWorlds","request":{},"pad":"' +

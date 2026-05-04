@@ -76,8 +76,8 @@ export type RpcAppOptions = {
   worldStorage?: WorldStorage;
   quadStorageManager?: QuadStorageManager;
   transport?: Partial<TransportConfig>;
-  /** API key authentication config */
-  apiKeys?: { apiKeyStorage: ApiKeyStorage };
+  /** API key storage implementation */
+  apiKeyStorage?: ApiKeyStorage;
 };
 
 function createDefaultOptions() {
@@ -229,7 +229,7 @@ export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const transport = transportOverrides
     ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
     : null;
-  const apiKeyStorage = options.apiKeys?.apiKeyStorage;
+  const apiKeyStorage = options.apiKeyStorage;
   return createHonoRpcApp(
     finalWorldStorage,
     finalQuadStorageManager,
