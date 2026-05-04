@@ -1,22 +1,17 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { storedQuadToN3 } from "#/rdf/rdf.ts";
 import { skolemizeStoredQuad } from "#/rdf/skolem.ts";
-import { META_PREDICATES } from "#/rdf/vocab.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
 import type { StoredQuad } from "#/rdf/storage/quad.ts";
 import type { Patch, PatchHandler } from "./types.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 
-function isMetaPredicate(predicate: string): boolean {
-  return META_PREDICATES.includes(predicate);
-}
-
 export interface ChunkingRule {
   /** Predicates this rule applies to (exact IRI match). */
   predicates: string[];
-  /** If true, index the triple even if it's in META_PREDICATES. */
-  index: boolean;
+  /** If false, skip indexing for these predicates (opt-out). Default: true. */
+  index?: boolean;
   /** If true, skip text splitting and index the full object as one chunk. */
   noSplit?: boolean;
 }
@@ -24,6 +19,7 @@ export interface ChunkingRule {
 /**
  * Whether to embed this triple in the chunk index. Object term type comes only from
  * {@link storedQuadToN3} so it stays aligned with SPARQL round-trip.
+ * All predicates are indexed by default; use ChunkingRule with index: false to opt out.
  */
 function shouldIndexTriple(
   quad: StoredQuad,
@@ -32,8 +28,7 @@ function shouldIndexTriple(
   const n3Quad = storedQuadToN3(quad);
   const p = n3Quad.predicate.value;
   const rule = rules.find((r) => r.predicates.includes(p));
-  if (rule) return rule.index;
-  if (isMetaPredicate(p)) return false;
+  if (rule) return rule.index !== false;
   return n3Quad.object.termType === "Literal" && n3Quad.object.value.length > 0;
 }
 
@@ -49,10 +44,10 @@ async function sha256Hex(msg: string): Promise<string> {
 
 /**
  * Patch handler: maintains chunk + embedding records for **literal** object
- * values (non-empty). Skips `META_PREDICATES` and non-literal objects;
- * subject IRIs and blank nodes are not embedded as searchable text. Ingest-time
- * blank skolemization vs content-derived quad ids live in `src/rdf/`
- * (`skolemizeStoredQuad`, `src/rdf/materialize.ts`).
+ * values (non-empty). All predicates are indexed by default; use ChunkingRule
+ * with `index: false` to opt out. Non-literal objects (NamedNode, BlankNode)
+ * are never indexed. Ingest-time blank skolemization vs content-derived
+ * quad ids live in `src/rdf/` (`skolemizeStoredQuad`, `src/rdf/materialize.ts`).
  */
 export class SearchIndexHandler implements PatchHandler {
   constructor(

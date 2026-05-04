@@ -121,7 +121,7 @@ Deno.test("SearchIndexHandler: skips rdf:type triples (object is typically an IR
   assertEquals(result.length, 0);
 });
 
-Deno.test("SearchIndexHandler: skips meta predicates (rdfs:label, rdfs:comment)", async () => {
+Deno.test("SearchIndexHandler: indexes meta predicates by default (rdfs:label, rdfs:comment)", async () => {
   const { handler, index } = await setup();
 
   await handler.patch([{
@@ -140,7 +140,15 @@ Deno.test("SearchIndexHandler: skips meta predicates (rdfs:label, rdfs:comment)"
   }]);
 
   const result = await index.getAll();
-  assertEquals(result.length, 0);
+  assertEquals(result.length, 2);
+  assertEquals(
+    result[0].predicate,
+    "http://www.w3.org/2000/01/rdf-schema#label",
+  );
+  assertEquals(
+    result[1].predicate,
+    "http://www.w3.org/2000/01/rdf-schema#comment",
+  );
 });
 
 Deno.test("SearchIndexHandler: skips empty object", async () => {
@@ -179,7 +187,7 @@ Deno.test("SearchIndexHandler: does not mutate index state", async () => {
   assertEquals(after, before);
 });
 
-Deno.test("SearchIndexHandler: opt-in rdfs:label with noSplit", async () => {
+Deno.test("SearchIndexHandler: opt-out rdfs:label via index:false", async () => {
   const embeddings = new FakeEmbeddingsService();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const world = { namespace: "ns", id: "w1" };
@@ -192,29 +200,23 @@ Deno.test("SearchIndexHandler: opt-in rdfs:label with noSplit", async () => {
 
   const rules: ChunkingRule[] = [{
     predicates: ["http://www.w3.org/2000/01/rdf-schema#label"],
-    index: true,
-    noSplit: true,
+    index: false,
   }];
   const handler = new SearchIndexHandler(embeddings, index, world, rules);
 
   await handler.patch([{
     insertions: [makeQuad({
       predicate: "http://www.w3.org/2000/01/rdf-schema#label",
-      object: "Short label",
+      object: "Should not be indexed",
     })],
     deletions: [],
   }]);
 
   const result = await index.getAll();
-  assertEquals(result.length, 1);
-  assertEquals(result[0].text, "Short label");
-  assertEquals(
-    result[0].predicate,
-    "http://www.w3.org/2000/01/rdf-schema#label",
-  );
+  assertEquals(result.length, 0);
 });
 
-Deno.test("SearchIndexHandler: opt-in rdfs:comment indexed as single chunk", async () => {
+Deno.test("SearchIndexHandler: opt-out rdfs:comment with noSplit", async () => {
   const embeddings = new FakeEmbeddingsService();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const world = { namespace: "ns", id: "w1" };
@@ -227,25 +229,51 @@ Deno.test("SearchIndexHandler: opt-in rdfs:comment indexed as single chunk", asy
 
   const rules: ChunkingRule[] = [{
     predicates: ["http://www.w3.org/2000/01/rdf-schema#comment"],
-    index: true,
+    index: false,
     noSplit: true,
   }];
   const handler = new SearchIndexHandler(embeddings, index, world, rules);
 
-  const longComment =
-    "This is a long comment that would normally be split into multiple chunks but with noSplit it stays as one.";
   await handler.patch([{
     insertions: [makeQuad({
       predicate: "http://www.w3.org/2000/01/rdf-schema#comment",
-      object: longComment,
+      object: "Should not be indexed",
       subject: "https://example.org/s2",
     })],
     deletions: [],
   }]);
 
   const result = await index.getAll();
+  assertEquals(result.length, 0);
+});
+
+Deno.test("SearchIndexHandler: rule noSplit preserves long text as single chunk", async () => {
+  const embeddings = new FakeEmbeddingsService();
+  const chunkIndexManager = new InMemoryChunkIndexManager();
+  const world = { namespace: "ns", id: "w1" };
+  await chunkIndexManager.setIndexState({
+    world,
+    indexedAt: Date.now(),
+    embeddingDimensions: embeddings.dimensions,
+  });
+  const index = await chunkIndexManager.getChunkIndex(world);
+
+  const rules: ChunkingRule[] = [{
+    predicates: ["https://example.org/p"],
+    noSplit: true,
+  }];
+  const handler = new SearchIndexHandler(embeddings, index, world, rules);
+
+  const longText =
+    "This is a long text that would normally be split into multiple chunks but with noSplit it stays as one.";
+  await handler.patch([{
+    insertions: [makeQuad({ object: longText })],
+    deletions: [],
+  }]);
+
+  const result = await index.getAll();
   assertEquals(result.length, 1);
-  assertEquals(result[0].text, longComment);
+  assertEquals(result[0].text, longText);
 });
 
 Deno.test("SearchIndexHandler: rule index:false overrides default", async () => {
@@ -259,7 +287,6 @@ Deno.test("SearchIndexHandler: rule index:false overrides default", async () => 
   });
   const index = await chunkIndexManager.getChunkIndex(world);
 
-  // Even though it's a literal, the rule says don't index
   const rules: ChunkingRule[] = [{
     predicates: ["https://example.org/p"],
     index: false,
