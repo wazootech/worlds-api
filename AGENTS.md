@@ -73,6 +73,8 @@ not the Worlds RPC error shape.
 - Avoid empty blocks, especially in `try/catch` statements; use `console.log` or
   equivalent to fill in the blocks.
 - Separate case statements using brackets.
+- It's ok to import files with `./relative/path.ts`. Instead of
+  `../going/back.ts`, please leverage the `#/` prefix.
 - Use `===` instead of `==` for equality comparisons.
 - Use `!==` instead of `!=` for inequality comparisons.
 

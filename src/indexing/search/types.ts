@@ -1,4 +1,4 @@
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 
 /**
  * Patch batch for RDF quad insertions and deletions.

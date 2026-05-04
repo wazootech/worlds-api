@@ -1,5 +1,5 @@
-import type { QuadStorage, StoredQuad } from "./quad-storage.ts";
-import { storedQuadKey } from "./quad-key.ts";
+import type { QuadStorage, StoredQuad } from "../interface.ts";
+import { storedQuadKey } from "../quad-key.ts";
 
 export class InMemoryQuadStorage implements QuadStorage {
   private readonly quads = new Map<string, StoredQuad>();

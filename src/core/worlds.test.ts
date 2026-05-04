@@ -3,8 +3,8 @@ import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { Worlds } from "./worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
-import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed/manager.ts";
+import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory/manager.ts";
 import {
   InvalidArgumentError,
   InvalidPageTokenError,

@@ -47,7 +47,7 @@
 import { Hono } from "@hono/hono";
 import { Worlds } from "#/core/worlds.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory-quad-storage-manager.ts";
+import { InMemoryQuadStorageManager } from "#/rdf/storage/in-memory/manager.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { handleRpc } from "./handler.ts";
@@ -60,7 +60,7 @@ import {
 } from "./transport/env.ts";
 import { applyTransportPreset } from "./transport/preset.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
-import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
+import type { QuadStorageManager } from "#/rdf/storage/interface.ts";
 import type { ApiKeyStorage } from "#/api-keys/api-key-storage.ts";
 import { verifyApiKey } from "#/api-keys/api-key.ts";
 

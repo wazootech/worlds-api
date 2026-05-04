@@ -3,7 +3,7 @@ import { storedQuadToN3 } from "#/rdf/rdf.ts";
 import { skolemizeStoredQuad } from "#/rdf/skolem.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 import type { Patch, PatchHandler } from "./types.ts";
 import { splitTextRecursive } from "./text-splitter.ts";
 

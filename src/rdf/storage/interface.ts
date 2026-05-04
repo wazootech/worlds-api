@@ -1,7 +1,7 @@
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
-import type { StoredQuad } from "./quad.ts";
+import type { StoredQuad } from "./types.ts";
 
 export type { StoredQuad };
 

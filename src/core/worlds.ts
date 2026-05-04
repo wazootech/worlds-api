@@ -30,7 +30,7 @@ import {
 } from "#/core/pagination.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { StoredWorld } from "#/core/storage/types.ts";
-import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
+import type { QuadStorageManager } from "#/rdf/storage/interface.ts";
 import {
   deserialize,
   quadsFromStore,
@@ -39,7 +39,7 @@ import {
 } from "#/rdf/rdf.ts";
 import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
 import {
   InvalidArgumentError,

@@ -1,7 +1,7 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import type { QuadStorageManager } from "./quad-storage.ts";
-import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
+import type { QuadStorageManager } from "../interface.ts";
+import { InMemoryQuadStorage } from "./storage.ts";
 
 export class InMemoryQuadStorageManager implements QuadStorageManager {
   private readonly storage = new Map<string, InMemoryQuadStorage>();

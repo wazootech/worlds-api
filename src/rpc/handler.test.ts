@@ -5,7 +5,7 @@ import { Worlds } from "#/core/worlds.ts";
 import { handleRpc } from "#/rpc/handler.ts";
 import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
-import { IndexedQuadStorageManager } from "#/rdf/storage/indexed-quad-storage-manager.ts";
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed/manager.ts";
 
 function createWorlds(userId: string = "test-user") {
   const chunkIndexManager = new InMemoryChunkIndexManager();

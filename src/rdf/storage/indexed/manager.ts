@@ -6,9 +6,9 @@ import {
   SearchIndexHandler,
 } from "#/indexing/search/search-index-handler.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
-import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
-import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
-import type { QuadStorageManager } from "./quad-storage.ts";
+import { InMemoryQuadStorage } from "../in-memory/storage.ts";
+import { IndexedQuadStorage } from "./storage.ts";
+import type { QuadStorageManager } from "../interface.ts";
 
 export interface IndexedQuadStorageManagerConfig {
   embeddings: EmbeddingsService;

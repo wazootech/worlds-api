@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { OramaChunkIndexManager } from "#/indexing/storage/orama.ts";
 import { SearchIndexHandler } from "./search-index-handler.ts";
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 
 function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {

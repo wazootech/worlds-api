@@ -5,7 +5,7 @@ import {
   type ChunkingRule,
   SearchIndexHandler,
 } from "./search-index-handler.ts";
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 
 async function setup() {
   const embeddings = new FakeEmbeddingsService();

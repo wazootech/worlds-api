@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import type { QuadStorageManager, StoredQuad } from "./quad-storage.ts";
+import type { QuadStorageManager, StoredQuad } from "./interface.ts";
 
 /** Shared contract tests for any QuadStorageManager implementation. */
 export function testQuadStorageManager(

@@ -1,4 +1,4 @@
-import type { StoredQuad } from "#/rdf/storage/quad.ts";
+import type { StoredQuad } from "#/rdf/storage/types.ts";
 import type { Quad } from "n3";
 import { DataFactory, Parser, Store, Writer } from "n3";
 

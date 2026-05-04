@@ -1,4 +1,4 @@
-import type { StoredQuad } from "./quad.ts";
+import type { StoredQuad } from "./types.ts";
 
 function inferredObjectTermType(q: StoredQuad): string {
   if (q.objectTermType) return q.objectTermType;

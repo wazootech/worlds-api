@@ -1,8 +1,8 @@
 import { type Client } from "@libsql/client";
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
-import type { QuadStorage, QuadStorageManager } from "./quad-storage.ts";
+import type { QuadStorage, QuadStorageManager } from "../interface.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import { LibsqlQuadStorage } from "./libsql-quad-storage.ts";
+import { LibsqlQuadStorage } from "./storage.ts";
 
 export class LibsqlQuadStorageManager implements QuadStorageManager {
   private readonly storages = new Map<string, LibsqlQuadStorage>();
