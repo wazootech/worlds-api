@@ -36,10 +36,13 @@ export const document: OpenAPIV3_1.Document = {
       post: {
         summary: "Unified RPC endpoint for Worlds.",
         description:
-          "JSON body: discriminated `{ action, request }` per `WorldsRpcRequest`. " +
-          "Success: HTTP 200 with `{ action, response }`. Any RPC failure (including " +
-          "`NOT_FOUND`): HTTP 400 with `{ action, error: { code, message } }` — classify " +
-          "RPC failures with `error.code`, not HTTP status alone. With the default " +
+          "JSON body: discriminated `{ action, request }` per `WorldsRpcRequest` (OpenAPI). " +
+          "This is **not** [JSON-RPC 2.0](https://www.jsonrpc.org/specification): there is no " +
+          "`jsonrpc` version field, `id`, or `params`/`result` in the spec sense. " +
+          "Success: HTTP 200 with `{ action, response }`. RPC failures return " +
+          "`{ action, error: { code, message } }` with HTTP status derived from `error.code` " +
+          "(e.g. 404 for `NOT_FOUND`, 400 for `INVALID_ARGUMENT`, 500 for `INTERNAL`); " +
+          "classify failures with `error.code`, not HTTP status alone. With the default " +
           "transport preset (see `src/rpc/transport`), CORS is enabled, JSON body size is " +
           "capped (HTTP **413** when exceeded), and `/rpc` is rate limited (HTTP **429**); " +
           "tune via env or TransportConfig. Auth is enforced via API keys — " +

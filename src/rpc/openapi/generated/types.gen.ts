@@ -345,7 +345,7 @@ export type SparqlQuadsResults = {
  * SPARQL query or update operation.
  */
 export type SparqlRequest = {
-    sources?: Array<Source>;
+    source?: Source;
     parent?: string;
     query: string;
     defaultGraphUris?: Array<string>;

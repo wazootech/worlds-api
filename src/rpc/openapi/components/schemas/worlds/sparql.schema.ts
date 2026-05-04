@@ -161,10 +161,7 @@ export const SparqlRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
   required: ["query"],
   properties: {
-    sources: {
-      type: "array",
-      items: { $ref: "#/components/schemas/Source" },
-    },
+    source: { $ref: "#/components/schemas/Source" },
     parent: { type: "string" },
     query: { type: "string" },
     defaultGraphUris: { type: "array", items: { type: "string" } },

@@ -71,7 +71,7 @@ function toRpcError(err: unknown): RpcError {
 }
 
 /**
- * Routes one JSON-RPC-shaped request to {@link WorldsInterface}.
+ * Routes one Worlds RPC request to {@link WorldsInterface}.
  *
  * - Validates the body with `zWorldsRpcRequest`; on failure returns
  *   `{ action, error: { code: INVALID_ARGUMENT, message: "Invalid RPC request" } }`

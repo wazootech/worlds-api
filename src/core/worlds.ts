@@ -44,7 +44,6 @@ import { executeSparql } from "#/rdf/sparql/sparql.ts";
 import {
   InvalidArgumentError,
   PermissionDeniedError,
-  SparqlUnsupportedOperationError,
   UnauthenticatedError,
   WorldNotFoundError,
 } from "#/core/errors.ts";
@@ -227,31 +226,20 @@ export class Worlds implements WorldsInterface {
 
   async sparql(input: SparqlRequest): Promise<SparqlResponse> {
     this.assertAuthenticated();
-    if (!input.sources || input.sources.length === 0) {
-      throw new InvalidArgumentError("sparql requires at least one source");
+    if (!input.source) {
+      throw new InvalidArgumentError("sparql requires a source");
     }
-    const references = input.sources.map((s) => resolveWorldReference(s));
-    for (const ref of references) {
-      await this.assertOwnsWorld(ref);
-    }
-    let allQuads: StoredQuad[] = [];
-    for (const ref of references) {
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
-      const quads = await quadStorage.findQuads([]);
-      allQuads = allQuads.concat(quads);
-    }
-    const store = storeFromQuads(allQuads);
+    const ref = resolveWorldReference(input.source);
+    await this.assertOwnsWorld(ref);
+
+    const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
+    const quads = await quadStorage.findQuads([]);
+    const store = storeFromQuads(quads);
     const result = await executeSparql(store, input.query, {
       baseIRI: input.defaultGraphUris?.[0],
     });
     if (result === null) {
-      if (references.length > 1) {
-        throw new SparqlUnsupportedOperationError(
-          "SPARQL UPDATE is only supported for a single source world",
-        );
-      }
-      const ref = references[0];
-      const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
+      // UPDATE for single world
       const currentQuads = await quadStorage.findQuads([]);
       const newQuads = quadsFromStore(store);
       const currentQuadSet = new Set(currentQuads.map(storedQuadKey));

@@ -175,7 +175,7 @@ export const zSparqlAskResults = z.object({
  * SPARQL query or update operation.
  */
 export const zSparqlRequest = z.object({
-    sources: z.array(zSource).optional(),
+    source: zSource.optional(),
     parent: z.string().optional(),
     query: z.string(),
     defaultGraphUris: z.array(z.string()).optional(),

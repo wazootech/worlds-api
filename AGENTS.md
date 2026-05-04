@@ -37,11 +37,17 @@ modules rather than maintaining separate architecture markdown files.
 
 ### Worlds RPC errors vs transport-only HTTP status
 
-For **`POST /rpc`**, application-level failures are returned as **HTTP 400**
-with the Worlds RPC error envelope (including `NOT_FOUND` and `INTERNAL`).
-Clients must classify those outcomes using the JSON field **`error.code`**, not
-HTTP status alone (`error.code` values are stable for clients; `message` strings
-are not contractual).
+For **`POST /rpc`**, application-level failures return the Worlds RPC error
+envelope (`{ action, error: { code, message } }`) with an **HTTP status chosen
+from `error.code`**: e.g. **400** for `INVALID_ARGUMENT`, **404** for
+`NOT_FOUND`, **409** for `ALREADY_EXISTS`, **500** for `INTERNAL`, **401** for
+`UNAUTHENTICATED`, **403** for `PERMISSION_DENIED`. The default for unknown
+codes is **400**.
+
+Clients must classify outcomes using the JSON field **`error.code`**, not HTTP
+status alone (`error.code` values are stable for clients; `message` strings are
+not contractual). HTTP status is a convenience for proxies and quick handling;
+`error.code` is normative for application logic.
 
 That is separate from **transport-only** responses: the default HTTP stack may
 return **413** (body too large) or **429** (rate limited) with bodies that are

@@ -1,5 +1,5 @@
 /**
- * HTTP server for the Worlds JSON-RPC API (`POST /rpc`).
+ * HTTP server for the Worlds RPC API (`POST /rpc`).
  *
  * @module
  *
@@ -131,7 +131,7 @@ function createWorldsFactory(
   };
 }
 
-/** Mounts `POST /rpc` JSON-RPC handling with auth. Compose with {@link applyTransportPreset} as needed. */
+/** Mounts `POST /rpc` Worlds RPC handling with auth. Compose with {@link applyTransportPreset} as needed. */
 export function mountRpcPost(
   app: Hono,
   worldStorage: WorldStorage,

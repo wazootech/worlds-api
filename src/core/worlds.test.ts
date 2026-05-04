@@ -139,7 +139,7 @@ Deno.test("Worlds: sparql SELECT query on world", async () => {
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/sparqlTest"],
+    source: "ns/sparqlTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o",
   });
@@ -169,7 +169,7 @@ Deno.test("Worlds: sparql ASK query returns true", async () => {
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/askTest"],
+    source: "ns/askTest",
     query:
       "ASK { <https://example.com/s> <https://example.com/p> <https://example.com/o> }",
   });
@@ -194,9 +194,9 @@ Deno.test("Worlds: sparql ASK query returns false", async () => {
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/askTest2"],
+    source: "ns/askTest2",
     query:
-      "ASK { <https://example.com/s> <https://example.com/p> <https://example.com/o2> }",
+      "ASK { <https://example.com/s> <https://example.com/not-p> <https://example.com/o> }",
   });
 
   assertEquals((result as { boolean: boolean }).boolean, false);
@@ -213,14 +213,14 @@ Deno.test("Worlds: sparql UPDATE INSERT adds triples", async () => {
 
   // Insert a triple using SPARQL UPDATE
   await worlds.sparql({
-    sources: ["ns/updateTest"],
+    source: "ns/updateTest",
     query:
       `INSERT DATA { <https://example.com/s> <https://example.com/p> <https://example.com/o1> }`,
   });
 
   // Verify the triple was added
   const result = await worlds.sparql({
-    sources: ["ns/updateTest"],
+    source: "ns/updateTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
   });
@@ -252,7 +252,7 @@ Deno.test("Worlds: sparql UPDATE DELETE removes triples", async () => {
 
   // Verify we have 2 triples
   let result = await worlds.sparql({
-    sources: ["ns/deleteTest"],
+    source: "ns/deleteTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o",
   });
@@ -264,14 +264,14 @@ Deno.test("Worlds: sparql UPDATE DELETE removes triples", async () => {
 
   // Delete one triple
   await worlds.sparql({
-    sources: ["ns/deleteTest"],
+    source: "ns/deleteTest",
     query:
       `DELETE DATA { <https://example.com/s> <https://example.com/p> <https://example.com/o1> }`,
   });
 
   // Verify only one remains
   result = await worlds.sparql({
-    sources: ["ns/deleteTest"],
+    source: "ns/deleteTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o",
   });
@@ -300,7 +300,7 @@ Deno.test("Worlds: sparql UPDATE INSERT+DELETE combination", async () => {
 
   // Replace o1 with o2 using INSERT+DELETE
   await worlds.sparql({
-    sources: ["ns/comboTest"],
+    source: "ns/comboTest",
     query: `
       DELETE { <https://example.com/s> <https://example.com/p> <https://example.com/o1> }
       INSERT { <https://example.com/s> <https://example.com/p> <https://example.com/o2> }
@@ -309,7 +309,7 @@ Deno.test("Worlds: sparql UPDATE INSERT+DELETE combination", async () => {
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/comboTest"],
+    source: "ns/comboTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
   });
@@ -319,105 +319,6 @@ Deno.test("Worlds: sparql UPDATE INSERT+DELETE combination", async () => {
   };
   assertEquals(rows.results.bindings.length, 1);
   assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o2");
-});
-
-Deno.test("Worlds: multi-source sparql query unions multiple worlds", async () => {
-  const worlds = createWorlds();
-
-  // Create two worlds
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "world1",
-    displayName: "World 1",
-  });
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "world2",
-    displayName: "World 2",
-  });
-
-  // Add different data to each world
-  await worlds.import({
-    source: "ns/world1",
-    data:
-      `<https://example.com/s> <https://example.com/p> <https://example.com/o1> .`,
-    contentType: "application/n-quads",
-  });
-
-  await worlds.import({
-    source: "ns/world2",
-    data:
-      `<https://example.com/s> <https://example.com/p> <https://example.com/o2> .`,
-    contentType: "application/n-quads",
-  });
-
-  // Query both worlds together
-  const result = await worlds.sparql({
-    sources: ["ns/world1", "ns/world2"],
-    query:
-      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o",
-  });
-
-  const rows = result as {
-    results: { bindings: Array<{ o?: { value: string } }> };
-  };
-  assertEquals(rows.results.bindings.length, 2);
-  assertEquals(rows.results.bindings[0].o?.value, "https://example.com/o1");
-  assertEquals(rows.results.bindings[1].o?.value, "https://example.com/o2");
-});
-
-Deno.test("Worlds: multi-source query with overlapping data", async () => {
-  const worlds = createWorlds();
-
-  // Create two worlds
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "w1",
-    displayName: "World 1",
-  });
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "w2",
-    displayName: "World 2",
-  });
-
-  // Add same triple to both worlds
-  const triple =
-    `<https://example.com/s> <https://example.com/p> <https://example.com/shared> .`;
-
-  await worlds.import({
-    source: "ns/w1",
-    data: triple,
-    contentType: "application/n-quads",
-  });
-
-  await worlds.import({
-    source: "ns/w2",
-    data: triple,
-    contentType: "application/n-quads",
-  });
-
-  // Add unique triple to w2
-  await worlds.import({
-    source: "ns/w2",
-    data:
-      `<https://example.com/s> <https://example.com/p> <https://example.com/unique> .`,
-    contentType: "application/n-quads",
-  });
-
-  // Query both worlds
-  const result = await worlds.sparql({
-    sources: ["ns/w1", "ns/w2"],
-    query:
-      "SELECT DISTINCT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o",
-  });
-
-  const rows = result as {
-    results: { bindings: Array<{ o?: { value: string } }> };
-  };
-  assertEquals(rows.results.bindings.length, 2);
-  assertEquals(rows.results.bindings[0].o?.value, "https://example.com/shared");
-  assertEquals(rows.results.bindings[1].o?.value, "https://example.com/unique");
 });
 
 Deno.test("Worlds: sparql with blank nodes", async () => {
@@ -438,7 +339,7 @@ Deno.test("Worlds: sparql with blank nodes", async () => {
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/bnodeTest"],
+    source: "ns/bnodeTest",
     query: "SELECT ?s ?p ?o WHERE { ?s ?p ?o } ORDER BY ?p ?o",
   });
 
@@ -472,7 +373,7 @@ Deno.test("Worlds: sparql rejects on non-existent world", async () => {
   await assertRejects(
     () =>
       worlds.sparql({
-        sources: ["ns/nonexistent"],
+        source: "ns/nonexistent",
         query: "SELECT * WHERE { ?s ?p ?o }",
       }),
     WorldNotFoundError,
@@ -655,7 +556,7 @@ Deno.test("Worlds: search finds data added via SPARQL UPDATE", async () => {
   });
 
   await worlds.sparql({
-    sources: ["ns/sparqlSearch"],
+    source: "ns/sparqlSearch",
     query:
       `INSERT DATA { <https://example.org/person> <https://example.org/name> "Gregory" }`,
   });
@@ -696,7 +597,7 @@ Deno.test("Worlds: sparql DELETE removes from search index", async () => {
   assertEquals(before.results?.length, 2);
 
   await worlds.sparql({
-    sources: ["ns/deleteSearch"],
+    source: "ns/deleteSearch",
     query:
       `DELETE DATA { <https://example.org/alice> <https://example.org/name> "Alice" }`,
   });
@@ -765,7 +666,7 @@ Deno.test("Worlds: empty sparql UPDATE does not mutate", async () => {
   });
 
   await worlds.sparql({
-    sources: ["ns/emptyUpdate"],
+    source: "ns/emptyUpdate",
     query: `INSERT DATA {}`,
   });
 
@@ -793,7 +694,7 @@ Deno.test("Worlds (InMemoryQuadStorageManager): sparql SELECT query", async () =
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/sparqlTest"],
+    source: "ns/sparqlTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
   });
@@ -815,13 +716,13 @@ Deno.test("Worlds (InMemoryQuadStorageManager): sparql UPDATE", async () => {
   });
 
   await worlds.sparql({
-    sources: ["ns/updateTest"],
+    source: "ns/updateTest",
     query:
       `INSERT DATA { <https://example.com/s> <https://example.com/p> "value" }`,
   });
 
   const result = await worlds.sparql({
-    sources: ["ns/updateTest"],
+    source: "ns/updateTest",
     query:
       "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
   });
@@ -849,16 +750,6 @@ Deno.test("Worlds (InMemoryQuadStorageManager): multi-world", async () => {
     data: `<https://example.com/s> <https://example.com/p> "two" .`,
     contentType: "application/n-quads",
   });
-
-  const result = await worlds.sparql({
-    sources: ["ns/w1", "ns/w2"],
-    query: "SELECT DISTINCT ?o WHERE { ?s ?p ?o } ORDER BY ?o",
-  });
-
-  const rows = result as {
-    results: { bindings: Array<{ o?: { value: string } }> };
-  };
-  assertEquals(rows.results.bindings.length, 2);
 });
 
 Deno.test("Worlds (InMemoryQuadStorageManager): isolated worlds", async () => {
@@ -876,14 +767,14 @@ Deno.test("Worlds (InMemoryQuadStorageManager): isolated worlds", async () => {
   });
 
   const r1 = await worlds.sparql({
-    sources: ["ns/w1"],
+    source: "ns/w1",
     query: "SELECT * WHERE { ?s ?p ?o }",
   });
   const r1Data = r1 as unknown as { results: { bindings: [] } };
   assertEquals(r1Data.results.bindings.length, 1);
 
   const r2 = await worlds.sparql({
-    sources: ["ns/w2"],
+    source: "ns/w2",
     query: "SELECT * WHERE { ?s ?p ?o }",
   });
   const r2Data = r2 as unknown as { results: { bindings: [] } };
