@@ -1,7 +1,10 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
-import { SearchIndexHandler } from "#/indexing/handlers/rdf-write-indexing/search-index-handler.ts";
+import {
+  type ChunkingRule,
+  SearchIndexHandler,
+} from "#/indexing/handlers/rdf-write-indexing/search-index-handler.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
 import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
@@ -10,6 +13,7 @@ import type { QuadStorageManager } from "./quad-storage.ts";
 export interface IndexedQuadStorageManagerConfig {
   embeddings: EmbeddingsService;
   chunks: ChunkIndexManager;
+  chunkingRules?: ChunkingRule[];
 }
 
 export class IndexedQuadStorageManager implements QuadStorageManager {
@@ -18,6 +22,7 @@ export class IndexedQuadStorageManager implements QuadStorageManager {
   constructor(
     private readonly embeddings: EmbeddingsService,
     private readonly chunks: ChunkIndexManager,
+    private readonly chunkingRules: ChunkingRule[] = [],
   ) {}
 
   async getQuadStorage(reference: WorldReference): Promise<IndexedQuadStorage> {
@@ -35,6 +40,7 @@ export class IndexedQuadStorageManager implements QuadStorageManager {
         this.embeddings,
         index,
         reference,
+        this.chunkingRules,
       );
       w = new IndexedQuadStorage(inner, [handler]);
       this.wrapped.set(key, w);
