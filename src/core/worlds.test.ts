@@ -441,6 +441,112 @@ Deno.test(
   },
 );
 
+Deno.test(
+  "Worlds: identical data across worlds yields identical SPARQL results",
+  async () => {
+    const worlds = createWorldsWithInMemoryQuadStorage();
+
+    await worlds.createWorld({ namespace: "ns", id: "w1", displayName: "W1" });
+    await worlds.createWorld({ namespace: "ns", id: "w2", displayName: "W2" });
+
+    const nquads =
+      `<https://example.com/s> <https://example.com/p> <https://example.com/o1> .\n` +
+      `<https://example.com/s> <https://example.com/p> <https://example.com/o2> .`;
+
+    await worlds.import({
+      source: "ns/w1",
+      data: nquads,
+      contentType: "application/n-quads",
+    });
+    await worlds.import({
+      source: "ns/w2",
+      data: nquads,
+      contentType: "application/n-quads",
+    });
+
+    const query =
+      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o } ORDER BY ?o";
+
+    const r1 = await worlds.sparql({ source: "ns/w1", query });
+    const r2 = await worlds.sparql({ source: "ns/w2", query });
+
+    assertEquals(r1, r2);
+  },
+);
+
+Deno.test(
+  "Worlds: same shape different values yields comparable SPARQL structure",
+  async () => {
+    const worlds = createWorldsWithInMemoryQuadStorage();
+
+    await worlds.createWorld({ namespace: "ns", id: "w1", displayName: "W1" });
+    await worlds.createWorld({ namespace: "ns", id: "w2", displayName: "W2" });
+
+    await worlds.import({
+      source: "ns/w1",
+      data: `<https://example.com/s> <https://example.com/p> "apple" .`,
+      contentType: "application/n-quads",
+    });
+    await worlds.import({
+      source: "ns/w2",
+      data: `<https://example.com/s> <https://example.com/p> "banana" .`,
+      contentType: "application/n-quads",
+    });
+
+    const query =
+      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }";
+
+    const r1 = await worlds.sparql({ source: "ns/w1", query }) as {
+      results: { bindings: Array<{ o?: { value: string } }> };
+    };
+    const r2 = await worlds.sparql({ source: "ns/w2", query }) as {
+      results: { bindings: Array<{ o?: { value: string } }> };
+    };
+
+    assertEquals(r1.results.bindings.length, 1);
+    assertEquals(r2.results.bindings.length, 1);
+    assertEquals(r1.results.bindings[0].o?.value, "apple");
+    assertEquals(r2.results.bindings[0].o?.value, "banana");
+  },
+);
+
+Deno.test(
+  "Worlds: populated world vs empty world SPARQL results",
+  async () => {
+    const worlds = createWorldsWithInMemoryQuadStorage();
+
+    await worlds.createWorld({
+      namespace: "ns",
+      id: "populated",
+      displayName: "Populated",
+    });
+    await worlds.createWorld({
+      namespace: "ns",
+      id: "empty",
+      displayName: "Empty",
+    });
+
+    await worlds.import({
+      source: "ns/populated",
+      data: `<https://example.com/s> <https://example.com/p> "data" .`,
+      contentType: "application/n-quads",
+    });
+
+    const query =
+      "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }";
+
+    const rPop = await worlds.sparql({ source: "ns/populated", query }) as {
+      results: { bindings: Array<{ o?: { value: string } }> };
+    };
+    const rEmpty = await worlds.sparql({ source: "ns/empty", query }) as {
+      results: { bindings: Array<{ o?: { value: string } }> };
+    };
+
+    assertEquals(rPop.results.bindings.length, 1);
+    assertEquals(rEmpty.results.bindings.length, 0);
+  },
+);
+
 Deno.test("Worlds: sparql rejects with no sources", async () => {
   const worlds = createWorlds();
 
