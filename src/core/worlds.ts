@@ -17,7 +17,6 @@ import type {
 } from "#/rpc/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
-import { searchChunks } from "#/indexing/chunks-search-engine.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import type { WorldsInterface } from "#/core/interfaces.ts";
@@ -346,12 +345,7 @@ export class Worlds implements WorldsInterface {
       else unindexedRefs.push(ref);
     }
     const chunkResults = indexedRefs.length > 0
-      ? await searchChunks(input, indexedRefs, {
-        chunkIndexManager: this.searchDeps.chunkIndexManager,
-        embeddingsService: this.searchDeps.embeddings,
-        worldStorage: this.worldStorage,
-        formatWorldName,
-      })
+      ? await this.searchChunks(input, indexedRefs)
       : [];
     const naiveResults = unindexedRefs.length > 0
       ? await this.searchNaiveFts(unindexedRefs, queryTerms)
@@ -398,6 +392,64 @@ export class Worlds implements WorldsInterface {
       ? encodePageToken({ v: 1, o: startIndex + pageSize, sig })
       : undefined;
     return { results, nextPageToken };
+  }
+
+  /**
+   * Vector + full-text search over per-world ChunkIndex indexes.
+   * Absorbed from chunks-search-engine.ts to eliminate pass-through module.
+   */
+  private async searchChunks(
+    input: SearchRequest,
+    targetRefs: WorldReference[],
+  ): Promise<SearchResult[]> {
+    const queryTerms = tokenizeSearchQuery(input.query);
+    if (queryTerms.length === 0) return [];
+
+    const queryVector = await this.searchDeps.embeddings.embed(input.query);
+    const rows = (
+      await Promise.all(targetRefs.map(async (ref) => {
+        const index = await this.searchDeps.chunkIndexManager.getChunkIndex(ref);
+        return await index.search({
+          queryText: input.query,
+          queryTerms,
+          queryVector,
+          subjects: input.subjects,
+          predicates: input.predicates,
+          types: input.types,
+        });
+      }))
+    ).flat();
+
+    rows.sort((a, b) => b.score - a.score);
+
+    const worldByKey = new Map<string, World>();
+    for (const ref of targetRefs) {
+      const stored = await this.worldStorage.getWorld(ref);
+      worldByKey.set(formatWorldName(ref), {
+        name: formatWorldName(ref),
+        namespace: ref.namespace,
+        id: ref.id,
+        displayName: stored?.displayName ?? "",
+        description: stored?.description,
+        createTime: stored?.createTime ?? 0,
+      });
+    }
+
+    return rows.map((row) => {
+      const world = worldByKey.get(formatWorldName(row.world));
+      if (!world) {
+        throw new Error(`Chunk result references untargeted world`);
+      }
+      return {
+        subject: row.subject,
+        predicate: row.predicate,
+        object: row.object,
+        vecRank: row.vecRank,
+        ftsRank: row.ftsRank,
+        score: row.score,
+        world,
+      };
+    });
   }
 
   private async searchNaiveFts(

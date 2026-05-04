@@ -1,6 +1,3 @@
-export { searchChunks } from "./chunks-search-engine.ts";
-export type { ChunkSearchOptions } from "./chunks-search-engine.ts";
-
 export { ftsTermHits, tokenizeSearchQuery } from "./fts.ts";
 
 export type { EmbeddingsService } from "./embeddings/interface.ts";
