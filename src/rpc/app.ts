@@ -61,8 +61,8 @@ import {
 import { applyTransportPreset } from "./transport/preset.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { QuadStorageManager } from "#/rdf/storage/quad-storage.ts";
-import type { ApiKeyStorage } from "#/identity/api-key-storage.ts";
-import { verifyApiKey } from "#/identity/api-key.ts";
+import type { ApiKeyStorage } from "#/api-keys/api-key-storage.ts";
+import { verifyApiKey } from "#/api-keys/api-key.ts";
 
 export type { TransportConfig } from "./transport/types.ts";
 export {
@@ -76,8 +76,8 @@ export type RpcAppOptions = {
   worldStorage?: WorldStorage;
   quadStorageManager?: QuadStorageManager;
   transport?: Partial<TransportConfig>;
-  /** Identity/API key auth config */
-  identity?: { apiKeyStorage: ApiKeyStorage };
+  /** API key authentication config */
+  apiKeys?: { apiKeyStorage: ApiKeyStorage };
 };
 
 function createDefaultOptions() {
@@ -229,7 +229,7 @@ export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const transport = transportOverrides
     ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
     : null;
-  const apiKeyStorage = options.identity?.apiKeyStorage;
+  const apiKeyStorage = options.apiKeys?.apiKeyStorage;
   return createHonoRpcApp(
     finalWorldStorage,
     finalQuadStorageManager,
