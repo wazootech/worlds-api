@@ -12,21 +12,31 @@ import {
   WorldNotFoundError,
 } from "#/core/errors.ts";
 
-function createWorlds(userId: string = "test-user") {
+function createWorlds(
+  keyId: string | null = "test-key",
+  scopes: string[] = ["world:*:*", "namespace:*:*"],
+) {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
-  return new Worlds({
-    worldStorage: new InMemoryWorldStorage(),
-    quadStorageManager: new IndexedQuadStorageManager(
-      embeddings,
+  return new Worlds(
+    {
+      worldStorage: new InMemoryWorldStorage(),
+      quadStorageManager: new IndexedQuadStorageManager(
+        embeddings,
+        chunkIndexManager,
+      ),
       chunkIndexManager,
-    ),
-    chunkIndexManager,
-    embeddings,
-  }, userId);
+      embeddings,
+    },
+    keyId,
+    scopes,
+  );
 }
 
-function createWorldsWithSharedOptions(userId: string = "test-user") {
+function createWorldsWithSharedOptions(
+  keyId: string | null = "test-key",
+  scopes: string[] = ["world:*:*", "namespace:*:*"],
+) {
   const worldStorage = new InMemoryWorldStorage();
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
@@ -34,24 +44,35 @@ function createWorldsWithSharedOptions(userId: string = "test-user") {
     embeddings,
     chunkIndexManager,
   );
-  const worlds = new Worlds({
-    worldStorage,
-    quadStorageManager: storeStorage,
-    chunkIndexManager,
-    embeddings,
-  }, userId);
+  const worlds = new Worlds(
+    {
+      worldStorage,
+      quadStorageManager: storeStorage,
+      chunkIndexManager,
+      embeddings,
+    },
+    keyId,
+    scopes,
+  );
   return { worlds, chunkIndexManager };
 }
 
-function createWorldsWithInMemoryQuadStorage(userId: string = "test-user") {
-  return new Worlds({
-    worldStorage: new InMemoryWorldStorage(),
-    quadStorageManager: new InMemoryQuadStorageManager(),
-  }, userId);
+function createWorldsWithInMemoryQuadStorage(
+  keyId: string | null = "test-key",
+  scopes: string[] = ["world:*:*", "namespace:*:*"],
+) {
+  return new Worlds(
+    {
+      worldStorage: new InMemoryWorldStorage(),
+      quadStorageManager: new InMemoryQuadStorageManager(),
+    },
+    keyId,
+    scopes,
+  );
 }
 
 Deno.test("Worlds: create/get/update/delete world", async () => {
-  const worlds = createWorlds();
+  const worlds = createWorlds("key1", ["world:*:*", "namespace:*:*"]);
 
   const created = await worlds.createWorld({
     namespace: "ns",
@@ -80,7 +101,7 @@ Deno.test("Worlds: create/get/update/delete world", async () => {
 });
 
 Deno.test("Worlds: createWorld rejects duplicates", async () => {
-  const worlds = createWorlds();
+  const worlds = createWorlds("key1", ["world:*:*", "namespace:*:*"]);
   await worlds.createWorld({ namespace: "ns", id: "w1" });
   await assertRejects(
     () => worlds.createWorld({ namespace: "ns", id: "w1" }),

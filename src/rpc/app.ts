@@ -112,13 +112,13 @@ function getHttpStatus(errorCode: string | undefined): number {
 function createWorldsFactory(
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
-): (userId: string) => Worlds {
+): (keyId: string | null, scopes: string[]) => Worlds {
   const searchDeps = {
     chunkIndexManager: new InMemoryChunkIndexManager(),
     embeddings: new FakeEmbeddingsService(),
   };
 
-  return (userId: string) => {
+  return (keyId: string | null, scopes: string[]) => {
     return new Worlds(
       {
         worldStorage,
@@ -126,7 +126,8 @@ function createWorldsFactory(
         chunkIndexManager: searchDeps.chunkIndexManager,
         embeddings: searchDeps.embeddings,
       },
-      userId,
+      keyId,
+      scopes,
     );
   };
 }
@@ -155,7 +156,7 @@ export function mountRpcPost(
       );
     }
 
-    let verified: { keyId: string; userId: string; scopes: string[] };
+    let verified: { keyId: string; scopes: string[] };
     try {
       if (!apiKeyStorage) {
         throw new Error("API key storage not configured");
@@ -174,7 +175,7 @@ export function mountRpcPost(
       );
     }
 
-    const scopedWorlds = worldsFactory(verified.userId);
+    const scopedWorlds = worldsFactory(verified.keyId, verified.scopes);
     const req = (await c.req.json()) as WorldsRpcRequest;
     const result = await handleRpc(scopedWorlds, req);
     if ("error" in result) {

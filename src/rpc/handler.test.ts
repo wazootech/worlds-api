@@ -7,18 +7,25 @@ import type { WorldsRpcRequest } from "#/rpc/openapi/generated/types.gen.ts";
 import { InMemoryWorldStorage } from "#/core/storage/in-memory.ts";
 import { IndexedQuadStorageManager } from "#/rdf/storage/indexed/manager.ts";
 
-function createWorlds(userId: string = "test-user") {
+function createWorlds(
+  keyId: string | null = "test-key",
+  scopes: string[] = ["world:*:*", "namespace:*:*"],
+) {
   const chunkIndexManager = new InMemoryChunkIndexManager();
   const embeddings = new FakeEmbeddingsService();
-  return new Worlds({
-    worldStorage: new InMemoryWorldStorage(),
-    quadStorageManager: new IndexedQuadStorageManager(
-      embeddings,
+  return new Worlds(
+    {
+      worldStorage: new InMemoryWorldStorage(),
+      quadStorageManager: new IndexedQuadStorageManager(
+        embeddings,
+        chunkIndexManager,
+      ),
       chunkIndexManager,
-    ),
-    chunkIndexManager,
-    embeddings,
-  }, userId);
+      embeddings,
+    },
+    keyId,
+    scopes,
+  );
 }
 
 Deno.test("handleRpc: createWorld then getWorld", async () => {

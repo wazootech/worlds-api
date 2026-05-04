@@ -3,7 +3,6 @@ import { type Client } from "@libsql/client";
 export interface StoredApiKey {
   id: string;
   keyHash: string;
-  userId: string;
   label?: string;
   scopes: string[];
   createdAt: number;
@@ -23,7 +22,6 @@ export class ApiKeyStorage {
       CREATE TABLE IF NOT EXISTS api_keys (
         id TEXT PRIMARY KEY,
         key_hash TEXT NOT NULL UNIQUE,
-        user_id TEXT NOT NULL,
         label TEXT,
         scopes TEXT NOT NULL DEFAULT '[]',
         created_at INTEGER NOT NULL,
@@ -39,12 +37,11 @@ export class ApiKeyStorage {
     await this.ensureInitialized();
     await this.client.execute({
       sql:
-        `INSERT INTO api_keys (id, key_hash, user_id, label, scopes, created_at, expires_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO api_keys (id, key_hash, label, scopes, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?, ?)`,
       args: [
         key.id,
         key.keyHash,
-        key.userId,
         key.label ?? null,
         JSON.stringify(key.scopes),
         key.createdAt,
@@ -64,7 +61,6 @@ export class ApiKeyStorage {
     return {
       id: row["id"] as string,
       keyHash: row["key_hash"] as string,
-      userId: row["user_id"] as string,
       label: row["label"] as string | undefined,
       scopes: JSON.parse(row["scopes"] as string),
       createdAt: row["created_at"] as number,

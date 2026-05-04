@@ -25,7 +25,11 @@ export const document: OpenAPIV3_1.Document = {
         name: "X-Api-Key",
         description:
           "API key for authentication. Obtain via your dashboard or admin API. " +
-          "The key is verified on every request and scopes the Worlds instance to the owner.",
+          "Scopes control access in format 'resource:verb:target' where resource is " +
+          "'world' or 'namespace', verb is 'read', 'write', or '*', and target is " +
+          "'namespace/id', 'namespace', or '*'. Example: 'world:read:myns/world1' " +
+          "grants read access to a specific world; 'namespace:*:myns' grants all access " +
+          "to a namespace; 'world:*:*' grants all access to all worlds.",
       },
     },
     schemas,

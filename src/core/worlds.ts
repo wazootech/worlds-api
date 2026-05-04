@@ -81,12 +81,18 @@ export class Worlds implements WorldsInterface {
     chunkIndexManager: ChunkIndexManager;
     embeddings: EmbeddingsService;
   };
-  private readonly userId: string | null;
+  private readonly keyId: string | null;
+  private readonly scopes: string[];
 
-  constructor(options: WorldsOptions, userId: string | null = null) {
+  constructor(
+    options: WorldsOptions,
+    keyId: string | null = null,
+    scopes: string[] = [],
+  ) {
     this.worldStorage = options.worldStorage;
     this.quadStorageManager = options.quadStorageManager;
-    this.userId = userId;
+    this.keyId = keyId;
+    this.scopes = scopes;
     this.searchDeps = options.chunkIndexManager && options.embeddings
       ? {
         chunkIndexManager: options.chunkIndexManager,
@@ -98,22 +104,76 @@ export class Worlds implements WorldsInterface {
       };
   }
 
-  forUser(userId: string): Worlds {
-    return new Worlds(
-      {
-        worldStorage: this.worldStorage,
-        quadStorageManager: this.quadStorageManager,
-        chunkIndexManager: this.searchDeps.chunkIndexManager,
-        embeddings: this.searchDeps.embeddings,
-      },
-      userId,
-    );
-  }
-
   private assertAuthenticated(): void {
-    if (!this.userId) {
+    if (!this.keyId) {
       throw new UnauthenticatedError();
     }
+  }
+
+  /**
+   * Check if the API key has access to a specific world.
+   * Matches scopes like: "world:read:ns/id", "world:write:ns/id", "world:*:ns/id",
+   *                   "namespace:read:ns", "namespace:write:ns", "namespace:*:ns",
+   *                   "world:*:*", "namespace:*:*", "*:*:*"
+   */
+  private hasWorldAccess(
+    ref: WorldReference,
+    verb: "read" | "write",
+  ): boolean {
+    const worldTarget = `${ref.namespace}/${ref.id}`;
+    const nsTarget = ref.namespace;
+
+    return this.scopes.some((scope) => {
+      const parts = scope.split(":");
+      if (parts.length !== 3) return false;
+      const [resource, scopeVerb, target] = parts;
+
+      // Check verb match
+      const verbMatch = scopeVerb === "*" || scopeVerb === verb;
+
+      // Check target match
+      if (resource === "world") {
+        const targetMatch = target === "*" || target === worldTarget;
+        return verbMatch && targetMatch;
+      }
+      if (resource === "namespace") {
+        const targetMatch = target === "*" || target === nsTarget;
+        return verbMatch && targetMatch;
+      }
+      if (resource === "*") {
+        return verbMatch && (target === "*" || target === worldTarget ||
+          target === nsTarget);
+      }
+      return false;
+    });
+  }
+
+  /**
+   * Check if the API key has access to a namespace.
+   */
+  private hasNamespaceAccess(
+    namespace: string,
+    verb: "read" | "write",
+  ): boolean {
+    return this.scopes.some((scope) => {
+      const parts = scope.split(":");
+      if (parts.length !== 3) return false;
+      const [resource, scopeVerb, target] = parts;
+
+      const verbMatch = scopeVerb === "*" || scopeVerb === verb;
+
+      if (resource === "namespace") {
+        return verbMatch && (target === "*" || target === namespace);
+      }
+      if (resource === "world") {
+        return verbMatch && (target === "*" ||
+          target?.split("/")[0] === namespace);
+      }
+      if (resource === "*") {
+        return verbMatch && (target === "*" || target === namespace);
+      }
+      return false;
+    });
   }
 
   private async assertOwnsWorld(reference: WorldReference): Promise<void> {
@@ -122,29 +182,26 @@ export class Worlds implements WorldsInterface {
     if (!stored) {
       throw new WorldNotFoundError(reference);
     }
-    if (stored.owner !== this.userId) {
+    if (!this.hasWorldAccess(reference, "write")) {
       throw new PermissionDeniedError(`${reference.namespace}/${reference.id}`);
     }
   }
 
   private async assertOwnsNamespace(namespace: string): Promise<void> {
     this.assertAuthenticated();
-    const existingWorlds = await this.worldStorage.listWorlds(namespace);
-    if (existingWorlds.length > 0) {
-      if (existingWorlds[0].owner !== this.userId) {
-        throw new PermissionDeniedError(`namespace/${namespace}`);
-      }
+    if (!this.hasNamespaceAccess(namespace, "write")) {
+      throw new PermissionDeniedError(`namespace/${namespace}`);
     }
   }
 
   async getWorld(input: GetWorldRequest): Promise<World | null> {
-    const reference = resolveWorldReference(input.source);
     this.assertAuthenticated();
+    const reference = resolveWorldReference(input.source);
     const stored = await this.worldStorage.getWorld(reference);
     if (!stored) {
       return null;
     }
-    if (stored.owner !== this.userId) {
+    if (!this.hasWorldAccess(reference, "read")) {
       throw new PermissionDeniedError(
         `${reference.namespace}/${reference.id}`,
       );
@@ -164,7 +221,6 @@ export class Worlds implements WorldsInterface {
       displayName: input.displayName,
       description: input.description,
       createTime: Date.now(),
-      owner: this.userId!,
     };
     await this.worldStorage.createWorld(stored);
     return toWorld(stored);
@@ -196,9 +252,10 @@ export class Worlds implements WorldsInterface {
   async listWorlds(input?: ListWorldsRequest): Promise<ListWorldsResponse> {
     this.assertAuthenticated();
     const namespaceFilter = input?.parent?.trim();
-    const all = await this.worldStorage.listWorlds(
-      namespaceFilter,
-      this.userId!,
+    const all = await this.worldStorage.listWorlds(namespaceFilter);
+    // Filter to only worlds the API key has read access to
+    const accessible = all.filter((w) =>
+      this.hasWorldAccess(w.reference, "read")
     );
     const pageSizeRaw = input?.pageSize === undefined || input.pageSize === 0
       ? DEFAULT_LIST_PAGE_SIZE
@@ -217,8 +274,10 @@ export class Worlds implements WorldsInterface {
       : null;
     if (decoded) assertPageTokenSig(decoded, sig);
     const startIndex = decoded?.o ?? 0;
-    const worlds = all.slice(startIndex, startIndex + pageSize).map(toWorld);
-    const nextPageToken = startIndex + pageSize < all.length
+    const worlds = accessible.slice(startIndex, startIndex + pageSize).map(
+      toWorld,
+    );
+    const nextPageToken = startIndex + pageSize < accessible.length
       ? encodePageToken({ v: 1, o: startIndex + pageSize, sig })
       : undefined;
     return { worlds, nextPageToken };
@@ -262,8 +321,12 @@ export class Worlds implements WorldsInterface {
     const sources = input.sources;
     const targetRefs: WorldReference[] = [];
     if (!sources || sources.length === 0) {
-      const all = await this.worldStorage.listWorlds(undefined, this.userId!);
-      for (const w of all) targetRefs.push(w.reference);
+      const all = await this.worldStorage.listWorlds();
+      for (const w of all) {
+        if (this.hasWorldAccess(w.reference, "read")) {
+          targetRefs.push(w.reference);
+        }
+      }
     } else {
       for (const src of sources) {
         const ref = resolveWorldReference(src);

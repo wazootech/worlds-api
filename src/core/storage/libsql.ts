@@ -18,7 +18,6 @@ export class LibsqlWorldStorage implements WorldStorage {
         display_name TEXT,
         description TEXT,
         create_time INTEGER NOT NULL,
-        owner TEXT NOT NULL,
         PRIMARY KEY (namespace, id)
       )
     `);
@@ -42,7 +41,6 @@ export class LibsqlWorldStorage implements WorldStorage {
       displayName: row["display_name"] as string | undefined,
       description: row["description"] as string | undefined,
       createTime: row["create_time"] as number,
-      owner: row["owner"] as string,
     };
   }
 
@@ -55,15 +53,14 @@ export class LibsqlWorldStorage implements WorldStorage {
     }
     await this.client.execute({
       sql:
-        `INSERT INTO worlds (namespace, id, display_name, description, create_time, owner)
-            VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO worlds (namespace, id, display_name, description, create_time)
+            VALUES (?, ?, ?, ?, ?)`,
       args: [
         namespace ?? "_",
         id,
         world.displayName ?? null,
         world.description ?? null,
         world.createTime,
-        world.owner,
       ],
     });
   }
@@ -76,12 +73,11 @@ export class LibsqlWorldStorage implements WorldStorage {
       throw new WorldNotFoundError({ namespace, id });
     }
     await this.client.execute({
-      sql: `UPDATE worlds SET display_name = ?, description = ?, owner = ?
+      sql: `UPDATE worlds SET display_name = ?, description = ?
             WHERE namespace = ? AND id = ?`,
       args: [
         world.displayName ?? null,
         world.description ?? null,
-        world.owner,
         namespace ?? "_",
         id,
       ],
@@ -101,24 +97,13 @@ export class LibsqlWorldStorage implements WorldStorage {
     });
   }
 
-  async listWorlds(namespace?: string, owner?: string): Promise<StoredWorld[]> {
+  async listWorlds(namespace?: string): Promise<StoredWorld[]> {
     await this.ensureInitialized();
     let result;
-    if (namespace && owner) {
-      result = await this.client.execute({
-        sql:
-          `SELECT * FROM worlds WHERE namespace = ? AND owner = ? ORDER BY namespace, id`,
-        args: [namespace, owner],
-      });
-    } else if (namespace) {
+    if (namespace) {
       result = await this.client.execute({
         sql: `SELECT * FROM worlds WHERE namespace = ? ORDER BY namespace, id`,
         args: [namespace],
-      });
-    } else if (owner) {
-      result = await this.client.execute({
-        sql: `SELECT * FROM worlds WHERE owner = ? ORDER BY namespace, id`,
-        args: [owner],
       });
     } else {
       result = await this.client.execute({
@@ -135,17 +120,7 @@ export class LibsqlWorldStorage implements WorldStorage {
         displayName: r["display_name"] as string | undefined,
         description: r["description"] as string | undefined,
         createTime: r["create_time"] as number,
-        owner: r["owner"] as string,
       };
     });
-  }
-
-  async getNamespaceOwner(namespace: string): Promise<string | null> {
-    await this.ensureInitialized();
-    const result = await this.client.execute({
-      sql: `SELECT owner FROM worlds WHERE namespace = ? LIMIT 1`,
-      args: [namespace],
-    });
-    return result.rows.length > 0 ? result.rows[0]["owner"] as string : null;
   }
 }

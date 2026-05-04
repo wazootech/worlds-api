@@ -25,8 +25,7 @@ Deno.test({
   await apiKeyStorage.createKey({
     id: "wk_test1",
     keyHash: hashedKey,
-    userId: "test-user",
-    scopes: ["read", "write"],
+    scopes: ["world:*:*", "namespace:*:*"],
     createdAt: Date.now(),
   });
   const app = createRpcApp({
@@ -57,8 +56,7 @@ Deno.test({
   await apiKeyStorage.createKey({
     id: "wk_test2",
     keyHash: hashedKey,
-    userId: "test-user",
-    scopes: ["read", "write"],
+    scopes: ["world:*:*", "namespace:*:*"],
     createdAt: Date.now(),
   });
   const app = createRpcApp({
@@ -92,8 +90,7 @@ Deno.test({
   await apiKeyStorage.createKey({
     id: "wk_test3",
     keyHash: hashedKey,
-    userId: "test-user",
-    scopes: ["read", "write"],
+    scopes: ["world:*:*", "namespace:*:*"],
     createdAt: Date.now(),
   });
   const app = createRpcApp({
@@ -127,8 +124,7 @@ Deno.test({
   await apiKeyStorage.createKey({
     id: "wk_test4",
     keyHash: hashedKey,
-    userId: "test-user",
-    scopes: ["read", "write"],
+    scopes: ["world:*:*", "namespace:*:*"],
     createdAt: Date.now(),
   });
   const app = createRpcApp({
@@ -184,8 +180,7 @@ Deno.test("createRpcApp: without transport, oversized body is not rejected", asy
   await apiKeyStorage.createKey({
     id: "wk_test5",
     keyHash: hashedKey,
-    userId: "test-user",
-    scopes: ["read", "write"],
+    scopes: ["world:*:*", "namespace:*:*"],
     createdAt: Date.now(),
   });
   const app = createRpcApp({

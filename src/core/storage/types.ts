@@ -6,5 +6,4 @@ export interface StoredWorld {
   displayName?: string;
   description?: string;
   createTime: number;
-  owner: string;
 }

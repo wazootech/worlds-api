@@ -12,7 +12,6 @@ async function createTestStorage() {
   await storage.createKey({
     id: "test_key_1",
     keyHash: "hash1",
-    userId: "user_1",
     scopes: ["read", "write"],
     createdAt: Date.now(),
   });
@@ -54,7 +53,6 @@ Deno.test("ApiKeyStorage - create and findByHash", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_test123",
     keyHash: hashedKey,
-    userId: "user_1",
     label: "Test Key",
     scopes: ["read"],
     createdAt: Date.now(),
@@ -63,7 +61,6 @@ Deno.test("ApiKeyStorage - create and findByHash", async () => {
 
   const foundKey = await storage.findByHash(hashedKey);
   assertEquals(foundKey?.id, "wk_test123");
-  assertEquals(foundKey?.userId, "user_1");
   assertEquals(foundKey?.scopes, ["read"]);
 });
 
@@ -74,7 +71,6 @@ Deno.test("ApiKeyStorage - findByHash returns null for revoked key", async () =>
   const storedKey: StoredApiKey = {
     id: "wk_revokable",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: [],
     createdAt: Date.now(),
   };
@@ -92,7 +88,6 @@ Deno.test("ApiKeyStorage - revokeKey", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_revoke",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: [],
     createdAt: Date.now(),
   };
@@ -110,7 +105,6 @@ Deno.test("ApiKeyStorage - touchLastUsed", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_touch",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: [],
     createdAt: Date.now(),
   };
@@ -128,7 +122,6 @@ Deno.test("verifyApiKey - valid key", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_valid",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: ["read", "write"],
     createdAt: Date.now(),
   };
@@ -136,7 +129,6 @@ Deno.test("verifyApiKey - valid key", async () => {
 
   const verified = await verifyApiKey(rawKey, storage);
   assertEquals(verified.keyId, "wk_valid");
-  assertEquals(verified.userId, "user_1");
   assertEquals(verified.scopes, ["read", "write"]);
 });
 
@@ -156,7 +148,6 @@ Deno.test("verifyApiKey - revoked key throws", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_revoked",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: [],
     createdAt: Date.now(),
   };
@@ -177,7 +168,6 @@ Deno.test("verifyApiKey - expired key throws", async () => {
   const storedKey: StoredApiKey = {
     id: "wk_expired",
     keyHash: hashedKey,
-    userId: "user_1",
     scopes: [],
     createdAt: Date.now(),
     expiresAt: Date.now() - 1000, // expired 1 second ago

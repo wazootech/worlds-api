@@ -9,7 +9,5 @@ export interface WorldStorage {
   createWorld(world: StoredWorld): Promise<void>;
   updateWorld(world: StoredWorld): Promise<void>;
   deleteWorld(reference: WorldReference): Promise<void>;
-  listWorlds(namespace?: string, owner?: string): Promise<StoredWorld[]>;
-  /** Get the owner of a namespace (by checking any world in that namespace). */
-  getNamespaceOwner(namespace: string): Promise<string | null>;
+  listWorlds(namespace?: string): Promise<StoredWorld[]>;
 }

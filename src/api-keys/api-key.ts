@@ -2,7 +2,6 @@ import type { ApiKeyStorage } from "./api-key-storage.ts";
 
 export interface VerifiedKey {
   keyId: string;
-  userId: string;
   scopes: string[];
 }
 
@@ -18,7 +17,7 @@ export async function verifyApiKey(
     throw new Error("API key expired");
   }
   await storage.touchLastUsed(record.id);
-  return { keyId: record.id, userId: record.userId, scopes: record.scopes };
+  return { keyId: record.id, scopes: record.scopes };
 }
 
 export async function hashKey(rawKey: string): Promise<string> {
