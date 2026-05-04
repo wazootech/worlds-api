@@ -8,7 +8,9 @@ import type { PatchHandler } from "#/indexing/search/types.ts";
 class FakePatchHandler implements PatchHandler {
   public patches: { insertions: StoredQuad[]; deletions: StoredQuad[] }[] = [];
 
-  async patch(patches: { insertions: StoredQuad[]; deletions: StoredQuad[] }[]): Promise<void> {
+  async patch(
+    patches: { insertions: StoredQuad[]; deletions: StoredQuad[] }[],
+  ): Promise<void> {
     this.patches.push(...patches);
   }
 }

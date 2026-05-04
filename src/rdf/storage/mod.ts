@@ -11,7 +11,10 @@ export { storedQuadKey } from "./quad-key.ts";
 export { InMemoryQuadStorage } from "./in-memory/storage.ts";
 export { InMemoryQuadStorageManager } from "./in-memory/manager.ts";
 export { IndexedQuadStorage } from "./indexed/storage.ts";
-export { IndexedQuadStorageManager, type IndexedQuadStorageManagerConfig } from "./indexed/manager.ts";
+export {
+  IndexedQuadStorageManager,
+  type IndexedQuadStorageManagerConfig,
+} from "./indexed/manager.ts";
 export { LibsqlQuadStorage } from "./libsql/storage.ts";
 export { LibsqlQuadStorageManager } from "./libsql/manager.ts";
 export { FakeQuadStorage } from "./fake.ts";
