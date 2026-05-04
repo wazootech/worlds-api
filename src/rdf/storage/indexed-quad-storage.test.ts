@@ -2,10 +2,7 @@ import { assertEquals } from "@std/assert";
 import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
 import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
 import type { StoredQuad } from "./quad.ts";
-import type {
-  Patch,
-  PatchHandler,
-} from "#/indexing/handlers/rdf-write-indexing/types.ts";
+import type { Patch, PatchHandler } from "#/indexing/search/types.ts";
 
 function makeQuad(overrides: Partial<StoredQuad> = {}): StoredQuad {
   return {

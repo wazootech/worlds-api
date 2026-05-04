@@ -4,7 +4,7 @@ import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import {
   type ChunkingRule,
   SearchIndexHandler,
-} from "#/indexing/handlers/rdf-write-indexing/search-index-handler.ts";
+} from "#/indexing/search/search-index-handler.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import { InMemoryQuadStorage } from "./in-memory-quad-storage.ts";
 import { IndexedQuadStorage } from "./indexed-quad-storage.ts";
