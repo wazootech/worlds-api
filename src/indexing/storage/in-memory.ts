@@ -1,33 +1,17 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
-import { RDF_TYPE } from "#/rdf/vocab.ts";
 import { ftsTermHits } from "#/indexing/fts.ts";
+import {
+  buildSubjectTypes,
+  filterChunks,
+  scoreChunk,
+} from "./search-utils.ts";
 import type {
   ChunkIndex,
   ChunkIndexManager,
   ChunkIndexSearchQuery,
 } from "./interface.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
-
-function dotNormalized(
-  a: Float32Array | number[],
-  b: Float32Array | number[],
-): number {
-  let s = 0;
-  const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) s += (a[i] ?? 0) * (b[i] ?? 0);
-  return s;
-}
-
-function buildSubjectTypes(chunks: ChunkRecord[]): Map<string, Set<string>> {
-  const subjectTypes = new Map<string, Set<string>>();
-  for (const c of chunks) {
-    if (c.predicate !== RDF_TYPE) continue;
-    if (!subjectTypes.has(c.subject)) subjectTypes.set(c.subject, new Set());
-    subjectTypes.get(c.subject)!.add(c.text);
-  }
-  return subjectTypes;
-}
 
 export class InMemoryChunkIndex implements ChunkIndex {
   private readonly chunksById = new Map<string, ChunkRecord>();
@@ -79,48 +63,24 @@ export class InMemoryChunkIndex implements ChunkIndex {
   async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
     const chunks = await this.getAll();
     const subjectTypes = buildSubjectTypes(chunks);
-    const qFull = input.queryText.toLowerCase();
-
-    const rows: ChunkSearchRow[] = [];
-
-    const filtered = chunks.filter((c) =>
-      !input.subjects || input.subjects.length === 0 ||
-      input.subjects.includes(c.subject)
-    ).filter((c) =>
-      !input.predicates || input.predicates.length === 0 ||
-      input.predicates.includes(c.predicate)
-    ).filter((c) => {
-      if (!input.types || input.types.length === 0) return true;
-      const st = subjectTypes.get(c.subject);
-      return input.types.some((t) => st?.has(t));
+    const filtered = filterChunks({
+      chunks,
+      subjects: input.subjects,
+      predicates: input.predicates,
+      types: input.types,
+      subjectTypes,
     });
 
+    const rows: ChunkSearchRow[] = [];
     for (const chunk of filtered) {
-      const fts = ftsTermHits(
-        input.queryTerms,
-        chunk.subject,
-        chunk.predicate,
-        chunk.text,
-      );
-      const hay = `${chunk.subject} ${chunk.predicate} ${chunk.text}`
-        .toLowerCase();
-      const phraseMatch = qFull.length > 0 && hay.includes(qFull);
-
-      if (fts === 0 && !phraseMatch) continue;
-
-      const dot = dotNormalized(input.queryVector, chunk.vector);
-      const vecRank = dot > 1e-12 ? dot : null;
-      const score = fts * 1000 + (vecRank ?? 0);
-
-      rows.push({
-        subject: chunk.subject,
-        predicate: chunk.predicate,
-        object: chunk.text,
-        vecRank,
-        ftsRank: fts > 0 ? fts : null,
-        score,
-        world: chunk.world,
+      const result = scoreChunk({
+        chunk,
+        queryTerms: input.queryTerms,
+        queryText: input.queryText,
+        queryVector: input.queryVector,
+        ftsTermHits,
       });
+      if (result) rows.push(result);
     }
 
     rows.sort((a, b) => b.score - a.score);
