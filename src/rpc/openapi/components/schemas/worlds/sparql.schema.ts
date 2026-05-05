@@ -159,7 +159,7 @@ export const SparqlQuadsResults: OpenAPIV3_1.SchemaObject = {
 export const SparqlRequest: OpenAPIV3_1.SchemaObject = {
   description: "SPARQL query or update operation.",
   type: "object",
-  required: ["query"],
+  required: ["source", "query"],
   properties: {
     source: { $ref: "#/components/schemas/Source" },
     parent: { type: "string" },

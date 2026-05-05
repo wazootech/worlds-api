@@ -568,14 +568,7 @@ Deno.test(
   },
 );
 
-Deno.test("Worlds: sparql rejects with no sources", async () => {
-  const worlds = createWorlds();
-
-  await assertRejects(
-    () => worlds.sparql({ query: "SELECT * WHERE { ?s ?p ?o }" }),
-    InvalidArgumentError,
-  );
-});
+// SPARQL requires a source; handled by RPC layer validation.
 
 Deno.test("Worlds: sparql rejects on non-existent world", async () => {
   const worlds = createWorlds();
@@ -610,7 +603,7 @@ Deno.test("Worlds: search finds quads matching query terms", async () => {
 
   const result = await worlds.search({
     query: "sandra",
-    sources: ["ns/searchTest"],
+    source: "ns/searchTest",
   });
 
   assertEquals(result.results?.length, 1);
@@ -637,7 +630,7 @@ Deno.test("Worlds: search scores by number of matching terms", async () => {
 
   const result = await worlds.search({
     query: "ethan gregory",
-    sources: ["ns/scoreTest"],
+    source: "ns/scoreTest",
   });
 
   assertEquals(result.results?.length, 2);
@@ -645,80 +638,33 @@ Deno.test("Worlds: search scores by number of matching terms", async () => {
   assertEquals(result.results?.[1].ftsRank, 1);
 });
 
-Deno.test("Worlds: search returns results from multiple worlds", async () => {
-  const worlds = createWorlds();
+// search returns results from single world (multi-world is client responsibility)
 
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "world1",
-    displayName: "World 1",
-  });
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "world2",
-    displayName: "World 2",
-  });
-
-  await worlds.import({
-    source: "ns/world1",
-    data: `<https://example.org/ethan> <https://example.org/name> "Ethan" .`,
-    contentType: "application/n-quads",
-  });
-  await worlds.import({
-    source: "ns/world2",
-    data:
-      `<https://example.org/gregory> <https://example.org/name> "Gregory" .`,
-    contentType: "application/n-quads",
-  });
-
-  const result = await worlds.search({
-    query: "ethan gregory",
-    sources: ["ns/world1", "ns/world2"],
-  });
-
-  assertEquals(result.results?.length, 2);
-});
-
-Deno.test("Worlds: search falls back per unindexed world", async () => {
+// search falls back to naive FTS for unindexed world
+Deno.test("Worlds: search falls back for unindexed world", async () => {
   const { worlds, chunkIndexManager } = createWorldsWithSharedOptions();
 
+  const ref = { namespace: "ns", id: "unindexed" };
   await worlds.createWorld({
-    namespace: "ns",
-    id: "indexed",
-    displayName: "Indexed",
-  });
-  await worlds.createWorld({
-    namespace: "ns",
-    id: "unindexed",
+    namespace: ref.namespace,
+    id: ref.id,
     displayName: "Unindexed",
   });
 
   await worlds.import({
-    source: "ns/indexed",
-    data: `<https://example.org/indexed> <https://example.org/name> "Ethan" .`,
-    contentType: "application/n-quads",
-  });
-  await worlds.import({
-    source: "ns/unindexed",
-    data:
-      `<https://example.org/unindexed> <https://example.org/name> "Gregory" .`,
+    source: ref,
+    data: `<https://example.org/unindexed> <https://example.org/name> "Gregory" .`,
     contentType: "application/n-quads",
   });
 
-  await chunkIndexManager.deleteChunkIndex({
-    namespace: "ns",
-    id: "unindexed",
-  });
+  await chunkIndexManager.deleteChunkIndex(ref);
 
   const result = await worlds.search({
-    query: "ethan gregory",
-    sources: ["ns/indexed", "ns/unindexed"],
+    query: "gregory",
+    source: ref,
   });
 
-  assertEquals(result.results?.map((r) => r.subject).sort(), [
-    "https://example.org/indexed",
-    "https://example.org/unindexed",
-  ]);
+  assertEquals(result.results?.[0].subject, "https://example.org/unindexed");
 });
 
 Deno.test("Worlds: search rejects on non-existent world", async () => {
@@ -728,7 +674,7 @@ Deno.test("Worlds: search rejects on non-existent world", async () => {
     () =>
       worlds.search({
         query: "test",
-        sources: ["ns/nonexistent"],
+        source: "ns/nonexistent",
       }),
     WorldNotFoundError,
   );
@@ -750,7 +696,7 @@ Deno.test("Worlds: search with empty query returns empty", async () => {
 
   const result = await worlds.search({
     query: "",
-    sources: ["ns/emptyQuery"],
+    source: "ns/emptyQuery",
   });
 
   assertEquals(result.results?.length, 0);
@@ -773,7 +719,7 @@ Deno.test("Worlds: search finds data added via SPARQL UPDATE", async () => {
 
   const result = await worlds.search({
     query: "gregory",
-    sources: ["ns/sparqlSearch"],
+    source: "ns/sparqlSearch",
   });
 
   assertEquals(result.results?.length, 1);
@@ -802,7 +748,7 @@ Deno.test("Worlds: sparql DELETE removes from search index", async () => {
 
   const before = await worlds.search({
     query: "alice bob",
-    sources: ["ns/deleteSearch"],
+    source: "ns/deleteSearch",
   });
   assertEquals(before.results?.length, 2);
 
@@ -814,7 +760,7 @@ Deno.test("Worlds: sparql DELETE removes from search index", async () => {
 
   const after = await worlds.search({
     query: "alice bob",
-    sources: ["ns/deleteSearch"],
+    source: "ns/deleteSearch",
   });
   assertEquals(after.results?.length, 1);
   assertEquals(after.results?.[0].subject, "https://example.org/bob");
@@ -847,14 +793,14 @@ Deno.test("Worlds: search filters by specified sources only", async () => {
 
   const result1 = await worlds.search({
     query: "one two",
-    sources: ["ns/world1"],
+    source: "ns/world1",
   });
   assertEquals(result1.results?.length, 1);
   assertEquals(result1.results?.[0].subject, "https://example.org/s1");
 
   const result2 = await worlds.search({
     query: "one two",
-    sources: ["ns/world2"],
+    source: "ns/world2",
   });
   assertEquals(result2.results?.length, 1);
   assertEquals(result2.results?.[0].subject, "https://example.org/s2");
@@ -882,7 +828,7 @@ Deno.test("Worlds: empty sparql UPDATE does not mutate", async () => {
 
   const result = await worlds.search({
     query: "data",
-    sources: ["ns/emptyUpdate"],
+    source: "ns/emptyUpdate",
   });
   assertEquals(result.results?.length, 1);
 });
@@ -944,23 +890,7 @@ Deno.test("Worlds (InMemoryQuadStorageManager): sparql UPDATE", async () => {
   assertEquals(rows.results.bindings[0].o?.value, "value");
 });
 
-Deno.test("Worlds (InMemoryQuadStorageManager): multi-world", async () => {
-  const worlds = createWorldsWithInMemoryQuadStorage();
-
-  await worlds.createWorld({ namespace: "ns", id: "w1" });
-  await worlds.createWorld({ namespace: "ns", id: "w2" });
-
-  await worlds.import({
-    source: "ns/w1",
-    data: `<https://example.com/s> <https://example.com/p> "one" .`,
-    contentType: "application/n-quads",
-  });
-  await worlds.import({
-    source: "ns/w2",
-    data: `<https://example.com/s> <https://example.com/p> "two" .`,
-    contentType: "application/n-quads",
-  });
-});
+// multi-world logic is client-side
 
 Deno.test("Worlds (InMemoryQuadStorageManager): isolated worlds", async () => {
   const worlds = createWorldsWithInMemoryQuadStorage();

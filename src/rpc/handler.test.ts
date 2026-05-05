@@ -145,7 +145,7 @@ Deno.test("handleRpc: sparql unsupported query returns INVALID_ARGUMENT", async 
   const res = await handleRpc(worlds, {
     action: "sparql",
     request: {
-      sources: ["ns/spq"],
+      source: "ns/spq",
       query: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
     },
   } as WorldsRpcRequest);
@@ -177,7 +177,7 @@ Deno.test("handleRpc: importWorld then sparql", async () => {
   const sparqlRes = await handleRpc(worlds, {
     action: "sparql",
     request: {
-      sources: ["ns/imp"],
+      source: "ns/imp",
       query:
         "SELECT ?o WHERE { <https://example.com/s> <https://example.com/p> ?o }",
     },
@@ -208,7 +208,7 @@ Deno.test("handleRpc: searchWorlds", async () => {
 
   const res = await handleRpc(worlds, {
     action: "searchWorlds",
-    request: { query: "hello", sources: ["ns/srch"] },
+    request: { query: "hello", source: "ns/srch" },
   } as WorldsRpcRequest);
   assertEquals(res.action, "searchWorlds");
   if ("response" in res && res.action === "searchWorlds") {

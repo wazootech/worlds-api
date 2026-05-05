@@ -24,7 +24,7 @@ import type { SearchResult } from "#/rpc/openapi/generated/types.gen.ts";
  * to make it independently testable.
  */
 export async function searchNaiveFts(params: {
-  targetRefs: WorldReference[];
+  targetRef: WorldReference;
   queryTerms: string[];
   queryText: string;
   subjects?: string[];
@@ -34,7 +34,7 @@ export async function searchNaiveFts(params: {
   worldStorage: WorldStorage;
 }): Promise<SearchResult[]> {
   const {
-    targetRefs,
+    targetRef,
     queryTerms,
     queryText,
     subjects,
@@ -44,55 +44,52 @@ export async function searchNaiveFts(params: {
     worldStorage,
   } = params;
 
-  const allResults: SearchResult[] = [];
+  const quadStorage = await quadStorageManager.getQuadStorage(targetRef);
+  const quads = await quadStorage.findQuads([]);
+  const meta = await worldStorage.getWorld(targetRef);
+  const world: World = {
+    name: formatWorldName(targetRef),
+    namespace: targetRef.namespace,
+    id: targetRef.id,
+    displayName: meta?.displayName ?? "",
+    description: meta?.description,
+    createTime: meta?.createTime ?? 0,
+  };
 
-  for (const ref of targetRefs) {
-    const quadStorage = await quadStorageManager.getQuadStorage(ref);
-    const quads = await quadStorage.findQuads([]);
-    const meta = await worldStorage.getWorld(ref);
-    const world: World = {
-      name: formatWorldName(ref),
-      namespace: ref.namespace,
-      id: ref.id,
-      displayName: meta?.displayName ?? "",
-      description: meta?.description,
-      createTime: meta?.createTime ?? 0,
-    };
+  // Map StoredQuads to SearchableItems
+  const items: SearchableItem[] = quads.map((q) => ({
+    subject: q.subject,
+    predicate: q.predicate,
+    text: q.object,
+    world: targetRef,
+  }));
 
-    // Map StoredQuads to SearchableItems
-    const items: SearchableItem[] = quads.map((q) => ({
-      subject: q.subject,
-      predicate: q.predicate,
-      text: q.object,
-      world: ref,
-    }));
+  const subjectTypes = buildSubjectTypes(items);
+  const filtered = filterItems({
+    items,
+    subjects,
+    predicates,
+    types,
+    subjectTypes,
+  });
 
-    const subjectTypes = buildSubjectTypes(items);
-    const filtered = filterItems({
-      items,
-      subjects,
-      predicates,
-      types,
-      subjectTypes,
+  const results: SearchResult[] = [];
+  for (const item of filtered) {
+    const result = scoreItem({
+      item,
+      queryTerms,
+      queryText,
+      ftsTermHits,
     });
-
-    for (const item of filtered) {
-      const result = scoreItem({
-        item,
-        queryTerms,
-        queryText,
-        ftsTermHits,
+    if (result) {
+      results.push({
+        ...result,
+        world,
       });
-      if (result) {
-        allResults.push({
-          ...result,
-          world,
-        });
-      }
     }
   }
 
-  allResults.sort((a, b) =>
+  results.sort((a, b) =>
     (b.score - a.score) ||
     (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
     (a.subject ?? "").localeCompare(b.subject ?? "") ||
@@ -100,5 +97,5 @@ export async function searchNaiveFts(params: {
     (a.object ?? "").localeCompare(b.object ?? "")
   );
 
-  return allResults;
+  return results;
 }

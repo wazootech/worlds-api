@@ -17,12 +17,9 @@ export const SearchResult: OpenAPIV3_1.SchemaObject = {
 
 export const SearchRequest: OpenAPIV3_1.SchemaObject = {
   type: "object",
-  required: ["query"],
+  required: ["source", "query"],
   properties: {
-    sources: {
-      type: "array",
-      items: { $ref: "#/components/schemas/Source" },
-    },
+    source: { $ref: "#/components/schemas/Source" },
     parent: { type: "string" },
     query: { type: "string" },
     pageSize: {

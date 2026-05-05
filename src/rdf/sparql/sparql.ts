@@ -29,8 +29,7 @@ export const queryEngine: QueryEngine = new QueryEngine();
  *
  * **Not supported here**
  * - `CONSTRUCT` / `DESCRIBE` → throws {@link SparqlUnsupportedOperationError}
- * - Multi-store UPDATE: enforced at {@link ../../core/worlds.ts} (`sparql`): multiple
- *   sources allowed for read-only queries; UPDATE requires a single source.
+ * - Multi-store queries: strictly single-world scoped as per ADR 0002.
  *
  * Malformed queries surface as whatever `QueryEngine` rejects; timeouts use
  * {@link SparqlSyntaxError} (default **30000** ms, override `timeoutMs`).

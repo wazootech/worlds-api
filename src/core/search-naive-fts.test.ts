@@ -38,7 +38,7 @@ Deno.test("searchNaiveFts: supports subjects, predicates, and types filtering", 
 
   // 1. Search without filters
   let results = await searchNaiveFts({
-    targetRefs: [worldRef],
+    targetRef: worldRef,
     queryTerms: ["target"],
     queryText: "target",
     quadStorageManager,
@@ -48,7 +48,7 @@ Deno.test("searchNaiveFts: supports subjects, predicates, and types filtering", 
 
   // 2. Filter by subject
   results = await searchNaiveFts({
-    targetRefs: [worldRef],
+    targetRef: worldRef,
     queryTerms: ["target"],
     queryText: "target",
     subjects: ["s1"],
@@ -60,7 +60,7 @@ Deno.test("searchNaiveFts: supports subjects, predicates, and types filtering", 
 
   // 3. Filter by type
   results = await searchNaiveFts({
-    targetRefs: [worldRef],
+    targetRef: worldRef,
     queryTerms: ["target"],
     queryText: "target",
     types: ["TypeA"],
@@ -72,7 +72,7 @@ Deno.test("searchNaiveFts: supports subjects, predicates, and types filtering", 
 
   // 4. Filter by non-existent type
   results = await searchNaiveFts({
-    targetRefs: [worldRef],
+    targetRef: worldRef,
     queryTerms: ["target"],
     queryText: "target",
     types: ["TypeB"],
@@ -99,7 +99,7 @@ Deno.test("searchNaiveFts: supports phrase matching without keyword match", asyn
 
   // queryTerms empty, but queryText matches phrase
   const results = await searchNaiveFts({
-    targetRefs: [worldRef],
+    targetRef: worldRef,
     queryTerms: [],
     queryText: "quick brown",
     quadStorageManager,

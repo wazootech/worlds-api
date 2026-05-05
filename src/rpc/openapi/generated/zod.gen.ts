@@ -149,7 +149,7 @@ export const zImportWorldRpcResponse = z.object({
 });
 
 export const zSearchRequest = z.object({
-    sources: z.array(zSource).optional(),
+    source: zSource,
     parent: z.string().optional(),
     query: z.string(),
     pageSize: z.int().gte(0).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).optional(),
@@ -175,7 +175,7 @@ export const zSparqlAskResults = z.object({
  * SPARQL query or update operation.
  */
 export const zSparqlRequest = z.object({
-    source: zSource.optional(),
+    source: zSource,
     parent: z.string().optional(),
     query: z.string(),
     defaultGraphUris: z.array(z.string()).optional(),

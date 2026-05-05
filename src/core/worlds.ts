@@ -176,13 +176,16 @@ export class Worlds implements WorldsInterface {
     });
   }
 
-  private async assertOwnsWorld(reference: WorldReference): Promise<void> {
+  private async assertOwnsWorld(
+    reference: WorldReference,
+    verb: "read" | "write" = "write",
+  ): Promise<void> {
     this.assertAuthenticated();
     const stored = await this.worldStorage.getWorld(reference);
     if (!stored) {
       throw new WorldNotFoundError(reference);
     }
-    if (!this.hasWorldAccess(reference, "write")) {
+    if (!this.hasWorldAccess(reference, verb)) {
       throw new PermissionDeniedError(`${reference.namespace}/${reference.id}`);
     }
   }
@@ -228,7 +231,7 @@ export class Worlds implements WorldsInterface {
 
   async updateWorld(input: UpdateWorldRequest): Promise<World> {
     const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
+    await this.assertOwnsWorld(reference, "write");
     const existing = await this.worldStorage.getWorld(reference);
     if (!existing) {
       throw new WorldNotFoundError(reference);
@@ -244,7 +247,7 @@ export class Worlds implements WorldsInterface {
 
   async deleteWorld(input: DeleteWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
+    await this.assertOwnsWorld(reference, "write");
     await this.worldStorage.deleteWorld(reference);
     await this.quadStorageManager.deleteQuadStorage(reference);
   }
@@ -289,7 +292,7 @@ export class Worlds implements WorldsInterface {
       throw new InvalidArgumentError("sparql requires a source");
     }
     const ref = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(ref);
+    await this.assertOwnsWorld(ref, "read"); // Will upgrade to write if it's an update
 
     const quadStorage = await this.quadStorageManager.getQuadStorage(ref);
     const quads = await quadStorage.findQuads([]);
@@ -309,8 +312,11 @@ export class Worlds implements WorldsInterface {
       const toAdd = newQuads.filter((q: StoredQuad) =>
         !currentQuadSet.has(storedQuadKey(q))
       );
-      if (toRemove.length > 0) await quadStorage.deleteQuads(toRemove);
-      if (toAdd.length > 0) await quadStorage.setQuads(toAdd);
+      if (toRemove.length > 0 || toAdd.length > 0) {
+        await this.assertOwnsWorld(ref, "write");
+        if (toRemove.length > 0) await quadStorage.deleteQuads(toRemove);
+        if (toAdd.length > 0) await quadStorage.setQuads(toAdd);
+      }
       return null;
     }
     return result;
@@ -318,39 +324,17 @@ export class Worlds implements WorldsInterface {
 
   async search(input: SearchRequest): Promise<SearchResponse> {
     this.assertAuthenticated();
-    const sources = input.sources;
-    const targetRefs: WorldReference[] = [];
-    if (!sources || sources.length === 0) {
-      const all = await this.worldStorage.listWorlds();
-      for (const w of all) {
-        if (this.hasWorldAccess(w.reference, "read")) {
-          targetRefs.push(w.reference);
-        }
-      }
-    } else {
-      for (const src of sources) {
-        const ref = resolveWorldReference(src);
-        await this.assertOwnsWorld(ref);
-        targetRefs.push(ref);
-      }
-    }
+    const ref = resolveWorldReference(input.source);
+    await this.assertOwnsWorld(ref, "read");
+
     const queryTerms = tokenizeSearchQuery(input.query);
     if (queryTerms.length === 0) return { results: [] };
-    const indexedRefs: WorldReference[] = [];
-    const unindexedRefs: WorldReference[] = [];
-    for (const ref of targetRefs) {
-      const indexState = await this.searchDeps.chunkIndexManager.getIndexState(
-        ref,
-      );
-      if (indexState) indexedRefs.push(ref);
-      else unindexedRefs.push(ref);
-    }
-    const chunkResults = indexedRefs.length > 0
-      ? await this.searchChunks(input, indexedRefs)
-      : [];
-    const naiveResults = unindexedRefs.length > 0
-      ? await searchNaiveFts({
-        targetRefs: unindexedRefs,
+
+    const indexState = await this.searchDeps.chunkIndexManager.getIndexState(ref);
+    const results = indexState
+      ? await this.searchChunks(input, ref)
+      : await searchNaiveFts({
+        targetRef: ref,
         queryTerms,
         queryText: input.query,
         subjects: input.subjects,
@@ -358,15 +342,8 @@ export class Worlds implements WorldsInterface {
         types: input.types,
         quadStorageManager: this.quadStorageManager,
         worldStorage: this.worldStorage,
-      })
-      : [];
-    const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
-      (b.score - a.score) ||
-      (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
-      (a.subject ?? "").localeCompare(b.subject ?? "") ||
-      (a.predicate ?? "").localeCompare(b.predicate ?? "") ||
-      (a.object ?? "").localeCompare(b.object ?? "")
-    );
+      });
+
     const pageSizeRaw = input.pageSize === undefined || input.pageSize === 0
       ? DEFAULT_SEARCH_PAGE_SIZE
       : input.pageSize < 0
@@ -375,32 +352,31 @@ export class Worlds implements WorldsInterface {
       })()
       : input.pageSize;
     const pageSize = Math.min(pageSizeRaw, MAX_PAGE_SIZE);
+
     const normalizeStringArray = (arr?: string[]) =>
       (arr ?? []).map((s) => s.trim()).filter((s) => s.length > 0).sort();
-    const sourcesSig = !sources || sources.length === 0
-      ? { mode: "all" as const }
-      : {
-        mode: "explicit" as const,
-        worlds: targetRefs.map(formatWorldName).sort(),
-      };
+
     const sig = await signPageTokenParams({
       method: "searchWorlds",
       query: input.query,
-      sources: sourcesSig,
+      source: formatWorldName(ref),
       subjects: normalizeStringArray(input.subjects),
       predicates: normalizeStringArray(input.predicates),
       types: normalizeStringArray(input.types),
     });
+
     const decoded = input.pageToken?.trim()
       ? decodePageToken(input.pageToken.trim())
       : null;
     if (decoded) assertPageTokenSig(decoded, sig);
+
     const startIndex = decoded?.o ?? 0;
-    const results = allResults.slice(startIndex, startIndex + pageSize);
-    const nextPageToken = startIndex + pageSize < allResults.length
+    const paginated = results.slice(startIndex, startIndex + pageSize);
+    const nextPageToken = startIndex + pageSize < results.length
       ? encodePageToken({ v: 1, o: startIndex + pageSize, sig })
       : undefined;
-    return { results, nextPageToken };
+
+    return { results: paginated, nextPageToken };
   }
 
   /**
@@ -409,63 +385,46 @@ export class Worlds implements WorldsInterface {
    */
   private async searchChunks(
     input: SearchRequest,
-    targetRefs: WorldReference[],
+    targetRef: WorldReference,
   ): Promise<SearchResult[]> {
     const queryTerms = tokenizeSearchQuery(input.query);
-    if (queryTerms.length === 0) return [];
-
     const queryVector = await this.searchDeps.embeddings.embed(input.query);
-    const rows = (
-      await Promise.all(targetRefs.map(async (ref) => {
-        const index = await this.searchDeps.chunkIndexManager.getChunkIndex(
-          ref,
-        );
-        return await index.search({
-          queryText: input.query,
-          queryTerms,
-          queryVector,
-          subjects: input.subjects,
-          predicates: input.predicates,
-          types: input.types,
-        });
-      }))
-    ).flat();
-
-    rows.sort((a, b) => b.score - a.score);
-
-    const worldByKey = new Map<string, World>();
-    for (const ref of targetRefs) {
-      const stored = await this.worldStorage.getWorld(ref);
-      worldByKey.set(formatWorldName(ref), {
-        name: formatWorldName(ref),
-        namespace: ref.namespace,
-        id: ref.id,
-        displayName: stored?.displayName ?? "",
-        description: stored?.description,
-        createTime: stored?.createTime ?? 0,
-      });
-    }
-
-    return rows.map((row) => {
-      const world = worldByKey.get(formatWorldName(row.world));
-      if (!world) {
-        throw new Error(`Chunk result references untargeted world`);
-      }
-      return {
-        subject: row.subject,
-        predicate: row.predicate,
-        object: row.object,
-        vecRank: row.vecRank,
-        ftsRank: row.ftsRank,
-        score: row.score,
-        world,
-      };
+    const index = await this.searchDeps.chunkIndexManager.getChunkIndex(
+      targetRef,
+    );
+    const rows = await index.search({
+      queryText: input.query,
+      queryTerms,
+      queryVector,
+      subjects: input.subjects,
+      predicates: input.predicates,
+      types: input.types,
     });
+
+    const stored = await this.worldStorage.getWorld(targetRef);
+    const world: World = {
+      name: formatWorldName(targetRef),
+      namespace: targetRef.namespace,
+      id: targetRef.id,
+      displayName: stored?.displayName ?? "",
+      description: stored?.description,
+      createTime: stored?.createTime ?? 0,
+    };
+
+    return rows.map((row) => ({
+      subject: row.subject,
+      predicate: row.predicate,
+      object: row.object,
+      vecRank: row.vecRank,
+      ftsRank: row.ftsRank,
+      score: row.score,
+      world,
+    }));
   }
 
   async import(input: ImportWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
+    await this.assertOwnsWorld(reference, "write");
     const contentType = input.contentType || "application/n-quads";
     const data = typeof input.data === "string"
       ? input.data
@@ -477,7 +436,7 @@ export class Worlds implements WorldsInterface {
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {
     const reference = resolveWorldReference(input.source);
-    await this.assertOwnsWorld(reference);
+    await this.assertOwnsWorld(reference, "read");
     const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
     const quads = await quadStorage.findQuads([]);
     const contentType = input.contentType || "application/n-quads";
