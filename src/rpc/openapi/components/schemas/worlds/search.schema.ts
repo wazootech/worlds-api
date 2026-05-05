@@ -37,6 +37,22 @@ export const SearchRequest: OpenAPIV3_1.SchemaObject = {
     subjects: { type: "array", items: { type: "string" } },
     predicates: { type: "array", items: { type: "string" } },
     types: { type: "array", items: { type: "string" } },
+    mode: {
+      type: "string",
+      enum: ["hybrid", "vector", "fts"],
+      default: "hybrid",
+      description:
+        "The search mode to use. 'hybrid' combines vector and FTS, 'vector' uses only semantic similarity, 'fts' uses only keyword matching.",
+    },
+    weights: {
+      type: "object",
+      properties: {
+        vector: { type: "number", default: 1.0 },
+        fts: { type: "number", default: 1.0 },
+      },
+      description:
+        "Weights for hybrid search ranking. Only used when mode is 'hybrid'.",
+    },
   },
   additionalProperties: false,
 };

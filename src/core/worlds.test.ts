@@ -653,7 +653,8 @@ Deno.test("Worlds: search falls back for unindexed world", async () => {
 
   await worlds.import({
     source: ref,
-    data: `<https://example.org/unindexed> <https://example.org/name> "Gregory" .`,
+    data:
+      `<https://example.org/unindexed> <https://example.org/name> "Gregory" .`,
     contentType: "application/n-quads",
   });
 

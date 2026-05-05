@@ -10,6 +10,7 @@
     "npm:@comunica/context-entries@5.2.0": "5.2.0",
     "npm:@comunica/query-sparql-rdfjs-lite@^5.2.1": "5.2.1",
     "npm:@hey-api/openapi-ts@0.97": "0.97.0_typescript@6.0.3",
+    "npm:@libsql/client@*": "0.17.3",
     "npm:@libsql/client@~0.17.3": "0.17.3",
     "npm:@orama/orama@^3.1.18": "3.1.18",
     "npm:cross-fetch@3.2.0": "3.2.0",

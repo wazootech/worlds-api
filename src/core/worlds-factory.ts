@@ -45,6 +45,8 @@ export interface WorldsFactoryResult {
  * });
  * ```
  */
+import { IndexedQuadStorageManager } from "#/rdf/storage/indexed/manager.ts";
+
 export function createWorldsWithLibsql(
   config?: WorldsFactoryConfig,
 ): WorldsFactoryResult {
@@ -55,13 +57,19 @@ export function createWorldsWithLibsql(
     });
 
   const worldStorage: WorldStorage = new LibsqlWorldStorage(client);
-  const quadStorageManager: QuadStorageManager = new LibsqlQuadStorageManager(
-    client,
-  );
+  const libsqlQuadManager = new LibsqlQuadStorageManager(client);
+  const embeddings = config?.embeddings ?? new FakeEmbeddingsService();
   const chunkIndexManager: ChunkIndexManager = new LibsqlChunkIndexManager(
     client,
+    embeddings.dimensions,
   );
-  const embeddings = config?.embeddings ?? new FakeEmbeddingsService();
+
+  const quadStorageManager = new IndexedQuadStorageManager(
+    embeddings,
+    chunkIndexManager,
+    [],
+    libsqlQuadManager,
+  );
 
   return {
     worldStorage,

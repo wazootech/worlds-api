@@ -14,7 +14,7 @@ export class LibsqlWorldStorage implements WorldStorage {
     await this.client.execute(`PRAGMA foreign_keys = ON;`);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS worlds (
-        namespace TEXT NOT NULL DEFAULT '_',
+        namespace TEXT NOT NULL,
         id TEXT NOT NULL,
         display_name TEXT,
         description TEXT,

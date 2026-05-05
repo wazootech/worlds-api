@@ -17,6 +17,7 @@ import type {
 } from "#/rpc/openapi/generated/types.gen.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
+import { OpenAIEmbeddingsService } from "#/indexing/embeddings/openai.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import type { WorldsInterface } from "#/core/interfaces.ts";
@@ -36,7 +37,7 @@ import {
   serialize,
   storeFromQuads,
 } from "#/rdf/rdf.ts";
-import { ftsTermHits, tokenizeSearchQuery } from "#/indexing/fts.ts";
+import { tokenizeSearchQuery } from "#/indexing/fts.ts";
 import { storedQuadKey } from "#/rdf/storage/quad-key.ts";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 import { executeSparql } from "#/rdf/sparql/sparql.ts";
@@ -83,6 +84,7 @@ export class Worlds implements WorldsInterface {
   };
   private readonly keyId: string | null;
   private readonly scopes: string[];
+  private readonly locks = new Map<string, Promise<void>>();
 
   constructor(
     options: WorldsOptions,
@@ -212,6 +214,30 @@ export class Worlds implements WorldsInterface {
     return toWorld(stored);
   }
 
+  private async withLock<T>(
+    reference: WorldReference,
+    fn: () => Promise<T>,
+  ): Promise<T> {
+    const key = formatWorldName(reference);
+    const existing = this.locks.get(key) || Promise.resolve();
+
+    let resolve: () => void;
+    const next = new Promise<void>((res) => {
+      resolve = res;
+    });
+    this.locks.set(key, next);
+
+    try {
+      await existing;
+      return await fn();
+    } finally {
+      resolve!();
+      if (this.locks.get(key) === next) {
+        this.locks.delete(key);
+      }
+    }
+  }
+
   async createWorld(input: CreateWorldRequest): Promise<World> {
     this.assertAuthenticated();
     const reference: WorldReference = {
@@ -314,8 +340,10 @@ export class Worlds implements WorldsInterface {
       );
       if (toRemove.length > 0 || toAdd.length > 0) {
         await this.assertOwnsWorld(ref, "write");
-        if (toRemove.length > 0) await quadStorage.deleteQuads(toRemove);
-        if (toAdd.length > 0) await quadStorage.setQuads(toAdd);
+        await this.withLock(ref, async () => {
+          if (toRemove.length > 0) await quadStorage.deleteQuads(toRemove);
+          if (toAdd.length > 0) await quadStorage.setQuads(toAdd);
+        });
       }
       return null;
     }
@@ -330,7 +358,9 @@ export class Worlds implements WorldsInterface {
     const queryTerms = tokenizeSearchQuery(input.query);
     if (queryTerms.length === 0) return { results: [] };
 
-    const indexState = await this.searchDeps.chunkIndexManager.getIndexState(ref);
+    const indexState = await this.searchDeps.chunkIndexManager.getIndexState(
+      ref,
+    );
 
     // Hard error if index exists but dimensions mismatch (Production Hardening)
     if (indexState) {
@@ -341,6 +371,22 @@ export class Worlds implements WorldsInterface {
           `Embedding dimension mismatch for world ${input.source}. ` +
             `Index: ${indexState.embeddingDimensions}, Current: ${this.searchDeps.embeddings.dimensions}. ` +
             `Please re-index or update configuration.`,
+        );
+      }
+
+      const currentModel =
+        this.searchDeps.embeddings instanceof FakeEmbeddingsService
+          ? undefined
+          : (this.searchDeps.embeddings as OpenAIEmbeddingsService).model;
+
+      if (
+        indexState.embeddingModel && currentModel &&
+        indexState.embeddingModel !== currentModel
+      ) {
+        throw new InvalidArgumentError(
+          `Embedding model mismatch for world ${input.source}. ` +
+            `Index: ${indexState.embeddingModel}, Current: ${currentModel}. ` +
+            `Please re-index or update configuration to match the original model.`,
         );
       }
     }
@@ -413,6 +459,13 @@ export class Worlds implements WorldsInterface {
       subjects: input.subjects,
       predicates: input.predicates,
       types: input.types,
+      mode: input.mode as "hybrid" | "vector" | "fts" | undefined,
+      weights: input.weights
+        ? {
+          vector: input.weights.vector ?? 1.0,
+          fts: input.weights.fts ?? 1.0,
+        }
+        : undefined,
     });
 
     const stored = await this.worldStorage.getWorld(targetRef);
@@ -439,13 +492,17 @@ export class Worlds implements WorldsInterface {
   async import(input: ImportWorldRequest): Promise<void> {
     const reference = resolveWorldReference(input.source);
     await this.assertOwnsWorld(reference, "write");
-    const contentType = input.contentType || "application/n-quads";
-    const data = typeof input.data === "string"
-      ? input.data
-      : new TextDecoder().decode(input.data);
-    const quads = deserialize(data, contentType);
-    const quadStorage = await this.quadStorageManager.getQuadStorage(reference);
-    await quadStorage.setQuads(quads);
+    return this.withLock(reference, async () => {
+      const contentType = input.contentType || "application/n-quads";
+      const data = typeof input.data === "string"
+        ? input.data
+        : new TextDecoder().decode(input.data);
+      const quads = deserialize(data, contentType);
+      const quadStorage = await this.quadStorageManager.getQuadStorage(
+        reference,
+      );
+      await quadStorage.setQuads(quads);
+    });
   }
 
   async export(input: ExportWorldRequest): Promise<ArrayBuffer> {

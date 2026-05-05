@@ -285,6 +285,17 @@ export type SearchRequest = {
     subjects?: Array<string>;
     predicates?: Array<string>;
     types?: Array<string>;
+    /**
+     * The search mode to use. 'hybrid' combines vector and FTS, 'vector' uses only semantic similarity, 'fts' uses only keyword matching.
+     */
+    mode?: 'hybrid' | 'vector' | 'fts';
+    /**
+     * Weights for hybrid search ranking. Only used when mode is 'hybrid'.
+     */
+    weights?: {
+        vector?: number;
+        fts?: number;
+    };
 };
 
 export type SearchResponse = {

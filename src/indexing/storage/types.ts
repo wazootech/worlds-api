@@ -25,6 +25,11 @@ export interface ChunkSearchQuery {
   subjects?: string[];
   predicates?: string[];
   types?: string[];
+  mode?: "hybrid" | "vector" | "fts";
+  weights?: {
+    vector: number;
+    fts: number;
+  };
 }
 
 export interface ChunkSearchRow {

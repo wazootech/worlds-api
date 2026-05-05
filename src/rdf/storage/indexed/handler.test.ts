@@ -1,10 +1,7 @@
 import { assertEquals } from "@std/assert";
 import { FakeEmbeddingsService } from "#/indexing/embeddings/fake.ts";
 import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
-import {
-  type ChunkingRule,
-  SearchIndexHandler,
-} from "./handler.ts";
+import { type ChunkingRule, SearchIndexHandler } from "./handler.ts";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 
 async function setup() {

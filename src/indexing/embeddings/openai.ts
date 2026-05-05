@@ -26,7 +26,7 @@ export interface OpenAIEmbeddingsConfig {
 export class OpenAIEmbeddingsService implements EmbeddingsService {
   public readonly dimensions: number;
   private readonly apiKey: string;
-  private readonly model: string;
+  public readonly model: string;
   private readonly baseUrl: string;
 
   constructor(config?: OpenAIEmbeddingsConfig) {
@@ -46,25 +46,37 @@ export class OpenAIEmbeddingsService implements EmbeddingsService {
 
   async embedBatch(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
-    const response = await fetch(`${this.baseUrl}/embeddings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        input: texts,
-        model: this.model,
-        dimensions: this.dimensions,
-      }),
-    });
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenAI API error (${response.status}): ${error}`);
+    const BATCH_LIMIT = 100;
+    const results: number[][] = [];
+
+    for (let i = 0; i < texts.length; i += BATCH_LIMIT) {
+      const batch = texts.slice(i, i + BATCH_LIMIT);
+      const response = await fetch(`${this.baseUrl}/embeddings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${this.apiKey}`,
+        },
+        body: JSON.stringify({
+          input: batch,
+          model: this.model,
+          dimensions: this.dimensions,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`OpenAI API error (${response.status}): ${error}`);
+      }
+
+      const data = await response.json();
+      const embeddings = data.data.map((item: { embedding: number[] }) =>
+        item.embedding
+      );
+      results.push(...embeddings);
     }
 
-    const data = await response.json();
-    return data.data.map((item: { embedding: number[] }) => item.embedding);
+    return results;
   }
 }

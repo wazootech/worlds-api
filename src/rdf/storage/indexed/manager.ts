@@ -1,10 +1,7 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
-import {
-  type ChunkingRule,
-  SearchIndexHandler,
-} from "./handler.ts";
+import { type ChunkingRule, SearchIndexHandler } from "./handler.ts";
 import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
 import { InMemoryQuadStorage } from "#/rdf/storage/in-memory/storage.ts";
 import { IndexedQuadStorage } from "./storage.ts";
@@ -23,13 +20,16 @@ export class IndexedQuadStorageManager implements QuadStorageManager {
     private readonly embeddings: EmbeddingsService,
     private readonly chunks: ChunkIndexManager,
     private readonly chunkingRules: ChunkingRule[] = [],
+    private readonly inner?: QuadStorageManager,
   ) {}
 
   async getQuadStorage(reference: WorldReference): Promise<IndexedQuadStorage> {
     const key = formatWorldName(reference);
     let w = this.wrapped.get(key);
     if (!w) {
-      const inner = new InMemoryQuadStorage();
+      const inner = this.inner
+        ? await this.inner.getQuadStorage(reference)
+        : new InMemoryQuadStorage();
       await this.chunks.setIndexState({
         world: reference,
         indexedAt: Date.now(),
@@ -51,5 +51,8 @@ export class IndexedQuadStorageManager implements QuadStorageManager {
   async deleteQuadStorage(reference: WorldReference): Promise<void> {
     this.wrapped.delete(formatWorldName(reference));
     await this.chunks.deleteChunkIndex(reference);
+    if (this.inner) {
+      await this.inner.deleteQuadStorage(reference);
+    }
   }
 }

@@ -59,7 +59,8 @@ export class SearchIndexHandler implements PatchHandler {
 
   async patch(patches: Patch[]): Promise<void> {
     const toDelete: string[] = [];
-    const insertions: { q: StoredQuad; quadId: string; chunks: string[] }[] = [];
+    const insertions: { q: StoredQuad; quadId: string; chunks: string[] }[] =
+      [];
     const textsToEmbed = new Set<string>();
 
     // 1. Collect and prepare

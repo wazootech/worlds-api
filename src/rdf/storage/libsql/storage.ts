@@ -19,6 +19,17 @@ export class LibsqlQuadStorage implements QuadStorage {
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
     await this.client.execute(`PRAGMA foreign_keys = ON;`);
+    // Ensure parent table exists
+    await this.client.execute(`
+      CREATE TABLE IF NOT EXISTS worlds (
+        namespace TEXT NOT NULL,
+        id TEXT NOT NULL,
+        display_name TEXT,
+        description TEXT,
+        create_time INTEGER NOT NULL,
+        PRIMARY KEY (namespace, id)
+      )
+    `);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS quads (
         world_namespace TEXT NOT NULL,

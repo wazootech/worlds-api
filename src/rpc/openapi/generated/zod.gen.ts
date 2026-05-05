@@ -156,7 +156,16 @@ export const zSearchRequest = z.object({
     pageToken: z.string().optional(),
     subjects: z.array(z.string()).optional(),
     predicates: z.array(z.string()).optional(),
-    types: z.array(z.string()).optional()
+    types: z.array(z.string()).optional(),
+    mode: z.enum([
+        'hybrid',
+        'vector',
+        'fts'
+    ]).optional().default('hybrid'),
+    weights: z.object({
+        vector: z.number().optional().default(1),
+        fts: z.number().optional().default(1)
+    }).optional()
 });
 
 export const zSearchWorldsRpcRequest = z.object({

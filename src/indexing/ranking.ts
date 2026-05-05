@@ -1,4 +1,3 @@
-import { ftsTermHits } from "#/indexing/fts.ts";
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import type { ChunkSearchRow } from "./storage/types.ts";
 
@@ -54,7 +53,8 @@ export function scoreItem(params: {
   );
 
   const hay = `${item.subject} ${item.predicate} ${item.text}`.toLowerCase();
-  const phraseMatch = queryText.length > 0 && hay.includes(queryText.toLowerCase());
+  const phraseMatch = queryText.length > 0 &&
+    hay.includes(queryText.toLowerCase());
 
   if (fts === 0 && !phraseMatch) return null;
 
@@ -87,7 +87,9 @@ export function buildSubjectTypes(
   const subjectTypes = new Map<string, Set<string>>();
   for (const item of items) {
     if (item.predicate !== RDF_TYPE) continue;
-    if (!subjectTypes.has(item.subject)) subjectTypes.set(item.subject, new Set());
+    if (!subjectTypes.has(item.subject)) {
+      subjectTypes.set(item.subject, new Set());
+    }
     subjectTypes.get(item.subject)!.add(item.text);
   }
   return subjectTypes;
@@ -110,7 +112,8 @@ export function filterItems<T extends SearchableItem>(params: {
       return false;
     }
     if (
-      predicates && predicates.length > 0 && !predicates.includes(item.predicate)
+      predicates && predicates.length > 0 &&
+      !predicates.includes(item.predicate)
     ) {
       return false;
     }
