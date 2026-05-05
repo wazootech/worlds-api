@@ -307,7 +307,10 @@ export class LibsqlChunkIndex implements ChunkIndex {
       this.vectorSupported = true;
     } catch (e) {
       this.vectorSupported = false;
-      console.warn("Native F32_BLOB not supported, falling back to TEXT:", (e as Error).message);
+      console.warn(
+        "Native F32_BLOB not supported, falling back to TEXT:",
+        (e as Error).message,
+      );
       await this.client.execute(`
         CREATE TABLE IF NOT EXISTS chunks (
           id TEXT NOT NULL PRIMARY KEY,

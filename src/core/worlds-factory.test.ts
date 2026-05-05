@@ -49,20 +49,28 @@ Deno.test("WorldsFactory: createWorldsWithLibsql produces persistent indexed sto
 
   // Verify quads are gone (via cascades)
   // We don't use quadStorageManager.getQuadStorage here because it re-initializes the state!
-  interface LibsqlProxy { client: { execute: (q: { sql: string, args: unknown[] }) => Promise<{ rows: unknown[] }> } }
-  const quadCheck = await (factoryResult.chunkIndexManager as unknown as LibsqlProxy).client
-    .execute({
-      sql: "SELECT * FROM quads WHERE world_namespace = ? AND world_id = ?",
-      args: ["ns", "persistent"],
-    });
+  interface LibsqlProxy {
+    client: {
+      execute: (
+        q: { sql: string; args: unknown[] },
+      ) => Promise<{ rows: unknown[] }>;
+    };
+  }
+  const quadCheck =
+    await (factoryResult.chunkIndexManager as unknown as LibsqlProxy).client
+      .execute({
+        sql: "SELECT * FROM quads WHERE world_namespace = ? AND world_id = ?",
+        args: ["ns", "persistent"],
+      });
   assertEquals(quadCheck.rows.length, 0);
 
   // Verify chunks are gone (via cascades)
-  const chunkCheck = await (factoryResult.chunkIndexManager as unknown as LibsqlProxy).client
-    .execute({
-      sql: "SELECT * FROM chunks WHERE world_namespace = ? AND world_id = ?",
-      args: ["ns", "persistent"],
-    });
+  const chunkCheck =
+    await (factoryResult.chunkIndexManager as unknown as LibsqlProxy).client
+      .execute({
+        sql: "SELECT * FROM chunks WHERE world_namespace = ? AND world_id = ?",
+        args: ["ns", "persistent"],
+      });
   assertEquals(chunkCheck.rows.length, 0);
 
   // Verify state is gone (via explicit delete in manager)
