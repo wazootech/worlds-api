@@ -26,7 +26,10 @@
     "serve": "deno serve main.ts",
     "bundle:browser": "deno bundle --no-check --platform=browser src/rdf/rdf.ts; deno bundle --no-check --platform=browser src/rdf/sparql/sparql.ts",
     "test": "deno test --allow-all",
-    "generate": "deno run -A src/rpc/openapi/openapi.ts"
+    "generate": "deno run -A src/rpc/openapi/openapi.ts",
+    "demo:core": "deno run -A sandbox/deno/core/main.ts",
+    "demo:rpc": "deno run -A sandbox/deno/rpc/main.ts",
+    "demo:rpc:client": "deno run -A sandbox/deno/rpc/client.ts"
   },
   "exports": {
     ".": "./src/mod.ts",
