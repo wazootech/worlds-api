@@ -162,7 +162,7 @@ if (import.meta.main) {
       plugins: [
         // https://heyapi.dev/openapi-ts/plugins/sdk
         { name: "@hey-api/sdk" },
-        
+
         // https://heyapi.dev/openapi-ts/plugins/typescript
         { name: "@hey-api/typescript" },
 

@@ -350,14 +350,17 @@ export class Worlds implements WorldsInterface {
       : [];
     const naiveResults = unindexedRefs.length > 0
       ? await searchNaiveFts({
-          targetRefs: unindexedRefs,
-          queryTerms,
-          quadStorageManager: this.quadStorageManager,
-          worldStorage: this.worldStorage,
-        })
+        targetRefs: unindexedRefs,
+        queryTerms,
+        queryText: input.query,
+        subjects: input.subjects,
+        predicates: input.predicates,
+        types: input.types,
+        quadStorageManager: this.quadStorageManager,
+        worldStorage: this.worldStorage,
+      })
       : [];
     const allResults = [...chunkResults, ...naiveResults].sort((a, b) =>
-      (b.ftsRank! - a.ftsRank!) ||
       (b.score - a.score) ||
       (a.world.name ?? "").localeCompare(b.world.name ?? "") ||
       (a.subject ?? "").localeCompare(b.subject ?? "") ||
@@ -414,7 +417,9 @@ export class Worlds implements WorldsInterface {
     const queryVector = await this.searchDeps.embeddings.embed(input.query);
     const rows = (
       await Promise.all(targetRefs.map(async (ref) => {
-        const index = await this.searchDeps.chunkIndexManager.getChunkIndex(ref);
+        const index = await this.searchDeps.chunkIndexManager.getChunkIndex(
+          ref,
+        );
         return await index.search({
           queryText: input.query,
           queryTerms,

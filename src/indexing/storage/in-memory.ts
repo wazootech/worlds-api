@@ -1,11 +1,7 @@
 import type { WorldReference } from "#/rpc/openapi/generated/types.gen.ts";
 import { formatWorldName } from "#/core/resolve.ts";
 import { ftsTermHits } from "#/indexing/fts.ts";
-import {
-  buildSubjectTypes,
-  filterChunks,
-  scoreChunk,
-} from "./search-utils.ts";
+import { buildSubjectTypes, filterItems, scoreItem } from "../ranking.ts";
 import type {
   ChunkIndex,
   ChunkIndexManager,
@@ -63,8 +59,8 @@ export class InMemoryChunkIndex implements ChunkIndex {
   async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
     const chunks = await this.getAll();
     const subjectTypes = buildSubjectTypes(chunks);
-    const filtered = filterChunks({
-      chunks,
+    const filtered = filterItems({
+      items: chunks,
       subjects: input.subjects,
       predicates: input.predicates,
       types: input.types,
@@ -73,8 +69,8 @@ export class InMemoryChunkIndex implements ChunkIndex {
 
     const rows: ChunkSearchRow[] = [];
     for (const chunk of filtered) {
-      const result = scoreChunk({
-        chunk,
+      const result = scoreItem({
+        item: chunk,
         queryTerms: input.queryTerms,
         queryText: input.queryText,
         queryVector: input.queryVector,

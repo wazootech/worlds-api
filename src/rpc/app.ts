@@ -61,6 +61,8 @@ import {
 import { applyTransportPreset } from "./transport/preset.ts";
 import type { WorldStorage } from "#/core/storage/interface.ts";
 import type { QuadStorageManager } from "#/rdf/storage/interface.ts";
+import type { ChunkIndexManager } from "#/indexing/storage/interface.ts";
+import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ApiKeyStorage } from "#/api-keys/api-key-storage.ts";
 import { verifyApiKey } from "#/api-keys/api-key.ts";
 
@@ -75,6 +77,10 @@ export { applyTransportPreset } from "./transport/preset.ts";
 export type RpcAppOptions = {
   worldStorage?: WorldStorage;
   quadStorageManager?: QuadStorageManager;
+  /** Chunk index manager for search (defaults to InMemoryChunkIndexManager) */
+  chunkIndexManager?: ChunkIndexManager;
+  /** Embeddings service for vector search (defaults to FakeEmbeddingsService) */
+  embeddings?: EmbeddingsService;
   transport?: Partial<TransportConfig>;
   /** API key storage implementation */
   apiKeyStorage?: ApiKeyStorage;
@@ -112,19 +118,20 @@ function getHttpStatus(errorCode: string | undefined): number {
 function createWorldsFactory(
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
+  chunkIndexManager?: ChunkIndexManager,
+  embeddings?: EmbeddingsService,
 ): (keyId: string | null, scopes: string[]) => Worlds {
-  const searchDeps = {
-    chunkIndexManager: new InMemoryChunkIndexManager(),
-    embeddings: new FakeEmbeddingsService(),
-  };
+  const finalChunkIndexManager = chunkIndexManager ??
+    new InMemoryChunkIndexManager();
+  const finalEmbeddings = embeddings ?? new FakeEmbeddingsService();
 
   return (keyId: string | null, scopes: string[]) => {
     return new Worlds(
       {
         worldStorage,
         quadStorageManager,
-        chunkIndexManager: searchDeps.chunkIndexManager,
-        embeddings: searchDeps.embeddings,
+        chunkIndexManager: finalChunkIndexManager,
+        embeddings: finalEmbeddings,
       },
       keyId,
       scopes,
@@ -137,9 +144,18 @@ export function mountRpcPost(
   app: Hono,
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
+  chunkIndexManager?: ChunkIndexManager,
+  embeddings?: EmbeddingsService,
   apiKeyStorage?: ApiKeyStorage,
+  worldsFactory?: (keyId: string | null, scopes: string[]) => Worlds,
 ): void {
-  const worldsFactory = createWorldsFactory(worldStorage, quadStorageManager);
+  const finalWorldsFactory = worldsFactory ??
+    createWorldsFactory(
+      worldStorage,
+      quadStorageManager,
+      chunkIndexManager,
+      embeddings,
+    );
 
   app.post("/rpc", async (c) => {
     const apiKey = c.req.header("X-Api-Key");
@@ -175,7 +191,7 @@ export function mountRpcPost(
       );
     }
 
-    const scopedWorlds = worldsFactory(verified.keyId, verified.scopes);
+    const scopedWorlds = finalWorldsFactory(verified.keyId, verified.scopes);
     const req = (await c.req.json()) as WorldsRpcRequest;
     const result = await handleRpc(scopedWorlds, req);
     if ("error" in result) {
@@ -196,14 +212,25 @@ export function mountRpcPost(
 function createHonoRpcApp(
   worldStorage: WorldStorage,
   quadStorageManager: QuadStorageManager,
+  chunkIndexManager: ChunkIndexManager,
+  embeddings: EmbeddingsService,
   transport: TransportConfig | null,
-  apiKeyStorage?: ApiKeyStorage,
+  apiKeyStorage: ApiKeyStorage | undefined,
+  worldsFactory: (keyId: string | null, scopes: string[]) => Worlds,
 ): Hono {
   const app = new Hono();
   if (transport !== null) {
     applyTransportPreset(app, transport);
   }
-  mountRpcPost(app, worldStorage, quadStorageManager, apiKeyStorage);
+  mountRpcPost(
+    app,
+    worldStorage,
+    quadStorageManager,
+    chunkIndexManager,
+    embeddings,
+    apiKeyStorage,
+    worldsFactory,
+  );
   return app;
 }
 
@@ -227,14 +254,26 @@ export function createRpcApp(options: RpcAppOptions = {}): Hono {
   const { worldStorage, quadStorageManager } = createDefaultOptions();
   const finalWorldStorage = rest.worldStorage ?? worldStorage;
   const finalQuadStorageManager = rest.quadStorageManager ?? quadStorageManager;
+  const finalChunkIndexManager = rest.chunkIndexManager ??
+    new InMemoryChunkIndexManager();
+  const finalEmbeddings = rest.embeddings ?? new FakeEmbeddingsService();
   const transport = transportOverrides
     ? mergeTransportConfig(loadTransportConfigFromEnv(), transportOverrides)
     : null;
   const apiKeyStorage = options.apiKeyStorage;
+  const worldsFactory = createWorldsFactory(
+    finalWorldStorage,
+    finalQuadStorageManager,
+    finalChunkIndexManager,
+    finalEmbeddings,
+  );
   return createHonoRpcApp(
     finalWorldStorage,
     finalQuadStorageManager,
+    finalChunkIndexManager,
+    finalEmbeddings,
     transport,
     apiKeyStorage,
+    worldsFactory,
   );
 }

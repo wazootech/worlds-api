@@ -4,7 +4,7 @@ import { InMemoryChunkIndexManager } from "#/indexing/storage/in-memory.ts";
 import {
   type ChunkingRule,
   SearchIndexHandler,
-} from "./search-index-handler.ts";
+} from "./handler.ts";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 
 async function setup() {

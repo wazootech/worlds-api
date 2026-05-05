@@ -2,7 +2,7 @@ import { assertEquals } from "@std/assert";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 import { FakeQuadStorage } from "#/rdf/storage/fake.ts";
 import { IndexedQuadStorage } from "./storage.ts";
-import type { PatchHandler } from "#/indexing/search/types.ts";
+import type { PatchHandler } from "./types.ts";
 
 // Fake PatchHandler for testing
 class FakePatchHandler implements PatchHandler {

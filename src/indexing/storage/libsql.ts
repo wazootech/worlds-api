@@ -8,11 +8,7 @@ import type {
 } from "./interface.ts";
 import type { ChunkIndexState, ChunkRecord, ChunkSearchRow } from "./types.ts";
 import { ftsTermHits } from "#/indexing/fts.ts";
-import {
-  buildSubjectTypes,
-  filterChunks,
-  scoreChunk,
-} from "./search-utils.ts";
+import { buildSubjectTypes, filterItems, scoreItem } from "../ranking.ts";
 
 function serializeVector(v: Float32Array | number[]): string {
   return JSON.stringify(Array.from(v));
@@ -71,8 +67,8 @@ export class LibsqlChunkIndex implements ChunkIndex {
   async search(input: ChunkIndexSearchQuery): Promise<ChunkSearchRow[]> {
     const chunks = await this.getAll();
     const subjectTypes = buildSubjectTypes(chunks);
-    const filtered = filterChunks({
-      chunks,
+    const filtered = filterItems({
+      items: chunks,
       subjects: input.subjects,
       predicates: input.predicates,
       types: input.types,
@@ -81,8 +77,8 @@ export class LibsqlChunkIndex implements ChunkIndex {
 
     const rows: ChunkSearchRow[] = [];
     for (const chunk of filtered) {
-      const result = scoreChunk({
-        chunk,
+      const result = scoreItem({
+        item: chunk,
         queryTerms: input.queryTerms,
         queryText: input.queryText,
         queryVector: input.queryVector,

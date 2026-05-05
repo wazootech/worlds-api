@@ -20,3 +20,4 @@ export {
   InMemoryChunkIndexManager,
 } from "./storage/in-memory.ts";
 export { OramaChunkIndex, OramaChunkIndexManager } from "./storage/orama.ts";
+export { splitTextRecursive } from "./text-splitter.ts";

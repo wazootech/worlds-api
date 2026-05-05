@@ -5,7 +5,7 @@ import type { EmbeddingsService } from "#/indexing/embeddings/interface.ts";
 import type { ChunkIndex, ChunkRecord } from "#/indexing/storage/interface.ts";
 import type { StoredQuad } from "#/rdf/storage/types.ts";
 import type { Patch, PatchHandler } from "./types.ts";
-import { splitTextRecursive } from "./text-splitter.ts";
+import { splitTextRecursive } from "#/indexing/text-splitter.ts";
 
 export interface ChunkingRule {
   /** Predicates this rule applies to (exact IRI match). */
