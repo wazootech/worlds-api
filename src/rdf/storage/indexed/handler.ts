@@ -58,58 +58,73 @@ export class SearchIndexHandler implements PatchHandler {
   ) {}
 
   async patch(patches: Patch[]): Promise<void> {
+    const toDelete: string[] = [];
+    const insertions: { q: StoredQuad; quadId: string; chunks: string[] }[] = [];
+    const textsToEmbed = new Set<string>();
+
+    // 1. Collect and prepare
     for (const patch of patches) {
       if (patch.deletions?.length) {
-        for (const q of patch.deletions) {
-          const quadId = await skolemizeStoredQuad(q);
-          await this.chunks.deleteChunk(quadId);
-        }
+        const ids = await Promise.all(
+          patch.deletions.map((q) => skolemizeStoredQuad(q)),
+        );
+        toDelete.push(...ids);
       }
 
       if (patch.insertions?.length) {
         for (const q of patch.insertions) {
           if (!shouldIndexTriple(q, this.rules)) continue;
 
+          const quadId = await skolemizeStoredQuad(q);
           const rule = this.rules.find((r) =>
             r.predicates.includes(q.predicate)
           );
-          const noSplit = rule?.noSplit ?? false;
+          const chunks = (rule?.noSplit ?? false)
+            ? [q.object]
+            : splitTextRecursive(q.object);
 
-          const quadId = await skolemizeStoredQuad(q);
-          const subject = q.subject;
-          const predicate = q.predicate;
-          const objectText = q.object;
-
-          const fullVector = await this.embeddings.embed(objectText);
-          const chunks = noSplit
-            ? [objectText]
-            : splitTextRecursive(objectText);
           if (chunks.length === 0) continue;
 
-          for (let i = 0; i < chunks.length; i++) {
-            const chunkText = chunks[i];
-            let chunkVec = Float32Array.from(fullVector);
-            if (!noSplit && chunks.length > 1) {
-              const v = await this.embeddings.embed(chunkText);
-              chunkVec = Float32Array.from(v);
-            }
-
-            const chunkId = await sha256Hex(`${quadId}:chunk:${i}`);
-            const record: ChunkRecord = {
-              id: chunkId,
-              quadId,
-              subject,
-              predicate,
-              text: chunkText,
-              vector: chunkVec,
-              world: this.world,
-            };
-            await this.chunks.setChunk(record);
+          insertions.push({ q, quadId, chunks });
+          for (const text of chunks) {
+            textsToEmbed.add(text);
           }
         }
       }
+    }
 
-      // Index state is management-plane; handled by the caller/manager.
+    // 2. Delete existing
+    for (const id of toDelete) {
+      await this.chunks.deleteChunk(id);
+    }
+
+    // 3. Batch embed all unique texts
+    const uniqueTexts = Array.from(textsToEmbed);
+    const vectors = await this.embeddings.embedBatch(uniqueTexts);
+    const textToVec = new Map<string, number[]>();
+    uniqueTexts.forEach((t, i) => textToVec.set(t, vectors[i]));
+
+    // 4. Set new chunks
+    for (const ins of insertions) {
+      const records: ChunkRecord[] = await Promise.all(
+        ins.chunks.map(async (text, i) => {
+          const vec = textToVec.get(text)!;
+          const chunkId = await sha256Hex(`${ins.quadId}:chunk:${i}`);
+          return {
+            id: chunkId,
+            quadId: ins.quadId,
+            subject: ins.q.subject,
+            predicate: ins.q.predicate,
+            text,
+            vector: Float32Array.from(vec),
+            world: this.world,
+          };
+        }),
+      );
+
+      for (const record of records) {
+        await this.chunks.setChunk(record);
+      }
     }
   }
 }

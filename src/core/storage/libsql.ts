@@ -11,6 +11,7 @@ export class LibsqlWorldStorage implements WorldStorage {
 
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
+    await this.client.execute(`PRAGMA foreign_keys = ON;`);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS worlds (
         namespace TEXT NOT NULL DEFAULT '_',

@@ -920,3 +920,27 @@ Deno.test("Worlds (InMemoryQuadStorageManager): isolated worlds", async () => {
   const r2Data = r2 as unknown as { results: { bindings: [] } };
   assertEquals(r2Data.results.bindings.length, 0);
 });
+
+Deno.test("Worlds: search rejects if index dimension mismatch", async () => {
+  const { worlds, chunkIndexManager } = createWorldsWithSharedOptions();
+
+  const ref = { namespace: "ns", id: "dimMismatch" };
+  await worlds.createWorld({
+    namespace: ref.namespace,
+    id: ref.id,
+    displayName: "Dim Mismatch",
+  });
+
+  // Manually set a state with wrong dimensions
+  await chunkIndexManager.setIndexState({
+    world: ref,
+    indexedAt: Date.now(),
+    embeddingDimensions: 9999, // Wrong!
+  });
+
+  await assertRejects(
+    () => worlds.search({ query: "test", source: ref }),
+    InvalidArgumentError,
+    "Embedding dimension mismatch",
+  );
+});

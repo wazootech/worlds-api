@@ -40,6 +40,12 @@ export class OpenAIEmbeddingsService implements EmbeddingsService {
   }
 
   async embed(text: string): Promise<number[]> {
+    const results = await this.embedBatch([text]);
+    return results[0];
+  }
+
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    if (texts.length === 0) return [];
     const response = await fetch(`${this.baseUrl}/embeddings`, {
       method: "POST",
       headers: {
@@ -47,7 +53,7 @@ export class OpenAIEmbeddingsService implements EmbeddingsService {
         "Authorization": `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        input: text,
+        input: texts,
         model: this.model,
         dimensions: this.dimensions,
       }),
@@ -59,6 +65,6 @@ export class OpenAIEmbeddingsService implements EmbeddingsService {
     }
 
     const data = await response.json();
-    return data.data[0].embedding;
+    return data.data.map((item: { embedding: number[] }) => item.embedding);
   }
 }

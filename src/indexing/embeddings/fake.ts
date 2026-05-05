@@ -17,6 +17,14 @@ export class FakeEmbeddingsService implements EmbeddingsService {
   readonly dimensions = DIM;
 
   async embed(text: string): Promise<number[]> {
+    return this.generate(text);
+  }
+
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    return Promise.all(texts.map((t) => this.generate(t)));
+  }
+
+  private generate(text: string): number[] {
     const vec = new Array<number>(DIM).fill(0);
     let h = hashString(text);
     for (let i = 0; i < DIM; i++) {

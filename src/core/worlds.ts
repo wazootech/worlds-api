@@ -331,6 +331,20 @@ export class Worlds implements WorldsInterface {
     if (queryTerms.length === 0) return { results: [] };
 
     const indexState = await this.searchDeps.chunkIndexManager.getIndexState(ref);
+
+    // Hard error if index exists but dimensions mismatch (Production Hardening)
+    if (indexState) {
+      if (
+        indexState.embeddingDimensions !== this.searchDeps.embeddings.dimensions
+      ) {
+        throw new InvalidArgumentError(
+          `Embedding dimension mismatch for world ${input.source}. ` +
+            `Index: ${indexState.embeddingDimensions}, Current: ${this.searchDeps.embeddings.dimensions}. ` +
+            `Please re-index or update configuration.`,
+        );
+      }
+    }
+
     const results = indexState
       ? await this.searchChunks(input, ref)
       : await searchNaiveFts({

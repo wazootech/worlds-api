@@ -92,6 +92,7 @@ export class LibsqlChunkIndex implements ChunkIndex {
   }
 
   private async ensureInitialized(): Promise<void> {
+    await this.client.execute(`PRAGMA foreign_keys = ON;`);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS chunks (
         id TEXT NOT NULL PRIMARY KEY,
@@ -101,7 +102,8 @@ export class LibsqlChunkIndex implements ChunkIndex {
         subject TEXT NOT NULL,
         predicate TEXT NOT NULL,
         text TEXT NOT NULL,
-        vector TEXT NOT NULL
+        vector TEXT NOT NULL,
+        FOREIGN KEY (world_namespace, world_id) REFERENCES worlds (namespace, id) ON DELETE CASCADE
       )
     `);
   }
@@ -190,6 +192,7 @@ export class LibsqlChunkIndexManager implements ChunkIndexManager {
   }
 
   private async ensureInitialized(): Promise<void> {
+    await this.client.execute(`PRAGMA foreign_keys = ON;`);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS chunk_index_state (
         world_namespace TEXT NOT NULL,
@@ -197,7 +200,8 @@ export class LibsqlChunkIndexManager implements ChunkIndexManager {
         indexed_at INTEGER NOT NULL,
         embedding_dimensions INTEGER NOT NULL,
         embedding_model TEXT,
-        PRIMARY KEY (world_namespace, world_id)
+        PRIMARY KEY (world_namespace, world_id),
+        FOREIGN KEY (world_namespace, world_id) REFERENCES worlds (namespace, id) ON DELETE CASCADE
       )
     `);
   }

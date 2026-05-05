@@ -18,6 +18,7 @@ export class LibsqlQuadStorage implements QuadStorage {
 
   private async ensureInitialized(): Promise<void> {
     if (this.initialized) return;
+    await this.client.execute(`PRAGMA foreign_keys = ON;`);
     await this.client.execute(`
       CREATE TABLE IF NOT EXISTS quads (
         world_namespace TEXT NOT NULL,
@@ -29,7 +30,8 @@ export class LibsqlQuadStorage implements QuadStorage {
         object_term_type TEXT,
         object_datatype TEXT,
         object_language TEXT,
-        PRIMARY KEY (world_namespace, world_id, subject, predicate, object, graph)
+        PRIMARY KEY (world_namespace, world_id, subject, predicate, object, graph),
+        FOREIGN KEY (world_namespace, world_id) REFERENCES worlds (namespace, id) ON DELETE CASCADE
       )
     `);
     this.initialized = true;
