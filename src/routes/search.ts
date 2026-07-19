@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../env";
 import { getDb, query } from "../lib/db";
-import { authorize, requireAccess } from "../lib/auth";
+import { authorize, requireAccess, unauthorized } from "../lib/auth";
 
 const search = new Hono<{ Bindings: Env }>();
 
@@ -17,19 +17,22 @@ interface QuadSearchRow {
   object: string;
 }
 
-search.post("/namespaces/:ns/worlds/:id/search", async (c) => {
+search.post("/worlds/:id/search", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
-
-  const accessErr = requireAccess(auth, namespace, worldId);
-  if (accessErr) return accessErr;
-
   const body = await c.req.json<{
+    namespace?: string;
     query: string;
     limit?: number;
   }>();
+  const namespace = auth.admin
+    ? (body.namespace ?? c.req.query("namespace"))
+    : auth.namespace;
+  if (!namespace) return unauthorized();
+
+  const accessErr = requireAccess(auth, namespace, worldId);
+  if (accessErr) return accessErr;
 
   if (!body.query) {
     return c.json(

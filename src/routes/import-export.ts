@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import type { Env } from "../env";
 import { getDb, execute, query, uid, now } from "../lib/db";
-import { authorize, requireAccess } from "../lib/auth";
+import { authorize, requireAccess, unauthorized } from "../lib/auth";
 
 const importExport = new Hono<{ Bindings: Env }>();
 
@@ -17,19 +17,22 @@ interface ChunkRow {
   text: string;
 }
 
-importExport.post("/namespaces/:ns/worlds/:id/import", async (c) => {
+importExport.post("/worlds/:id/import", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
-
-  const accessErr = requireAccess(auth, namespace, worldId);
-  if (accessErr) return accessErr;
-
   const body = await c.req.json<{
+    namespace?: string;
     data: string;
     contentType?: string;
   }>();
+  const namespace = auth.admin
+    ? (body.namespace ?? c.req.query("namespace"))
+    : auth.namespace;
+  if (!namespace) return unauthorized();
+
+  const accessErr = requireAccess(auth, namespace, worldId);
+  if (accessErr) return accessErr;
   const contentType = body.contentType ?? "text/turtle";
 
   if (!body.data) {
@@ -122,11 +125,12 @@ importExport.post("/namespaces/:ns/worlds/:id/import", async (c) => {
   );
 });
 
-importExport.get("/namespaces/:ns/worlds/:id/export", async (c) => {
+importExport.get("/worlds/:id/export", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
+  const namespace = auth.admin ? c.req.query("namespace") : auth.namespace;
+  if (!namespace) return unauthorized();
 
   const accessErr = requireAccess(auth, namespace, worldId);
   if (accessErr) return accessErr;

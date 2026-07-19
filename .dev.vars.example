@@ -1,0 +1,3 @@
+LIBSQL_URL="file:/data/worlds.db"
+LIBSQL_AUTH_TOKEN=""
+WORLDS_ADMIN_KEY="replace_me"

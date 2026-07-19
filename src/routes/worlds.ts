@@ -32,10 +32,19 @@ function worldResource(row: WorldRow) {
   };
 }
 
-worlds.get("/namespaces/:ns/worlds", async (c) => {
+function namespaceFor(
+  auth: Awaited<ReturnType<typeof authorize>>,
+  explicit?: string | null,
+) {
+  if (auth.admin) return explicit ?? null;
+  return auth.namespace ?? null;
+}
+
+worlds.get("/worlds", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const auth = await authorize(c.req.raw, env);
+  const namespace = namespaceFor(auth, c.req.query("namespace"));
+  if (!namespace) return unauthorized();
 
   const accessErr = requireAccess(auth, namespace);
   if (accessErr) return accessErr;
@@ -50,15 +59,20 @@ worlds.get("/namespaces/:ns/worlds", async (c) => {
   return c.json({ worlds: rows.map(worldResource) });
 });
 
-worlds.post("/namespaces/:ns/worlds", async (c) => {
+worlds.post("/worlds", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const auth = await authorize(c.req.raw, env);
+  const body = await c.req.json<{
+    namespace?: string;
+    worldId: string;
+    displayName?: string;
+  }>();
+  const namespace = namespaceFor(auth, body.namespace);
+  if (!namespace) return unauthorized();
 
   const accessErr = requireAccess(auth, namespace);
   if (accessErr) return accessErr;
 
-  const body = await c.req.json<{ worldId: string; displayName?: string }>();
   if (!body.worldId) {
     return c.json(
       { error: { code: "INVALID_ARGUMENT", message: "worldId is required" } },
@@ -109,11 +123,12 @@ worlds.post("/namespaces/:ns/worlds", async (c) => {
   }
 });
 
-worlds.get("/namespaces/:ns/worlds/:id", async (c) => {
+worlds.get("/worlds/:id", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
+  const namespace = namespaceFor(auth, c.req.query("namespace"));
+  if (!namespace) return unauthorized();
 
   const accessErr = requireAccess(auth, namespace, worldId);
   if (accessErr) return accessErr;
@@ -135,17 +150,21 @@ worlds.get("/namespaces/:ns/worlds/:id", async (c) => {
   return c.json(worldResource(row));
 });
 
-worlds.patch("/namespaces/:ns/worlds/:id", async (c) => {
+worlds.patch("/worlds/:id", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
+  const body = await c.req.json<{ namespace?: string; displayName?: string }>();
+  const namespace = namespaceFor(
+    auth,
+    body.namespace ?? c.req.query("namespace"),
+  );
+  if (!namespace) return unauthorized();
 
   if (!auth.admin && auth.namespace !== namespace) {
     return unauthorized();
   }
 
-  const body = await c.req.json<{ displayName?: string }>();
   if (!body.displayName) {
     return c.json(
       {
@@ -183,11 +202,12 @@ worlds.patch("/namespaces/:ns/worlds/:id", async (c) => {
   return c.json(worldResource(row!));
 });
 
-worlds.delete("/namespaces/:ns/worlds/:id", async (c) => {
+worlds.delete("/worlds/:id", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
+  const namespace = namespaceFor(auth, c.req.query("namespace"));
+  if (!namespace) return unauthorized();
 
   if (!auth.admin && auth.namespace !== namespace) {
     return unauthorized();
@@ -215,11 +235,19 @@ worlds.delete("/namespaces/:ns/worlds/:id", async (c) => {
   return c.body(null, 204);
 });
 
-worlds.post("/namespaces/:ns/worlds/:id/undelete", async (c) => {
+worlds.post("/worlds/:id/undelete", async (c) => {
   const env = c.env as unknown as Env;
-  const namespace = c.req.param("ns");
   const worldId = c.req.param("id");
   const auth = await authorize(c.req.raw, env);
+  let explicit: string | undefined;
+  if (auth.admin) {
+    const body = await c.req
+      .json<{ namespace?: string }>()
+      .catch(() => ({ namespace: undefined }));
+    explicit = body.namespace;
+  }
+  const namespace = namespaceFor(auth, explicit ?? c.req.query("namespace"));
+  if (!namespace) return unauthorized();
 
   if (!auth.admin && auth.namespace !== namespace) {
     return unauthorized();
