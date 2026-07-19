@@ -1,0 +1,11 @@
+name = "worlds-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-18"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+LIBSQL_URL = ""
+
+[observability]
+enabled = true
+head_sampling_rate = 1

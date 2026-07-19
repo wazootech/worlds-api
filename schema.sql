@@ -1,0 +1,70 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS worlds_metadata (
+  uid TEXT PRIMARY KEY,
+  namespace TEXT NOT NULL,
+  world_id TEXT NOT NULL,
+  display_name TEXT NOT NULL DEFAULT '',
+  state TEXT NOT NULL DEFAULT 'active',
+  delete_time TEXT,
+  expire_time TEXT,
+  create_time TEXT NOT NULL,
+  update_time TEXT NOT NULL,
+  UNIQUE(namespace, world_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_worlds_metadata_namespace
+  ON worlds_metadata(namespace);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  uid TEXT PRIMARY KEY,
+  key_hash TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL DEFAULT '',
+  namespace TEXT NOT NULL,
+  world_id TEXT,
+  scopes TEXT NOT NULL DEFAULT '["data:read","data:write"]',
+  create_time TEXT NOT NULL,
+  revoked_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash
+  ON api_keys(key_hash);
+
+CREATE INDEX IF NOT EXISTS idx_api_keys_namespace
+  ON api_keys(namespace);
+
+CREATE TABLE IF NOT EXISTS quads (
+  id TEXT PRIMARY KEY,
+  namespace TEXT NOT NULL,
+  world_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  predicate TEXT NOT NULL,
+  object TEXT NOT NULL,
+  graph TEXT NOT NULL DEFAULT 'default',
+  create_time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_quads_world
+  ON quads(namespace, world_id);
+
+CREATE INDEX IF NOT EXISTS idx_quads_subject
+  ON quads(subject);
+
+CREATE INDEX IF NOT EXISTS idx_quads_predicate
+  ON quads(predicate);
+
+CREATE TABLE IF NOT EXISTS chunks (
+  id TEXT PRIMARY KEY,
+  namespace TEXT NOT NULL,
+  world_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  source TEXT,
+  text TEXT NOT NULL,
+  create_time TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_chunks_world
+  ON chunks(namespace, world_id);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts
+  USING fts5(text, content=chunks, content_rowid=rowid);
