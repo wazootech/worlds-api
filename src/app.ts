@@ -21,7 +21,13 @@ app.openAPIRegistry.registerComponent("securitySchemes", "bearerWorldsToken", {
 
 app.onError((err, c) => {
   console.error(err);
-  if (err instanceof SyntaxError) {
+  const message = err instanceof Error ? err.message : String(err);
+  if (
+    err instanceof SyntaxError ||
+    (typeof message === "string" &&
+      (message.includes("Unexpected end of JSON") ||
+        message.includes("Malformed JSON in request body")))
+  ) {
     return c.json(
       {
         error: {
