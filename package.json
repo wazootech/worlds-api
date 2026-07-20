@@ -9,8 +9,11 @@
     "start": "node dist/server.js",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "format": "prettier \"src/**/*.ts\" --write",
-    "format:check": "prettier \"src/**/*.ts\" --check"
+    "smoke:local": "node scripts/local-smoke.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --write",
+    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check"
   },
   "dependencies": {
     "@comunica/query-sparql-rdfjs-lite": "^5.3.0",
@@ -27,6 +30,7 @@
     "@types/node": "^26.1.1",
     "prettier": "^3.9.5",
     "typescript": "^5.9.2",
+    "vitest": "^4.1.10",
     "wrangler": "latest"
   }
 }
