@@ -21,6 +21,17 @@ app.openAPIRegistry.registerComponent("securitySchemes", "bearerWorldsToken", {
 
 app.onError((err, c) => {
   console.error(err);
+  if (err instanceof SyntaxError) {
+    return c.json(
+      {
+        error: {
+          code: "INVALID_ARGUMENT",
+          message: "Invalid JSON body",
+        },
+      },
+      400,
+    );
+  }
   return c.json(
     {
       error: {
