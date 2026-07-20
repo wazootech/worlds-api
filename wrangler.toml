@@ -10,6 +10,15 @@ routes = [
 [vars]
 LIBSQL_URL = "libsql://worlds-api-prod-ethanthatonekid.aws-us-west-2.turso.io"
 
+[env.qa]
+name = "worlds-api-qa"
+routes = [
+  { pattern = "worlds-api-qa.wazoo.dev", custom_domain = true }
+]
+
+[env.qa.vars]
+LIBSQL_URL = "libsql://worlds-api-qa-ethanthatonekid.aws-us-west-2.turso.io"
+
 [observability]
 enabled = true
 head_sampling_rate = 1
