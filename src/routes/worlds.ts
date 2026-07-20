@@ -1,9 +1,20 @@
-import { Hono, type Context } from "hono";
+import { createRoute, z } from "@hono/zod-openapi";
+import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { getDb, query, queryOne, execute, uid, now } from "../lib/db";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
-
-const worlds = new Hono<{ Bindings: Env }>();
+import { initializeWorldDatabase } from "../lib/world-db";
+import { respond } from "../lib/respond";
+import {
+  WorldResourceSchema,
+  CreateWorldRequestSchema,
+  UpdateWorldRequestSchema,
+  UndeleteWorldRequestSchema,
+  worldIdParam,
+  worldsListQuery,
+  worldGetQuery,
+  namespaceQuery,
+} from "../lib/schemas";
 
 interface WorldRow {
   uid: string;
@@ -11,6 +22,8 @@ interface WorldRow {
   world_id: string;
   display_name: string;
   state: string;
+  database_url: string | null;
+  database_auth_token: string | null;
   delete_time: string | null;
   expire_time: string | null;
   create_time: string;
@@ -25,6 +38,7 @@ function worldResource(row: WorldRow) {
     worldId: row.world_id,
     displayName: row.display_name,
     state: row.state,
+    storage: row.database_url ? "libsql-per-world" : "legacy-shared-libsql",
     createTime: row.create_time,
     updateTime: row.update_time,
     deleteTime: row.delete_time ?? undefined,
@@ -40,266 +54,505 @@ function namespaceFor(
   return auth.namespace ?? null;
 }
 
-worlds.get("/worlds", async (c) => {
-  const env = c.env as unknown as Env;
-  const auth = await authorize(c.req.raw, env);
-  const namespace = namespaceFor(auth, c.req.query("namespace"));
-  if (!namespace) return unauthorized();
-
-  const accessErr = requireAccess(auth, namespace);
-  if (accessErr) return accessErr;
-
-  const db = getDb(env);
-  const rows = await query<WorldRow>(
-    db,
-    "SELECT * FROM worlds_metadata WHERE namespace = ? AND state != 'deleted' ORDER BY create_time DESC",
-    [namespace],
-  );
-
-  return c.json({ worlds: rows.map(worldResource) });
+const listRoute = createRoute({
+  method: "get",
+  path: "/worlds",
+  tags: ["Worlds"],
+  operationId: "listWorlds",
+  security: [{ bearerWorldsToken: [] }],
+  request: { query: worldsListQuery },
+  responses: {
+    200: {
+      description: "World list",
+      content: {
+        "application/json": {
+          schema: z.object({ worlds: z.array(WorldResourceSchema) }),
+        },
+      },
+    },
+  },
 });
 
-worlds.post("/worlds", async (c) => {
-  const env = c.env as unknown as Env;
-  const auth = await authorize(c.req.raw, env);
-  const body = await c.req.json<{
-    namespace?: string;
-    worldId: string;
-    displayName?: string;
-  }>();
-  const namespace = namespaceFor(auth, body.namespace);
-  if (!namespace) return unauthorized();
+const createRouteDef = createRoute({
+  method: "post",
+  path: "/worlds",
+  tags: ["Worlds"],
+  operationId: "createWorld",
+  security: [{ bearerWorldsToken: [] }],
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": { schema: CreateWorldRequestSchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      description: "Created World",
+      content: {
+        "application/json": { schema: WorldResourceSchema },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+    409: {
+      description: "Already exists",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
 
-  const accessErr = requireAccess(auth, namespace);
-  if (accessErr) return accessErr;
+const getRoute = createRoute({
+  method: "get",
+  path: "/worlds/{id}",
+  tags: ["Worlds"],
+  operationId: "getWorld",
+  security: [{ bearerWorldsToken: [] }],
+  request: { params: worldIdParam, query: worldGetQuery },
+  responses: {
+    200: {
+      description: "World",
+      content: {
+        "application/json": { schema: WorldResourceSchema },
+      },
+    },
+    404: {
+      description: "Not found",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
 
-  if (!body.worldId) {
-    return c.json(
-      { error: { code: "INVALID_ARGUMENT", message: "worldId is required" } },
-      400,
-    );
-  }
+const updateRoute = createRoute({
+  method: "patch",
+  path: "/worlds/{id}",
+  tags: ["Worlds"],
+  operationId: "updateWorld",
+  security: [{ bearerWorldsToken: [] }],
+  request: {
+    params: worldIdParam,
+    body: {
+      required: true,
+      content: {
+        "application/json": { schema: UpdateWorldRequestSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Updated World",
+      content: {
+        "application/json": { schema: WorldResourceSchema },
+      },
+    },
+    400: {
+      description: "Bad request",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+    404: {
+      description: "Not found",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
 
-  const db = getDb(env);
-  const worldUid = `w_${uid()}`;
-  const ts = now();
-  const displayName = body.displayName ?? body.worldId;
+const deleteRoute = createRoute({
+  method: "delete",
+  path: "/worlds/{id}",
+  tags: ["Worlds"],
+  operationId: "deleteWorld",
+  security: [{ bearerWorldsToken: [] }],
+  request: { params: worldIdParam, query: namespaceQuery },
+  responses: {
+    204: { description: "Deleted" },
+    404: {
+      description: "Not found",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
 
-  try {
-    await execute(
+const undeleteRoute = createRoute({
+  method: "post",
+  path: "/worlds/{id}/undelete",
+  tags: ["Worlds"],
+  operationId: "undeleteWorld",
+  security: [{ bearerWorldsToken: [] }],
+  request: {
+    params: worldIdParam,
+    query: namespaceQuery,
+    body: {
+      content: {
+        "application/json": { schema: UndeleteWorldRequestSchema },
+      },
+    },
+  },
+  responses: {
+    200: {
+      description: "Restored World",
+      content: {
+        "application/json": { schema: WorldResourceSchema },
+      },
+    },
+    404: {
+      description: "Not found",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+    409: {
+      description: "Restore blocked",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
+
+export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
+  app.openapi(listRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const auth = await authorize(c.req.raw, env);
+    const listQuery = c.req.valid("query");
+    const namespace = namespaceFor(auth, listQuery.namespace);
+    if (!namespace) return unauthorized();
+
+    const accessErr = requireAccess(auth, namespace);
+    if (accessErr) return accessErr;
+
+    const db = getDb(env);
+    const rows = await query<WorldRow>(
       db,
-      "INSERT INTO worlds_metadata (uid, namespace, world_id, display_name, state, create_time, update_time) VALUES (?, ?, ?, ?, 'active', ?, ?)",
-      [worldUid, namespace, body.worldId, displayName, ts, ts],
+      "SELECT * FROM worlds_metadata WHERE namespace = ? AND state != 'deleted' ORDER BY create_time DESC",
+      [namespace],
     );
+    return respond(c, { worlds: rows.map(worldResource) });
+  });
 
-    return c.json(
-      worldResource({
-        uid: worldUid,
-        namespace,
-        world_id: body.worldId,
-        display_name: displayName,
-        state: "active",
-        delete_time: null,
-        expire_time: null,
-        create_time: ts,
-        update_time: ts,
-      }),
-      201,
-    );
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    if (message.includes("UNIQUE constraint")) {
-      return c.json(
+  app.openapi(createRouteDef, async (c) => {
+    const env = c.env as unknown as Env;
+    const auth = await authorize(c.req.raw, env);
+    const body = c.req.valid("json");
+    const namespace = namespaceFor(auth, body.namespace);
+    if (!namespace) return unauthorized();
+
+    const accessErr = requireAccess(auth, namespace);
+    if (accessErr) return accessErr;
+
+    if (!body.worldId) {
+      return respond(
+        c,
+        { error: { code: "INVALID_ARGUMENT", message: "worldId is required" } },
+        400,
+      );
+    }
+
+    const db = getDb(env);
+    const worldUid = `w_${uid()}`;
+    const ts = now();
+    const displayName = body.displayName ?? body.worldId;
+
+    if (!body.databaseUrl) {
+      return respond(
+        c,
         {
           error: {
-            code: "ALREADY_EXISTS",
-            message: `World '${body.worldId}' already exists in namespace '${namespace}'`,
+            code: "INVALID_ARGUMENT",
+            message: "databaseUrl is required for per-World libSQL storage",
+          },
+        },
+        400,
+      );
+    }
+
+    await initializeWorldDatabase({
+      namespace,
+      worldId: body.worldId,
+      databaseUrl: body.databaseUrl,
+      databaseAuthToken: body.databaseAuthToken,
+    });
+
+    try {
+      await execute(
+        db,
+        "INSERT INTO worlds_metadata (uid, namespace, world_id, display_name, state, database_url, database_auth_token, create_time, update_time) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?)",
+        [
+          worldUid,
+          namespace,
+          body.worldId,
+          displayName,
+          body.databaseUrl,
+          body.databaseAuthToken ?? null,
+          ts,
+          ts,
+        ],
+      );
+
+      return respond(
+        c,
+        worldResource({
+          uid: worldUid,
+          namespace,
+          world_id: body.worldId,
+          display_name: displayName,
+          state: "active",
+          database_url: body.databaseUrl,
+          database_auth_token: body.databaseAuthToken ?? null,
+          delete_time: null,
+          expire_time: null,
+          create_time: ts,
+          update_time: ts,
+        }),
+        201,
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes("UNIQUE constraint")) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "ALREADY_EXISTS",
+              message: `World '${body.worldId}' already exists in namespace '${namespace}'`,
+            },
+          },
+          409,
+        );
+      }
+      throw err;
+    }
+  });
+
+  app.openapi(getRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const worldId = c.req.param("id");
+    const auth = await authorize(c.req.raw, env);
+    const query = c.req.valid("query");
+    const namespace = namespaceFor(auth, query.namespace);
+    if (!namespace) return unauthorized();
+
+    const accessErr = requireAccess(auth, namespace, worldId);
+    if (accessErr) return accessErr;
+
+    const db = getDb(env);
+    const row = await queryOne<WorldRow>(
+      db,
+      "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
+      [namespace, worldId],
+    );
+
+    if (!row) {
+      return respond(
+        c,
+        { error: { code: "NOT_FOUND", message: "World not found" } },
+        404,
+      );
+    }
+
+    return respond(c, worldResource(row));
+  });
+
+  app.openapi(updateRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const worldId = c.req.param("id");
+    const auth = await authorize(c.req.raw, env);
+    const body = c.req.valid("json");
+    const namespace = namespaceFor(
+      auth,
+      body.namespace ?? c.req.query("namespace"),
+    );
+    if (!namespace) return unauthorized();
+
+    if (!auth.admin && auth.namespace !== namespace) {
+      return unauthorized();
+    }
+
+    if (!body.displayName) {
+      return respond(
+        c,
+        {
+          error: {
+            code: "INVALID_ARGUMENT",
+            message: "displayName is required",
+          },
+        },
+        400,
+      );
+    }
+
+    const db = getDb(env);
+    const ts = now();
+
+    const result = await execute(
+      db,
+      "UPDATE worlds_metadata SET display_name = ?, update_time = ? WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
+      [body.displayName, ts, namespace, worldId],
+    );
+
+    if (result.rowsAffected === 0) {
+      return respond(
+        c,
+        { error: { code: "NOT_FOUND", message: "World not found" } },
+        404,
+      );
+    }
+
+    const row = await queryOne<WorldRow>(
+      db,
+      "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ?",
+      [namespace, worldId],
+    );
+
+    return respond(c, worldResource(row!));
+  });
+
+  app.openapi(deleteRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const worldId = c.req.param("id");
+    const auth = await authorize(c.req.raw, env);
+    const query = c.req.valid("query");
+    const namespace = namespaceFor(auth, query.namespace);
+    if (!namespace) return unauthorized();
+
+    if (!auth.admin && auth.namespace !== namespace) {
+      return unauthorized();
+    }
+
+    const db = getDb(env);
+    const ts = now();
+    const expireTs = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    const result = await execute(
+      db,
+      "UPDATE worlds_metadata SET state = 'deleted', delete_time = ?, expire_time = ? WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
+      [ts, expireTs, namespace, worldId],
+    );
+
+    if (result.rowsAffected === 0) {
+      return respond(
+        c,
+        { error: { code: "NOT_FOUND", message: "World not found" } },
+        404,
+      );
+    }
+
+    return c.body(null, 204) as any;
+  });
+
+  app.openapi(undeleteRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const worldId = c.req.param("id");
+    const auth = await authorize(c.req.raw, env);
+    let explicit: string | undefined;
+    if (auth.admin) {
+      const body = c.req.valid("json");
+      explicit = body.namespace;
+    }
+    const query = c.req.valid("query");
+    const namespace = namespaceFor(auth, explicit ?? query.namespace);
+    if (!namespace) return unauthorized();
+
+    if (!auth.admin && auth.namespace !== namespace) {
+      return unauthorized();
+    }
+
+    const db = getDb(env);
+
+    const row = await queryOne<WorldRow>(
+      db,
+      "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state = 'deleted'",
+      [namespace, worldId],
+    );
+
+    if (!row) {
+      return respond(
+        c,
+        {
+          error: {
+            code: "NOT_FOUND",
+            message: "Deleted world not found",
+          },
+        },
+        404,
+      );
+    }
+
+    if (row.expire_time && row.expire_time < now()) {
+      return respond(
+        c,
+        {
+          error: {
+            code: "WORLD_RESTORE_BLOCKED",
+            message: "World has expired and cannot be restored",
           },
         },
         409,
       );
     }
-    throw err;
-  }
-});
 
-worlds.get("/worlds/:id", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  const namespace = namespaceFor(auth, c.req.query("namespace"));
-  if (!namespace) return unauthorized();
+    const ts = now();
 
-  const accessErr = requireAccess(auth, namespace, worldId);
-  if (accessErr) return accessErr;
-
-  const db = getDb(env);
-  const row = await queryOne<WorldRow>(
-    db,
-    "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
-    [namespace, worldId],
-  );
-
-  if (!row) {
-    return c.json(
-      { error: { code: "NOT_FOUND", message: "World not found" } },
-      404,
+    await execute(
+      db,
+      "UPDATE worlds_metadata SET state = 'active', delete_time = NULL, expire_time = NULL, update_time = ? WHERE uid = ?",
+      [ts, row.uid],
     );
-  }
 
-  return c.json(worldResource(row));
-});
-
-worlds.patch("/worlds/:id", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  const body = await c.req.json<{ namespace?: string; displayName?: string }>();
-  const namespace = namespaceFor(
-    auth,
-    body.namespace ?? c.req.query("namespace"),
-  );
-  if (!namespace) return unauthorized();
-
-  if (!auth.admin && auth.namespace !== namespace) {
-    return unauthorized();
-  }
-
-  if (!body.displayName) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_ARGUMENT",
-          message: "displayName is required",
-        },
-      },
-      400,
+    const restored = await queryOne<WorldRow>(
+      db,
+      "SELECT * FROM worlds_metadata WHERE uid = ?",
+      [row.uid],
     );
-  }
 
-  const db = getDb(env);
-  const ts = now();
-
-  const result = await execute(
-    db,
-    "UPDATE worlds_metadata SET display_name = ?, update_time = ? WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
-    [body.displayName, ts, namespace, worldId],
-  );
-
-  if (result.rowsAffected === 0) {
-    return c.json(
-      { error: { code: "NOT_FOUND", message: "World not found" } },
-      404,
-    );
-  }
-
-  const row = await queryOne<WorldRow>(
-    db,
-    "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ?",
-    [namespace, worldId],
-  );
-
-  return c.json(worldResource(row!));
-});
-
-worlds.delete("/worlds/:id", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  const namespace = namespaceFor(auth, c.req.query("namespace"));
-  if (!namespace) return unauthorized();
-
-  if (!auth.admin && auth.namespace !== namespace) {
-    return unauthorized();
-  }
-
-  const db = getDb(env);
-  const ts = now();
-  const expireTs = new Date(
-    Date.now() + 30 * 24 * 60 * 60 * 1000,
-  ).toISOString();
-
-  const result = await execute(
-    db,
-    "UPDATE worlds_metadata SET state = 'deleted', delete_time = ?, expire_time = ? WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
-    [ts, expireTs, namespace, worldId],
-  );
-
-  if (result.rowsAffected === 0) {
-    return c.json(
-      { error: { code: "NOT_FOUND", message: "World not found" } },
-      404,
-    );
-  }
-
-  return c.body(null, 204);
-});
-
-worlds.post("/worlds/:id/undelete", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  let explicit: string | undefined;
-  if (auth.admin) {
-    const body = await c.req
-      .json<{ namespace?: string }>()
-      .catch(() => ({ namespace: undefined }));
-    explicit = body.namespace;
-  }
-  const namespace = namespaceFor(auth, explicit ?? c.req.query("namespace"));
-  if (!namespace) return unauthorized();
-
-  if (!auth.admin && auth.namespace !== namespace) {
-    return unauthorized();
-  }
-
-  const db = getDb(env);
-
-  const row = await queryOne<WorldRow>(
-    db,
-    "SELECT * FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state = 'deleted'",
-    [namespace, worldId],
-  );
-
-  if (!row) {
-    return c.json(
-      {
-        error: {
-          code: "NOT_FOUND",
-          message: "Deleted world not found",
-        },
-      },
-      404,
-    );
-  }
-
-  if (row.expire_time && row.expire_time < now()) {
-    return c.json(
-      {
-        error: {
-          code: "WORLD_RESTORE_BLOCKED",
-          message: "World has expired and cannot be restored",
-        },
-      },
-      409,
-    );
-  }
-
-  const ts = now();
-
-  await execute(
-    db,
-    "UPDATE worlds_metadata SET state = 'active', delete_time = NULL, expire_time = NULL, update_time = ? WHERE uid = ?",
-    [ts, row.uid],
-  );
-
-  const restored = await queryOne<WorldRow>(
-    db,
-    "SELECT * FROM worlds_metadata WHERE uid = ?",
-    [row.uid],
-  );
-
-  return c.json(worldResource(restored!));
-});
-
-export { worlds };
+    return respond(c, worldResource(restored!));
+  });
+}

@@ -3,8 +3,12 @@ main = "src/index.ts"
 compatibility_date = "2026-07-18"
 compatibility_flags = ["nodejs_compat"]
 
+routes = [
+  { pattern = "worlds-api.wazoo.dev", custom_domain = true }
+]
+
 [vars]
-LIBSQL_URL = ""
+LIBSQL_URL = "libsql://worlds-api-prod-ethanthatonekid.aws-us-west-2.turso.io"
 
 [observability]
 enabled = true

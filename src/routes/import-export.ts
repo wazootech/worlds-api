@@ -1,187 +1,328 @@
-import { Hono } from "hono";
+import { createRoute, z } from "@hono/zod-openapi";
+import type { OpenAPIHono } from "@hono/zod-openapi";
+import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
-import { getDb, execute, query, uid, now } from "../lib/db";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
-
-const importExport = new Hono<{ Bindings: Env }>();
+import { resolveWorldDatabase, worldDb } from "../lib/world-db";
+import { respond } from "../lib/respond";
+import {
+  ImportRequestSchema,
+  ImportResponseSchema,
+  ExportQuadsResponseSchema,
+  worldIdParam,
+  exportQuery,
+} from "../lib/schemas";
 
 interface QuadRow {
   subject: string;
   predicate: string;
   object: string;
-  graph: string;
+  graph?: string;
 }
 
-interface ChunkRow {
-  subject: string;
-  text: string;
-}
-
-importExport.post("/worlds/:id/import", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  const body = await c.req.json<{
-    namespace?: string;
-    data: string;
-    contentType?: string;
-  }>();
-  const namespace = auth.admin
-    ? (body.namespace ?? c.req.query("namespace"))
-    : auth.namespace;
-  if (!namespace) return unauthorized();
-
-  const accessErr = requireAccess(auth, namespace, worldId);
-  if (accessErr) return accessErr;
-  const contentType = body.contentType ?? "text/turtle";
-
-  if (!body.data) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_ARGUMENT",
-          message: "data field is required",
+export function registerImportExportRoutes(
+  app: OpenAPIHono<{ Bindings: Env }>,
+) {
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/worlds/{id}/import",
+      tags: ["ImportExport"],
+      operationId: "importWorld",
+      security: [{ bearerWorldsToken: [] }],
+      request: {
+        params: worldIdParam,
+        body: {
+          required: true,
+          content: {
+            "application/json": { schema: ImportRequestSchema },
+          },
         },
       },
-      400,
-    );
-  }
+      responses: {
+        200: {
+          description: "Import result",
+          content: {
+            "application/json": { schema: ImportResponseSchema },
+          },
+        },
+        400: {
+          description: "Bad request",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      const env = c.env as unknown as Env;
+      const worldId = c.req.param("id");
+      const auth = await authorize(c.req.raw, env);
+      const body = c.req.valid("json");
+      const namespace = auth.admin
+        ? (body.namespace ?? c.req.query("namespace"))
+        : auth.namespace;
+      if (!namespace) return unauthorized();
 
-  const db = getDb(env);
+      const accessErr = requireAccess(auth, namespace, worldId);
+      if (accessErr) return accessErr;
+      const contentType = body.contentType ?? "text/turtle";
 
-  if (contentType === "application/json") {
-    const items = JSON.parse(body.data) as Array<{
-      subject: string;
-      predicate: string;
-      object: string;
-      graph?: string;
-    }>;
-
-    const stmts = items.map((item) => ({
-      sql: "INSERT OR IGNORE INTO quads (id, namespace, world_id, subject, predicate, object, graph, create_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      args: [
-        uid(),
-        namespace,
-        worldId,
-        item.subject,
-        item.predicate,
-        item.object,
-        item.graph ?? "default",
-        now(),
-      ],
-    }));
-
-    await db.batch(stmts, "write");
-
-    return c.json({ imported: { quads: items.length, chunks: 0 } }, 200);
-  }
-
-  if (contentType === "text/plain" || contentType === "application/x-ndjson") {
-    const lines = body.data
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
-
-    const chunks = lines.map((line) => {
-      let subject = "";
-      let text = "";
-      const jsonMatch = line.match(/^(\{.*\})$/);
-      if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(line);
-          subject = parsed.subject ?? "";
-          text = parsed.text ?? parsed.content ?? parsed.value ?? line;
-        } catch {
-          text = line;
-        }
-      } else {
-        const tabMatch = line.split("\t");
-        if (tabMatch.length >= 2) {
-          subject = tabMatch[0];
-          text = tabMatch.slice(1).join("\t");
-        } else {
-          text = line;
-        }
+      if (!body.data) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message: "data field is required",
+            },
+          },
+          400,
+        );
       }
-      return {
-        sql: "INSERT INTO chunks (id, namespace, world_id, subject, text, create_time) VALUES (?, ?, ?, ?, ?, ?)",
-        args: [uid(), namespace, worldId, subject, text, now()],
-      };
-    });
 
-    await db.batch(chunks, "write");
+      const ref = await resolveWorldDatabase(env, namespace, worldId);
+      if (!ref) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "World database not found",
+            },
+          },
+          404,
+        );
+      }
+      const db = worldDb(ref);
+      const client = await createLibsqlClient({ client: db });
 
-    return c.json({ imported: { quads: 0, chunks: chunks.length } }, 200);
-  }
+      if (contentType === "application/json") {
+        const items = JSON.parse(body.data) as QuadRow[];
+        await client.import({
+          source: {
+            kind: "serialized",
+            contentType: "application/n-quads",
+            data: items.map(quadToNQuad).join(""),
+          },
+        });
 
-  return c.json(
-    {
-      error: {
-        code: "UNSUPPORTED_CONTENT_TYPE",
-        message: `Content type '${contentType}' is not supported. Use 'application/json' for quads or 'text/plain' for chunks.`,
-      },
+        return respond(c, { imported: { quads: items.length, chunks: 0 } });
+      }
+
+      if (
+        contentType === "text/plain" ||
+        contentType === "application/x-ndjson"
+      ) {
+        const lines = body.data
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+
+        const chunks = lines.map((line, index) => {
+          let subject = "";
+          let text = "";
+          const jsonMatch = line.match(/^(\{.*\})$/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(line);
+              subject = parsed.subject ?? "";
+              text = parsed.text ?? parsed.content ?? parsed.value ?? line;
+            } catch {
+              text = line;
+            }
+          } else {
+            const tabMatch = line.split("\t");
+            if (tabMatch.length >= 2) {
+              subject = tabMatch[0];
+              text = tabMatch.slice(1).join("\t");
+            } else {
+              text = line;
+            }
+          }
+          return {
+            subject: subject || `urn:wazoo:chunk:${crypto.randomUUID()}`,
+            predicate: "http://schema.org/text",
+            object: text,
+            graph: `urn:wazoo:import:${index}`,
+          };
+        });
+
+        await client.import({
+          source: {
+            kind: "serialized",
+            contentType: "application/n-quads",
+            data: chunks.map(quadToNQuad).join(""),
+          },
+        });
+
+        return respond(c, {
+          imported: { quads: 0, chunks: chunks.length },
+        });
+      }
+
+      return respond(
+        c,
+        {
+          error: {
+            code: "UNSUPPORTED_CONTENT_TYPE",
+            message: `Content type '${contentType}' is not supported. Use 'application/json' for quads or 'text/plain' for chunks.`,
+          },
+        },
+        400,
+      );
     },
-    400,
   );
-});
 
-importExport.get("/worlds/:id/export", async (c) => {
-  const env = c.env as unknown as Env;
-  const worldId = c.req.param("id");
-  const auth = await authorize(c.req.raw, env);
-  const namespace = auth.admin ? c.req.query("namespace") : auth.namespace;
-  if (!namespace) return unauthorized();
-
-  const accessErr = requireAccess(auth, namespace, worldId);
-  if (accessErr) return accessErr;
-
-  const fmt = c.req.query("format") ?? "application/json";
-  const limit = parseInt(c.req.query("limit") ?? "1000", 10);
-  const offset = parseInt(c.req.query("offset") ?? "0", 10);
-
-  const db = getDb(env);
-
-  if (fmt === "application/json") {
-    const quads = await query<QuadRow>(
-      db,
-      "SELECT subject, predicate, object, graph FROM quads WHERE namespace = ? AND world_id = ? LIMIT ? OFFSET ?",
-      [namespace, worldId, limit, offset],
-    );
-
-    return c.json({
-      quads: quads.map((q) => ({
-        subject: q.subject,
-        predicate: q.predicate,
-        object: q.object,
-        graph: q.graph,
-      })),
-      nextOffset: quads.length === limit ? offset + limit : undefined,
-    });
-  }
-
-  if (fmt === "text/plain") {
-    const chunks = await query<ChunkRow>(
-      db,
-      "SELECT subject, text FROM chunks WHERE namespace = ? AND world_id = ? LIMIT ? OFFSET ?",
-      [namespace, worldId, limit, offset],
-    );
-
-    const lines = chunks.map((ch) =>
-      ch.subject ? `${ch.subject}\t${ch.text}` : ch.text,
-    );
-
-    return c.text(lines.join("\n"));
-  }
-
-  return c.json(
-    {
-      error: {
-        code: "UNSUPPORTED_FORMAT",
-        message: `Export format '${fmt}' is not supported. Use 'application/json' or 'text/plain'.`,
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/worlds/{id}/export",
+      tags: ["ImportExport"],
+      operationId: "exportWorld",
+      security: [{ bearerWorldsToken: [] }],
+      request: {
+        params: worldIdParam,
+        query: exportQuery,
       },
-    },
-    400,
-  );
-});
+      responses: {
+        200: {
+          description: "Export result",
+          content: {
+            "application/json": { schema: ExportQuadsResponseSchema },
+            "text/plain": { schema: z.any() },
+          },
+        },
+        400: {
+          description: "Bad request",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      const env = c.env as unknown as Env;
+      const worldId = c.req.param("id");
+      const auth = await authorize(c.req.raw, env);
+      const query = c.req.valid("query");
+      const namespace = auth.admin ? query.namespace : auth.namespace;
+      if (!namespace) return unauthorized();
 
-export { importExport };
+      const accessErr = requireAccess(auth, namespace, worldId);
+      if (accessErr) return accessErr;
+
+      const fmt = query.format ?? "application/json";
+      const limit = parseInt(query.limit ?? "1000", 10);
+      const offset = parseInt(query.offset ?? "0", 10);
+
+      const ref = await resolveWorldDatabase(env, namespace, worldId);
+      if (!ref) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "World database not found",
+            },
+          },
+          404,
+        );
+      }
+      const db = worldDb(ref);
+      const client = await createLibsqlClient({ client: db });
+
+      if (fmt === "application/json") {
+        const exported = await client.export({
+          format: { kind: "quads" },
+        });
+        const quads = exported.kind === "quads" ? exported.quads : [];
+
+        return respond(c, {
+          quads: quads.slice(offset, offset + limit).map((q) => ({
+            subject: q.subject.value,
+            predicate: q.predicate.value,
+            object: q.object.value,
+            graph:
+              q.graph.termType === "DefaultGraph" ? undefined : q.graph.value,
+          })),
+          nextOffset:
+            quads.length > offset + limit ? offset + limit : undefined,
+        });
+      }
+
+      if (fmt === "text/plain") {
+        const exported = await client.export({
+          format: { kind: "quads" },
+        });
+        const quads = exported.kind === "quads" ? exported.quads : [];
+
+        const lines = quads
+          .filter((q) => q.predicate.value === "http://schema.org/text")
+          .slice(offset, offset + limit)
+          .map((q) => `${q.subject.value}\t${q.object.value}`);
+
+        return c.text(lines.join("\n"));
+      }
+
+      if (
+        fmt === "application/n-quads" ||
+        fmt === "application/n-triples" ||
+        fmt === "text/turtle"
+      ) {
+        const exported = await client.export({
+          format: { kind: "serialized", contentType: fmt },
+        });
+
+        return c.text(
+          exported.kind === "serialized" ? exported.data : "",
+          200,
+          {
+            "Content-Type": fmt,
+          },
+        );
+      }
+
+      return respond(
+        c,
+        {
+          error: {
+            code: "UNSUPPORTED_FORMAT",
+            message: `Export format '${fmt}' is not supported. Use 'application/json' or 'text/plain'.`,
+          },
+        },
+        400,
+      );
+    },
+  );
+}
+
+function quadToNQuad(quad: QuadRow) {
+  const subject = namedNode(quad.subject);
+  const predicate = namedNode(quad.predicate);
+  const object = isNamedNodeValue(quad.object)
+    ? namedNode(quad.object)
+    : literal(quad.object);
+  const graph = quad.graph ? ` ${namedNode(quad.graph)}` : "";
+  return `${subject} ${predicate} ${object}${graph} .\n`;
+}
+
+function namedNode(value: string) {
+  return `<${value.replace(/[<>]/g, "")}>`;
+}
+
+function literal(value: string) {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`;
+}
+
+function isNamedNodeValue(value: string) {
+  return /^https?:\/\//.test(value) || /^urn:/.test(value);
+}

@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS worlds_metadata (
   world_id TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
   state TEXT NOT NULL DEFAULT 'active',
+  database_url TEXT,
+  database_auth_token TEXT,
   delete_time TEXT,
   expire_time TEXT,
   create_time TEXT NOT NULL,
@@ -68,3 +70,16 @@ CREATE INDEX IF NOT EXISTS idx_chunks_world
 
 CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts
   USING fts5(text, content=chunks, content_rowid=rowid);
+
+CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
+  INSERT INTO chunks_fts(rowid, text) VALUES (new.rowid, new.text);
+END;
+
+CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
+  INSERT INTO chunks_fts(chunks_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+END;
+
+CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
+  INSERT INTO chunks_fts(chunks_fts, rowid, text) VALUES('delete', old.rowid, old.text);
+  INSERT INTO chunks_fts(rowid, text) VALUES (new.rowid, new.text);
+END;

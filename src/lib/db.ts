@@ -6,13 +6,16 @@ import {
 import type { Env } from "../env";
 
 let client: LibsqlClient | null = null;
+let clientKey = "";
 
 export function getDb(env: Env): LibsqlClient {
-  if (client) return client;
+  const key = `${env.LIBSQL_URL}\n${env.LIBSQL_AUTH_TOKEN ?? ""}`;
+  if (client && clientKey === key) return client;
   client = createClient({
     url: env.LIBSQL_URL,
     authToken: env.LIBSQL_AUTH_TOKEN,
   });
+  clientKey = key;
   return client;
 }
 

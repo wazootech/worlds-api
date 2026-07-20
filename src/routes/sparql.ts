@@ -1,43 +1,76 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
+import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
-  SearchRequestSchema,
-  SearchResultSchema,
+  SparqlRequestSchema,
   worldIdParam,
   namespaceQuery,
 } from "../lib/schemas";
 
-export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
+const queryEngine = new QueryEngine();
+
+export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/search",
-      tags: ["Search"],
-      operationId: "searchWorld",
+      path: "/worlds/sparql",
+      tags: ["SPARQL"],
+      operationId: "sparqlNoWorld",
+      security: [{ bearerWorldsToken: [] }],
+      responses: {
+        400: {
+          description: "Must specify a World",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      return respond(
+        c,
+        {
+          error: {
+            code: "INVALID_ARGUMENT",
+            message: "Use /worlds/:id/sparql to query one World",
+          },
+        },
+        400,
+      );
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/worlds/{id}/sparql",
+      tags: ["SPARQL"],
+      operationId: "sparqlWorld",
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,
         body: {
           required: true,
           content: {
-            "application/json": { schema: SearchRequestSchema },
+            "application/json": { schema: SparqlRequestSchema },
           },
         },
       },
       responses: {
         200: {
-          description: "Search results",
+          description: "SPARQL query result",
           content: {
             "application/json": {
-              schema: z.object({
-                results: z.array(SearchResultSchema),
-                mode: z.string().optional(),
-              }),
+              schema: z.any(),
             },
           },
         },
@@ -70,16 +103,12 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         return respond(
           c,
           {
-            error: {
-              code: "INVALID_ARGUMENT",
-              message: "query is required",
-            },
+            error: { code: "INVALID_ARGUMENT", message: "query is required" },
           },
           400,
         );
       }
 
-      const limit = body.limit ?? 20;
       const ref = await resolveWorldDatabase(env, namespace, worldId);
       if (!ref) {
         return respond(
@@ -93,37 +122,31 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           404,
         );
       }
+
       const db = worldDb(ref);
-      const client = await createLibsqlClient({ client: db });
+      const client = await createLibsqlClient({
+        client: db,
+        queryEngine,
+      });
 
       try {
-        const response = await client.search({ query: body.query });
-
-        return respond(c, {
-          results: (response.results ?? []).slice(0, limit).map((r) => ({
-            subject: r.subject,
-            predicate: r.predicate,
-            graph: r.graph,
-            content: r.text,
-            score: r.score,
-          })),
-        });
-      } catch {
-        const likePattern = `%${body.query}%`;
-
-        const quadRows = await db.execute({
-          sql: "SELECT s, p, o FROM quads WHERE s LIKE ? OR p LIKE ? OR o LIKE ? LIMIT ?",
-          args: [likePattern, likePattern, likePattern, limit],
-        });
-
-        return respond(c, {
-          results: quadRows.rows.map((r) => ({
-            subject: String(r.s),
-            predicate: String(r.p),
-            object: String(r.o),
-          })),
-          mode: "fallback",
-        });
+        const result = await client.sparql({ query: body.query });
+        if (result.kind === "select" || result.kind === "ask") {
+          return respond(c, result.data);
+        }
+        return respond(c, { ok: true });
+      } catch (error) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message:
+                error instanceof Error ? error.message : "Invalid SPARQL query",
+            },
+          },
+          400,
+        );
       }
     },
   );

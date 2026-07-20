@@ -1,0 +1,210 @@
+import { z } from "@hono/zod-openapi";
+
+export const ErrorResponseSchema = z
+  .object({
+    error: z.object({
+      code: z.string(),
+      message: z.string(),
+    }),
+  })
+  .openapi("ErrorResponse");
+
+export const WorldResourceSchema = z
+  .object({
+    name: z.string(),
+    uid: z.string(),
+    namespace: z.string(),
+    worldId: z.string(),
+    displayName: z.string(),
+    state: z.string(),
+    storage: z.enum(["libsql-per-world", "legacy-shared-libsql"]),
+    createTime: z.string(),
+    updateTime: z.string(),
+    deleteTime: z.string().optional(),
+    expireTime: z.string().optional(),
+  })
+  .openapi("WorldResource");
+
+export const CreateWorldRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+    worldId: z.string().min(1),
+    displayName: z.string().optional(),
+    databaseUrl: z.string().optional(),
+    databaseAuthToken: z.string().optional(),
+  })
+  .openapi("CreateWorldRequest");
+
+export const UpdateWorldRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+    displayName: z.string().min(1),
+  })
+  .openapi("UpdateWorldRequest");
+
+export const UndeleteWorldRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+  })
+  .openapi("UndeleteWorldRequest");
+
+export const SearchRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+    query: z.string().min(1),
+    limit: z.number().int().positive().optional().default(20),
+  })
+  .openapi("SearchRequest");
+
+export const SearchResultSchema = z
+  .object({
+    subject: z.string(),
+    predicate: z.string(),
+    graph: z.string().optional(),
+    content: z.string().optional(),
+    score: z.number().optional(),
+  })
+  .openapi("SearchResult");
+
+export const SparqlRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+    query: z.string().min(1),
+  })
+  .openapi("SparqlRequest");
+
+export const ImportRequestSchema = z
+  .object({
+    namespace: z.string().optional(),
+    data: z.string().min(1),
+    contentType: z.string().optional().default("text/turtle"),
+  })
+  .openapi("ImportRequest");
+
+export const ImportResponseSchema = z
+  .object({
+    imported: z.object({
+      quads: z.number().int(),
+      chunks: z.number().int(),
+    }),
+  })
+  .openapi("ImportResponse");
+
+export const QuadSchema = z
+  .object({
+    subject: z.string(),
+    predicate: z.string(),
+    object: z.string(),
+    graph: z.string().optional(),
+  })
+  .openapi("Quad");
+
+export const ExportQuadsResponseSchema = z
+  .object({
+    quads: z.array(QuadSchema),
+    nextOffset: z.number().int().optional(),
+  })
+  .openapi("ExportQuadsResponse");
+
+export const ApiKeyCreateRequestSchema = z
+  .object({
+    namespace: z.string().min(1),
+    worldId: z.string().optional(),
+    name: z.string().optional(),
+  })
+  .openapi("ApiKeyCreateRequest");
+
+export const ApiKeyCreateResponseSchema = z
+  .object({
+    uid: z.string(),
+    token: z.string(),
+    name: z.string(),
+    namespace: z.string(),
+    worldId: z.string().nullable(),
+    createTime: z.string(),
+  })
+  .openapi("ApiKeyCreateResponse");
+
+export const ApiKeyResourceSchema = z
+  .object({
+    uid: z.string(),
+    name: z.string(),
+    namespace: z.string(),
+    worldId: z.string().optional(),
+    scopes: z.array(z.string()),
+    createTime: z.string(),
+  })
+  .openapi("ApiKeyResource");
+
+export const worldIdParam = z.object({
+  id: z.string().openapi({ param: { name: "id", in: "path", required: true } }),
+});
+
+export const keyIdParam = z.object({
+  keyId: z
+    .string()
+    .openapi({ param: { name: "keyId", in: "path", required: true } }),
+});
+
+export const namespaceQuery = z.object({
+  namespace: z
+    .string()
+    .optional()
+    .openapi({
+      param: {
+        name: "namespace",
+        in: "query",
+        description:
+          "Namespace to operate on. User keys have this auto-detected.",
+      },
+    }),
+});
+
+export const exportQuery = namespaceQuery.extend({
+  format: z
+    .string()
+    .optional()
+    .default("application/json")
+    .openapi({
+      param: { name: "format", in: "query" },
+    }),
+  limit: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "limit", in: "query" },
+    }),
+  offset: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "offset", in: "query" },
+    }),
+});
+
+export const apiKeysListQuery = z.object({
+  namespace: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "namespace", in: "query" },
+    }),
+});
+
+export const worldsListQuery = z.object({
+  namespace: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "namespace", in: "query" },
+    }),
+});
+
+export const worldGetQuery = z.object({
+  namespace: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "namespace", in: "query" },
+    }),
+});

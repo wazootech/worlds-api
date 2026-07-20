@@ -1,10 +1,17 @@
-import { Hono } from "hono";
+import { createRoute, z } from "@hono/zod-openapi";
+import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { getDb, execute, query, uid, now } from "../lib/db";
 import { sha256Hex, createToken } from "../lib/crypto";
 import { authorize } from "../lib/auth";
-
-const apiKeys = new Hono<{ Bindings: Env }>();
+import { respond } from "../lib/respond";
+import {
+  ApiKeyCreateRequestSchema,
+  ApiKeyCreateResponseSchema,
+  ApiKeyResourceSchema,
+  keyIdParam,
+  apiKeysListQuery,
+} from "../lib/schemas";
 
 interface ApiKeyRow {
   uid: string;
@@ -16,151 +23,261 @@ interface ApiKeyRow {
   revoked_at: string | null;
 }
 
-apiKeys.post("/api-keys", async (c) => {
-  const env = c.env as unknown as Env;
-  const auth = await authorize(c.req.raw, env);
-
-  if (!auth.admin) {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Only admin keys can manage API keys",
+export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/api-keys",
+      tags: ["APIKeys"],
+      operationId: "createApiKey",
+      security: [{ bearerWorldsToken: [] }],
+      request: {
+        body: {
+          required: true,
+          content: {
+            "application/json": { schema: ApiKeyCreateRequestSchema },
+          },
         },
       },
-      403,
-    );
-  }
-
-  const body = await c.req.json<{
-    namespace: string;
-    worldId?: string;
-    name?: string;
-  }>();
-
-  if (!body.namespace) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_ARGUMENT",
-          message: "namespace is required",
+      responses: {
+        201: {
+          description: "Created API key",
+          content: {
+            "application/json": { schema: ApiKeyCreateResponseSchema },
+          },
+        },
+        400: {
+          description: "Bad request",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+        403: {
+          description: "Forbidden",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
         },
       },
-      400,
-    );
-  }
+    }),
+    async (c) => {
+      const env = c.env as unknown as Env;
+      const auth = await authorize(c.req.raw, env);
 
-  const db = getDb(env);
-  const token = createToken("wzw");
-  const hash = await sha256Hex(token);
-  const keyUid = uid();
-  const ts = now();
+      if (!auth.admin) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Only admin keys can manage API keys",
+            },
+          },
+          403,
+        );
+      }
 
-  await execute(
-    db,
-    "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    [
-      keyUid,
-      hash,
-      body.name ?? "",
-      body.namespace,
-      body.worldId ?? null,
-      '["data:read","data:write"]',
-      ts,
-    ],
-  );
+      const body = c.req.valid("json");
 
-  return c.json(
-    {
-      uid: keyUid,
-      token,
-      name: body.name ?? "",
-      namespace: body.namespace,
-      worldId: body.worldId ?? null,
-      createTime: ts,
+      if (!body.namespace) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message: "namespace is required",
+            },
+          },
+          400,
+        );
+      }
+
+      const db = getDb(env);
+      const token = createToken("wzw");
+      const hash = await sha256Hex(token);
+      const keyUid = uid();
+      const ts = now();
+
+      await execute(
+        db,
+        "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+          keyUid,
+          hash,
+          body.name ?? "",
+          body.namespace,
+          body.worldId ?? null,
+          '["data:read","data:write"]',
+          ts,
+        ],
+      );
+
+      return respond(
+        c,
+        {
+          uid: keyUid,
+          token,
+          name: body.name ?? "",
+          namespace: body.namespace,
+          worldId: body.worldId ?? null,
+          createTime: ts,
+        },
+        201,
+      );
     },
-    201,
-  );
-});
-
-apiKeys.get("/api-keys", async (c) => {
-  const env = c.env as unknown as Env;
-  const auth = await authorize(c.req.raw, env);
-
-  if (!auth.admin) {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Only admin keys can list API keys",
-        },
-      },
-      403,
-    );
-  }
-
-  const namespace = c.req.query("namespace");
-  const db = getDb(env);
-
-  let sql =
-    "SELECT uid, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
-  const params: Array<string> = [];
-
-  if (namespace) {
-    sql += " AND namespace = ?";
-    params.push(namespace);
-  }
-
-  sql += " ORDER BY create_time DESC";
-
-  const rows = await query<ApiKeyRow>(db, sql, params);
-
-  return c.json({
-    keys: rows.map((r) => ({
-      uid: r.uid,
-      name: r.name,
-      namespace: r.namespace,
-      worldId: r.world_id ?? undefined,
-      scopes: JSON.parse(r.scopes),
-      createTime: r.create_time,
-    })),
-  });
-});
-
-apiKeys.delete("/api-keys/:keyId", async (c) => {
-  const env = c.env as unknown as Env;
-  const auth = await authorize(c.req.raw, env);
-
-  if (!auth.admin) {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Only admin keys can revoke API keys",
-        },
-      },
-      403,
-    );
-  }
-
-  const keyId = c.req.param("keyId");
-  const db = getDb(env);
-  const ts = now();
-
-  const result = await execute(
-    db,
-    "UPDATE api_keys SET revoked_at = ? WHERE uid = ? AND revoked_at IS NULL",
-    [ts, keyId],
   );
 
-  if (result.rowsAffected === 0) {
-    return c.json(
-      { error: { code: "NOT_FOUND", message: "API key not found" } },
-      404,
-    );
-  }
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/api-keys",
+      tags: ["APIKeys"],
+      operationId: "listApiKeys",
+      security: [{ bearerWorldsToken: [] }],
+      request: { query: apiKeysListQuery },
+      responses: {
+        200: {
+          description: "API keys list",
+          content: {
+            "application/json": {
+              schema: z.object({ keys: z.array(ApiKeyResourceSchema) }),
+            },
+          },
+        },
+        403: {
+          description: "Forbidden",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      const env = c.env as unknown as Env;
+      const auth = await authorize(c.req.raw, env);
 
-  return c.body(null, 204);
-});
+      if (!auth.admin) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Only admin keys can list API keys",
+            },
+          },
+          403,
+        );
+      }
 
-export { apiKeys };
+      const query_ = c.req.valid("query");
+      const db = getDb(env);
+
+      let sql =
+        "SELECT uid, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
+      const params: Array<string> = [];
+
+      if (query_.namespace) {
+        sql += " AND namespace = ?";
+        params.push(query_.namespace);
+      }
+
+      sql += " ORDER BY create_time DESC";
+
+      const rows = await query<ApiKeyRow>(db, sql, params);
+
+      return respond(c, {
+        keys: rows.map((r) => ({
+          uid: r.uid,
+          name: r.name,
+          namespace: r.namespace,
+          worldId: r.world_id ?? undefined,
+          scopes: JSON.parse(r.scopes),
+          createTime: r.create_time,
+        })),
+      });
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "delete",
+      path: "/api-keys/{keyId}",
+      tags: ["APIKeys"],
+      operationId: "deleteApiKey",
+      security: [{ bearerWorldsToken: [] }],
+      request: { params: keyIdParam },
+      responses: {
+        204: { description: "Revoked" },
+        403: {
+          description: "Forbidden",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+        404: {
+          description: "Not found",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+      },
+    }),
+    async (c) => {
+      const env = c.env as unknown as Env;
+      const auth = await authorize(c.req.raw, env);
+
+      if (!auth.admin) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "FORBIDDEN",
+              message: "Only admin keys can revoke API keys",
+            },
+          },
+          403,
+        );
+      }
+
+      const keyId = c.req.param("keyId");
+      const db = getDb(env);
+      const ts = now();
+
+      const result = await execute(
+        db,
+        "UPDATE api_keys SET revoked_at = ? WHERE uid = ? AND revoked_at IS NULL",
+        [ts, keyId],
+      );
+
+      if (result.rowsAffected === 0) {
+        return respond(
+          c,
+          { error: { code: "NOT_FOUND", message: "API key not found" } },
+          404,
+        );
+      }
+
+      return c.body(null, 204) as any;
+    },
+  );
+}
