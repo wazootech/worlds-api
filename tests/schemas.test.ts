@@ -60,9 +60,9 @@ describe("UpdateWorldRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects missing displayName", () => {
+  it("accepts empty update body (fields validated at route level)", () => {
     const result = UpdateWorldRequestSchema.safeParse({});
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects empty displayName", () => {
@@ -244,6 +244,10 @@ describe("WorldResourceSchema", () => {
       displayName: "My World",
       state: "active",
       storage: "libsql-per-world",
+      embeddingModel: "tfjs-universal-sentence-encoder",
+      chunkSize: 1000,
+      topK: 20,
+      minScore: 0.0,
       createTime: "2026-01-01T00:00:00.000Z",
       updateTime: "2026-01-01T00:00:00.000Z",
     });
@@ -259,6 +263,10 @@ describe("WorldResourceSchema", () => {
       displayName: "My World",
       state: "deleted",
       storage: "libsql-per-world",
+      embeddingModel: "tfjs-universal-sentence-encoder",
+      chunkSize: 1000,
+      topK: 20,
+      minScore: 0.0,
       createTime: "2026-01-01T00:00:00.000Z",
       updateTime: "2026-01-01T00:00:00.000Z",
       deleteTime: "2026-01-15T00:00:00.000Z",
@@ -276,6 +284,10 @@ describe("WorldResourceSchema", () => {
       displayName: "My World",
       state: "active",
       storage: "invalid-storage",
+      embeddingModel: "tfjs-universal-sentence-encoder",
+      chunkSize: 1000,
+      topK: 20,
+      minScore: 0.0,
       createTime: "2026-01-01T00:00:00.000Z",
       updateTime: "2026-01-01T00:00:00.000Z",
     });

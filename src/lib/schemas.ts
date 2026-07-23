@@ -18,6 +18,10 @@ export const WorldResourceSchema = z
     displayName: z.string(),
     state: z.string(),
     storage: z.enum(["libsql-per-world", "legacy-shared-libsql"]),
+    embeddingModel: z.string(),
+    chunkSize: z.number().int(),
+    topK: z.number().int(),
+    minScore: z.number(),
     createTime: z.string(),
     updateTime: z.string(),
     deleteTime: z.string().optional(),
@@ -32,13 +36,21 @@ export const CreateWorldRequestSchema = z
     displayName: z.string().optional(),
     databaseUrl: z.string().optional(),
     databaseAuthToken: z.string().optional(),
+    embeddingModel: z.string().optional(),
+    chunkSize: z.number().int().positive().optional(),
+    topK: z.number().int().positive().optional(),
+    minScore: z.number().min(0).max(1).optional(),
   })
   .openapi("CreateWorldRequest");
 
 export const UpdateWorldRequestSchema = z
   .object({
     namespace: z.string().optional(),
-    displayName: z.string().min(1),
+    displayName: z.string().min(1).optional(),
+    embeddingModel: z.string().optional(),
+    chunkSize: z.number().int().positive().optional(),
+    topK: z.number().int().positive().optional(),
+    minScore: z.number().min(0).max(1).optional(),
   })
   .openapi("UpdateWorldRequest");
 
@@ -53,6 +65,8 @@ export const SearchRequestSchema = z
     namespace: z.string().optional(),
     query: z.string().min(1),
     limit: z.number().int().positive().optional().default(20),
+    topK: z.number().int().positive().optional(),
+    minScore: z.number().min(0).max(1).optional(),
   })
   .openapi("SearchRequest");
 
