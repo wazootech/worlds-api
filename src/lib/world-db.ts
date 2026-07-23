@@ -8,6 +8,10 @@ export type WorldDatabaseRef = {
   worldId: string;
   databaseUrl: string;
   databaseAuthToken?: string;
+  embeddingModel: string;
+  chunkSize: number;
+  topK: number;
+  minScore: number;
 };
 
 type WorldDatabaseRow = {
@@ -15,6 +19,10 @@ type WorldDatabaseRow = {
   world_id: string;
   database_url: string | null;
   database_auth_token: string | null;
+  embedding_model: string;
+  chunk_size: number;
+  top_k: number;
+  min_score: number;
 };
 
 const clients = new Map<string, Client>();
@@ -26,7 +34,7 @@ export async function resolveWorldDatabase(
 ): Promise<WorldDatabaseRef | null> {
   const row = await queryOne<WorldDatabaseRow>(
     getDb(env),
-    "SELECT namespace, world_id, database_url, database_auth_token FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
+    "SELECT namespace, world_id, database_url, database_auth_token, embedding_model, chunk_size, top_k, min_score FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
     [namespace, worldId],
   );
   if (!row?.database_url) return null;
@@ -35,6 +43,10 @@ export async function resolveWorldDatabase(
     worldId: row.world_id,
     databaseUrl: row.database_url,
     databaseAuthToken: row.database_auth_token ?? undefined,
+    embeddingModel: row.embedding_model,
+    chunkSize: row.chunk_size,
+    topK: row.top_k,
+    minScore: row.min_score,
   };
 }
 

@@ -24,6 +24,10 @@ interface WorldRow {
   state: string;
   database_url: string | null;
   database_auth_token: string | null;
+  embedding_model: string;
+  chunk_size: number;
+  top_k: number;
+  min_score: number;
   delete_time: string | null;
   expire_time: string | null;
   create_time: string;
@@ -39,6 +43,10 @@ function worldResource(row: WorldRow) {
     displayName: row.display_name,
     state: row.state,
     storage: row.database_url ? "libsql-per-world" : "legacy-shared-libsql",
+    embeddingModel: row.embedding_model,
+    chunkSize: row.chunk_size,
+    topK: row.top_k,
+    minScore: row.min_score,
     createTime: row.create_time,
     updateTime: row.update_time,
     deleteTime: row.delete_time ?? undefined,
@@ -317,12 +325,16 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       worldId: body.worldId,
       databaseUrl: body.databaseUrl,
       databaseAuthToken: body.databaseAuthToken,
+      embeddingModel: body.embeddingModel ?? "tfjs-universal-sentence-encoder",
+      chunkSize: body.chunkSize ?? 1000,
+      topK: body.topK ?? 20,
+      minScore: body.minScore ?? 0.0,
     });
 
     try {
       await execute(
         db,
-        "INSERT INTO worlds_metadata (uid, namespace, world_id, display_name, state, database_url, database_auth_token, create_time, update_time) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?)",
+        "INSERT INTO worlds_metadata (uid, namespace, world_id, display_name, state, database_url, database_auth_token, embedding_model, chunk_size, top_k, min_score, create_time, update_time) VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, ?, ?, ?)",
         [
           worldUid,
           namespace,
@@ -330,6 +342,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           displayName,
           body.databaseUrl,
           body.databaseAuthToken ?? null,
+          body.embeddingModel ?? "tfjs-universal-sentence-encoder",
+          body.chunkSize ?? 1000,
+          body.topK ?? 20,
+          body.minScore ?? 0.0,
           ts,
           ts,
         ],
@@ -345,6 +361,11 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           state: "active",
           database_url: body.databaseUrl,
           database_auth_token: body.databaseAuthToken ?? null,
+          embedding_model:
+            body.embeddingModel ?? "tfjs-universal-sentence-encoder",
+          chunk_size: body.chunkSize ?? 1000,
+          top_k: body.topK ?? 20,
+          min_score: body.minScore ?? 0.0,
           delete_time: null,
           expire_time: null,
           create_time: ts,
@@ -414,26 +435,53 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       return unauthorized();
     }
 
-    if (!body.displayName) {
+    const db = getDb(env);
+    const ts = now();
+
+    const setClauses: string[] = [];
+    const setArgs: (string | number)[] = [];
+
+    if (body.displayName) {
+      setClauses.push("display_name = ?");
+      setArgs.push(body.displayName);
+    }
+    if (body.embeddingModel) {
+      setClauses.push("embedding_model = ?");
+      setArgs.push(body.embeddingModel);
+    }
+    if (body.chunkSize !== undefined) {
+      setClauses.push("chunk_size = ?");
+      setArgs.push(body.chunkSize);
+    }
+    if (body.topK !== undefined) {
+      setClauses.push("top_k = ?");
+      setArgs.push(body.topK);
+    }
+    if (body.minScore !== undefined) {
+      setClauses.push("min_score = ?");
+      setArgs.push(body.minScore);
+    }
+
+    if (setClauses.length === 0) {
       return respond(
         c,
         {
           error: {
             code: "INVALID_ARGUMENT",
-            message: "displayName is required",
+            message: "At least one field to update is required",
           },
         },
         400,
       );
     }
 
-    const db = getDb(env);
-    const ts = now();
+    setClauses.push("update_time = ?");
+    setArgs.push(ts, namespace, worldId);
 
     const result = await execute(
       db,
-      "UPDATE worlds_metadata SET display_name = ?, update_time = ? WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
-      [body.displayName, ts, namespace, worldId],
+      `UPDATE worlds_metadata SET ${setClauses.join(", ")} WHERE namespace = ? AND world_id = ? AND state != 'deleted'`,
+      setArgs,
     );
 
     if (result.rowsAffected === 0) {

@@ -97,7 +97,13 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const client = await createLibsqlClient({ client: db });
 
       try {
-        const response = await client.search({ query: body.query });
+        const searchTopK = body.topK ?? ref.topK;
+        const searchMinScore = body.minScore ?? ref.minScore;
+        const response = await client.search({
+          query: body.query,
+          ...(searchTopK !== undefined && { topK: searchTopK }),
+          ...(searchMinScore !== undefined && { minScore: searchMinScore }),
+        } as Parameters<typeof client.search>[0]);
 
         return respond(c, {
           results: (response.results ?? []).slice(0, limit).map((r) => ({
