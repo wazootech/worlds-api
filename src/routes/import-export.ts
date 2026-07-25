@@ -29,6 +29,7 @@ export function registerImportExportRoutes(
       path: "/worlds/{id}/import",
       tags: ["ImportExport"],
       operationId: "importWorld",
+      summary: "Import graph data",
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,
@@ -121,32 +122,12 @@ export function registerImportExportRoutes(
         const lines = body.data
           .split("\n")
           .map((l) => l.trim())
-          .filter(Boolean);
+          .filter((l) => l.length > 0);
 
-        const chunks = lines.map((line, index) => {
-          let subject = "";
-          let text = "";
-          const jsonMatch = line.match(/^(\{.*\})$/);
-          if (jsonMatch) {
-            try {
-              const parsed = JSON.parse(line);
-              subject = parsed.subject ?? "";
-              text = parsed.text ?? parsed.content ?? parsed.value ?? line;
-            } catch {
-              text = line;
-            }
-          } else {
-            const tabMatch = line.split("\t");
-            if (tabMatch.length >= 2) {
-              subject = tabMatch[0];
-              text = tabMatch.slice(1).join("\t");
-            } else {
-              text = line;
-            }
-          }
+        const chunks = lines.map((text, index) => {
           return {
-            subject: subject || `urn:wazoo:chunk:${crypto.randomUUID()}`,
-            predicate: "http://schema.org/text",
+            subject: `urn:wazoo:chunk:${index}`,
+            predicate: "http://www.w3.org/2000/01/rdf-schema#comment",
             object: text,
             graph: `urn:wazoo:import:${index}`,
           };
@@ -184,6 +165,7 @@ export function registerImportExportRoutes(
       path: "/worlds/{id}/export",
       tags: ["ImportExport"],
       operationId: "exportWorld",
+      summary: "Export graph data",
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,

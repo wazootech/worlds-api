@@ -21,6 +21,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       path: "/worlds/sparql",
       tags: ["SPARQL"],
       operationId: "sparqlNoWorld",
+      summary: "SPARQL without world",
       security: [{ bearerWorldsToken: [] }],
       responses: {
         400: {
@@ -55,6 +56,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       path: "/worlds/{id}/sparql",
       tags: ["SPARQL"],
       operationId: "sparqlWorld",
+      summary: "Execute SPARQL query",
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,

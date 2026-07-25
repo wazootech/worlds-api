@@ -19,6 +19,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       path: "/worlds/{id}/search",
       tags: ["Search"],
       operationId: "searchWorld",
+      summary: "Search world",
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,

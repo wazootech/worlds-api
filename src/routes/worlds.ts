@@ -67,6 +67,7 @@ const listRoute = createRoute({
   path: "/worlds",
   tags: ["Worlds"],
   operationId: "listWorlds",
+  summary: "List worlds",
   security: [{ bearerWorldsToken: [] }],
   request: { query: worldsListQuery },
   responses: {
@@ -86,6 +87,7 @@ const createRouteDef = createRoute({
   path: "/worlds",
   tags: ["Worlds"],
   operationId: "createWorld",
+  summary: "Create world",
   security: [{ bearerWorldsToken: [] }],
   request: {
     body: {
@@ -130,6 +132,7 @@ const getRoute = createRoute({
   path: "/worlds/{id}",
   tags: ["Worlds"],
   operationId: "getWorld",
+  summary: "Get world",
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam, query: worldGetQuery },
   responses: {
@@ -157,6 +160,7 @@ const updateRoute = createRoute({
   path: "/worlds/{id}",
   tags: ["Worlds"],
   operationId: "updateWorld",
+  summary: "Update world",
   security: [{ bearerWorldsToken: [] }],
   request: {
     params: worldIdParam,
@@ -202,8 +206,9 @@ const deleteRoute = createRoute({
   path: "/worlds/{id}",
   tags: ["Worlds"],
   operationId: "deleteWorld",
+  summary: "Delete world",
   security: [{ bearerWorldsToken: [] }],
-  request: { params: worldIdParam, query: namespaceQuery },
+  request: { params: worldIdParam, query: worldDeleteQuery },
   responses: {
     204: { description: "Deleted" },
     404: {
@@ -224,6 +229,7 @@ const undeleteRoute = createRoute({
   path: "/worlds/{id}/undelete",
   tags: ["Worlds"],
   operationId: "undeleteWorld",
+  summary: "Undelete world",
   security: [{ bearerWorldsToken: [] }],
   request: {
     params: worldIdParam,
