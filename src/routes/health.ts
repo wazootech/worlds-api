@@ -10,6 +10,7 @@ const route = createRoute({
   security: [],
   tags: ["Health"],
   operationId: "getHealth",
+  summary: "Get health",
   responses: {
     200: {
       description: "Service is healthy",
