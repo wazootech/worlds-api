@@ -9,7 +9,7 @@
     "start": "node dist/server.js",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
-    "smoke:local": "node scripts/local-smoke.mjs",
+    "health:local": "node scripts/local-health.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --write",

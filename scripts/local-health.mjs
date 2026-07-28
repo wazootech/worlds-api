@@ -1,5 +1,5 @@
-// Local smoke test for worlds-api
-// Usage: node scripts/local-smoke.mjs [baseUrl]
+// Local health test for worlds-api
+// Usage: node scripts/local-health.mjs [baseUrl]
 //   Defaults to http://localhost:8787 for wrangler dev
 //   Set WORLDS_ADMIN_KEY env var for authenticated tests
 
@@ -62,7 +62,7 @@ function authHeaders() {
 
 // ── Start ──
 
-console.log(`\nWorlds API local smoke test`);
+console.log(`\nWorlds API local health test`);
 console.log(`  Base URL: ${BASE_URL}`);
 console.log(`  Admin key: ${ADMIN_KEY ? "set" : "NOT SET (auth tests skipped)"}\n`);
 
@@ -141,11 +141,11 @@ await test("POST /worlds/sparql without world id returns 400", async () => {
   }
 });
 
-// ── Authenticated smoke flow ───
+// ── Authenticated health flow ───
 
 if (ADMIN_KEY) {
-  const testNamespace = `smoke-${Date.now()}`;
-  const testWorldId = `smoke-world-${Date.now()}`;
+  const testNamespace = `health-${Date.now()}`;
+  const testWorldId = `health-world-${Date.now()}`;
 
   await test("GET /worlds returns list (may be empty)", async () => {
     const res = await fetch(
@@ -163,7 +163,7 @@ if (ADMIN_KEY) {
       headers: authHeaders(),
       body: JSON.stringify({
         namespace: testNamespace,
-        name: "smoke-test-key",
+        name: "health-test-key",
       }),
     });
     await assertCreated(res);
@@ -185,7 +185,7 @@ if (ADMIN_KEY) {
   });
 
   // Note: World CRUD requires a provisioned databaseUrl which we can't provide
-  // in a local smoke test. Testing the validation only.
+  // in a local health test. Testing the validation only.
   await test("POST /worlds without databaseUrl returns 400", async () => {
     const res = await fetch(`${BASE_URL}/worlds`, {
       method: "POST",
@@ -193,7 +193,7 @@ if (ADMIN_KEY) {
       body: JSON.stringify({
         namespace: testNamespace,
         worldId: testWorldId,
-        displayName: "Smoke Test",
+        displayName: "Health Test",
       }),
     });
     await assertBadRequest(res);
@@ -214,7 +214,7 @@ if (ADMIN_KEY) {
   // We don't have the keyId directly, so skip this for now.
   // The test keys will be cleaned up by the API key revocation endpoint.
 } else {
-  console.log("\n  (skipping authenticated smoke tests — set WORLDS_ADMIN_KEY)\n");
+  console.log("\n  (skipping authenticated health tests — set WORLDS_ADMIN_KEY)\n");
   passed += 6;
 }
 
