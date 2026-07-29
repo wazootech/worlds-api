@@ -127,7 +127,7 @@ export function registerImportExportRoutes(
         const chunks = lines.map((text, index) => {
           return {
             subject: `urn:wazoo:chunk:${index}`,
-            predicate: "http://www.w3.org/2000/01/rdf-schema#comment",
+            predicate: "http://schema.org/text",
             object: text,
             graph: `urn:wazoo:import:${index}`,
           };
