@@ -10,5 +10,6 @@ This repository contains the Worlds API service.
   health, test, and formatting commands.
 - Run `npm run typecheck` and `npm test` for service behavior changes when
   practical.
-- Run health checks for API changes that affect runtime behavior.
+- Run health checks for API changes that affect runtime behavior. Health checks
+  require `WORLDS_ADMIN_KEY`.
 - Document environment variables and remote-service assumptions before finishing.

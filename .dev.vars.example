@@ -1,3 +1,12 @@
+# Local development variables for worlds-api
+# Copy this file to `.dev.vars` and fill in real values.
+
+# Worlds data libSQL database URL.
 LIBSQL_URL="file:/data/worlds.db"
+
+# Optional auth token for remote libSQL.
 LIBSQL_AUTH_TOKEN=""
+
+# Admin key used by wazoo-api for provisioning and API-key management.
+# Must match the WORLDS_API_ADMIN_KEY secret configured on the wazoo-api Worker.
 WORLDS_ADMIN_KEY="replace_me"
