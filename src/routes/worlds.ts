@@ -13,6 +13,7 @@ import {
   worldIdParam,
   worldsListQuery,
   worldGetQuery,
+  worldDeleteQuery,
   namespaceQuery,
 } from "../lib/schemas";
 
