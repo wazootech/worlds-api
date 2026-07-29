@@ -29,6 +29,13 @@ Normal data-plane keys resolve namespace from the key. Admin calls pass `namespa
 - `LIBSQL_AUTH_TOKEN`: optional auth token for remote libSQL.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key management.
 
+## Health checks
+
+- Local: `npm run health:local`
+- QA: `npm run health:local -- https://worlds-api-qa.wazoo.dev`
+
+Requires `WORLDS_ADMIN_KEY` to exercise authenticated endpoints.
+
 ## Development
 
 ```sh
