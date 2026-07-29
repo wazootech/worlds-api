@@ -4,7 +4,15 @@
 //   Set WORLDS_ADMIN_KEY env var for authenticated tests
 
 const BASE_URL = process.argv[2] ?? "http://localhost:8787";
-const ADMIN_KEY = process.env.WORLDS_ADMIN_KEY ?? "";
+const ADMIN_KEY = required("WORLDS_ADMIN_KEY");
+
+function required(name) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
 
 let passed = 0;
 let failed = 0;
@@ -55,16 +63,16 @@ async function assertNotFound(res) {
 }
 
 function authHeaders() {
-  return ADMIN_KEY
-    ? { Authorization: `Bearer ${ADMIN_KEY}`, "Content-Type": "application/json" }
-    : { "Content-Type": "application/json" };
+  return {
+    Authorization: `Bearer ${ADMIN_KEY}`,
+    "Content-Type": "application/json",
+  };
 }
 
 // ── Start ──
 
 console.log(`\nWorlds API local health test`);
-console.log(`  Base URL: ${BASE_URL}`);
-console.log(`  Admin key: ${ADMIN_KEY ? "set" : "NOT SET (auth tests skipped)"}\n`);
+console.log(`  Base URL: ${BASE_URL}\n`);
 
 // ── Health ───
 
@@ -111,15 +119,7 @@ await test("POST /worlds/:id/search without body returns 400", async () => {
     method: "POST",
     headers: authHeaders(),
   });
-  if (res.status === 400) {
-    await assertBadRequest(res);
-  } else if (res.status === 401) {
-    console.log(`        got 401 (no auth) — schema validation after auth`);
-    passed++;
-    return;
-  } else {
-    throw new Error(`Unexpected status ${res.status}`);
-  }
+  await assertBadRequest(res);
 });
 
 await test("POST /worlds/sparql without world id returns 400", async () => {
@@ -128,26 +128,17 @@ await test("POST /worlds/sparql without world id returns 400", async () => {
     headers: authHeaders(),
     body: JSON.stringify({}),
   });
-  if (res.status === 400) {
-    const body = await res.json();
-    if (!body.error?.code) throw new Error("Missing error code");
-  } else if (res.status === 401) {
-    console.log(`        got 401 (no auth)`);
-    passed++;
-    return;
-  } else {
-    const body = await res.text();
-    throw new Error(`Unexpected status ${res.status}: ${body}`);
-  }
+  await assertBadRequest(res);
+  const body = await res.json();
+  if (!body.error?.code) throw new Error("Missing error code");
 });
 
 // ── Authenticated health flow ───
 
-if (ADMIN_KEY) {
-  const testNamespace = `health-${Date.now()}`;
-  const testWorldId = `health-world-${Date.now()}`;
+const testNamespace = `health-${Date.now()}`;
+const testWorldId = `health-world-${Date.now()}`;
 
-  await test("GET /worlds returns list (may be empty)", async () => {
+await test("GET /worlds returns list (may be empty)", async () => {
     const res = await fetch(
       `${BASE_URL}/worlds?namespace=${testNamespace}`,
       { headers: authHeaders() },
@@ -213,10 +204,6 @@ if (ADMIN_KEY) {
   // Cleanup: revoke the test key
   // We don't have the keyId directly, so skip this for now.
   // The test keys will be cleaned up by the API key revocation endpoint.
-} else {
-  console.log("\n  (skipping authenticated health tests — set WORLDS_ADMIN_KEY)\n");
-  passed += 6;
-}
 
 // ── Results ───
 
