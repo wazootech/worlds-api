@@ -222,3 +222,12 @@ export const worldGetQuery = z.object({
       param: { name: "namespace", in: "query" },
     }),
 });
+
+export const worldDeleteQuery = z.object({
+  namespace: z
+    .string()
+    .optional()
+    .openapi({
+      param: { name: "namespace", in: "query" },
+    }),
+});
