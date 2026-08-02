@@ -21,6 +21,9 @@ app.openAPIRegistry.registerComponent("securitySchemes", "bearerWorldsToken", {
 
 app.onError((err, c) => {
   console.error(err);
+  c.header("Access-Control-Allow-Origin", "*");
+  c.header("Access-Control-Allow-Headers", "*");
+  c.header("Access-Control-Allow-Methods", "*");
   const message = err instanceof Error ? err.message : String(err);
   if (
     err instanceof SyntaxError ||
@@ -49,9 +52,10 @@ app.onError((err, c) => {
   );
 });
 
-app.notFound((c) =>
-  c.json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404),
-);
+app.notFound((c) => {
+  c.header("Access-Control-Allow-Origin", "*");
+  return c.json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
+});
 
 registerHealthRoutes(app);
 registerWorldsRoutes(app);
