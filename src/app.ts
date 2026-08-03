@@ -57,12 +57,15 @@ app.notFound((c) => {
   return c.json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
 });
 
+import { registerReindexRoutes } from "./routes/reindex";
+
 registerHealthRoutes(app);
 registerWorldsRoutes(app);
 registerImportExportRoutes(app);
 registerSearchRoutes(app);
 registerSparqlRoutes(app);
 registerApiKeysRoutes(app);
+registerReindexRoutes(app);
 
 app.doc("/openapi.json", {
   openapi: "3.0.0",
