@@ -22,6 +22,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["SPARQL"],
       operationId: "sparqlNoWorld",
       summary: "SPARQL without world",
+      "x-mint": { metadata: { title: "SPARQL without world" } },
       security: [{ bearerWorldsToken: [] }],
       responses: {
         400: {
@@ -57,6 +58,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["SPARQL"],
       operationId: "sparqlWorld",
       summary: "Execute SPARQL query",
+      "x-mint": { metadata: { title: "Execute SPARQL query" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,

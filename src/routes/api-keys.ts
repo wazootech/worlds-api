@@ -31,6 +31,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "createApiKey",
       summary: "Create API key",
+      "x-mint": { metadata: { title: "Create API key" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         body: {
@@ -143,6 +144,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "listApiKeys",
       summary: "List API keys",
+      "x-mint": { metadata: { title: "List API keys" } },
       security: [{ bearerWorldsToken: [] }],
       request: { query: apiKeysListQuery },
       responses: {
@@ -219,6 +221,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "deleteApiKey",
       summary: "Revoke API key",
+      "x-mint": { metadata: { title: "Revoke API key" } },
       request: { params: keyIdParam },
       responses: {
         204: { description: "Revoked" },

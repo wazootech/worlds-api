@@ -14,6 +14,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["Reindex"],
       operationId: "reindexWorld",
       summary: "Reindex world vector & FTS indexes",
+      "x-mint": { metadata: { title: "Reindex world vector & FTS indexes" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,

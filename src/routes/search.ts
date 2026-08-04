@@ -20,6 +20,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["Search"],
       operationId: "searchWorld",
       summary: "Search world",
+      "x-mint": { metadata: { title: "Search world" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,
