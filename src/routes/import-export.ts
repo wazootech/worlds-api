@@ -30,6 +30,7 @@ export function registerImportExportRoutes(
       tags: ["ImportExport"],
       operationId: "importWorld",
       summary: "Import graph data",
+      "x-mint": { metadata: { title: "Import graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,
@@ -166,6 +167,7 @@ export function registerImportExportRoutes(
       tags: ["ImportExport"],
       operationId: "exportWorld",
       summary: "Export graph data",
+      "x-mint": { metadata: { title: "Export graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
         params: worldIdParam,
