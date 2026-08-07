@@ -14,6 +14,29 @@ import {
 
 const queryEngine = new QueryEngine();
 
+/**
+ * materializeBindings drains SPARQL bindings before the response is
+ * serialized. Comunica may hand back a live event stream; stream-evaluation
+ * errors (e.g. an unhandled term comparator while sorting on an unbound
+ * OPTIONAL variable) otherwise fire asynchronously during JSON serialization
+ * and escape the route's try/catch, crashing the Worker with Error 1101.
+ * Draining here turns those errors into a rejection the route can map to a
+ * structured response.
+ */
+async function materializeBindings(bindings: unknown): Promise<unknown> {
+  if (Array.isArray(bindings)) return bindings;
+  const iterable = bindings as
+    { [Symbol.asyncIterator](): AsyncIterator<unknown> } | undefined;
+  if (iterable && typeof iterable[Symbol.asyncIterator] === "function") {
+    const rows: unknown[] = [];
+    for await (const row of iterable as AsyncIterable<unknown>) {
+      rows.push(row);
+    }
+    return rows;
+  }
+  return bindings;
+}
+
 export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
@@ -135,7 +158,17 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
       try {
         const result = await client.sparql({ query: body.query });
-        if (result.kind === "select" || result.kind === "ask") {
+        if (result.kind === "select") {
+          const data = {
+            ...result.data,
+            results: {
+              ...result.data.results,
+              bindings: await materializeBindings(result.data.results.bindings),
+            },
+          };
+          return respond(c, data);
+        }
+        if (result.kind === "ask") {
           return respond(c, result.data);
         }
         return respond(c, { ok: true });
