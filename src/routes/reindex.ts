@@ -45,19 +45,12 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldUid = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
-      const namespace = auth.namespace;
-      if (!namespace && !auth.admin) return unauthorized();
 
-      const targetNamespace = auth.admin
-        ? (c.req.query("namespace") ?? namespace ?? "default")
-        : namespace!;
+      if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const accessErr = requireAccess(auth, targetNamespace, worldId);
-      if (accessErr) return accessErr;
-
-      const ref = await resolveWorldDatabase(env, targetNamespace, worldId);
+      const ref = await resolveWorldDatabase(env, worldUid);
       if (!ref) {
         return respond(
           c,
@@ -70,6 +63,9 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           404,
         );
       }
+
+      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      if (accessErr) return accessErr;
 
       return respond(c, { ok: true, status: "completed" });
     },

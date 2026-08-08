@@ -10,45 +10,42 @@ import {
 } from "../src/lib/schemas";
 
 describe("CreateWorldRequestSchema", () => {
-  it("accepts a valid create world request", () => {
-    const result = CreateWorldRequestSchema.safeParse({
-      worldId: "my-world",
-      databaseUrl: "libsql://example.com",
-    });
+  it("accepts a minimal create world request", () => {
+    const result = CreateWorldRequestSchema.safeParse({});
     expect(result.success).toBe(true);
   });
 
   it("accepts with all optional fields", () => {
     const result = CreateWorldRequestSchema.safeParse({
-      worldId: "my-world",
       displayName: "My World",
+      embeddingModel: "tfjs-universal-sentence-encoder",
+      chunkSize: 1000,
+      topK: 20,
+      minScore: 0.0,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
+    const result = CreateWorldRequestSchema.safeParse({
+      worldId: "my-world",
       databaseUrl: "libsql://example.com",
-      databaseAuthToken: "token123",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.worldId).toBeUndefined();
+      expect(result.data.databaseUrl).toBeUndefined();
+    }
+  });
+
+  it("strips a client-supplied namespace", () => {
+    const result = CreateWorldRequestSchema.safeParse({
       namespace: "my-namespace",
     });
     expect(result.success).toBe(true);
-  });
-
-  it("rejects missing worldId", () => {
-    const result = CreateWorldRequestSchema.safeParse({
-      databaseUrl: "libsql://example.com",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects empty worldId", () => {
-    const result = CreateWorldRequestSchema.safeParse({
-      worldId: "",
-      databaseUrl: "libsql://example.com",
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("accepts without databaseUrl (optional)", () => {
-    const result = CreateWorldRequestSchema.safeParse({
-      worldId: "my-world",
-    });
-    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.namespace).toBeUndefined();
+    }
   });
 });
 
@@ -72,12 +69,15 @@ describe("UpdateWorldRequestSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts optional namespace", () => {
+  it("strips a public namespace field", () => {
     const result = UpdateWorldRequestSchema.safeParse({
       displayName: "Name",
       namespace: "my-namespace",
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.namespace).toBeUndefined();
+    }
   });
 });
 
@@ -89,13 +89,16 @@ describe("SearchRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts with optional limit and namespace", () => {
+  it("accepts with optional limit and strips public namespace", () => {
     const result = SearchRequestSchema.safeParse({
       query: "find me",
       limit: 10,
       namespace: "my-namespace",
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.namespace).toBeUndefined();
+    }
   });
 
   it("rejects missing query", () => {
@@ -151,12 +154,15 @@ describe("SparqlRequestSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("accepts optional namespace", () => {
+  it("strips a public namespace field", () => {
     const result = SparqlRequestSchema.safeParse({
       query: "SELECT * WHERE { ?s ?p ?o }",
       namespace: "my-namespace",
     });
     expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.namespace).toBeUndefined();
+    }
   });
 });
 
@@ -210,10 +216,10 @@ describe("ApiKeyCreateRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts with optional worldId and name", () => {
+  it("accepts with optional worldId (world_uid) and name", () => {
     const result = ApiKeyCreateRequestSchema.safeParse({
       namespace: "my-namespace",
-      worldId: "my-world",
+      worldId: "w_abc123",
       name: "My Key",
     });
     expect(result.success).toBe(true);
@@ -237,10 +243,8 @@ describe("ApiKeyCreateRequestSchema", () => {
 describe("WorldResourceSchema", () => {
   it("accepts valid world resource", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "namespaces/ns/worlds/my-world",
+      name: "worlds/w_abc123",
       uid: "w_abc123",
-      namespace: "ns",
-      worldId: "my-world",
       displayName: "My World",
       state: "active",
       storage: "libsql-per-world",
@@ -256,10 +260,8 @@ describe("WorldResourceSchema", () => {
 
   it("accepts with optional deleteTime and expireTime", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "namespaces/ns/worlds/my-world",
+      name: "worlds/w_abc123",
       uid: "w_abc123",
-      namespace: "ns",
-      worldId: "my-world",
       displayName: "My World",
       state: "deleted",
       storage: "libsql-per-world",
@@ -277,10 +279,8 @@ describe("WorldResourceSchema", () => {
 
   it("rejects invalid storage value", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "namespaces/ns/worlds/my-world",
+      name: "worlds/w_abc123",
       uid: "w_abc123",
-      namespace: "ns",
-      worldId: "my-world",
       displayName: "My World",
       state: "active",
       storage: "invalid-storage",

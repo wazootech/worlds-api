@@ -6,11 +6,7 @@ import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
-import {
-  SparqlRequestSchema,
-  worldIdParam,
-  namespaceQuery,
-} from "../lib/schemas";
+import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
 
 const queryEngine = new QueryEngine();
 
@@ -115,28 +111,13 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldUid = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
-      const namespace = auth.admin
-        ? (body.namespace ?? c.req.query("namespace"))
-        : auth.namespace;
-      if (!namespace) return unauthorized();
 
-      const accessErr = requireAccess(auth, namespace, worldId);
-      if (accessErr) return accessErr;
+      if (!auth.admin && !auth.namespace) return unauthorized();
 
-      if (!body.query) {
-        return respond(
-          c,
-          {
-            error: { code: "INVALID_ARGUMENT", message: "query is required" },
-          },
-          400,
-        );
-      }
-
-      const ref = await resolveWorldDatabase(env, namespace, worldId);
+      const ref = await resolveWorldDatabase(env, worldUid);
       if (!ref) {
         return respond(
           c,
@@ -147,6 +128,19 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
             },
           },
           404,
+        );
+      }
+
+      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      if (accessErr) return accessErr;
+
+      if (!body.query) {
+        return respond(
+          c,
+          {
+            error: { code: "INVALID_ARGUMENT", message: "query is required" },
+          },
+          400,
         );
       }
 

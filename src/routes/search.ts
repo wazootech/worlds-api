@@ -9,7 +9,6 @@ import {
   SearchRequestSchema,
   SearchResultSchema,
   worldIdParam,
-  namespaceQuery,
 } from "../lib/schemas";
 
 export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
@@ -57,15 +56,27 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldUid = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
-      const namespace = auth.admin
-        ? (body.namespace ?? c.req.query("namespace"))
-        : auth.namespace;
-      if (!namespace) return unauthorized();
 
-      const accessErr = requireAccess(auth, namespace, worldId);
+      if (!auth.admin && !auth.namespace) return unauthorized();
+
+      const ref = await resolveWorldDatabase(env, worldUid);
+      if (!ref) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "World database not found",
+            },
+          },
+          404,
+        );
+      }
+
+      const accessErr = requireAccess(auth, ref.namespace, worldUid);
       if (accessErr) return accessErr;
 
       if (!body.query) {
@@ -82,19 +93,6 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       }
 
       const limit = body.limit ?? 20;
-      const ref = await resolveWorldDatabase(env, namespace, worldId);
-      if (!ref) {
-        return respond(
-          c,
-          {
-            error: {
-              code: "NOT_FOUND",
-              message: "World database not found",
-            },
-          },
-          404,
-        );
-      }
       const db = worldDb(ref);
       const client = await createLibsqlClient({ client: db });
 

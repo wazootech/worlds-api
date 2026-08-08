@@ -62,15 +62,27 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldUid = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
-      const namespace = auth.admin
-        ? (body.namespace ?? c.req.query("namespace"))
-        : auth.namespace;
-      if (!namespace) return unauthorized();
 
-      const accessErr = requireAccess(auth, namespace, worldId);
+      if (!auth.admin && !auth.namespace) return unauthorized();
+
+      const ref = await resolveWorldDatabase(env, worldUid);
+      if (!ref) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "NOT_FOUND",
+              message: "World database not found",
+            },
+          },
+          404,
+        );
+      }
+
+      const accessErr = requireAccess(auth, ref.namespace, worldUid);
       if (accessErr) return accessErr;
       const contentType = body.contentType ?? "text/turtle";
 
@@ -87,19 +99,6 @@ export function registerImportExportRoutes(
         );
       }
 
-      const ref = await resolveWorldDatabase(env, namespace, worldId);
-      if (!ref) {
-        return respond(
-          c,
-          {
-            error: {
-              code: "NOT_FOUND",
-              message: "World database not found",
-            },
-          },
-          404,
-        );
-      }
       const db = worldDb(ref);
       const client = await createLibsqlClient({ client: db });
 
@@ -195,20 +194,13 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldUid = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const query = c.req.valid("query");
-      const namespace = auth.admin ? query.namespace : auth.namespace;
-      if (!namespace) return unauthorized();
 
-      const accessErr = requireAccess(auth, namespace, worldId);
-      if (accessErr) return accessErr;
+      if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const fmt = query.format ?? "application/json";
-      const limit = parseInt(query.limit ?? "1000", 10);
-      const offset = parseInt(query.offset ?? "0", 10);
-
-      const ref = await resolveWorldDatabase(env, namespace, worldId);
+      const ref = await resolveWorldDatabase(env, worldUid);
       if (!ref) {
         return respond(
           c,
@@ -221,6 +213,14 @@ export function registerImportExportRoutes(
           404,
         );
       }
+
+      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      if (accessErr) return accessErr;
+
+      const fmt = query.format ?? "application/json";
+      const limit = parseInt(query.limit ?? "1000", 10);
+      const offset = parseInt(query.offset ?? "0", 10);
+
       const db = worldDb(ref);
       const client = await createLibsqlClient({ client: db });
 
