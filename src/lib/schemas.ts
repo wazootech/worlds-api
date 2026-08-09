@@ -13,11 +13,12 @@ export const WorldResourceSchema = z
   .object({
     name: z.string(),
     uid: z.string(),
-    namespace: z.string(),
-    worldId: z.string(),
     displayName: z.string(),
     state: z.string(),
-    storage: z.enum(["libsql-per-world", "legacy-shared-libsql"]),
+    storage: z.enum(["libsql-per-world", "legacy-shared-libsql"]).openapi({
+      description:
+        "Storage backend for the world. libsql-per-world provisions a dedicated per-world Turso/LibSQL database; legacy-shared-libsql points at a shared legacy store.",
+    }),
     embeddingModel: z.string(),
     chunkSize: z.number().int(),
     topK: z.number().int(),
@@ -31,11 +32,7 @@ export const WorldResourceSchema = z
 
 export const CreateWorldRequestSchema = z
   .object({
-    namespace: z.string().optional(),
-    worldId: z.string().min(1),
     displayName: z.string().optional(),
-    databaseUrl: z.string().optional(),
-    databaseAuthToken: z.string().optional(),
     embeddingModel: z.string().optional(),
     chunkSize: z.number().int().positive().optional(),
     topK: z.number().int().positive().optional(),
@@ -45,7 +42,6 @@ export const CreateWorldRequestSchema = z
 
 export const UpdateWorldRequestSchema = z
   .object({
-    namespace: z.string().optional(),
     displayName: z.string().min(1).optional(),
     embeddingModel: z.string().optional(),
     chunkSize: z.number().int().positive().optional(),
@@ -54,15 +50,8 @@ export const UpdateWorldRequestSchema = z
   })
   .openapi("UpdateWorldRequest");
 
-export const UndeleteWorldRequestSchema = z
-  .object({
-    namespace: z.string().optional(),
-  })
-  .openapi("UndeleteWorldRequest");
-
 export const SearchRequestSchema = z
   .object({
-    namespace: z.string().optional(),
     query: z.string().min(1),
     limit: z.number().int().positive().optional().default(20),
     topK: z.number().int().positive().optional(),
@@ -82,14 +71,12 @@ export const SearchResultSchema = z
 
 export const SparqlRequestSchema = z
   .object({
-    namespace: z.string().optional(),
     query: z.string().min(1),
   })
   .openapi("SparqlRequest");
 
 export const ImportRequestSchema = z
   .object({
-    namespace: z.string().optional(),
     data: z.string().min(1),
     contentType: z.string().optional().default("text/turtle"),
   })
@@ -151,7 +138,10 @@ export const ApiKeyResourceSchema = z
   .openapi("ApiKeyResource");
 
 export const worldIdParam = z.object({
-  id: z.string().openapi({ param: { name: "id", in: "path", required: true } }),
+  id: z.string().openapi({
+    param: { name: "id", in: "path", required: true },
+    description: "The canonical world_uid, e.g. w_<uuid>.",
+  }),
 });
 
 export const keyIdParam = z.object({
@@ -160,21 +150,7 @@ export const keyIdParam = z.object({
     .openapi({ param: { name: "keyId", in: "path", required: true } }),
 });
 
-export const namespaceQuery = z.object({
-  namespace: z
-    .string()
-    .optional()
-    .openapi({
-      param: {
-        name: "namespace",
-        in: "query",
-        description:
-          "Namespace to operate on. User keys have this auto-detected.",
-      },
-    }),
-});
-
-export const exportQuery = namespaceQuery.extend({
+export const exportQuery = z.object({
   format: z
     .string()
     .optional()
@@ -205,29 +181,4 @@ export const apiKeysListQuery = z.object({
     }),
 });
 
-export const worldsListQuery = z.object({
-  namespace: z
-    .string()
-    .optional()
-    .openapi({
-      param: { name: "namespace", in: "query" },
-    }),
-});
-
-export const worldGetQuery = z.object({
-  namespace: z
-    .string()
-    .optional()
-    .openapi({
-      param: { name: "namespace", in: "query" },
-    }),
-});
-
-export const worldDeleteQuery = z.object({
-  namespace: z
-    .string()
-    .optional()
-    .openapi({
-      param: { name: "namespace", in: "query" },
-    }),
-});
+export const worldsListQuery = z.object({});

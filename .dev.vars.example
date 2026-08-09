@@ -10,3 +10,12 @@ LIBSQL_AUTH_TOKEN=""
 # Admin key used by wazoo-api for provisioning and API-key management.
 # Must match the WORLDS_API_ADMIN_KEY secret configured on the wazoo-api Worker.
 WORLDS_ADMIN_KEY="replace_me"
+
+# Turso platform credentials used to provision and destroy per-world databases.
+# Use a group-scoped token with least privilege.
+TURSO_ORG=""
+TURSO_GROUP=""
+TURSO_PLATFORM_API_TOKEN=""
+
+# Environment label used in the Turso database name (prod/qa).
+WAZOO_ENV="dev"

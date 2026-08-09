@@ -4,8 +4,8 @@ import type { Env } from "../env";
 import { getDb, queryOne } from "./db";
 
 export type WorldDatabaseRef = {
+  worldUid: string;
   namespace: string;
-  worldId: string;
   databaseUrl: string;
   databaseAuthToken?: string;
   embeddingModel: string;
@@ -15,8 +15,8 @@ export type WorldDatabaseRef = {
 };
 
 type WorldDatabaseRow = {
+  uid: string;
   namespace: string;
-  world_id: string;
   database_url: string | null;
   database_auth_token: string | null;
   embedding_model: string;
@@ -27,20 +27,24 @@ type WorldDatabaseRow = {
 
 const clients = new Map<string, Client>();
 
+/**
+ * Resolves a world's storage by its canonical world_uid. Only worlds in an
+ * active state are reachable by the data plane; suspended or deleted worlds
+ * resolve to null and routes reject with NOT_FOUND.
+ */
 export async function resolveWorldDatabase(
   env: Env,
-  namespace: string,
-  worldId: string,
+  worldUid: string,
 ): Promise<WorldDatabaseRef | null> {
   const row = await queryOne<WorldDatabaseRow>(
     getDb(env),
-    "SELECT namespace, world_id, database_url, database_auth_token, embedding_model, chunk_size, top_k, min_score FROM worlds_metadata WHERE namespace = ? AND world_id = ? AND state != 'deleted'",
-    [namespace, worldId],
+    "SELECT uid, namespace, database_url, database_auth_token, embedding_model, chunk_size, top_k, min_score FROM worlds_metadata WHERE uid = ? AND state = 'active'",
+    [worldUid],
   );
   if (!row?.database_url) return null;
   return {
+    worldUid: row.uid,
     namespace: row.namespace,
-    worldId: row.world_id,
     databaseUrl: row.database_url,
     databaseAuthToken: row.database_auth_token ?? undefined,
     embeddingModel: row.embedding_model,

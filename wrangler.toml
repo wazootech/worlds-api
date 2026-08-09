@@ -7,8 +7,14 @@ routes = [
   { pattern = "worlds-api.wazoo.dev", custom_domain = true }
 ]
 
+[triggers]
+crons = ["0 0 * * *"]
+
 [vars]
 LIBSQL_URL = "libsql://worlds-api-prod-ethanthatonekid.aws-us-west-2.turso.io"
+TURSO_ORG = "ethanthatonekid"
+TURSO_GROUP = "wazoo"
+WAZOO_ENV = "prod"
 
 [env.qa]
 name = "worlds-api-qa"
@@ -16,8 +22,14 @@ routes = [
   { pattern = "worlds-api-qa.wazoo.dev", custom_domain = true }
 ]
 
+[env.qa.triggers]
+crons = ["0 0 * * *"]
+
 [env.qa.vars]
 LIBSQL_URL = "libsql://worlds-api-qa-ethanthatonekid.aws-us-west-2.turso.io"
+TURSO_ORG = "ethanthatonekid"
+TURSO_GROUP = "wazoo"
+WAZOO_ENV = "qa"
 
 [observability]
 enabled = true

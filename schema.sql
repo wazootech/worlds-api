@@ -1,9 +1,12 @@
 PRAGMA foreign_keys = ON;
 
+-- worlds_metadata: single source of truth for world identity, lifecycle, and
+-- storage. `uid` is the canonical, machine-minted `world_uid` and is the public
+-- resource identifier (`worlds/{world_uid}`). `namespace` is the internal
+-- tenancy key (`user_uid` in hosted mode) and is never exposed publicly.
 CREATE TABLE IF NOT EXISTS worlds_metadata (
   uid TEXT PRIMARY KEY,
   namespace TEXT NOT NULL,
-  world_id TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
   state TEXT NOT NULL DEFAULT 'active',
   database_url TEXT,
@@ -14,13 +17,18 @@ CREATE TABLE IF NOT EXISTS worlds_metadata (
   min_score REAL NOT NULL DEFAULT 0.0,
   delete_time TEXT,
   expire_time TEXT,
+  purge_status TEXT NOT NULL DEFAULT 'none',
+  purged_at TEXT,
   create_time TEXT NOT NULL,
-  update_time TEXT NOT NULL,
-  UNIQUE(namespace, world_id)
+  update_time TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_worlds_metadata_namespace
   ON worlds_metadata(namespace);
+
+CREATE INDEX IF NOT EXISTS idx_worlds_metadata_purge
+  ON worlds_metadata(purge_status, expire_time)
+  WHERE state = 'deleted';
 
 CREATE TABLE IF NOT EXISTS api_keys (
   uid TEXT PRIMARY KEY,

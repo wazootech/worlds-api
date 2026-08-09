@@ -136,11 +136,10 @@ await test("POST /worlds/sparql without world id returns 400", async () => {
 // ── Authenticated health flow ───
 
 const testNamespace = `health-${Date.now()}`;
-const testWorldId = `health-world-${Date.now()}`;
 
 await test("GET /worlds returns list (may be empty)", async () => {
     const res = await fetch(
-      `${BASE_URL}/worlds?namespace=${testNamespace}`,
+      `${BASE_URL}/worlds`,
       { headers: authHeaders() },
     );
     await assertOk(res);
@@ -175,15 +174,13 @@ await test("GET /worlds returns list (may be empty)", async () => {
     console.log(`        keys for namespace: ${body.keys.length}`);
   });
 
-  // Note: World CRUD requires a provisioned databaseUrl which we can't provide
-  // in a local health test. Testing the validation only.
-  await test("POST /worlds without databaseUrl returns 400", async () => {
+  // World creation requires a namespace-scoped API key (tenancy comes from
+  // auth). The admin key alone must be rejected.
+  await test("POST /worlds with admin key (no namespace) returns 400", async () => {
     const res = await fetch(`${BASE_URL}/worlds`, {
       method: "POST",
       headers: authHeaders(),
       body: JSON.stringify({
-        namespace: testNamespace,
-        worldId: testWorldId,
         displayName: "Health Test",
       }),
     });
@@ -195,7 +192,7 @@ await test("GET /worlds returns list (may be empty)", async () => {
 
   await test("GET /worlds/:id for nonexistent world returns 404", async () => {
     const res = await fetch(
-      `${BASE_URL}/worlds/nonexistent-zzz?namespace=${testNamespace}`,
+      `${BASE_URL}/worlds/nonexistent-zzz`,
       { headers: authHeaders() },
     );
     await assertNotFound(res);

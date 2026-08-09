@@ -27,8 +27,8 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
+  worldUid: "test-world",
   namespace: "ns",
-  worldId: "test-world",
   databaseUrl: "file:test.db",
   databaseAuthToken: undefined,
   embeddingModel: "use",
@@ -46,7 +46,7 @@ function request(body: unknown) {
         authorization: "Bearer test-admin-key",
         "content-type": "application/json",
       },
-      body: JSON.stringify({ namespace: "ns", ...(body as object) }),
+      body: JSON.stringify(body),
     },
     env,
     executionCtx,
@@ -67,7 +67,6 @@ describe("POST /worlds/:id/sparql endpoint", () => {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          namespace: "ns",
           query: "SELECT * WHERE { ?s ?p ?o }",
         }),
       },
