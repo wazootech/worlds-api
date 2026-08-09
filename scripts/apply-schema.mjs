@@ -1,20 +1,17 @@
 #!/usr/bin/env node
 
 import { readFile } from "node:fs/promises";
-import { createClient } from "@libsql/client/web";
+import { createClient } from "@libsql/client";
 
 const url = required("LIBSQL_URL");
 const authToken = process.env.LIBSQL_AUTH_TOKEN;
 const schema = await readFile(new URL("../schema.sql", import.meta.url), "utf8");
-const statements = schema
-  .split(/;\s*(?:\r?\n|$)/)
-  .map((sql) => sql.trim())
-  .filter(Boolean);
 
 const client = createClient({ url, authToken });
 
 // Idempotent upgrades for databases created before the world_uid schema.
-// These must run before any index that references the new columns.
+// These must run before schema.sql's purge index (which references the new
+// columns) is applied.
 await addColumnIfMissing(
   "worlds_metadata",
   "purge_status",
@@ -52,10 +49,11 @@ if (await hasColumn("worlds_metadata", "world_id")) {
   `);
 }
 
-// The remaining schema statements are idempotent (IF NOT EXISTS), so they can
-// run after the migration above. This includes the purge index, which now has
-// its columns guaranteed to exist.
-await client.batch(statements.map((sql) => ({ sql })), "write");
+// The remaining schema statements are idempotent (IF NOT EXISTS) and are now
+// guaranteed to have their columns, so apply them whole. executeMultiple parses
+// full multi-statement SQL (schema.sql contains trigger bodies with embedded
+// semicolons that a naive ;-split would truncate).
+await client.executeMultiple(schema);
 
 console.log(`Applied schema to ${url}`);
 
