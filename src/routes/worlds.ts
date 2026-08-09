@@ -2,7 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { getDb, query, queryOne, execute, uid, now } from "../lib/db";
-import { authorize, requireAccess, unauthorized } from "../lib/auth";
+import { authorize, requireAccess, unauthorized, forbidden } from "../lib/auth";
 import { initializeWorldDatabase } from "../lib/world-db";
 import { provisionWorldDatabase, destroyWorldDatabase } from "../lib/turso";
 import { runPurgeSweep } from "../lib/purge";
@@ -72,8 +72,10 @@ function requireWorldAccess(
   worldUid: string,
 ): Response | null {
   if (auth.admin) return null;
-  if (auth.namespace && auth.namespace === row.namespace) return null;
-  return unauthorized();
+  if (!auth.namespace || auth.namespace !== row.namespace)
+    return unauthorized();
+  if (auth.worldId && auth.worldId !== worldUid) return forbidden();
+  return null;
 }
 
 const listRoute = createRoute({

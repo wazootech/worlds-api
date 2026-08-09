@@ -40,6 +40,8 @@ const executionCtx = {
 
 const ADMIN_KEY = "test-admin-key";
 const USER_TOKEN = "test-user-token";
+const WORLD_TOKEN = "test-world-token";
+const WORLD_UID = "w_scoped_own";
 
 function request(token: string | null, path: string, init: RequestInit = {}) {
   return app.request(
@@ -65,6 +67,10 @@ function userRequest(path: string, init: RequestInit = {}) {
   return request(USER_TOKEN, path, init);
 }
 
+function worldRequest(path: string, init: RequestInit = {}) {
+  return request(WORLD_TOKEN, path, init);
+}
+
 beforeAll(async () => {
   rmSync(dbFile, { force: true });
   const client = createClient({ url: dbUrl });
@@ -84,6 +90,19 @@ beforeAll(async () => {
       "user-1 key",
       "user-1",
       null,
+      '["data:read","data:write"]',
+      new Date().toISOString(),
+    ],
+  });
+  const worldHash = await sha256Hex(WORLD_TOKEN);
+  await client.execute({
+    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    args: [
+      "key-world-1",
+      worldHash,
+      "world-1 key",
+      "user-1",
+      WORLD_UID,
       '["data:read","data:write"]',
       new Date().toISOString(),
     ],
@@ -152,6 +171,31 @@ describe("world lifecycle (world_uid contract)", () => {
   it("rejects get for a missing world", async () => {
     const res = await adminRequest("/worlds/w_nope");
     expect(res.status).toBe(404);
+  });
+
+  it("restricts a world-scoped key to its own world", async () => {
+    const client = createClient({ url: dbUrl });
+    const ts = new Date().toISOString();
+    await client.batch(
+      [
+        {
+          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          args: [WORLD_UID, "user-1", "Owned World", ts, ts],
+        },
+        {
+          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          args: ["w_sibling", "user-1", "Sibling World", ts, ts],
+        },
+      ],
+      "write",
+    );
+    client.close();
+
+    const own = await worldRequest(`/worlds/${WORLD_UID}`);
+    expect(own.status).toBe(200);
+
+    const sibling = await worldRequest("/worlds/w_sibling");
+    expect(sibling.status).toBe(403);
   });
 
   it("rejects admin purge without an admin key", async () => {
