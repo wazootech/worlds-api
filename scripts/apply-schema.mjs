@@ -5,13 +5,25 @@ import { createClient } from "@libsql/client";
 
 const url = required("LIBSQL_URL");
 const authToken = process.env.LIBSQL_AUTH_TOKEN;
-const schema = await readFile(new URL("../schema.sql", import.meta.url), "utf8");
+const schema = await readFile(
+  new URL("../schema.sql", import.meta.url),
+  "utf8",
+);
 
 const client = createClient({ url, authToken });
 
+// Only control-plane tables (worlds_metadata, api_keys) belong in the control
+// database. Per-world data tables (quads/chunks/fts) live in each provisioned
+// world database via initializeWorldDatabase; an existing shared-libsql control
+// DB may still contain legacy copies with a different shape, so never re-apply
+// statements for them.
+const controlStatements = schema
+  .split(/;\s*(?:\r?\n|$)/)
+  .map((sql) => sql.trim())
+  .filter((sql) => /worlds_metadata|api_keys/.test(sql));
+
 // Idempotent upgrades for databases created before the world_uid schema.
-// These must run before schema.sql's purge index (which references the new
-// columns) is applied.
+// These must run before the purge index (which references the new columns).
 await addColumnIfMissing(
   "worlds_metadata",
   "purge_status",
@@ -49,21 +61,32 @@ if (await hasColumn("worlds_metadata", "world_id")) {
   `);
 }
 
-// The remaining schema statements are idempotent (IF NOT EXISTS) and are now
-// guaranteed to have their columns, so apply them whole. executeMultiple parses
-// full multi-statement SQL (schema.sql contains trigger bodies with embedded
-// semicolons that a naive ;-split would truncate).
-await client.executeMultiple(schema);
+// The remaining control-plane statements are idempotent (IF NOT EXISTS) and
+// now have their columns, so apply them.
+await client.batch(
+  controlStatements.map((sql) => ({ sql })),
+  "write",
+);
 
-console.log(`Applied schema to ${url}`);
+console.log(`Applied control-plane schema to ${url}`);
+
+async function tableExists(table) {
+  const rs = await client.execute(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+    [table],
+  );
+  return rs.rows.length > 0;
+}
 
 async function hasColumn(table, column) {
+  if (!(await tableExists(table))) return false;
   const rs = await client.execute(`PRAGMA table_info(${table})`);
   const names = rs.rows.map((row) => String(row[1]));
   return names.includes(column);
 }
 
 async function addColumnIfMissing(table, column, definition) {
+  if (!(await tableExists(table))) return;
   if (await hasColumn(table, column)) return;
   await client.execute({
     sql: `ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`,
