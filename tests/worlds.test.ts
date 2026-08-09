@@ -130,6 +130,16 @@ describe("world lifecycle (world_uid contract)", () => {
     expect(res.status).toBe(401);
   });
 
+  it("rejects list without authorization", async () => {
+    const res = await request(null, "/worlds");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects list with an invalid token", async () => {
+    const res = await request("wzw_invalidtoken123", "/worlds");
+    expect(res.status).toBe(401);
+  });
+
   it("rejects admin create without a namespace-scoped key", async () => {
     const res = await adminRequest("/worlds", {
       method: "POST",

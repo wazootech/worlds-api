@@ -381,12 +381,14 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
+    if (!auth.admin && !auth.namespace) return unauthorized();
+
     const rows = await query<WorldRow>(
       db,
       auth.admin
         ? "SELECT * FROM worlds_metadata WHERE state != 'deleted' ORDER BY create_time DESC"
         : "SELECT * FROM worlds_metadata WHERE namespace = ? AND state != 'deleted' ORDER BY create_time DESC",
-      auth.admin ? [] : [auth.namespace ?? ""],
+      auth.admin ? [] : [auth.namespace!],
     );
     return respond(c, { worlds: rows.map(worldResource) });
   });
