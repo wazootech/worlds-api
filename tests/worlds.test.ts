@@ -213,6 +213,80 @@ describe("world lifecycle (world_uid contract)", () => {
     expect(res.status).toBe(403);
   });
 
+  it("marks all worlds for a namespace deleted and revokes its keys", async () => {
+    const client = createClient({ url: dbUrl });
+    const ts = new Date().toISOString();
+    await client.batch(
+      [
+        {
+          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          args: ["w_del_1", "user-delete", "Del World 1", ts, ts],
+        },
+        {
+          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          args: ["w_del_2", "user-delete", "Del World 2", ts, ts],
+        },
+        {
+          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'deleted', ?, ?)",
+          args: ["w_del_purged", "user-delete", "Purged World", ts, ts],
+        },
+      ],
+      "write",
+    );
+    const delKeyHash = await sha256Hex("wzw_delete_user_token");
+    await client.execute({
+      sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      args: [
+        "key-del-1",
+        delKeyHash,
+        "del key",
+        "user-delete",
+        null,
+        '["data:read","data:write"]',
+        ts,
+      ],
+    });
+    client.close();
+
+    const res = await adminRequest("/admin/namespaces/user-delete/delete", {
+      method: "POST",
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.deletedWorlds).toBe(2);
+    expect(body.revokedKeys).toBe(1);
+
+    const verify = createClient({ url: dbUrl });
+    const byUid = new Map(
+      (
+        await verify.execute({
+          sql: "SELECT uid, state, purge_status, expire_time FROM worlds_metadata WHERE namespace = 'user-delete' ORDER BY uid",
+        })
+      ).rows.map((row) => [String(row[0]), row]),
+    );
+    expect(String((byUid.get("w_del_1") as unknown[])[1])).toBe("deleted");
+    expect(String((byUid.get("w_del_1") as unknown[])[2])).toBe("pending");
+    expect((byUid.get("w_del_1") as unknown[])[3]).toBeTruthy();
+    expect(String((byUid.get("w_del_2") as unknown[])[1])).toBe("deleted");
+    expect(String((byUid.get("w_del_purged") as unknown[])[1])).toBe(
+      "deleted",
+    );
+    expect((byUid.get("w_del_purged") as unknown[])[2]).not.toBe("pending");
+
+    const keyRow = await verify.execute({
+      sql: "SELECT revoked_at FROM api_keys WHERE uid = 'key-del-1'",
+    });
+    expect(keyRow.rows[0][0]).toBeTruthy();
+    verify.close();
+  });
+
+  it("rejects namespace delete without an admin key", async () => {
+    const res = await request(null, "/admin/namespaces/user-delete/delete", {
+      method: "POST",
+    });
+    expect(res.status).toBe(403);
+  });
+
   it("runs the purge sweep for an admin key", async () => {
     const res = await adminRequest("/admin/purge", { method: "POST" });
     expect(res.status).toBe(200);
