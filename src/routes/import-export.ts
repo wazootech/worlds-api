@@ -12,6 +12,10 @@ import {
   worldIdParam,
   exportQuery,
 } from "../lib/schemas";
+import {
+  serializeQuadsToJsonLd,
+  serializeQuadsToTrig,
+} from "../lib/export-serializers";
 
 interface QuadRow {
   subject: string;
@@ -178,6 +182,11 @@ export function registerImportExportRoutes(
           content: {
             "application/json": { schema: ExportQuadsResponseSchema },
             "text/plain": { schema: z.any() },
+            "application/n-quads": { schema: z.any() },
+            "application/n-triples": { schema: z.any() },
+            "text/turtle": { schema: z.any() },
+            "application/trig": { schema: z.any() },
+            "application/ld+json": { schema: z.any() },
           },
         },
         400: {
@@ -275,12 +284,27 @@ export function registerImportExportRoutes(
         );
       }
 
+      if (fmt === "application/trig" || fmt === "application/ld+json") {
+        const exported = await client.export({
+          format: { kind: "quads" },
+        });
+        const quads = exported.kind === "quads" ? exported.quads : [];
+        const data =
+          fmt === "application/trig"
+            ? await serializeQuadsToTrig(quads)
+            : serializeQuadsToJsonLd(quads);
+
+        return c.text(data, 200, {
+          "Content-Type": fmt,
+        });
+      }
+
       return respond(
         c,
         {
           error: {
             code: "UNSUPPORTED_FORMAT",
-            message: `Export format '${fmt}' is not supported. Use 'application/json' or 'text/plain'.`,
+            message: `Export format '${fmt}' is not supported. Use 'application/json', 'text/plain', 'application/n-quads', 'application/n-triples', 'text/turtle', 'application/trig', or 'application/ld+json'.`,
           },
         },
         400,
