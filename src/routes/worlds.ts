@@ -342,6 +342,46 @@ const resumeRoute = createRoute({
   },
 });
 
+const namespaceDeleteRoute = createRoute({
+  method: "post",
+  path: "/admin/namespaces/{namespace}/delete",
+  tags: ["Admin"],
+  operationId: "deleteNamespaceWorlds",
+  summary: "Mark all worlds for a namespace deleted (account deletion)",
+  "x-mint": { metadata: { title: "Delete namespace worlds" } },
+  security: [{ bearerWorldsToken: [] }],
+  request: {
+    params: z.object({
+      namespace: z.string().openapi({
+        param: { name: "namespace", in: "path", required: true },
+      }),
+    }),
+  },
+  responses: {
+    200: {
+      description: "Delete result",
+      content: {
+        "application/json": {
+          schema: z.object({
+            deletedWorlds: z.number().int(),
+            revokedKeys: z.number().int(),
+          }),
+        },
+      },
+    },
+    403: {
+      description: "Forbidden",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+  },
+});
+
 const purgeRoute = createRoute({
   method: "post",
   path: "/admin/purge",
@@ -720,6 +760,44 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldUid],
     );
     return respond(c, worldResource(resumed!));
+  });
+
+  app.openapi(namespaceDeleteRoute, async (c) => {
+    const env = c.env as unknown as Env;
+    const auth = await authorize(c.req.raw, env);
+    if (!auth.admin) {
+      return respond(
+        c,
+        { error: { code: "FORBIDDEN", message: "Admin key required" } },
+        403,
+      );
+    }
+
+    const namespace = c.req.param("namespace");
+    const db = getDb(env);
+    const ts = now();
+    const expireTs = new Date(Date.now() + GRACE_MS).toISOString();
+
+    // Mark every non-purged world for the namespace deleted, reusing the same
+    // 30-day grace window and purge sweep as per-world deletion.
+    const worldResult = await execute(
+      db,
+      "UPDATE worlds_metadata SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE namespace = ? AND state != 'deleted' AND purge_status != 'purged'",
+      [ts, expireTs, ts, namespace],
+    );
+
+    // Revoke every data-plane key for the namespace so credentials stop
+    // working immediately even before the grace period elapses.
+    const keyResult = await execute(
+      db,
+      "UPDATE api_keys SET revoked_at = ? WHERE namespace = ? AND revoked_at IS NULL",
+      [ts, namespace],
+    );
+
+    return respond(c, {
+      deletedWorlds: worldResult.rowsAffected,
+      revokedKeys: keyResult.rowsAffected,
+    });
   });
 
   app.openapi(purgeRoute, async (c) => {
