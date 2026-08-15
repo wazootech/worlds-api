@@ -268,9 +268,7 @@ describe("world lifecycle (world_uid contract)", () => {
     expect(String((byUid.get("w_del_1") as unknown[])[2])).toBe("pending");
     expect((byUid.get("w_del_1") as unknown[])[3]).toBeTruthy();
     expect(String((byUid.get("w_del_2") as unknown[])[1])).toBe("deleted");
-    expect(String((byUid.get("w_del_purged") as unknown[])[1])).toBe(
-      "deleted",
-    );
+    expect(String((byUid.get("w_del_purged") as unknown[])[1])).toBe("deleted");
     expect((byUid.get("w_del_purged") as unknown[])[2]).not.toBe("pending");
 
     const keyRow = await verify.execute({
