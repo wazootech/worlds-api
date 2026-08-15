@@ -3,6 +3,8 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
+import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
+import { maxImportBytes, maxImportQuads } from "../lib/abuse";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
@@ -72,6 +74,21 @@ export function registerImportExportRoutes(
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
+      const bytesCap = maxImportBytes(env);
+      const declaredLength = Number(c.req.header("content-length") ?? "0");
+      if (declaredLength > bytesCap || body.data.length > bytesCap) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "PAYLOAD_TOO_LARGE",
+              message: `Import payload exceeds the ${bytesCap} byte limit`,
+            },
+          },
+          413,
+        );
+      }
+
       const ref = await resolveWorldDatabase(env, worldUid);
       if (!ref) {
         return respond(
@@ -86,7 +103,12 @@ export function registerImportExportRoutes(
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_WRITE,
+      );
       if (accessErr) return accessErr;
       const contentType = body.contentType ?? "text/turtle";
 
@@ -106,8 +128,22 @@ export function registerImportExportRoutes(
       const db = worldDb(ref);
       const client = await createLibsqlClient({ client: db });
 
+      const quadsCap = maxImportQuads(env);
+
       if (contentType === "application/json") {
         const items = JSON.parse(body.data) as QuadRow[];
+        if (items.length > quadsCap) {
+          return respond(
+            c,
+            {
+              error: {
+                code: "PAYLOAD_TOO_LARGE",
+                message: `Import exceeds the ${quadsCap} quad limit per request`,
+              },
+            },
+            413,
+          );
+        }
         await client.import({
           source: {
             kind: "serialized",
@@ -127,6 +163,19 @@ export function registerImportExportRoutes(
           .split("\n")
           .map((l) => l.trim())
           .filter((l) => l.length > 0);
+
+        if (lines.length > quadsCap) {
+          return respond(
+            c,
+            {
+              error: {
+                code: "PAYLOAD_TOO_LARGE",
+                message: `Import exceeds the ${quadsCap} chunk limit per request`,
+              },
+            },
+            413,
+          );
+        }
 
         const chunks = lines.map((text, index) => {
           return {
@@ -223,7 +272,12 @@ export function registerImportExportRoutes(
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_READ,
+      );
       if (accessErr) return accessErr;
 
       const fmt = query.format ?? "application/json";

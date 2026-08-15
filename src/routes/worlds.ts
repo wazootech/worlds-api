@@ -2,7 +2,16 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { getDb, query, queryOne, execute, uid, now } from "../lib/db";
-import { authorize, requireAccess, unauthorized, forbidden } from "../lib/auth";
+import {
+  authorize,
+  requireAccess,
+  unauthorized,
+  forbidden,
+  forbiddenScope,
+  hasScope,
+  SCOPE_DATA_READ,
+  SCOPE_DATA_WRITE,
+} from "../lib/auth";
 import { initializeWorldDatabase } from "../lib/world-db";
 import { provisionWorldDatabase, destroyWorldDatabase } from "../lib/turso";
 import { runPurgeSweep } from "../lib/purge";
@@ -70,11 +79,14 @@ function requireWorldAccess(
   auth: Awaited<ReturnType<typeof authorize>>,
   row: WorldRow,
   worldUid: string,
+  requiredScope?: string,
 ): Response | null {
   if (auth.admin) return null;
   if (!auth.namespace || auth.namespace !== row.namespace)
     return unauthorized();
   if (auth.worldId && auth.worldId !== worldUid) return forbidden();
+  if (requiredScope && !hasScope(auth, requiredScope))
+    return forbiddenScope(requiredScope);
   return null;
 }
 
@@ -422,6 +434,8 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const db = getDb(env);
 
     if (!auth.admin && !auth.namespace) return unauthorized();
+    if (!hasScope(auth, SCOPE_DATA_READ))
+      return forbiddenScope(SCOPE_DATA_READ);
 
     const rows = await query<WorldRow>(
       db,
@@ -452,7 +466,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         400,
       );
     }
-    const accessErr = requireAccess(auth, namespace);
+    const accessErr = requireAccess(
+      auth,
+      namespace,
+      undefined,
+      SCOPE_DATA_WRITE,
+    );
     if (accessErr) return accessErr;
 
     const db = getDb(env);
@@ -552,7 +571,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_READ,
+    );
     if (worldAccess) return worldAccess;
 
     return respond(c, worldResource(row));
@@ -573,7 +597,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     const setClauses: string[] = [];
@@ -644,7 +673,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     const ts = now();
@@ -672,7 +706,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     if (row.expire_time && row.expire_time < now()) {
@@ -716,7 +755,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     await execute(
@@ -746,7 +790,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     await execute(

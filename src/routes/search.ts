@@ -3,6 +3,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
+import { SCOPE_DATA_READ } from "../lib/auth";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
@@ -76,7 +77,12 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_READ,
+      );
       if (accessErr) return accessErr;
 
       if (!body.query) {

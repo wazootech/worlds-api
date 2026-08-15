@@ -31,6 +31,7 @@ const env = {
   TURSO_GROUP: "test-group",
   TURSO_PLATFORM_API_TOKEN: "test-token",
   WAZOO_ENV: "test",
+  RATE_LIMIT_RPM: "0", // rate limiting is exercised in tests/abuse.test.ts
 } as unknown as Env;
 
 const executionCtx = {

@@ -19,6 +19,7 @@ const worldDbMock = vi.mocked(worldDb);
 const env = {
   LIBSQL_URL: "file:test.db",
   WORLDS_ADMIN_KEY: "test-admin-key",
+  RATE_LIMIT_RPM: "0", // rate limiting is exercised in tests/abuse.test.ts
 } as unknown as Env;
 
 const executionCtx = {
@@ -37,6 +38,8 @@ const worldRef = {
   minScore: 0.5,
 };
 
+const ALLOWED_ORIGIN = "https://console.wazoo.dev";
+
 function request(body: unknown) {
   return app.request(
     "/worlds/test-world/sparql",
@@ -45,6 +48,7 @@ function request(body: unknown) {
       headers: {
         authorization: "Bearer test-admin-key",
         "content-type": "application/json",
+        origin: ALLOWED_ORIGIN,
       },
       body: JSON.stringify(body),
     },
@@ -79,7 +83,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
   it("returns 400 when query is missing", async () => {
     const res = await request({});
     expect(res.status).toBe(400);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
   });
 
   it("returns 404 when the world database cannot be resolved", async () => {
@@ -100,7 +104,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
       query: "SELECT * WHERE { ?s ?p ?o } ORDER BY ?missing",
     });
     expect(res.status).toBe(400);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
     const body = await res.json();
     expect(body.error.code).toBe("INVALID_ARGUMENT");
     expect(body.error.message).toContain("unbound variable");
@@ -122,7 +126,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
 
     const res = await request({ query: "SELECT ?s WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(400);
-    expect(res.headers.get("access-control-allow-origin")).toBe("*");
+    expect(res.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
     const body = await res.json();
     expect(body.error.code).toBe("INVALID_ARGUMENT");
     expect(body.error.message).toContain("unhandled term comparator");
