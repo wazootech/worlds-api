@@ -112,6 +112,13 @@ export const ApiKeyCreateRequestSchema = z
     namespace: z.string().min(1),
     worldId: z.string().optional(),
     name: z.string().optional(),
+    scopes: z
+      .array(z.enum(["data:read", "data:write"]))
+      .optional()
+      .openapi({
+        description:
+          "Optional scope grant. Defaults to [\"data:read\", \"data:write\"]. Use [\"data:read\"] for read-only keys.",
+      }),
   })
   .openapi("ApiKeyCreateRequest");
 

@@ -117,7 +117,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           body.name ?? "",
           body.namespace,
           body.worldId ?? null,
-          '["data:read","data:write"]',
+          JSON.stringify(body.scopes ?? ["data:read", "data:write"]),
           ts,
         ],
       );

@@ -4,11 +4,40 @@ import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
+import { SCOPE_DATA_READ } from "../lib/auth";
+import {
+  sparqlMaxQueryLength,
+  sparqlMaxResults,
+  sparqlTimeoutMs,
+} from "../lib/abuse";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
 
 const queryEngine = new QueryEngine();
+
+class QueryTimeoutError extends Error {
+  constructor() {
+    super("SPARQL query timed out");
+    this.name = "QueryTimeoutError";
+  }
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new QueryTimeoutError()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 /**
  * materializeBindings drains SPARQL bindings before the response is
@@ -19,14 +48,18 @@ const queryEngine = new QueryEngine();
  * Draining here turns those errors into a rejection the route can map to a
  * structured response.
  */
-async function materializeBindings(bindings: unknown): Promise<unknown> {
-  if (Array.isArray(bindings)) return bindings;
+async function materializeBindings(
+  bindings: unknown,
+  maxRows: number,
+): Promise<unknown> {
+  if (Array.isArray(bindings)) return bindings.slice(0, maxRows);
   const iterable = bindings as
     { [Symbol.asyncIterator](): AsyncIterator<unknown> } | undefined;
   if (iterable && typeof iterable[Symbol.asyncIterator] === "function") {
     const rows: unknown[] = [];
     for await (const row of iterable as AsyncIterable<unknown>) {
       rows.push(row);
+      if (rows.length >= maxRows) break; // bound drain cost
     }
     return rows;
   }
@@ -131,7 +164,12 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_READ,
+      );
       if (accessErr) return accessErr;
 
       if (!body.query) {
@@ -144,6 +182,20 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
+      const maxQueryLength = sparqlMaxQueryLength(env);
+      if (body.query.length > maxQueryLength) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "QUERY_TOO_LARGE",
+              message: `SPARQL query exceeds the ${maxQueryLength} character limit`,
+            },
+          },
+          400,
+        );
+      }
+
       const db = worldDb(ref);
       const client = await createLibsqlClient({
         client: db,
@@ -151,13 +203,19 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       });
 
       try {
-        const result = await client.sparql({ query: body.query });
+        const result = await withTimeout(
+          client.sparql({ query: body.query }),
+          sparqlTimeoutMs(env),
+        );
         if (result.kind === "select") {
           const data = {
             ...result.data,
             results: {
               ...result.data.results,
-              bindings: await materializeBindings(result.data.results.bindings),
+              bindings: await materializeBindings(
+                result.data.results.bindings,
+                sparqlMaxResults(env),
+              ),
             },
           };
           return respond(c, data);
@@ -180,6 +238,18 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           400,
         );
       } catch (error) {
+        if (error instanceof QueryTimeoutError) {
+          return respond(
+            c,
+            {
+              error: {
+                code: "QUERY_TIMEOUT",
+                message: "SPARQL query timed out",
+              },
+            },
+            400,
+          );
+        }
         return respond(
           c,
           {

@@ -2,6 +2,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
+import { SCOPE_DATA_WRITE } from "../lib/auth";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { worldIdParam } from "../lib/schemas";
@@ -64,7 +65,12 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_WRITE,
+      );
       if (accessErr) return accessErr;
 
       return respond(c, { ok: true, status: "completed" });
