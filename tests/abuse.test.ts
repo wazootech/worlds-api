@@ -195,7 +195,10 @@ describe("import caps", () => {
     const lines = Array.from({ length: 11 }, (_, i) => `chunk ${i}`);
     const res = await request(FULL_TOKEN, "/worlds/test-world/import", {
       method: "POST",
-      body: JSON.stringify({ contentType: "text/plain", data: lines.join("\n") }),
+      body: JSON.stringify({
+        contentType: "text/plain",
+        data: lines.join("\n"),
+      }),
     });
     expect(res.status).toBe(413);
   });
@@ -223,7 +226,9 @@ describe("scope enforcement", () => {
       body: JSON.stringify({ data: "x", contentType: "text/plain" }),
     });
     expect(res.status).toBe(403);
-    const body = (await res.json()) as { error?: { code?: string; message?: string } };
+    const body = (await res.json()) as {
+      error?: { code?: string; message?: string };
+    };
     expect(body.error?.code).toBe("FORBIDDEN");
     expect(body.error?.message).toContain("data:write");
     expect(createLibsqlClientMock).not.toHaveBeenCalled();

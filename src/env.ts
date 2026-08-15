@@ -43,8 +43,12 @@ export function fromBindings(env: Record<string, unknown>): Env {
     SPARQL_MAX_RESULTS: env.SPARQL_MAX_RESULTS
       ? String(env.SPARQL_MAX_RESULTS)
       : undefined,
-    MAX_IMPORT_BYTES: env.MAX_IMPORT_BYTES ? String(env.MAX_IMPORT_BYTES) : undefined,
-    MAX_IMPORT_QUADS: env.MAX_IMPORT_QUADS ? String(env.MAX_IMPORT_QUADS) : undefined,
+    MAX_IMPORT_BYTES: env.MAX_IMPORT_BYTES
+      ? String(env.MAX_IMPORT_BYTES)
+      : undefined,
+    MAX_IMPORT_QUADS: env.MAX_IMPORT_QUADS
+      ? String(env.MAX_IMPORT_QUADS)
+      : undefined,
     RATE_LIMIT_RPM: env.RATE_LIMIT_RPM ? String(env.RATE_LIMIT_RPM) : undefined,
     RATE_LIMIT_BURST: env.RATE_LIMIT_BURST
       ? String(env.RATE_LIMIT_BURST)

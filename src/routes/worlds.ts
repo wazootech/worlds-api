@@ -434,7 +434,8 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const db = getDb(env);
 
     if (!auth.admin && !auth.namespace) return unauthorized();
-    if (!hasScope(auth, SCOPE_DATA_READ)) return forbiddenScope(SCOPE_DATA_READ);
+    if (!hasScope(auth, SCOPE_DATA_READ))
+      return forbiddenScope(SCOPE_DATA_READ);
 
     const rows = await query<WorldRow>(
       db,
@@ -465,7 +466,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         400,
       );
     }
-    const accessErr = requireAccess(auth, namespace, undefined, SCOPE_DATA_WRITE);
+    const accessErr = requireAccess(
+      auth,
+      namespace,
+      undefined,
+      SCOPE_DATA_WRITE,
+    );
     if (accessErr) return accessErr;
 
     const db = getDb(env);
@@ -565,7 +571,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_READ);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_READ,
+    );
     if (worldAccess) return worldAccess;
 
     return respond(c, worldResource(row));
@@ -586,7 +597,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_WRITE);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     const setClauses: string[] = [];
@@ -657,7 +673,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_WRITE);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     const ts = now();
@@ -685,7 +706,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_WRITE);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     if (row.expire_time && row.expire_time < now()) {
@@ -729,7 +755,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_WRITE);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     await execute(
@@ -759,7 +790,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(auth, row, worldUid, SCOPE_DATA_WRITE);
+    const worldAccess = requireWorldAccess(
+      auth,
+      row,
+      worldUid,
+      SCOPE_DATA_WRITE,
+    );
     if (worldAccess) return worldAccess;
 
     await execute(

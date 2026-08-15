@@ -82,8 +82,7 @@ const buckets = new Map<string, Bucket>();
 const BUCKET_IDLE_MS = 10 * 60 * 1000;
 
 export type RateLimitDecision =
-  | { allowed: true }
-  | { allowed: false; retryAfterSeconds: number };
+  { allowed: true } | { allowed: false; retryAfterSeconds: number };
 
 export function checkRateLimit(key: string, env: Env): RateLimitDecision {
   const rpm = rateLimitRpm(env);

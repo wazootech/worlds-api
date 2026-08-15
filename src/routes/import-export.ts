@@ -272,7 +272,12 @@ export function registerImportExportRoutes(
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid, SCOPE_DATA_READ);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_READ,
+      );
       if (accessErr) return accessErr;
 
       const fmt = query.format ?? "application/json";

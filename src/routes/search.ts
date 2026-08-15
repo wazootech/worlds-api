@@ -77,7 +77,12 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const accessErr = requireAccess(auth, ref.namespace, worldUid, SCOPE_DATA_READ);
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldUid,
+        SCOPE_DATA_READ,
+      );
       if (accessErr) return accessErr;
 
       if (!body.query) {

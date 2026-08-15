@@ -117,7 +117,7 @@ export const ApiKeyCreateRequestSchema = z
       .optional()
       .openapi({
         description:
-          "Optional scope grant. Defaults to [\"data:read\", \"data:write\"]. Use [\"data:read\"] for read-only keys.",
+          'Optional scope grant. Defaults to ["data:read", "data:write"]. Use ["data:read"] for read-only keys.',
       }),
   })
   .openapi("ApiKeyCreateRequest");
