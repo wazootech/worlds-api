@@ -21,6 +21,59 @@ export type ProvisionedWorldDatabase = {
   authToken: string;
 };
 
+/** Default org-wide Turso database cap for the current plan (100). */
+export const DEFAULT_MAX_DATABASES = 100;
+
+/**
+ * Thrown when the org is at its database-plan capacity, either from our own
+ * pre-flight count or from Turso rejecting the create at the limit.
+ */
+export class DatabaseLimitError extends Error {
+  readonly limit: number;
+  constructor(limit: number) {
+    super(
+      `The organization has reached its database limit (${limit}). Delete unused worlds or raise the database limit before creating more.`,
+    );
+    this.name = "DatabaseLimitError";
+    this.limit = limit;
+  }
+}
+
+/** Resolves the org-wide database cap, defaulting to 100 (current plan). */
+export function maxDatabases(env: Env): number {
+  const raw = env.MAX_DATABASES;
+  if (!raw) return DEFAULT_MAX_DATABASES;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_MAX_DATABASES;
+  return parsed;
+}
+
+/**
+ * Counts the databases currently provisioned in the Turso organization. The
+ * plan cap is org-wide (all groups and environments share the budget), so this
+ * counts everything the platform API lists.
+ */
+export async function countOrganizationDatabases(env: Env): Promise<number> {
+  const org = env.TURSO_ORG;
+  if (!org) throw new Error("Turso provisioning is not configured");
+
+  let count = 0;
+  let cursor: string | undefined;
+  do {
+    const query = cursor
+      ? `?limit=1000&cursor=${encodeURIComponent(cursor)}`
+      : "?limit=1000";
+    const body = await turso<{ databases?: unknown[] }>(
+      env,
+      `/v1/organizations/${encodeURIComponent(org)}/databases${query}`,
+      { method: "GET" },
+    );
+    count += body.databases?.length ?? 0;
+    cursor = (body as { next_page_token?: string }).next_page_token;
+  } while (cursor);
+  return count;
+}
+
 /**
  * Provisions a per-world Turso database and mints a database auth token.
  * The returned database name is derived from the canonical world_uid so the
@@ -38,16 +91,38 @@ export async function provisionWorldDatabase(
     throw new Error("Turso provisioning is not configured");
   }
 
+  const limit = maxDatabases(env);
+  const count = await countOrganizationDatabases(env);
+  if (count >= limit) {
+    throw new DatabaseLimitError(limit);
+  }
+
   const name = databaseName(env.WAZOO_ENV ?? "prod", worldUid);
-  const database = await turso<CreateDatabaseResponse>(
-    env,
-    `/v1/organizations/${encodeURIComponent(org)}/databases`,
-    {
-      method: "POST",
-      body: { name, group },
-      allowConflict: true,
-    },
-  );
+  let database: CreateDatabaseResponse;
+  try {
+    database = await turso<CreateDatabaseResponse>(
+      env,
+      `/v1/organizations/${encodeURIComponent(org)}/databases`,
+      {
+        method: "POST",
+        body: { name, group },
+        allowConflict: true,
+      },
+    );
+  } catch (err) {
+    // Backstop for the race between our pre-flight count and the create:
+    // Turso may still reject at the plan cap. Surface it as the same clean
+    // capacity error instead of a generic provisioning failure.
+    const message = err instanceof Error ? err.message : String(err);
+    if (
+      /maximum database count|maximum number of databases|database limit/i.test(
+        message,
+      )
+    ) {
+      throw new DatabaseLimitError(limit);
+    }
+    throw err;
+  }
   const hostname = database.database?.Hostname ?? database.database?.hostname;
   const url = hostname ? `libsql://${hostname}` : await databaseUrl(env, name);
 

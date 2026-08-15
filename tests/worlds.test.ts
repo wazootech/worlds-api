@@ -5,14 +5,25 @@ import { rmSync } from "node:fs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
 import type { Env } from "../src/env";
-import { provisionWorldDatabase, destroyWorldDatabase } from "../src/lib/turso";
+import {
+  provisionWorldDatabase,
+  destroyWorldDatabase,
+  DatabaseLimitError,
+} from "../src/lib/turso";
 import { initializeWorldDatabase } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
 
-vi.mock("../src/lib/turso", () => ({
-  provisionWorldDatabase: vi.fn(),
-  destroyWorldDatabase: vi.fn(),
-}));
+vi.mock("../src/lib/turso", async () => {
+  const actual =
+    await vi.importActual<typeof import("../src/lib/turso")>(
+      "../src/lib/turso",
+    );
+  return {
+    ...actual,
+    provisionWorldDatabase: vi.fn(),
+    destroyWorldDatabase: vi.fn(),
+  };
+});
 
 vi.mock("../src/lib/world-db", () => ({
   initializeWorldDatabase: vi.fn(),
@@ -164,6 +175,19 @@ describe("world lifecycle (world_uid contract)", () => {
     expect(body.storage).toBe("libsql-per-world");
     expect(body.namespace).toBeUndefined();
     expect(body.worldId).toBeUndefined();
+  });
+
+  it("returns 429 DATABASE_LIMIT_REACHED when the org is at its database limit", async () => {
+    provisionMock.mockRejectedValue(new DatabaseLimitError(100));
+    const res = await userRequest("/worlds", {
+      method: "POST",
+      body: JSON.stringify({ displayName: "Capacity World" }),
+    });
+    expect(res.status).toBe(429);
+    const body = await res.json();
+    expect(body.error.code).toBe("DATABASE_LIMIT_REACHED");
+    expect(body.error.message).toContain("100");
+    expect(destroyMock).not.toHaveBeenCalled();
   });
 
   it("destroys the provisioned database when schema init fails (no orphan)", async () => {
