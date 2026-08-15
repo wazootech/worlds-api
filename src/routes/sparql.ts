@@ -165,7 +165,20 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         if (result.kind === "ask") {
           return respond(c, result.data);
         }
-        return respond(c, { ok: true });
+        if (result.kind === "void") {
+          return respond(c, { ok: true });
+        }
+        return respond(
+          c,
+          {
+            error: {
+              code: "UNSUPPORTED_QUERY_KIND",
+              message:
+                "Unsupported SPARQL result. Use a SELECT, ASK, or SPARQL UPDATE query.",
+            },
+          },
+          400,
+        );
       } catch (error) {
         return respond(
           c,

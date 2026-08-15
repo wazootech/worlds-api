@@ -146,4 +146,32 @@ describe("POST /worlds/:id/sparql endpoint", () => {
     expect(body.results.bindings).toHaveLength(1);
     expect(body.results.bindings[0].s.value).toBe("urn:hello");
   });
+
+  it("executes a SPARQL UPDATE and reports ok", async () => {
+    const sparql = vi.fn().mockResolvedValue({ kind: "void" });
+    createLibsqlClientMock.mockResolvedValue({ sparql } as never);
+
+    const res = await request({
+      query: 'INSERT DATA { <urn:subject> <urn:predicate> "value" }',
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ ok: true });
+    expect(sparql).toHaveBeenCalledWith({
+      query: 'INSERT DATA { <urn:subject> <urn:predicate> "value" }',
+    });
+  });
+
+  it("returns a structured 400 for unsupported SPARQL result kinds", async () => {
+    const sparql = vi.fn().mockResolvedValue({ kind: "construct" });
+    createLibsqlClientMock.mockResolvedValue({ sparql } as never);
+
+    const res = await request({
+      query: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error.code).toBe("UNSUPPORTED_QUERY_KIND");
+    expect(body.error.message).toContain("SPARQL UPDATE");
+  });
 });
