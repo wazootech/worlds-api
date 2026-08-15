@@ -80,9 +80,19 @@ interface Bucket {
 
 const buckets = new Map<string, Bucket>();
 const BUCKET_IDLE_MS = 10 * 60 * 1000;
+const MAX_BUCKETS = 10_000;
 
 export type RateLimitDecision =
   { allowed: true } | { allowed: false; retryAfterSeconds: number };
+
+// Sweep is lazy (no timers — Cloudflare Workers forbid module-scope timers):
+// when the bucket map grows past a threshold, idle buckets are dropped.
+function sweepIdleBuckets(now: number) {
+  const cutoff = now - BUCKET_IDLE_MS;
+  for (const [key, bucket] of buckets) {
+    if (bucket.last < cutoff) buckets.delete(key);
+  }
+}
 
 export function checkRateLimit(key: string, env: Env): RateLimitDecision {
   const rpm = rateLimitRpm(env);
@@ -90,6 +100,10 @@ export function checkRateLimit(key: string, env: Env): RateLimitDecision {
 
   const burst = rateLimitBurst(env);
   const now = Date.now();
+
+  if (buckets.size >= MAX_BUCKETS) {
+    sweepIdleBuckets(now);
+  }
 
   const bucket = buckets.get(key);
   if (!bucket) {
@@ -115,16 +129,6 @@ export function checkRateLimit(key: string, env: Env): RateLimitDecision {
   );
   return { allowed: false, retryAfterSeconds };
 }
-
-// Periodically drop idle buckets so the map cannot grow without bound.
-const sweepHandle = setInterval(() => {
-  const cutoff = Date.now() - BUCKET_IDLE_MS;
-  for (const [key, bucket] of buckets) {
-    if (bucket.last < cutoff) buckets.delete(key);
-  }
-}, 60_000);
-// In Node (tests / standalone) allow the process to exit naturally.
-(sweepHandle as unknown as { unref?: () => void }).unref?.();
 
 // ---------------------------------------------------------------------------
 // CORS origins
