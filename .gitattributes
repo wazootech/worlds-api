@@ -1,0 +1,3 @@
+# Normalize all text files to LF line endings on checkout, regardless of
+# platform, so working trees never silently flip committed files to CRLF.
+* text=auto eol=lf
