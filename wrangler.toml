@@ -14,6 +14,7 @@ crons = ["0 0 * * *"]
 LIBSQL_URL = "libsql://worlds-api-prod-ethanthatonekid.aws-us-west-2.turso.io"
 TURSO_ORG = "ethanthatonekid"
 TURSO_GROUP = "wazoo"
+MAX_DATABASES = "100"
 WAZOO_ENV = "prod"
 
 [env.qa]
@@ -29,6 +30,7 @@ crons = ["0 0 * * *"]
 LIBSQL_URL = "libsql://worlds-api-qa-ethanthatonekid.aws-us-west-2.turso.io"
 TURSO_ORG = "ethanthatonekid"
 TURSO_GROUP = "wazoo"
+MAX_DATABASES = "100"
 WAZOO_ENV = "qa"
 
 [observability]
