@@ -9,6 +9,8 @@
     "start": "node dist/server.js",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
+    "sync:openapi": "node scripts/sync-openapi.mjs",
+    "openapi:check": "vitest run tests/openapi-doc.test.ts",
     "health:local": "node scripts/local-health.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

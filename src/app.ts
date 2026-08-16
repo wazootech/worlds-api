@@ -114,7 +114,12 @@ registerSparqlRoutes(app);
 registerApiKeysRoutes(app);
 registerReindexRoutes(app);
 
-app.doc("/openapi.json", {
+/**
+ * openApiDocOptions is the OpenAPI document configuration. It is the single
+ * source of truth for the served spec (GET /openapi.json) and the committed
+ * snapshot in openapi/openapi.json, so the two cannot drift apart.
+ */
+export const openApiDocOptions = {
   openapi: "3.0.0",
   info: {
     title: "Worlds API",
@@ -124,6 +129,8 @@ app.doc("/openapi.json", {
   },
   servers: [{ url: "https://worlds-api.wazoo.dev", description: "Worlds API" }],
   security: [{ bearerWorldsToken: [] }],
-});
+};
+
+app.doc("/openapi.json", openApiDocOptions);
 
 export default app;
