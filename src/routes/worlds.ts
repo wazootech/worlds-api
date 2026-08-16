@@ -13,7 +13,11 @@ import {
   SCOPE_DATA_WRITE,
 } from "../lib/auth";
 import { initializeWorldDatabase } from "../lib/world-db";
-import { provisionWorldDatabase, destroyWorldDatabase } from "../lib/turso";
+import {
+  provisionWorldDatabase,
+  destroyWorldDatabase,
+  DatabaseLimitError,
+} from "../lib/turso";
 import { runPurgeSweep } from "../lib/purge";
 import { respond } from "../lib/respond";
 import {
@@ -136,6 +140,16 @@ const createRouteDef = createRoute({
     },
     400: {
       description: "Bad request",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+    429: {
+      description: "Organization database limit reached",
       content: {
         "application/json": {
           schema: z.object({
@@ -482,6 +496,18 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     try {
       provisioned = await provisionWorldDatabase(env, worldUid);
     } catch (err: unknown) {
+      if (err instanceof DatabaseLimitError) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "DATABASE_LIMIT_REACHED",
+              message: err.message,
+            },
+          },
+          429,
+        );
+      }
       return respond(
         c,
         {

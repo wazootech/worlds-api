@@ -5,6 +5,11 @@ export type Env = {
   TURSO_ORG?: string;
   TURSO_GROUP?: string;
   TURSO_PLATFORM_API_TOKEN?: string;
+  /**
+   * Org-wide cap on Turso databases for the current plan. Creation errors with
+   * DATABASE_LIMIT_REACHED once the org is at capacity. Defaults to 100.
+   */
+  MAX_DATABASES?: string;
   WAZOO_ENV?: string;
   PORT?: string;
   // Abuse-prevention knobs (all optional, defaults applied in code).
@@ -32,6 +37,7 @@ export function fromBindings(env: Record<string, unknown>): Env {
     TURSO_PLATFORM_API_TOKEN: env.TURSO_PLATFORM_API_TOKEN
       ? String(env.TURSO_PLATFORM_API_TOKEN)
       : undefined,
+    MAX_DATABASES: env.MAX_DATABASES ? String(env.MAX_DATABASES) : undefined,
     WAZOO_ENV: env.WAZOO_ENV ? String(env.WAZOO_ENV) : undefined,
     PORT: env.PORT ? String(env.PORT) : undefined,
     SPARQL_TIMEOUT_MS: env.SPARQL_TIMEOUT_MS
@@ -65,6 +71,7 @@ export function fromProcessEnv(): Env {
     TURSO_ORG: process.env.TURSO_ORG,
     TURSO_GROUP: process.env.TURSO_GROUP,
     TURSO_PLATFORM_API_TOKEN: process.env.TURSO_PLATFORM_API_TOKEN,
+    MAX_DATABASES: process.env.MAX_DATABASES,
     WAZOO_ENV: process.env.WAZOO_ENV,
     PORT: process.env.PORT,
     SPARQL_TIMEOUT_MS: process.env.SPARQL_TIMEOUT_MS,
