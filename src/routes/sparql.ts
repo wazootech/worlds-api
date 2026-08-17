@@ -16,28 +16,12 @@ import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
 
 const queryEngine = new QueryEngine();
 
-class QueryTimeoutError extends Error {
-  constructor() {
-    super("SPARQL query timed out");
-    this.name = "QueryTimeoutError";
-  }
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new QueryTimeoutError()), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}
+/**
+ * The engine rejects timeouts with this exact message (see the SDK's
+ * `executeSparql` composed controller), so the route maps it back to the
+ * documented QUERY_TIMEOUT error code without its own timer.
+ */
+const SPARQL_TIMEOUT_MESSAGE = "SPARQL query timed out";
 
 /**
  * materializeBindings drains SPARQL bindings before the response is
@@ -203,10 +187,16 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       });
 
       try {
-        const result = await withTimeout(
-          client.sparql({ query: body.query }),
-          sparqlTimeoutMs(env),
-        );
+        // The engine composes the caller signal with the timeout into one
+        // controller (first wins) and clears its timer on completion, so the
+        // route no longer races a second timer. The signal forwards the
+        // client disconnect (c.req.raw.signal) so an in-flight query aborts
+        // at the next evaluation boundary instead of burning a Worker slot.
+        const result = await client.sparql({
+          query: body.query,
+          signal: c.req.raw.signal,
+          timeoutMs: sparqlTimeoutMs(env),
+        });
         if (result.kind === "select") {
           const data = {
             ...result.data,
@@ -238,13 +228,22 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           400,
         );
       } catch (error) {
-        if (error instanceof QueryTimeoutError) {
+        // Client disconnect: the request signal fired, so the response can
+        // never be delivered. Return an empty body rather than serializing a
+        // pointless error to a dead connection.
+        if (c.req.raw.signal.aborted) {
+          return c.body(null);
+        }
+        if (
+          error instanceof Error &&
+          error.message === SPARQL_TIMEOUT_MESSAGE
+        ) {
           return respond(
             c,
             {
               error: {
                 code: "QUERY_TIMEOUT",
-                message: "SPARQL query timed out",
+                message: SPARQL_TIMEOUT_MESSAGE,
               },
             },
             400,
