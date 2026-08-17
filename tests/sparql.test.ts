@@ -40,7 +40,7 @@ const worldRef = {
 
 const ALLOWED_ORIGIN = "https://console.wazoo.dev";
 
-function request(body: unknown) {
+function request(body: unknown, signal?: AbortSignal) {
   return app.request(
     "/worlds/test-world/sparql",
     {
@@ -51,6 +51,7 @@ function request(body: unknown) {
         origin: ALLOWED_ORIGIN,
       },
       body: JSON.stringify(body),
+      signal,
     },
     env,
     executionCtx,
@@ -161,9 +162,82 @@ describe("POST /worlds/:id/sparql endpoint", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({ ok: true });
-    expect(sparql).toHaveBeenCalledWith({
-      query: 'INSERT DATA { <urn:subject> <urn:predicate> "value" }',
-    });
+    expect(sparql).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: 'INSERT DATA { <urn:subject> <urn:predicate> "value" }',
+        timeoutMs: 5000,
+      }),
+    );
+  });
+
+  it("forwards the client-disconnect signal and timeout to the SPARQL client", async () => {
+    const controller = new AbortController();
+    const sparql = vi.fn().mockResolvedValue({ kind: "void" });
+    createLibsqlClientMock.mockResolvedValue({ sparql } as never);
+
+    const res = await request(
+      { query: "SELECT * WHERE { ?s ?p ?o }" },
+      controller.signal,
+    );
+    expect(res.status).toBe(200);
+    expect(sparql).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "SELECT * WHERE { ?s ?p ?o }",
+        timeoutMs: 5000,
+      }),
+    );
+    // The route passes the request's disconnect signal through (the Request
+    // wrapper exposes a derived signal that aborts with the caller's).
+    const calledWith = sparql.mock.calls[0][0];
+    expect(calledWith.signal).toBeDefined();
+    expect(calledWith.signal.aborted).toBe(false);
+    controller.abort();
+    expect(calledWith.signal.aborted).toBe(true);
+  });
+
+  it("does not serialize an error body when the client disconnects mid-query", async () => {
+    const controller = new AbortController();
+    const sparql = vi.fn().mockImplementation(
+      (req: { signal: AbortSignal }) =>
+        new Promise((_resolve, reject) => {
+          // The engine honors the signal: it rejects promptly when the
+          // request is aborted (the SDK's executeSparql composed controller).
+          // Handle both a pre-aborted request and a mid-flight abort.
+          if (req.signal.aborted) {
+            reject(
+              req.signal.reason instanceof Error
+                ? req.signal.reason
+                : new Error("SPARQL query aborted"),
+            );
+            return;
+          }
+          req.signal.addEventListener(
+            "abort",
+            () => {
+              reject(
+                req.signal.reason instanceof Error
+                  ? req.signal.reason
+                  : new Error("SPARQL query aborted"),
+              );
+            },
+            { once: true },
+          );
+        }),
+    );
+    createLibsqlClientMock.mockResolvedValue({ sparql } as never);
+
+    const promise = request(
+      { query: "SELECT * WHERE { ?s ?p ?o }" },
+      controller.signal,
+    );
+    controller.abort(new Error("client disconnected"));
+    const res = await promise;
+
+    // The request signal fired, so the route returns without writing a
+    // structured error body to the dead connection. The framework's minimal
+    // fallback response has no JSON error envelope.
+    const body = await res.json().catch(() => null);
+    expect(body).toBeNull();
   });
 
   it("returns a structured 400 for unsupported SPARQL result kinds", async () => {
