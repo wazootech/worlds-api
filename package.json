@@ -23,13 +23,14 @@
     "@langchain/core": "^1.2.3",
     "@libsql/client": "^0.17.4",
     "@rdfjs/types": "^2.0.1",
-    "@worlds/libsql": "npm:@jsr/worlds__libsql@^0.0.3",
+    "@worlds/libsql": "npm:@jsr/worlds__libsql@^0.3.0",
     "hono": "^4.10.3",
     "n3": "^2.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "latest",
+    "@types/n3": "^1.26.1",
     "@types/node": "^26.1.1",
     "prettier": "^3.9.5",
     "typescript": "^5.9.2",

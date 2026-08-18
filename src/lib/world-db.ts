@@ -1,5 +1,9 @@
 import { createClient, type Client } from "@libsql/client";
-import { initializeLibsqlSchema, LibsqlSchemaBuilder } from "@worlds/libsql";
+import {
+  initializeLibsqlSchema,
+  LibsqlConnectionDriver,
+  LibsqlSchemaBuilder,
+} from "@worlds/libsql";
 import type { Env } from "../env";
 import { getDb, queryOne } from "./db";
 
@@ -68,5 +72,8 @@ export function worldDb(ref: WorldDatabaseRef): Client {
 
 export async function initializeWorldDatabase(ref: WorldDatabaseRef) {
   const db = worldDb(ref);
-  await initializeLibsqlSchema(db, new LibsqlSchemaBuilder(32));
+  await initializeLibsqlSchema(
+    new LibsqlConnectionDriver(db),
+    new LibsqlSchemaBuilder(32),
+  );
 }

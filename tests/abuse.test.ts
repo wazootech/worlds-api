@@ -5,12 +5,12 @@ import { rmSync } from "node:fs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
 import type { Env } from "../src/env";
-import { createLibsqlClient } from "@worlds/libsql";
+import { createLibsqlSdk } from "@worlds/libsql";
 import { resolveWorldDatabase, worldDb } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
 
 vi.mock("@worlds/libsql", () => ({
-  createLibsqlClient: vi.fn(),
+  createLibsqlSdk: vi.fn(),
 }));
 
 vi.mock("../src/lib/world-db", () => ({
@@ -18,7 +18,7 @@ vi.mock("../src/lib/world-db", () => ({
   worldDb: vi.fn(),
 }));
 
-const createLibsqlClientMock = vi.mocked(createLibsqlClient);
+const createLibsqlSdkMock = vi.mocked(createLibsqlSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 const worldDbMock = vi.mocked(worldDb);
 
@@ -114,7 +114,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
   worldDbMock.mockReturnValue({} as never);
-  createLibsqlClientMock.mockReturnValue({
+  createLibsqlSdkMock.mockReturnValue({
     sparql: vi.fn().mockResolvedValue({ kind: "ask", data: { boolean: true } }),
     import: vi.fn().mockResolvedValue({}),
   } as never);
@@ -185,7 +185,7 @@ describe("import caps", () => {
     expect(res.status).toBe(413);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("PAYLOAD_TOO_LARGE");
-    const client = createLibsqlClientMock.mock.results[0]?.value as {
+    const client = createLibsqlSdkMock.mock.results[0]?.value as {
       import: ReturnType<typeof vi.fn>;
     };
     expect(client?.import).not.toHaveBeenCalled();
@@ -215,7 +215,7 @@ describe("SPARQL guards", () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("QUERY_TOO_LARGE");
-    expect(createLibsqlClientMock).not.toHaveBeenCalled();
+    expect(createLibsqlSdkMock).not.toHaveBeenCalled();
   });
 });
 
@@ -231,7 +231,7 @@ describe("scope enforcement", () => {
     };
     expect(body.error?.code).toBe("FORBIDDEN");
     expect(body.error?.message).toContain("data:write");
-    expect(createLibsqlClientMock).not.toHaveBeenCalled();
+    expect(createLibsqlSdkMock).not.toHaveBeenCalled();
   });
 
   it("allows a data:read key on a read route (sparql)", async () => {
