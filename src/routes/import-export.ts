@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlClient } from "@worlds/libsql";
+import { createLibsqlSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
@@ -126,7 +126,7 @@ export function registerImportExportRoutes(
       }
 
       const db = worldDb(ref);
-      const client = await createLibsqlClient({ client: db });
+      const client = await createLibsqlSdk({ client: db });
 
       const quadsCap = maxImportQuads(env);
 
@@ -285,7 +285,7 @@ export function registerImportExportRoutes(
       const offset = parseInt(query.offset ?? "0", 10);
 
       const db = worldDb(ref);
-      const client = await createLibsqlClient({ client: db });
+      const client = await createLibsqlSdk({ client: db });
 
       if (fmt === "application/json") {
         const exported = await client.export({

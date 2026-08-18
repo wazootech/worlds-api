@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlClient } from "@worlds/libsql";
+import { createLibsqlSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ } from "../lib/auth";
@@ -179,7 +179,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       }
 
       const db = worldDb(ref);
-      const client = await createLibsqlClient({ client: db });
+      const client = await createLibsqlSdk({ client: db });
 
       try {
         // The engine composes the caller signal with the timeout into one
