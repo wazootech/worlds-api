@@ -20,7 +20,7 @@ surface and its own client package:
 | Plane | Service | Auth | Owns | Client |
 | ----- | ------- | ---- | ---- | ------ |
 | Platform (management) | `wazoo-api` (`api.wazoo.dev`) | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the *policy facade* over worlds | `@wazoo/client` (generated from the platform OpenAPI) |
-| Data plane | `worlds-api` (`worlds-api.wazoo.dev`) | world keys (`wzw_`) | world *data*: per-world LibSQL databases, `worlds_metadata`, `api_keys`, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | a data-plane HTTP client (not yet generated) and the embeddable `@worlds/client` SDK |
+| Data plane | `worlds-api` (`worlds-api.wazoo.dev`) | world keys (`wzw_`) | world *data*: per-world LibSQL databases, `worlds_metadata`, `api_keys`, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | the generated `@worlds/client` data-plane HTTP client and the embeddable `@worlds/sdk` |
 
 ### The cut (intentional)
 
@@ -70,7 +70,7 @@ that were never explicitly resolved. This section resolves them:
 - The data plane needs its own typed HTTP client generated from this repo's
   OpenAPI document (`GET /openapi.json`), replacing hand-rolled `fetch` in
   consumers such as `wazoo-cli`.
-- `@worlds/client` is the embeddable SDK (in-process graph operations over
+- `@worlds/sdk` is the embeddable SDK (in-process graph operations over
   any backend). Its `import`/`export`/`search`/`sparql`/`reindex` methods
   must stay shape-identical with the data-plane HTTP endpoints so the SDK and
   the HTTP client expose one contract.

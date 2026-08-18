@@ -1,6 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { QueryEngine } from "@comunica/query-sparql-rdfjs-lite";
 import { createLibsqlClient } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
@@ -14,21 +13,20 @@ import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
 
-const queryEngine = new QueryEngine();
-
 /**
- * The engine rejects timeouts with this exact message (see the SDK's
- * `executeSparql` composed controller), so the route maps it back to the
- * documented QUERY_TIMEOUT error code without its own timer.
+ * The engine rejects timeouts with this exact message (WazooSparqlEngine's
+ * composed timeout/abort controller), so the
+ * route maps it back to the documented QUERY_TIMEOUT error code without its
+ * own timer.
  */
 const SPARQL_TIMEOUT_MESSAGE = "SPARQL query timed out";
 
 /**
  * materializeBindings drains SPARQL bindings before the response is
- * serialized. Comunica may hand back a live event stream; stream-evaluation
- * errors (e.g. an unhandled term comparator while sorting on an unbound
- * OPTIONAL variable) otherwise fire asynchronously during JSON serialization
- * and escape the route's try/catch, crashing the Worker with Error 1101.
+ * serialized. Engines may hand back a live stream; stream-evaluation errors
+ * (e.g. an unhandled term comparator while sorting on an unbound OPTIONAL
+ * variable) otherwise fire asynchronously during JSON serialization and
+ * escape the route's try/catch, crashing the Worker with Error 1101.
  * Draining here turns those errors into a rejection the route can map to a
  * structured response.
  */
@@ -181,10 +179,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       }
 
       const db = worldDb(ref);
-      const client = await createLibsqlClient({
-        client: db,
-        queryEngine,
-      });
+      const client = await createLibsqlClient({ client: db });
 
       try {
         // The engine composes the caller signal with the timeout into one
