@@ -100,6 +100,8 @@ const listRoute = createRoute({
   tags: ["Worlds"],
   operationId: "listWorlds",
   summary: "List worlds",
+  description:
+    "List all worlds accessible to the authenticated token. Admin tokens see all worlds; namespace-scoped tokens see only their namespace's worlds.",
   "x-mint": { metadata: { title: "List worlds" } },
   security: [{ bearerWorldsToken: [] }],
   request: { query: worldsListQuery },
@@ -121,6 +123,8 @@ const createRouteDef = createRoute({
   tags: ["Worlds"],
   operationId: "createWorld",
   summary: "Create world",
+  description:
+    "Create a new world. Provisions a dedicated per-world LibSQL database and initializes the search and vector indexes.",
   "x-mint": { metadata: { title: "Create world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -177,6 +181,8 @@ const getRoute = createRoute({
   tags: ["Worlds"],
   operationId: "getWorld",
   summary: "Get world",
+  description:
+    "Retrieve a single world by its unique identifier. Returns the full WorldResource including state, storage backend, and search configuration.",
   "x-mint": { metadata: { title: "Get world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },
@@ -206,6 +212,8 @@ const updateRoute = createRoute({
   tags: ["Worlds"],
   operationId: "updateWorld",
   summary: "Update world",
+  description:
+    "Update a world's display name, embedding model, or search configuration. Changing the embedding model triggers a reindex.",
   "x-mint": { metadata: { title: "Update world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -253,6 +261,8 @@ const deleteRoute = createRoute({
   tags: ["Worlds"],
   operationId: "deleteWorld",
   summary: "Delete world",
+  description:
+    "Soft-delete a world. The world enters a 30-day grace period during which it can be restored via undelete. After the grace period, the world is permanently purged.",
   "x-mint": { metadata: { title: "Delete world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },
@@ -277,6 +287,8 @@ const undeleteRoute = createRoute({
   tags: ["Worlds"],
   operationId: "undeleteWorld",
   summary: "Undelete world",
+  description:
+    "Restore a soft-deleted world within its 30-day grace period. Returns the restored WorldResource. Fails if the grace period has expired.",
   "x-mint": { metadata: { title: "Undelete world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },
@@ -316,6 +328,8 @@ const suspendRoute = createRoute({
   tags: ["Worlds"],
   operationId: "suspendWorld",
   summary: "Suspend world",
+  description:
+    "Suspend a world, temporarily blocking all read and write operations. The world can be resumed later without data loss.",
   "x-mint": { metadata: { title: "Suspend world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },
@@ -345,6 +359,8 @@ const resumeRoute = createRoute({
   tags: ["Worlds"],
   operationId: "resumeWorld",
   summary: "Resume world",
+  description:
+    "Resume a suspended world, restoring full read and write access.",
   "x-mint": { metadata: { title: "Resume world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },
@@ -374,6 +390,8 @@ const namespaceDeleteRoute = createRoute({
   tags: ["Admin"],
   operationId: "deleteNamespaceWorlds",
   summary: "Mark all worlds for a namespace deleted (account deletion)",
+  description:
+    "Admin-only. Soft-deletes all worlds in a namespace and revokes all API keys for that namespace. Used for account deletion workflows.",
   "x-mint": { metadata: { title: "Delete namespace worlds" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -414,6 +432,8 @@ const purgeRoute = createRoute({
   tags: ["Admin"],
   operationId: "purgeWorlds",
   summary: "Run purge sweep on demand",
+  description:
+    "Admin-only. Triggers the purge sweep to permanently delete all worlds whose 30-day grace period has expired. Normally runs on a schedule; this endpoint forces an immediate sweep.",
   "x-mint": { metadata: { title: "Run purge sweep on demand" } },
   security: [{ bearerWorldsToken: [] }],
   responses: {

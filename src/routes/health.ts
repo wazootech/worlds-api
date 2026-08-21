@@ -11,6 +11,8 @@ const route = createRoute({
   tags: ["Health"],
   operationId: "getHealth",
   summary: "Get health",
+  description:
+    "Liveness probe. Returns 200 when the service can reach its database; 503 when the database is unreachable.",
   "x-mint": { metadata: { title: "Get health" } },
   responses: {
     200: {

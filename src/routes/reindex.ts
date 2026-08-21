@@ -15,6 +15,8 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["Reindex"],
       operationId: "reindexWorld",
       summary: "Reindex world vector & FTS indexes",
+      description:
+        "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality.",
       "x-mint": { metadata: { title: "Reindex world vector & FTS indexes" } },
       security: [{ bearerWorldsToken: [] }],
       request: {

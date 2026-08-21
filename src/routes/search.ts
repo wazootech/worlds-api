@@ -20,6 +20,8 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["Search"],
       operationId: "searchWorld",
       summary: "Search world",
+      description:
+        "Full-text and vector similarity search across a world's graph data. Returns ranked results with subject, predicate, content, and relevance score. Falls back to LIKE-based search if the vector index is unavailable.",
       "x-mint": { metadata: { title: "Search world" } },
       security: [{ bearerWorldsToken: [] }],
       request: {

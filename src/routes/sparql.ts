@@ -56,6 +56,8 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["SPARQL"],
       operationId: "sparqlNoWorld",
       summary: "SPARQL without world",
+      description:
+        "Always returns 400. Use POST /worlds/{id}/sparql to execute a SPARQL query against a specific world.",
       "x-mint": { metadata: { title: "SPARQL without world" } },
       security: [{ bearerWorldsToken: [] }],
       responses: {
@@ -92,6 +94,8 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["SPARQL"],
       operationId: "sparqlWorld",
       summary: "Execute SPARQL query",
+      description:
+        "Execute a SPARQL 1.1 query (SELECT, ASK, or UPDATE) against a world's RDF graph. SELECT results are limited by the server-configured maximum. Queries time out after the configured limit.",
       "x-mint": { metadata: { title: "Execute SPARQL query" } },
       security: [{ bearerWorldsToken: [] }],
       request: {

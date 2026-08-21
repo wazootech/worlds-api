@@ -31,6 +31,8 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "createApiKey",
       summary: "Create API key",
+      description:
+        "Create a new API key scoped to a namespace and optionally a single world. The token is returned once on creation and cannot be retrieved again.",
       "x-mint": { metadata: { title: "Create API key" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
@@ -144,6 +146,8 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "listApiKeys",
       summary: "List API keys",
+      description:
+        "List all active (non-revoked) API keys. Optionally filter by namespace. Admin-only.",
       "x-mint": { metadata: { title: "List API keys" } },
       security: [{ bearerWorldsToken: [] }],
       request: { query: apiKeysListQuery },
@@ -221,6 +225,8 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       tags: ["APIKeys"],
       operationId: "deleteApiKey",
       summary: "Revoke API key",
+      description:
+        "Permanently revoke an API key. The key immediately loses all access. This action cannot be undone.",
       "x-mint": { metadata: { title: "Revoke API key" } },
       request: { params: keyIdParam },
       responses: {
