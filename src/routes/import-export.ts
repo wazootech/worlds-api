@@ -36,6 +36,8 @@ export function registerImportExportRoutes(
       tags: ["ImportExport"],
       operationId: "importWorld",
       summary: "Import graph data",
+      description:
+        "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's LibSQL database and indexed for vector search.",
       "x-mint": { metadata: { title: "Import graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
@@ -219,6 +221,8 @@ export function registerImportExportRoutes(
       tags: ["ImportExport"],
       operationId: "exportWorld",
       summary: "Export graph data",
+      description:
+        "Export RDF quads from a world. Supports JSON (RDF/JSON array), Turtle, TriG, and JSON-LD output formats. Use the limit and offset query parameters for pagination.",
       "x-mint": { metadata: { title: "Export graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
