@@ -20,20 +20,19 @@ function intFromEnv(
   fallback: number,
   allowZero = false,
 ) {
-  const raw =
-    key === "sparqlTimeoutMs"
-      ? env.SPARQL_TIMEOUT_MS
-      : key === "sparqlMaxQueryLength"
-        ? env.SPARQL_MAX_QUERY_LENGTH
-        : key === "sparqlMaxResults"
-          ? env.SPARQL_MAX_RESULTS
-          : key === "maxImportBytes"
-            ? env.MAX_IMPORT_BYTES
-            : key === "maxImportQuads"
-              ? env.MAX_IMPORT_QUADS
-              : key === "rateLimitRpm"
-                ? env.RATE_LIMIT_RPM
-                : env.RATE_LIMIT_BURST;
+  const raw = key === "sparqlTimeoutMs"
+    ? env.SPARQL_TIMEOUT_MS
+    : key === "sparqlMaxQueryLength"
+    ? env.SPARQL_MAX_QUERY_LENGTH
+    : key === "sparqlMaxResults"
+    ? env.SPARQL_MAX_RESULTS
+    : key === "maxImportBytes"
+    ? env.MAX_IMPORT_BYTES
+    : key === "maxImportQuads"
+    ? env.MAX_IMPORT_QUADS
+    : key === "rateLimitRpm"
+    ? env.RATE_LIMIT_RPM
+    : env.RATE_LIMIT_BURST;
   if (!raw) return fallback;
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed < 0) return fallback;
@@ -82,8 +81,10 @@ const buckets = new Map<string, Bucket>();
 const BUCKET_IDLE_MS = 10 * 60 * 1000;
 const MAX_BUCKETS = 10_000;
 
-export type RateLimitDecision =
-  { allowed: true } | { allowed: false; retryAfterSeconds: number };
+export type RateLimitDecision = { allowed: true } | {
+  allowed: false;
+  retryAfterSeconds: number;
+};
 
 // Sweep is lazy (no timers — Cloudflare Workers forbid module-scope timers):
 // when the bucket map grows past a threshold, idle buckets are dropped.

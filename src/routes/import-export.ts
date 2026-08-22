@@ -8,11 +8,11 @@ import { maxImportBytes, maxImportQuads } from "../lib/abuse";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
+  ExportQuadsResponseSchema,
+  exportQuery,
   ImportRequestSchema,
   ImportResponseSchema,
-  ExportQuadsResponseSchema,
   worldIdParam,
-  exportQuery,
 } from "../lib/schemas";
 import {
   serializeQuadsToJsonLd,
@@ -140,7 +140,8 @@ export function registerImportExportRoutes(
             {
               error: {
                 code: "PAYLOAD_TOO_LARGE",
-                message: `Import exceeds the ${quadsCap} quad limit per request`,
+                message:
+                  `Import exceeds the ${quadsCap} quad limit per request`,
               },
             },
             413,
@@ -172,7 +173,8 @@ export function registerImportExportRoutes(
             {
               error: {
                 code: "PAYLOAD_TOO_LARGE",
-                message: `Import exceeds the ${quadsCap} chunk limit per request`,
+                message:
+                  `Import exceeds the ${quadsCap} chunk limit per request`,
               },
             },
             413,
@@ -206,7 +208,8 @@ export function registerImportExportRoutes(
         {
           error: {
             code: "UNSUPPORTED_CONTENT_TYPE",
-            message: `Content type '${contentType}' is not supported. Use 'application/json' for quads or 'text/plain' for chunks.`,
+            message:
+              `Content type '${contentType}' is not supported. Use 'application/json' for quads or 'text/plain' for chunks.`,
           },
         },
         400,
@@ -302,11 +305,13 @@ export function registerImportExportRoutes(
             subject: q.subject.value,
             predicate: q.predicate.value,
             object: q.object.value,
-            graph:
-              q.graph.termType === "DefaultGraph" ? undefined : q.graph.value,
+            graph: q.graph.termType === "DefaultGraph"
+              ? undefined
+              : q.graph.value,
           })),
-          nextOffset:
-            quads.length > offset + limit ? offset + limit : undefined,
+          nextOffset: quads.length > offset + limit
+            ? offset + limit
+            : undefined,
         });
       }
 
@@ -347,10 +352,9 @@ export function registerImportExportRoutes(
           format: { kind: "quads" },
         });
         const quads = exported.kind === "quads" ? exported.quads : [];
-        const data =
-          fmt === "application/trig"
-            ? await serializeQuadsToTrig(quads)
-            : serializeQuadsToJsonLd(quads);
+        const data = fmt === "application/trig"
+          ? await serializeQuadsToTrig(quads)
+          : serializeQuadsToJsonLd(quads);
 
         return c.text(data, 200, {
           "Content-Type": fmt,
@@ -362,7 +366,8 @@ export function registerImportExportRoutes(
         {
           error: {
             code: "UNSUPPORTED_FORMAT",
-            message: `Export format '${fmt}' is not supported. Use 'application/json', 'text/plain', 'application/n-quads', 'application/n-triples', 'text/turtle', 'application/trig', or 'application/ld+json'.`,
+            message:
+              `Export format '${fmt}' is not supported. Use 'application/json', 'text/plain', 'application/n-quads', 'application/n-triples', 'text/turtle', 'application/trig', or 'application/ld+json'.`,
           },
         },
         400,
@@ -386,7 +391,9 @@ function namedNode(value: string) {
 }
 
 function literal(value: string) {
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`;
+  return `"${
+    value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")
+  }"`;
 }
 
 function isNamedNodeValue(value: string) {

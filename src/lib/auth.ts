@@ -66,7 +66,8 @@ export async function authorize(
 
   try {
     const rs = await db.execute({
-      sql: "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
+      sql:
+        "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
       args: [hash],
     });
 

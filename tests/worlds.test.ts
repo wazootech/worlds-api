@@ -6,18 +6,17 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
 import type { Env } from "../src/env";
 import {
-  provisionWorldDatabase,
-  destroyWorldDatabase,
   DatabaseLimitError,
+  destroyWorldDatabase,
+  provisionWorldDatabase,
 } from "../src/lib/turso";
 import { initializeWorldDatabase } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
 
 vi.mock("../src/lib/turso", async () => {
-  const actual =
-    await vi.importActual<typeof import("../src/lib/turso")>(
-      "../src/lib/turso",
-    );
+  const actual = await vi.importActual<typeof import("../src/lib/turso")>(
+    "../src/lib/turso",
+  );
   return {
     ...actual,
     provisionWorldDatabase: vi.fn(),
@@ -95,7 +94,8 @@ beforeAll(async () => {
   );
   const hash = await sha256Hex(USER_TOKEN);
   await client.execute({
-    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    sql:
+      "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
     args: [
       "key-user-1",
       hash,
@@ -108,7 +108,8 @@ beforeAll(async () => {
   });
   const worldHash = await sha256Hex(WORLD_TOKEN);
   await client.execute({
-    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    sql:
+      "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
     args: [
       "key-world-1",
       worldHash,
@@ -214,11 +215,13 @@ describe("world lifecycle (world_uid contract)", () => {
     await client.batch(
       [
         {
-          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          sql:
+            "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
           args: [WORLD_UID, "user-1", "Owned World", ts, ts],
         },
         {
-          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          sql:
+            "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
           args: ["w_sibling", "user-1", "Sibling World", ts, ts],
         },
       ],
@@ -244,15 +247,18 @@ describe("world lifecycle (world_uid contract)", () => {
     await client.batch(
       [
         {
-          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          sql:
+            "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
           args: ["w_del_1", "user-delete", "Del World 1", ts, ts],
         },
         {
-          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
+          sql:
+            "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'active', ?, ?)",
           args: ["w_del_2", "user-delete", "Del World 2", ts, ts],
         },
         {
-          sql: "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'deleted', ?, ?)",
+          sql:
+            "INSERT INTO worlds_metadata (uid, namespace, display_name, state, create_time, update_time) VALUES (?, ?, ?, 'deleted', ?, ?)",
           args: ["w_del_purged", "user-delete", "Purged World", ts, ts],
         },
       ],
@@ -260,7 +266,8 @@ describe("world lifecycle (world_uid contract)", () => {
     );
     const delKeyHash = await sha256Hex("wzw_delete_user_token");
     await client.execute({
-      sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      sql:
+        "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
       args: [
         "key-del-1",
         delKeyHash,
@@ -285,7 +292,8 @@ describe("world lifecycle (world_uid contract)", () => {
     const byUid = new Map(
       (
         await verify.execute({
-          sql: "SELECT uid, state, purge_status, expire_time FROM worlds_metadata WHERE namespace = 'user-delete' ORDER BY uid",
+          sql:
+            "SELECT uid, state, purge_status, expire_time FROM worlds_metadata WHERE namespace = 'user-delete' ORDER BY uid",
         })
       ).rows.map((row) => [String(row[0]), row]),
     );

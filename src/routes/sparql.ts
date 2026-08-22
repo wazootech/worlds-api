@@ -35,8 +35,9 @@ async function materializeBindings(
   maxRows: number,
 ): Promise<unknown> {
   if (Array.isArray(bindings)) return bindings.slice(0, maxRows);
-  const iterable = bindings as
-    { [Symbol.asyncIterator](): AsyncIterator<unknown> } | undefined;
+  const iterable = bindings as {
+    [Symbol.asyncIterator](): AsyncIterator<unknown>;
+  } | undefined;
   if (iterable && typeof iterable[Symbol.asyncIterator] === "function") {
     const rows: unknown[] = [];
     for await (const row of iterable as AsyncIterable<unknown>) {
@@ -175,7 +176,8 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           {
             error: {
               code: "QUERY_TOO_LARGE",
-              message: `SPARQL query exceeds the ${maxQueryLength} character limit`,
+              message:
+                `SPARQL query exceeds the ${maxQueryLength} character limit`,
             },
           },
           400,
@@ -253,8 +255,9 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           {
             error: {
               code: "INVALID_ARGUMENT",
-              message:
-                error instanceof Error ? error.message : "Invalid SPARQL query",
+              message: error instanceof Error
+                ? error.message
+                : "Invalid SPARQL query",
             },
           },
           400,

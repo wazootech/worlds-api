@@ -24,7 +24,8 @@ const authToken = process.env.LIBSQL_AUTH_TOKEN;
 const client = createClient({ url, authToken });
 
 const rows = await client.execute({
-  sql: "SELECT uid FROM worlds_metadata WHERE state = 'deleted' AND purge_status != 'purged' AND expire_time IS NOT NULL AND expire_time <= ?",
+  sql:
+    "SELECT uid FROM worlds_metadata WHERE state = 'deleted' AND purge_status != 'purged' AND expire_time IS NOT NULL AND expire_time <= ?",
   args: [new Date().toISOString()],
 });
 
@@ -36,7 +37,8 @@ for (const row of rows.rows) {
   try {
     await destroy(name);
     await client.execute({
-      sql: "UPDATE worlds_metadata SET purge_status = 'purged', purged_at = ? WHERE uid = ?",
+      sql:
+        "UPDATE worlds_metadata SET purge_status = 'purged', purged_at = ? WHERE uid = ?",
       args: [new Date().toISOString(), uid],
     });
     purged++;
@@ -51,10 +53,14 @@ console.log(`\n${purged} purged, ${failed} failed`);
 async function destroy(name) {
   const org = required("TURSO_ORG");
   const response = await fetch(
-    `https://api.turso.tech/v1/organizations/${encodeURIComponent(org)}/databases/${encodeURIComponent(name)}`,
+    `https://api.turso.tech/v1/organizations/${
+      encodeURIComponent(org)
+    }/databases/${encodeURIComponent(name)}`,
     {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${required("TURSO_PLATFORM_API_TOKEN")}` },
+      headers: {
+        Authorization: `Bearer ${required("TURSO_PLATFORM_API_TOKEN")}`,
+      },
     },
   );
   if (!response.ok && response.status !== 404) {

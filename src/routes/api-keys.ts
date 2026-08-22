@@ -1,16 +1,16 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
-import { getDb, execute, query, uid, now } from "../lib/db";
-import { sha256Hex, createToken } from "../lib/crypto";
+import { execute, getDb, now, query, uid } from "../lib/db";
+import { createToken, sha256Hex } from "../lib/crypto";
 import { authorize } from "../lib/auth";
 import { respond } from "../lib/respond";
 import {
   ApiKeyCreateRequestSchema,
   ApiKeyCreateResponseSchema,
   ApiKeyResourceSchema,
-  keyIdParam,
   apiKeysListQuery,
+  keyIdParam,
 } from "../lib/schemas";
 
 interface ApiKeyRow {

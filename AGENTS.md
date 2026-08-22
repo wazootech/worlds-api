@@ -12,4 +12,5 @@ This repository contains the Worlds API service.
   practical.
 - Run health checks for API changes that affect runtime behavior. Health checks
   require `WORLDS_ADMIN_KEY`.
-- Document environment variables and remote-service assumptions before finishing.
+- Document environment variables and remote-service assumptions before
+  finishing.

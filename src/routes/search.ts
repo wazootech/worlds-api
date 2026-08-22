@@ -107,11 +107,13 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       try {
         const searchTopK = body.topK ?? ref.topK;
         const searchMinScore = body.minScore ?? ref.minScore;
-        const response = await client.search({
-          query: body.query,
-          ...(searchTopK !== undefined && { topK: searchTopK }),
-          ...(searchMinScore !== undefined && { minScore: searchMinScore }),
-        } as Parameters<typeof client.search>[0]);
+        const response = await client.search(
+          {
+            query: body.query,
+            ...(searchTopK !== undefined && { topK: searchTopK }),
+            ...(searchMinScore !== undefined && { minScore: searchMinScore }),
+          } as Parameters<typeof client.search>[0],
+        );
 
         return respond(c, {
           results: (response.results ?? []).slice(0, limit).map((r) => ({
@@ -126,7 +128,8 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         const likePattern = `%${body.query}%`;
 
         const quadRows = await db.execute({
-          sql: "SELECT s, p, o FROM quads WHERE s LIKE ? OR p LIKE ? OR o LIKE ? LIMIT ?",
+          sql:
+            "SELECT s, p, o FROM quads WHERE s LIKE ? OR p LIKE ? OR o LIKE ? LIMIT ?",
           args: [likePattern, likePattern, likePattern, limit],
         });
 

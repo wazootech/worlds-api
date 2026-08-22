@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  ApiKeyCreateRequestSchema,
   CreateWorldRequestSchema,
-  UpdateWorldRequestSchema,
+  ImportRequestSchema,
   SearchRequestSchema,
   SparqlRequestSchema,
-  ImportRequestSchema,
-  ApiKeyCreateRequestSchema,
+  UpdateWorldRequestSchema,
   WorldResourceSchema,
 } from "../src/lib/schemas";
 
