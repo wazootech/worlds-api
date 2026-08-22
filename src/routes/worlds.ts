@@ -536,9 +536,8 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         {
           error: {
             code: "PROVISIONING_FAILED",
-            message: err instanceof Error
-              ? err.message
-              : "Turso provisioning failed",
+            message:
+              err instanceof Error ? err.message : "Turso provisioning failed",
           },
         },
         502,
@@ -565,9 +564,8 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         {
           error: {
             code: "PROVISIONING_FAILED",
-            message: err instanceof Error
-              ? err.message
-              : "World schema init failed",
+            message:
+              err instanceof Error ? err.message : "World schema init failed",
           },
         },
         502,

@@ -128,9 +128,9 @@ export async function provisionWorldDatabase(
 
   const auth = await turso<CreateTokenResponse>(
     env,
-    `/v1/organizations/${encodeURIComponent(org)}/databases/${
-      encodeURIComponent(name)
-    }/auth/tokens?authorization=full-access&expiration=never`,
+    `/v1/organizations/${encodeURIComponent(org)}/databases/${encodeURIComponent(
+      name,
+    )}/auth/tokens?authorization=full-access&expiration=never`,
     { method: "POST" },
   );
   if (!auth.jwt) {
@@ -151,9 +151,9 @@ export async function destroyWorldDatabase(env: Env, name: string) {
   }
   await turso<unknown>(
     env,
-    `/v1/organizations/${encodeURIComponent(org)}/databases/${
-      encodeURIComponent(name)
-    }`,
+    `/v1/organizations/${encodeURIComponent(org)}/databases/${encodeURIComponent(
+      name,
+    )}`,
     { method: "DELETE" },
   );
 }
@@ -162,9 +162,9 @@ async function databaseUrl(env: Env, name: string): Promise<string> {
   const org = env.TURSO_ORG!;
   const response = await turso<CreateDatabaseResponse>(
     env,
-    `/v1/organizations/${encodeURIComponent(org)}/databases/${
-      encodeURIComponent(name)
-    }`,
+    `/v1/organizations/${encodeURIComponent(org)}/databases/${encodeURIComponent(
+      name,
+    )}`,
     { method: "GET" },
   );
   const hostname = response.database?.Hostname ?? response.database?.hostname;

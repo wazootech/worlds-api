@@ -83,8 +83,7 @@ beforeAll(async () => {
   );
   const readOnlyHash = await sha256Hex(READ_ONLY_TOKEN);
   await client.execute({
-    sql:
-      "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
     args: [
       "key-read-only",
       readOnlyHash,
@@ -97,8 +96,7 @@ beforeAll(async () => {
   });
   const fullHash = await sha256Hex(FULL_TOKEN);
   await client.execute({
-    sql:
-      "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
     args: [
       "key-full",
       fullHash,

@@ -48,8 +48,7 @@ app.use("*", async (c, next) => {
       {
         error: {
           code: "RATE_LIMITED",
-          message:
-            `Too many requests. Retry after ${decision.retryAfterSeconds} second(s).`,
+          message: `Too many requests. Retry after ${decision.retryAfterSeconds} second(s).`,
         },
       },
       429,
