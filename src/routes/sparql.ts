@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlSdk } from "@worlds/libsql";
+import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ } from "../lib/auth";
@@ -36,7 +36,10 @@ async function materializeBindings(
 ): Promise<unknown> {
   if (Array.isArray(bindings)) return bindings.slice(0, maxRows);
   const iterable = bindings as
-    { [Symbol.asyncIterator](): AsyncIterator<unknown> } | undefined;
+    | {
+        [Symbol.asyncIterator](): AsyncIterator<unknown>;
+      }
+    | undefined;
   if (iterable && typeof iterable[Symbol.asyncIterator] === "function") {
     const rows: unknown[] = [];
     for await (const row of iterable as AsyncIterable<unknown>) {
@@ -183,7 +186,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       }
 
       const db = worldDb(ref);
-      const client = await createLibsqlSdk({ client: db });
+      const client = await createLibsqlWorldsSdk({ client: db });
 
       try {
         // The engine composes the caller signal with the timeout into one

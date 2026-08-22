@@ -34,7 +34,9 @@ export async function runPurgeSweep(
     } catch (err) {
       failed++;
       console.error(
-        `purge failed for ${row.uid}: ${err instanceof Error ? err.message : String(err)}`,
+        `purge failed for ${row.uid}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
       );
     }
   }

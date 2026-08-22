@@ -83,7 +83,11 @@ const BUCKET_IDLE_MS = 10 * 60 * 1000;
 const MAX_BUCKETS = 10_000;
 
 export type RateLimitDecision =
-  { allowed: true } | { allowed: false; retryAfterSeconds: number };
+  | { allowed: true }
+  | {
+      allowed: false;
+      retryAfterSeconds: number;
+    };
 
 // Sweep is lazy (no timers — Cloudflare Workers forbid module-scope timers):
 // when the bucket map grows past a threshold, idle buckets are dropped.

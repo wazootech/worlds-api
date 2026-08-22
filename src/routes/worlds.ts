@@ -1,30 +1,30 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
-import { getDb, query, queryOne, execute, uid, now } from "../lib/db";
+import { execute, getDb, now, query, queryOne, uid } from "../lib/db";
 import {
   authorize,
-  requireAccess,
-  unauthorized,
   forbidden,
   forbiddenScope,
   hasScope,
+  requireAccess,
   SCOPE_DATA_READ,
   SCOPE_DATA_WRITE,
+  unauthorized,
 } from "../lib/auth";
 import { initializeWorldDatabase } from "../lib/world-db";
 import {
-  provisionWorldDatabase,
-  destroyWorldDatabase,
   DatabaseLimitError,
+  destroyWorldDatabase,
+  provisionWorldDatabase,
 } from "../lib/turso";
 import { runPurgeSweep } from "../lib/purge";
 import { respond } from "../lib/respond";
 import {
-  WorldResourceSchema,
   CreateWorldRequestSchema,
   UpdateWorldRequestSchema,
   worldIdParam,
+  WorldResourceSchema,
   worldsListQuery,
 } from "../lib/schemas";
 
@@ -86,11 +86,13 @@ function requireWorldAccess(
   requiredScope?: string,
 ): Response | null {
   if (auth.admin) return null;
-  if (!auth.namespace || auth.namespace !== row.namespace)
+  if (!auth.namespace || auth.namespace !== row.namespace) {
     return unauthorized();
+  }
   if (auth.worldId && auth.worldId !== worldUid) return forbidden();
-  if (requiredScope && !hasScope(auth, requiredScope))
+  if (requiredScope && !hasScope(auth, requiredScope)) {
     return forbiddenScope(requiredScope);
+  }
   return null;
 }
 
@@ -468,8 +470,9 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const db = getDb(env);
 
     if (!auth.admin && !auth.namespace) return unauthorized();
-    if (!hasScope(auth, SCOPE_DATA_READ))
+    if (!hasScope(auth, SCOPE_DATA_READ)) {
       return forbiddenScope(SCOPE_DATA_READ);
+    }
 
     const rows = await query<WorldRow>(
       db,

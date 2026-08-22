@@ -1,6 +1,6 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlSdk } from "@worlds/libsql";
+import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
@@ -8,11 +8,11 @@ import { maxImportBytes, maxImportQuads } from "../lib/abuse";
 import { resolveWorldDatabase, worldDb } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
+  ExportQuadsResponseSchema,
+  exportQuery,
   ImportRequestSchema,
   ImportResponseSchema,
-  ExportQuadsResponseSchema,
   worldIdParam,
-  exportQuery,
 } from "../lib/schemas";
 import {
   serializeQuadsToJsonLd,
@@ -128,7 +128,7 @@ export function registerImportExportRoutes(
       }
 
       const db = worldDb(ref);
-      const client = await createLibsqlSdk({ client: db });
+      const client = await createLibsqlWorldsSdk({ client: db });
 
       const quadsCap = maxImportQuads(env);
 
@@ -289,7 +289,7 @@ export function registerImportExportRoutes(
       const offset = parseInt(query.offset ?? "0", 10);
 
       const db = worldDb(ref);
-      const client = await createLibsqlSdk({ client: db });
+      const client = await createLibsqlWorldsSdk({ client: db });
 
       if (fmt === "application/json") {
         const exported = await client.export({
@@ -386,7 +386,10 @@ function namedNode(value: string) {
 }
 
 function literal(value: string) {
-  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")}"`;
+  return `"${value
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, "\\n")}"`;
 }
 
 function isNamedNodeValue(value: string) {
