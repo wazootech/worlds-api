@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
-import { createLibsqlSdk } from "@worlds/libsql";
+import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import { resolveWorldDatabase, worldDb } from "../src/lib/world-db";
 
 vi.mock("@worlds/libsql", () => ({
-  createLibsqlSdk: vi.fn(),
+  createLibsqlWorldsSdk: vi.fn(),
 }));
 
 vi.mock("../src/lib/world-db", () => ({
@@ -12,7 +12,7 @@ vi.mock("../src/lib/world-db", () => ({
   worldDb: vi.fn(),
 }));
 
-const createLibsqlSdkMock = vi.mocked(createLibsqlSdk);
+const createLibsqlSdkMock = vi.mocked(createLibsqlWorldsSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 const worldDbMock = vi.mocked(worldDb);
 
