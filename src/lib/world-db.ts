@@ -1,38 +1,37 @@
-import { type Client, createClient } from "@libsql/client";
-import {
-  initializeLibsqlSchema,
-  LibsqlConnectionDriver,
-  LibsqlSchemaBuilder,
-} from "@worlds/libsql";
+import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
+import type { WorldsSdkInterface } from "@worlds/sdk";
 import type { Env } from "../env";
-import { getDb, queryOne } from "./db";
+import { queryOne } from "./db";
+import { WorldScopedD1 } from "./d1-world";
 
+/**
+ * Per-world database reference. With the single-D1 model, there's no separate
+ * database URL — all data lives in the same D1 binding, filtered by world_uid.
+ * The reference carries the world's metadata needed to initialize the SDK.
+ */
 export type WorldDatabaseRef = {
   worldUid: string;
   namespace: string;
-  databaseUrl: string;
-  databaseAuthToken?: string;
   embeddingModel: string;
   chunkSize: number;
   topK: number;
   minScore: number;
 };
 
-type WorldDatabaseRow = {
+type WorldMetadataRow = {
   uid: string;
   namespace: string;
-  database_url: string | null;
-  database_auth_token: string | null;
   embedding_model: string;
   chunk_size: number;
   top_k: number;
   min_score: number;
 };
 
-const clients = new Map<string, Client>();
+/** Cache SDK instances by world_uid (one per active world). */
+const sdkCache = new Map<string, WorldsSdkInterface>();
 
 /**
- * Resolves a world's storage by its canonical world_uid. Only worlds in an
+ * Resolves a world's metadata by its canonical world_uid. Only worlds in an
  * active state are reachable by the data plane; suspended or deleted worlds
  * resolve to null and routes reject with NOT_FOUND.
  */
@@ -40,17 +39,15 @@ export async function resolveWorldDatabase(
   env: Env,
   worldUid: string,
 ): Promise<WorldDatabaseRef | null> {
-  const row = await queryOne<WorldDatabaseRow>(
-    getDb(env),
-    "SELECT uid, namespace, database_url, database_auth_token, embedding_model, chunk_size, top_k, min_score FROM worlds_metadata WHERE uid = ? AND state = 'active'",
+  const row = await queryOne<WorldMetadataRow>(
+    env.DB,
+    "SELECT uid, namespace, embedding_model, chunk_size, top_k, min_score FROM worlds WHERE uid = ? AND state = 'active'",
     [worldUid],
   );
-  if (!row?.database_url) return null;
+  if (!row) return null;
   return {
     worldUid: row.uid,
     namespace: row.namespace,
-    databaseUrl: row.database_url,
-    databaseAuthToken: row.database_auth_token ?? undefined,
     embeddingModel: row.embedding_model,
     chunkSize: row.chunk_size,
     topK: row.top_k,
@@ -58,22 +55,33 @@ export async function resolveWorldDatabase(
   };
 }
 
-export function worldDb(ref: WorldDatabaseRef): Client {
-  const key = `${ref.databaseUrl}\n${ref.databaseAuthToken ?? ""}`;
-  const existing = clients.get(key);
-  if (existing) return existing;
-  const client = createClient({
-    url: ref.databaseUrl,
-    authToken: ref.databaseAuthToken,
+/**
+ * Returns a WorldsSdk backed by the single D1 binding, scoped to a specific
+ * world via the WorldScopedD1 wrapper. The wrapper intercepts all D1 queries
+ * to inject `world_uid` filtering, giving each world its own isolated view of
+ * the shared database.
+ *
+ * The SDK is cached per world_uid — initialization (schema check) only runs
+ * once per world per worker lifetime.
+ */
+export async function getWorldSdk(
+  env: Env,
+  ref: WorldDatabaseRef,
+): Promise<WorldsSdkInterface> {
+  const cached = sdkCache.get(ref.worldUid);
+  if (cached) return cached;
+
+  const scopedDb = new WorldScopedD1(env.DB, ref.worldUid);
+
+  const sdk = await createCloudflareWorldsSdk({
+    database: scopedDb as any, // D1DatabaseLike structural match
   });
-  clients.set(key, client);
-  return client;
+
+  sdkCache.set(ref.worldUid, sdk);
+  return sdk;
 }
 
-export async function initializeWorldDatabase(ref: WorldDatabaseRef) {
-  const db = worldDb(ref);
-  await initializeLibsqlSchema(
-    new LibsqlConnectionDriver(db),
-    new LibsqlSchemaBuilder(32),
-  );
+/** Clear the SDK cache (e.g., after schema changes). */
+export function clearSdkCache(): void {
+  sdkCache.clear();
 }

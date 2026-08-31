@@ -1,67 +1,60 @@
-import {
-  type Client as LibsqlClient,
-  createClient,
-  type InArgs,
-} from "@libsql/client";
 import type { Env } from "../env";
 
-let client: LibsqlClient | null = null;
-let clientKey = "";
+/**
+ * Control-plane database helpers over a single Cloudflare D1 binding.
+ *
+ * All control-plane tables (worlds, api_keys) live in the same D1 database
+ * alongside per-world data (quads, chunks, chunks_fts), separated by a
+ * `world_uid` column on per-world tables.
+ */
 
-export function getDb(env: Env): LibsqlClient {
-  const key = `${env.LIBSQL_URL}\n${env.LIBSQL_AUTH_TOKEN ?? ""}`;
-  if (client && clientKey === key) return client;
-  client = createClient({
-    url: env.LIBSQL_URL,
-    authToken: env.LIBSQL_AUTH_TOKEN,
-  });
-  clientKey = key;
-  return client;
+type D1Db = import("@cloudflare/workers-types").D1Database;
+
+/** Returns the D1 binding from the worker environment. */
+export function getDb(env: Env): D1Db {
+  return env.DB;
 }
 
+/** Execute a SELECT and return all matching rows as plain objects. */
 export async function query<T>(
-  db: LibsqlClient,
+  db: D1Db,
   sql: string,
-  args?: InArgs,
+  args?: unknown[],
 ): Promise<T[]> {
-  const rs = await db.execute({ sql, args });
-  return rs.rows.map((row) => {
-    const obj: Record<string, unknown> = {};
-    for (let i = 0; i < rs.columns.length; i++) {
-      obj[rs.columns[i]] = row[i];
-    }
-    return obj as T;
-  });
+  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const result = await stmt.all<Record<string, unknown>>();
+  return result.results as unknown as T[];
 }
 
+/** Execute a SELECT and return the first row, or null if empty. */
 export async function queryOne<T>(
-  db: LibsqlClient,
+  db: D1Db,
   sql: string,
-  args?: InArgs,
+  args?: unknown[],
 ): Promise<T | null> {
-  const rs = await db.execute({ sql, args });
-  if (rs.rows.length === 0) return null;
-  const row = rs.rows[0];
-  const obj: Record<string, unknown> = {};
-  for (let i = 0; i < rs.columns.length; i++) {
-    obj[rs.columns[i]] = row[i];
-  }
-  return obj as T;
+  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const row = await stmt.first<Record<string, unknown>>();
+  if (!row) return null;
+  return row as unknown as T;
 }
 
+/** Execute a non-SELECT statement (INSERT, UPDATE, DELETE) and return rows affected. */
 export async function execute(
-  db: LibsqlClient,
+  db: D1Db,
   sql: string,
-  args?: InArgs,
+  args?: unknown[],
 ): Promise<{ rowsAffected: number }> {
-  const rs = await db.execute({ sql, args });
-  return { rowsAffected: rs.rowsAffected };
+  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const result = await stmt.run();
+  return { rowsAffected: result.meta?.changes ?? 0 };
 }
 
+/** Generate a random UUID for primary keys. */
 export function uid(): string {
   return crypto.randomUUID();
 }
 
+/** Return the current time as an ISO 8601 string. */
 export function now(): string {
   return new Date().toISOString();
 }

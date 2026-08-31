@@ -42,7 +42,7 @@ export function registerHealthRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const env = c.env as unknown as Env;
     try {
       const db = getDb(env);
-      await db.execute("SELECT 1");
+      await db.prepare("SELECT 1").first();
       return respond(c, { status: "ok" });
     } catch (err) {
       return respond(

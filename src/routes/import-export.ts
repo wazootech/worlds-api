@@ -1,11 +1,10 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
 import { maxImportBytes, maxImportQuads } from "../lib/abuse";
-import { resolveWorldDatabase, worldDb } from "../lib/world-db";
+import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
   ExportQuadsResponseSchema,
@@ -127,8 +126,7 @@ export function registerImportExportRoutes(
         );
       }
 
-      const db = worldDb(ref);
-      const client = await createLibsqlWorldsSdk({ client: db });
+      const client = await getWorldSdk(env, ref);
 
       const quadsCap = maxImportQuads(env);
 
@@ -288,8 +286,7 @@ export function registerImportExportRoutes(
       const limit = parseInt(query.limit ?? "1000", 10);
       const offset = parseInt(query.offset ?? "0", 10);
 
-      const db = worldDb(ref);
-      const client = await createLibsqlWorldsSdk({ client: db });
+      const client = await getWorldSdk(env, ref);
 
       if (fmt === "application/json") {
         const exported = await client.export({
@@ -298,7 +295,7 @@ export function registerImportExportRoutes(
         const quads = exported.kind === "quads" ? exported.quads : [];
 
         return respond(c, {
-          quads: quads.slice(offset, offset + limit).map((q) => ({
+          quads: quads.slice(offset, offset + limit).map((q: any) => ({
             subject: q.subject.value,
             predicate: q.predicate.value,
             object: q.object.value,
@@ -317,9 +314,9 @@ export function registerImportExportRoutes(
         const quads = exported.kind === "quads" ? exported.quads : [];
 
         const lines = quads
-          .filter((q) => q.predicate.value === "http://schema.org/text")
+          .filter((q: any) => q.predicate.value === "http://schema.org/text")
           .slice(offset, offset + limit)
-          .map((q) => `${q.subject.value}\t${q.object.value}`);
+          .map((q: any) => `${q.subject.value}\t${q.object.value}`);
 
         return c.text(lines.join("\n"));
       }

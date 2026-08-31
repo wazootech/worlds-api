@@ -11,7 +11,11 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "declaration": true,
-    "types": ["node", "@cloudflare/workers-types"]
+    "types": ["node", "@cloudflare/workers-types"],
+    "paths": {
+      "@worlds/cloudflare": ["./src/types/worlds-cloudflare.d.ts"],
+      "@worlds/sdk": ["./src/types/worlds-cloudflare.d.ts"]
+    }
   },
   "include": ["src/**/*.ts"]
 }

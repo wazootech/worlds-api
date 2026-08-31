@@ -1,15 +1,7 @@
 export type Env = {
-  LIBSQL_URL: string;
-  LIBSQL_AUTH_TOKEN?: string;
+  /** D1 database binding (single database for control plane + per-world data). */
+  DB: import("@cloudflare/workers-types").D1Database;
   WORLDS_ADMIN_KEY?: string;
-  TURSO_ORG?: string;
-  TURSO_GROUP?: string;
-  TURSO_PLATFORM_API_TOKEN?: string;
-  /**
-   * Org-wide cap on Turso databases for the current plan. Creation errors with
-   * DATABASE_LIMIT_REACHED once the org is at capacity. Defaults to 100.
-   */
-  MAX_DATABASES?: string;
   WAZOO_ENV?: string;
   PORT?: string;
   // Abuse-prevention knobs (all optional, defaults applied in code).
@@ -25,19 +17,10 @@ export type Env = {
 
 export function fromBindings(env: Record<string, unknown>): Env {
   return {
-    LIBSQL_URL: String(env.LIBSQL_URL ?? ""),
-    LIBSQL_AUTH_TOKEN: env.LIBSQL_AUTH_TOKEN
-      ? String(env.LIBSQL_AUTH_TOKEN)
-      : undefined,
+    DB: env.DB as import("@cloudflare/workers-types").D1Database,
     WORLDS_ADMIN_KEY: env.WORLDS_ADMIN_KEY
       ? String(env.WORLDS_ADMIN_KEY)
       : undefined,
-    TURSO_ORG: env.TURSO_ORG ? String(env.TURSO_ORG) : undefined,
-    TURSO_GROUP: env.TURSO_GROUP ? String(env.TURSO_GROUP) : undefined,
-    TURSO_PLATFORM_API_TOKEN: env.TURSO_PLATFORM_API_TOKEN
-      ? String(env.TURSO_PLATFORM_API_TOKEN)
-      : undefined,
-    MAX_DATABASES: env.MAX_DATABASES ? String(env.MAX_DATABASES) : undefined,
     WAZOO_ENV: env.WAZOO_ENV ? String(env.WAZOO_ENV) : undefined,
     PORT: env.PORT ? String(env.PORT) : undefined,
     SPARQL_TIMEOUT_MS: env.SPARQL_TIMEOUT_MS
@@ -64,14 +47,11 @@ export function fromBindings(env: Record<string, unknown>): Env {
 }
 
 export function fromProcessEnv(): Env {
+  // D1 bindings aren't available via process.env — this path is only used
+  // for local development with miniflare, where DB is injected at runtime.
   return {
-    LIBSQL_URL: process.env.LIBSQL_URL ?? "",
-    LIBSQL_AUTH_TOKEN: process.env.LIBSQL_AUTH_TOKEN,
+    DB: (globalThis as any).__D1_DATABASE__ as import("@cloudflare/workers-types").D1Database,
     WORLDS_ADMIN_KEY: process.env.WORLDS_ADMIN_KEY,
-    TURSO_ORG: process.env.TURSO_ORG,
-    TURSO_GROUP: process.env.TURSO_GROUP,
-    TURSO_PLATFORM_API_TOKEN: process.env.TURSO_PLATFORM_API_TOKEN,
-    MAX_DATABASES: process.env.MAX_DATABASES,
     WAZOO_ENV: process.env.WAZOO_ENV,
     PORT: process.env.PORT,
     SPARQL_TIMEOUT_MS: process.env.SPARQL_TIMEOUT_MS,

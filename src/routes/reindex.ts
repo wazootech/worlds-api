@@ -3,7 +3,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
-import { resolveWorldDatabase, worldDb } from "../lib/world-db";
+import { resolveWorldDatabase } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { worldIdParam } from "../lib/schemas";
 

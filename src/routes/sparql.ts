@@ -1,6 +1,5 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ } from "../lib/auth";
@@ -9,7 +8,7 @@ import {
   sparqlMaxResults,
   sparqlTimeoutMs,
 } from "../lib/abuse";
-import { resolveWorldDatabase, worldDb } from "../lib/world-db";
+import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
 
@@ -185,8 +184,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const db = worldDb(ref);
-      const client = await createLibsqlWorldsSdk({ client: db });
+      const client = await getWorldSdk(env, ref);
 
       try {
         // The engine composes the caller signal with the timeout into one

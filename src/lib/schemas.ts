@@ -30,10 +30,8 @@ export const WorldResourceSchema = z
     state: z.string().openapi({
       description:
         "Lifecycle state: active, deleted, or suspended. Deleted worlds enter a 30-day grace period before permanent purge.",
-    }),
-    storage: z.enum(["libsql-per-world", "legacy-shared-libsql"]).openapi({
-      description:
-        "Storage backend for the world. libsql-per-world provisions a dedicated per-world Turso/LibSQL database; legacy-shared-libsql points at a shared legacy store.",
+    }),    storage: z.literal("d1").openapi({
+      description: "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_uid.",
     }),
     embeddingModel: z.string().openapi({
       description:

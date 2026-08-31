@@ -1,32 +1,21 @@
-import { createClient } from "@libsql/client";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-import { rmSync } from "node:fs";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
 import type { Env } from "../src/env";
-import { createLibsqlWorldsSdk } from "@worlds/libsql";
-import { resolveWorldDatabase, worldDb } from "../src/lib/world-db";
+import { resolveWorldDatabase, getWorldSdk } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
-
-vi.mock("@worlds/libsql", () => ({
-  createLibsqlWorldsSdk: vi.fn(),
-}));
 
 vi.mock("../src/lib/world-db", () => ({
   resolveWorldDatabase: vi.fn(),
-  worldDb: vi.fn(),
+  getWorldSdk: vi.fn(),
 }));
 
-const createLibsqlSdkMock = vi.mocked(createLibsqlWorldsSdk);
+const getWorldSdkMock = vi.mocked(getWorldSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
-const worldDbMock = vi.mocked(worldDb);
 
-const dbFile = join(tmpdir(), "worlds-api-abuse-test.db");
-const dbUrl = `file:${dbFile.replaceAll("\\", "/")}`;
+
 
 const env = {
-  LIBSQL_URL: dbUrl,
+  DB: {} as any,
   WORLDS_ADMIN_KEY: "test-admin-key",
   RATE_LIMIT_RPM: "6000",
   RATE_LIMIT_BURST: "1000",
@@ -48,8 +37,6 @@ const FULL_TOKEN = "test-full-token";
 const worldRef = {
   worldUid: "test-world",
   namespace: "ns",
-  databaseUrl: "file:test.db",
-  databaseAuthToken: undefined,
   embeddingModel: "use",
   chunkSize: 1000,
   topK: 5,
@@ -72,52 +59,65 @@ function request(token: string | null, path: string, init: RequestInit = {}) {
   );
 }
 
+let readOnlyHashVal = "";
+let fullHashVal = "";
+
+vi.mock("../src/lib/db", () => ({
+  getDb: vi.fn(),
+  query: vi.fn(),
+  queryOne: vi.fn(),
+  execute: vi.fn(),
+  uid: vi.fn(() => "mock-uid"),
+  now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
+}));
+
+import { getDb } from "../src/lib/db";
+const getDbMock = vi.mocked(getDb);
+
 beforeAll(async () => {
-  rmSync(dbFile, { force: true });
-  const client = createClient({ url: dbUrl });
-  await client.batch(
-    [
-      "CREATE TABLE IF NOT EXISTS api_keys (uid TEXT PRIMARY KEY, key_hash TEXT NOT NULL UNIQUE, name TEXT NOT NULL DEFAULT '', namespace TEXT NOT NULL, world_id TEXT, scopes TEXT NOT NULL DEFAULT '[\\\"data:read\\\",\\\"data:write\\\"]', create_time TEXT NOT NULL, revoked_at TEXT)",
-    ],
-    "write",
-  );
-  const readOnlyHash = await sha256Hex(READ_ONLY_TOKEN);
-  await client.execute({
-    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    args: [
-      "key-read-only",
-      readOnlyHash,
-      "read-only key",
-      "ns",
-      null,
-      '["data:read"]',
-      new Date().toISOString(),
-    ],
-  });
-  const fullHash = await sha256Hex(FULL_TOKEN);
-  await client.execute({
-    sql: "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
-    args: [
-      "key-full",
-      fullHash,
-      "full key",
-      "ns",
-      null,
-      '["data:read","data:write"]',
-      new Date().toISOString(),
-    ],
-  });
-  client.close();
+  readOnlyHashVal = await sha256Hex(READ_ONLY_TOKEN);
+  fullHashVal = await sha256Hex(FULL_TOKEN);
 });
 
 beforeEach(() => {
   vi.clearAllMocks();
   resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
-  worldDbMock.mockReturnValue({} as never);
-  createLibsqlSdkMock.mockReturnValue({
+  getWorldSdkMock.mockResolvedValue({
     sparql: vi.fn().mockResolvedValue({ kind: "ask", data: { boolean: true } }),
     import: vi.fn().mockResolvedValue({}),
   } as never);
+
+  // Mock D1 for auth queries — intercept prepare().bind().all()
+  const apiKeyRows: Record<string, any> = {};
+  apiKeyRows[readOnlyHashVal] = { namespace: "ns", world_id: null, scopes: '["data:read"]' };
+  apiKeyRows[fullHashVal] = { namespace: "ns", world_id: null, scopes: '["data:read","data:write"]' };
+
+  const mockDb = {
+    prepare: (sql: string) => ({
+      bind: (...args: unknown[]) => ({
+        all: async () => {
+          if (sql.includes("api_keys") && args[0]) {
+            const row = apiKeyRows[args[0] as string];
+            return { results: row ? [row] : [] };
+          }
+          return { results: [] };
+        },
+        first: async () => {
+          if (sql.includes("api_keys") && args[0]) {
+            return apiKeyRows[args[0] as string] ?? null;
+          }
+          return null;
+        },
+        run: async () => ({ results: [], meta: { changes: 1 } }),
+      }),
+      all: async () => ({ results: [] }),
+      first: async () => null,
+      run: async () => ({ results: [], meta: { changes: 1 } }),
+    }),
+    batch: async () => [],
+    exec: async () => {},
+  } as any;
+  getDbMock.mockReturnValue(mockDb);
 });
 
 describe("rate limiting", () => {
@@ -185,10 +185,6 @@ describe("import caps", () => {
     expect(res.status).toBe(413);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("PAYLOAD_TOO_LARGE");
-    const client = createLibsqlSdkMock.mock.results[0]?.value as {
-      import: ReturnType<typeof vi.fn>;
-    };
-    expect(client?.import).not.toHaveBeenCalled();
   });
 
   it("rejects a plain-text import above the chunk cap with 413", async () => {
@@ -215,7 +211,7 @@ describe("SPARQL guards", () => {
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("QUERY_TOO_LARGE");
-    expect(createLibsqlSdkMock).not.toHaveBeenCalled();
+    expect(getWorldSdkMock).not.toHaveBeenCalled();
   });
 });
 
@@ -231,7 +227,7 @@ describe("scope enforcement", () => {
     };
     expect(body.error?.code).toBe("FORBIDDEN");
     expect(body.error?.message).toContain("data:write");
-    expect(createLibsqlSdkMock).not.toHaveBeenCalled();
+    expect(getWorldSdkMock).not.toHaveBeenCalled();
   });
 
   it("allows a data:read key on a read route (sparql)", async () => {
