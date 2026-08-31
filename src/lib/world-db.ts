@@ -81,7 +81,12 @@ export async function getWorldSdk(
   return sdk;
 }
 
-/** Clear the SDK cache (e.g., after schema changes). */
+/** Clear the SDK cache for a specific world (e.g., after state changes). */
+export function clearSdkCacheForWorld(worldUid: string): void {
+  sdkCache.delete(worldUid);
+}
+
+/** Clear the entire SDK cache (e.g., after schema changes or namespace delete). */
 export function clearSdkCache(): void {
   sdkCache.clear();
 }

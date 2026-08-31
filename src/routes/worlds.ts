@@ -13,6 +13,7 @@ import {
   unauthorized,
 } from "../lib/auth";
 import { provisionWorld } from "../lib/d1-provision";
+import { clearSdkCache, clearSdkCacheForWorld } from "../lib/world-db";
 import { runPurgeSweep } from "../lib/purge";
 import { respond } from "../lib/respond";
 import {
@@ -598,6 +599,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "SELECT * FROM worlds WHERE uid = ?",
       [worldUid],
     );
+    clearSdkCacheForWorld(worldUid);
     return respond(c, worldResource(updated!));
   });
 
@@ -631,6 +633,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "UPDATE worlds SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE uid = ?",
       [ts, expireTs, ts, worldUid],
     );
+    clearSdkCacheForWorld(worldUid);
     return c.body(null, 204) as any;
   });
 
@@ -680,6 +683,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "SELECT * FROM worlds WHERE uid = ?",
       [worldUid],
     );
+    clearSdkCacheForWorld(worldUid);
     return respond(c, worldResource(restored!));
   });
 
@@ -715,6 +719,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "SELECT * FROM worlds WHERE uid = ?",
       [worldUid],
     );
+    clearSdkCacheForWorld(worldUid);
     return respond(c, worldResource(suspended!));
   });
 
@@ -750,6 +755,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "SELECT * FROM worlds WHERE uid = ?",
       [worldUid],
     );
+    clearSdkCacheForWorld(worldUid);
     return respond(c, worldResource(resumed!));
   });
 
@@ -784,6 +790,9 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "UPDATE api_keys SET revoked_at = ? WHERE namespace = ? AND revoked_at IS NULL",
       [ts, namespace],
     );
+
+    // Invalidate all cached SDKs since multiple worlds may have been affected.
+    clearSdkCache();
 
     return respond(c, {
       deletedWorlds: worldResult.rowsAffected,
