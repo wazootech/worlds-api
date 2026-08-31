@@ -20,7 +20,7 @@ WAZOO_ENV = "prod"
 [env.qa]
 name = "worlds-api-qa"
 routes = [
-  { pattern = "worlds-api-qa.wazoo.dev", custom_domain = true }
+  { pattern = "data-qa.wazoo.dev", custom_domain = true }
 ]
 
 [env.qa.triggers]
