@@ -51,17 +51,12 @@ export async function provisionWorld(
   const topK = options.topK ?? 20;
   const minScore = options.minScore ?? 0.0;
 
-  await execute(
-    db,
-    `INSERT INTO worlds (uid, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
-     VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)`,
-    [worldUid, namespace, displayName, embeddingModel, chunkSize, topK, minScore, ts, ts],
-  );
-
   const row = await queryOne<WorldMetadata>(
     db,
-    "SELECT * FROM worlds WHERE uid = ?",
-    [worldUid],
+    `INSERT INTO worlds (uid, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
+     VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
+     RETURNING *`,
+    [worldUid, namespace, displayName, embeddingModel, chunkSize, topK, minScore, ts, ts],
   );
   return row!;
 }

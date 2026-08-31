@@ -12,6 +12,16 @@
  * The real D1 prepared statement receives the rewritten SQL. The caller's
  * `bind()` call must include the world_uid value as the last argument — this
  * is handled by WorldScopedStatement which auto-appends it.
+ *
+ * Known limitations:
+ * - INSERT requires an explicit column list: INSERT INTO quads VALUES (...)
+ *   is NOT rewritten (the regex needs (col1, col2, ...) syntax).
+ * - SELECT/UPDATE/DELETE without a WHERE clause are NOT rewritten — they
+ *   would return/modify ALL worlds' data. Only queries that already have
+ *   a WHERE clause get the world_uid filter appended.
+ * - Subqueries with mixed table references may not be fully scoped.
+ * - Only @worlds/cloudflare SDK queries should touch quads/chunks tables;
+ *   direct queries against these tables bypass this wrapper entirely.
  */
 
 const DATA_TABLE_PATTERNS = /\b(quads|chunks|chunks_fts)\b/i;

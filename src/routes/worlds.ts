@@ -148,26 +148,7 @@ const createRouteDef = createRoute({
         },
       },
     },
-    429: {
-      description: "Organization database limit reached",
-      content: {
-        "application/json": {
-          schema: z.object({
-            error: z.object({ code: z.string(), message: z.string() }),
-          }),
-        },
-      },
-    },
-    502: {
-      description: "Provisioning failed",
-      content: {
-        "application/json": {
-          schema: z.object({
-            error: z.object({ code: z.string(), message: z.string() }),
-          }),
-        },
-      },
-    },
+
   },
 });
 

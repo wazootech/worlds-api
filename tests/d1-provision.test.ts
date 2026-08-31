@@ -38,7 +38,7 @@ describe("provisionWorld", () => {
     });
 
     const result = await provisionWorld(env, "w_test-uid", "ns");
-    expect(executeMock).toHaveBeenCalled();
+    expect(queryOneMock).toHaveBeenCalled();
     expect(result.uid).toBe("w_test-uid");
     expect(result.namespace).toBe("ns");
     expect(result.state).toBe("active");
