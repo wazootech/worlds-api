@@ -1,12 +1,60 @@
 import { describe, expect, it } from "vitest";
-import { DataFactory } from "n3";
 import type * as rdfjs from "@rdfjs/types";
 import {
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../src/lib/export-serializers";
 
-const { namedNode, literal, quad, defaultGraph } = DataFactory;
+// Simple DataFactory for tests
+function namedNode(value: string): rdfjs.NamedNode {
+  return { termType: "NamedNode", value } as rdfjs.NamedNode;
+}
+
+function literal(
+  value: string,
+  languageOrDatatype?: string | rdfjs.NamedNode,
+): rdfjs.Literal {
+  if (typeof languageOrDatatype === "string") {
+    return {
+      termType: "Literal",
+      value,
+      language: languageOrDatatype,
+      datatype: namedNode(
+        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+      ),
+      direction: undefined,
+    } as rdfjs.Literal;
+  }
+  return {
+    termType: "Literal",
+    value,
+    language: "",
+    datatype:
+      languageOrDatatype ??
+      namedNode("http://www.w3.org/2001/XMLSchema#string"),
+    direction: undefined,
+  } as rdfjs.Literal;
+}
+
+function quad(
+  subject: rdfjs.Term,
+  predicate: rdfjs.Term,
+  object: rdfjs.Term,
+  graph?: rdfjs.Term,
+): rdfjs.Quad {
+  return {
+    termType: "Quad",
+    value: "",
+    subject,
+    predicate,
+    object,
+    graph: graph ?? defaultGraph(),
+  } as rdfjs.Quad;
+}
+
+function defaultGraph(): rdfjs.DefaultGraph {
+  return { termType: "DefaultGraph", value: "" } as rdfjs.DefaultGraph;
+}
 
 function sampleQuads(): rdfjs.Quad[] {
   return [
@@ -44,14 +92,36 @@ function sampleQuads(): rdfjs.Quad[] {
 }
 
 describe("serializeQuadsToTrig", () => {
-  it("emits default-graph quads as triples and named-graph quads in named blocks", async () => {
-    const trig = await serializeQuadsToTrig(sampleQuads());
+  it("emits default-graph quads as triples and named-graph quads in named blocks", () => {
+    const trig = serializeQuadsToTrig(sampleQuads());
     expect(trig).toContain("<urn:subject:alice>");
     expect(trig).toContain("<urn:predicate:name>");
     expect(trig).toContain('"Alice"');
     expect(trig).toContain("<urn:predicate:age>");
     expect(trig).toContain("urn:graph:private");
     expect(trig).toContain('"A note"');
+  });
+
+  it("round-trips through the sparql-engine parser", async () => {
+    const { parseTurtleQuads } = await import("@wazoo/sparql-engine");
+    const quads = sampleQuads();
+    const trig = serializeQuadsToTrig(quads);
+    const parsed = Array.from(await parseTurtleQuads(trig, { format: "trig" }));
+
+    // Should have same number of quads
+    expect(parsed.length).toBe(quads.length);
+
+    // Check that all original quads are present
+    for (const original of quads) {
+      const found = parsed.some(
+        (p) =>
+          p.subject.value === original.subject.value &&
+          p.predicate.value === original.predicate.value &&
+          p.object.value === original.object.value &&
+          p.graph.value === original.graph.value,
+      );
+      expect(found).toBe(true);
+    }
   });
 });
 

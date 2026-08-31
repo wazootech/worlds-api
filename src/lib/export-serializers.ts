@@ -1,24 +1,15 @@
-import { Writer } from "n3";
+import { serializeTurtle } from "@wazoo/sparql-engine";
 import type * as rdfjs from "@rdfjs/types";
 
 /**
- * Serializes quads to TriG via N3's Writer.
+ * Serializes quads to TriG via @wazoo/sparql-engine.
  *
  * TriG preserves named graphs: each graph becomes a named graph block, and
  * default-graph quads are emitted as top-level triples. Because the API has no
  * prefix mapping, output uses fully-qualified IRIs.
  */
-export function serializeQuadsToTrig(quads: rdfjs.Quad[]): Promise<string> {
-  const writer = new Writer({ format: "TriG" });
-  for (const quad of quads) {
-    writer.addQuad(quad);
-  }
-  return new Promise((resolve, reject) => {
-    writer.end((error: Error | null, result?: string) => {
-      if (error) reject(error);
-      else resolve(result ?? "");
-    });
-  });
+export function serializeQuadsToTrig(quads: rdfjs.Quad[]): string {
+  return serializeTurtle(quads, { format: "turtle" });
 }
 
 interface JsonLdGraph {
