@@ -4,17 +4,18 @@ compatibility_date = "2026-07-18"
 compatibility_flags = ["nodejs_compat"]
 
 routes = [
-  { pattern = "worlds-api.wazoo.dev", custom_domain = true }
+  { pattern = "data.wazoo.dev", custom_domain = true }
 ]
 
 [triggers]
 crons = ["0 0 * * *"]
 
+[[d1_databases]]
+binding = "DB"
+database_name = "worlds-api"
+database_id = "placeholder-replace-with-actual-id"
+
 [vars]
-LIBSQL_URL = "libsql://worlds-api-prod-ethanthatonekid.aws-us-west-2.turso.io"
-TURSO_ORG = "ethanthatonekid"
-TURSO_GROUP = "wazoo"
-MAX_DATABASES = "100"
 WAZOO_ENV = "prod"
 
 [env.qa]
@@ -26,11 +27,12 @@ routes = [
 [env.qa.triggers]
 crons = ["0 0 * * *"]
 
+[[env.qa.d1_databases]]
+binding = "DB"
+database_name = "worlds-api-qa"
+database_id = "placeholder-replace-with-actual-id"
+
 [env.qa.vars]
-LIBSQL_URL = "libsql://worlds-api-qa-ethanthatonekid.aws-us-west-2.turso.io"
-TURSO_ORG = "ethanthatonekid"
-TURSO_GROUP = "wazoo"
-MAX_DATABASES = "100"
 WAZOO_ENV = "qa"
 
 [observability]

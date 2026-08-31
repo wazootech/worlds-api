@@ -105,6 +105,29 @@ app.notFound((c) => {
 });
 
 import { registerReindexRoutes } from "./routes/reindex";
+import {
+  ensureControlPlaneSchema,
+  ensurePerWorldSchema,
+} from "./lib/d1-schema";
+
+// One-time D1 schema initialization. Cloudflare Workers reuse the global
+// scope across requests within the same isolate, so this flag prevents
+// re-running DDL on every request. The CREATE TABLE IF NOT EXISTS statements
+// are idempotent, but this avoids the latency of repeated exec calls.
+let schemaInitialized = false;
+
+app.use("*", async (c, next) => {
+  if (!schemaInitialized) {
+    const db = (c.env as unknown as Env).DB;
+    // Guard: skip if DB is a test mock without exec (tests mock DB as {})
+    if (db && typeof (db as any).exec === "function") {
+      await ensureControlPlaneSchema(db);
+      await ensurePerWorldSchema(db);
+      schemaInitialized = true;
+    }
+  }
+  return next();
+});
 
 registerHealthRoutes(app);
 registerWorldsRoutes(app);

@@ -65,18 +65,25 @@ export async function authorize(
   const hash = await sha256Hex(token);
 
   try {
-    const rs = await db.execute({
-      sql: "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
-      args: [hash],
-    });
+    const stmt = db
+      .prepare(
+        "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
+      )
+      .bind(hash);
+    const rs = await stmt.all<{
+      namespace: string;
+      world_id: string | null;
+      scopes: string | null;
+    }>();
 
-    if (rs.rows.length === 0) {
+    if (rs.results.length === 0) {
       return { admin: false };
     }
 
-    const namespace = rs.rows[0][0] as string;
-    const worldId = rs.rows[0][1] as string | null;
-    const scopesRaw = rs.rows[0][2] as string | null;
+    const row = rs.results[0];
+    const namespace = row.namespace;
+    const worldId = row.world_id;
+    const scopesRaw = row.scopes;
     let scopes: string[] = [SCOPE_DATA_READ, SCOPE_DATA_WRITE];
     if (scopesRaw) {
       try {

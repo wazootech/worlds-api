@@ -1,25 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
-import { createLibsqlWorldsSdk } from "@worlds/libsql";
-import { resolveWorldDatabase, worldDb } from "../src/lib/world-db";
-
-vi.mock("@worlds/libsql", () => ({
-  createLibsqlWorldsSdk: vi.fn(),
-}));
+import { resolveWorldDatabase, getWorldSdk } from "../src/lib/world-db";
 
 vi.mock("../src/lib/world-db", () => ({
   resolveWorldDatabase: vi.fn(),
-  worldDb: vi.fn(),
+  getWorldSdk: vi.fn(),
 }));
 
-const createLibsqlSdkMock = vi.mocked(createLibsqlWorldsSdk);
+const getWorldSdkMock = vi.mocked(getWorldSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
-const worldDbMock = vi.mocked(worldDb);
 
 const env = {
-  LIBSQL_URL: "file:test.db",
+  DB: {} as any,
   WORLDS_ADMIN_KEY: "test-admin-key",
-  RATE_LIMIT_RPM: "0", // rate limiting is exercised in tests/abuse.test.ts
+  RATE_LIMIT_RPM: "0",
 } as unknown as Env;
 
 const executionCtx = {
@@ -30,8 +24,6 @@ const executionCtx = {
 const worldRef = {
   worldUid: "test-world",
   namespace: "ns",
-  databaseUrl: "file:test.db",
-  databaseAuthToken: undefined,
   embeddingModel: "use",
   chunkSize: 1000,
   topK: 5,
@@ -62,7 +54,6 @@ describe("POST /worlds/:id/sparql endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
-    worldDbMock.mockReturnValue({} as never);
   });
 
   it("rejects request without authorization token", async () => {
@@ -99,7 +90,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
     const sparql = vi
       .fn()
       .mockRejectedValue(new Error("sort on unbound variable"));
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request({
       query: "SELECT * WHERE { ?s ?p ?o } ORDER BY ?missing",
@@ -123,7 +114,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
         results: { bindings: throwingBindings() },
       },
     });
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request({ query: "SELECT ?s WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(400);
@@ -143,7 +134,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
         },
       },
     });
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request({ query: "SELECT ?s WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(200);
@@ -154,7 +145,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
 
   it("executes a SPARQL UPDATE and reports ok", async () => {
     const sparql = vi.fn().mockResolvedValue({ kind: "void" });
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request({
       query: 'INSERT DATA { <urn:subject> <urn:predicate> "value" }',
@@ -173,7 +164,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
   it("forwards the client-disconnect signal and timeout to the SPARQL client", async () => {
     const controller = new AbortController();
     const sparql = vi.fn().mockResolvedValue({ kind: "void" });
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request(
       { query: "SELECT * WHERE { ?s ?p ?o }" },
@@ -224,7 +215,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
           );
         }),
     );
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const promise = request(
       { query: "SELECT * WHERE { ?s ?p ?o }" },
@@ -242,7 +233,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
 
   it("returns a structured 400 for unsupported SPARQL result kinds", async () => {
     const sparql = vi.fn().mockResolvedValue({ kind: "construct" });
-    createLibsqlSdkMock.mockResolvedValue({ sparql } as never);
+    getWorldSdkMock.mockResolvedValue({ sparql } as never);
 
     const res = await request({
       query: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",

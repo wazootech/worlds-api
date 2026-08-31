@@ -1,10 +1,9 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { createLibsqlWorldsSdk } from "@worlds/libsql";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_READ } from "../lib/auth";
-import { resolveWorldDatabase, worldDb } from "../lib/world-db";
+import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
 import {
   SearchRequestSchema,
@@ -101,8 +100,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       }
 
       const limit = body.limit ?? 20;
-      const db = worldDb(ref);
-      const client = await createLibsqlWorldsSdk({ client: db });
+      const client = await getWorldSdk(env, ref);
 
       try {
         const searchTopK = body.topK ?? ref.topK;
@@ -125,16 +123,16 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       } catch {
         const likePattern = `%${body.query}%`;
 
-        const quadRows = await db.execute({
-          sql: "SELECT s, p, o FROM quads WHERE s LIKE ? OR p LIKE ? OR o LIKE ? LIMIT ?",
-          args: [likePattern, likePattern, likePattern, limit],
-        });
+        const stmt = env.DB.prepare(
+          "SELECT s, p, o FROM quads WHERE s LIKE ? OR p LIKE ? OR o LIKE ? AND world_uid = ? LIMIT ?",
+        ).bind(likePattern, likePattern, likePattern, worldUid, limit);
+        const quadRows = await stmt.all<{ s: string; p: string; o: string }>();
 
         return respond(c, {
-          results: quadRows.rows.map((r) => ({
-            subject: String(r.s),
-            predicate: String(r.p),
-            object: String(r.o),
+          results: quadRows.results.map((r) => ({
+            subject: r.s,
+            predicate: r.p,
+            object: r.o,
           })),
           mode: "fallback",
         });
