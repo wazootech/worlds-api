@@ -86,7 +86,11 @@ export const PER_WORLD_DDL = [
  */
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
-    await db.exec(ddl);
+    try {
+      await db.prepare(ddl).run();
+    } catch {
+      // Table/index already exists — ignore
+    }
   }
 }
 
@@ -96,13 +100,19 @@ export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
  */
 export async function ensurePerWorldSchema(db: D1Database): Promise<void> {
   for (const ddl of PER_WORLD_DDL) {
-    await db.exec(ddl);
+    try {
+      await db.prepare(ddl).run();
+    } catch {
+      // Table/index already exists — ignore
+    }
   }
-  // FTS5 external-content table (must be created via exec, not batch)
+  // FTS5 external-content table
   try {
-    await db.exec(
-      `CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(fts_value, world_uid UNINDEXED, quad_id UNINDEXED)`,
-    );
+    await db
+      .prepare(
+        `CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(fts_value, world_uid UNINDEXED, quad_id UNINDEXED)`,
+      )
+      .run();
   } catch {
     // FTS5 table may already exist — ignore
   }
