@@ -18,7 +18,11 @@ class MockD1PreparedStatement {
   ) {}
 
   bind(...values: unknown[]): MockD1PreparedStatement {
-    const stmt = new MockD1PreparedStatement(this.store, this.sql, this.allRows);
+    const stmt = new MockD1PreparedStatement(
+      this.store,
+      this.sql,
+      this.allRows,
+    );
     stmt.boundArgs = [...values];
     return stmt;
   }
@@ -41,11 +45,7 @@ export class MockD1Database {
   private tables = new Map<string, Record<string, unknown>[]>();
 
   prepare(sql: string): MockD1PreparedStatement {
-    return new MockD1PreparedStatement(
-      new Map(),
-      sql,
-      this.tables,
-    );
+    return new MockD1PreparedStatement(new Map(), sql, this.tables);
   }
 
   batch(_statements: unknown[]): Promise<unknown[]> {

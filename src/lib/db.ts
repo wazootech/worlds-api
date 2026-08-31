@@ -21,7 +21,8 @@ export async function query<T>(
   sql: string,
   args?: unknown[],
 ): Promise<T[]> {
-  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const stmt =
+    args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
   const result = await stmt.all<Record<string, unknown>>();
   return result.results as unknown as T[];
 }
@@ -32,7 +33,8 @@ export async function queryOne<T>(
   sql: string,
   args?: unknown[],
 ): Promise<T | null> {
-  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const stmt =
+    args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
   const row = await stmt.first<Record<string, unknown>>();
   if (!row) return null;
   return row as unknown as T;
@@ -44,7 +46,8 @@ export async function execute(
   sql: string,
   args?: unknown[],
 ): Promise<{ rowsAffected: number }> {
-  const stmt = args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
+  const stmt =
+    args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
   const result = await stmt.run();
   return { rowsAffected: result.meta?.changes ?? 0 };
 }

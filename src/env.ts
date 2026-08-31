@@ -50,7 +50,8 @@ export function fromProcessEnv(): Env {
   // D1 bindings aren't available via process.env — this path is only used
   // for local development with miniflare, where DB is injected at runtime.
   return {
-    DB: (globalThis as any).__D1_DATABASE__ as import("@cloudflare/workers-types").D1Database,
+    DB: (globalThis as any)
+      .__D1_DATABASE__ as import("@cloudflare/workers-types").D1Database,
     WORLDS_ADMIN_KEY: process.env.WORLDS_ADMIN_KEY,
     WAZOO_ENV: process.env.WAZOO_ENV,
     PORT: process.env.PORT,

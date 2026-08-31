@@ -120,8 +120,9 @@ const createRouteDef = createRoute({
   path: "/worlds",
   tags: ["Worlds"],
   operationId: "createWorld",
-  summary: "Create world",    description:
-      "Create a new world. Allocates a new world_uid in the shared D1 database and initializes the search and vector indexes.",
+  summary: "Create world",
+  description:
+    "Create a new world. Allocates a new world_uid in the shared D1 database and initializes the search and vector indexes.",
   "x-mint": { metadata: { title: "Create world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -149,7 +150,6 @@ const createRouteDef = createRoute({
         },
       },
     },
-
   },
 });
 

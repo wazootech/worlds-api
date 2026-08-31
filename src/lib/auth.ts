@@ -65,10 +65,16 @@ export async function authorize(
   const hash = await sha256Hex(token);
 
   try {
-    const stmt = db.prepare(
-      "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
-    ).bind(hash);
-    const rs = await stmt.all<{ namespace: string; world_id: string | null; scopes: string | null }>();
+    const stmt = db
+      .prepare(
+        "SELECT namespace, world_id, scopes FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
+      )
+      .bind(hash);
+    const rs = await stmt.all<{
+      namespace: string;
+      world_id: string | null;
+      scopes: string | null;
+    }>();
 
     if (rs.results.length === 0) {
       return { admin: false };

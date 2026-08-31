@@ -46,7 +46,8 @@ export async function provisionWorld(
   const db = getDb(env);
   const ts = now();
   const displayName = options.displayName ?? worldUid;
-  const embeddingModel = options.embeddingModel ?? "tfjs-universal-sentence-encoder";
+  const embeddingModel =
+    options.embeddingModel ?? "tfjs-universal-sentence-encoder";
   const chunkSize = options.chunkSize ?? 1000;
   const topK = options.topK ?? 20;
   const minScore = options.minScore ?? 0.0;
@@ -56,7 +57,17 @@ export async function provisionWorld(
     `INSERT INTO worlds (uid, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
      RETURNING *`,
-    [worldUid, namespace, displayName, embeddingModel, chunkSize, topK, minScore, ts, ts],
+    [
+      worldUid,
+      namespace,
+      displayName,
+      embeddingModel,
+      chunkSize,
+      topK,
+      minScore,
+      ts,
+      ts,
+    ],
   );
   return row!;
 }

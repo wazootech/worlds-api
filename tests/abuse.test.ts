@@ -12,8 +12,6 @@ vi.mock("../src/lib/world-db", () => ({
 const getWorldSdkMock = vi.mocked(getWorldSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 
-
-
 const env = {
   DB: {} as any,
   WORLDS_ADMIN_KEY: "test-admin-key",
@@ -89,8 +87,16 @@ beforeEach(() => {
 
   // Mock D1 for auth queries — intercept prepare().bind().all()
   const apiKeyRows: Record<string, any> = {};
-  apiKeyRows[readOnlyHashVal] = { namespace: "ns", world_id: null, scopes: '["data:read"]' };
-  apiKeyRows[fullHashVal] = { namespace: "ns", world_id: null, scopes: '["data:read","data:write"]' };
+  apiKeyRows[readOnlyHashVal] = {
+    namespace: "ns",
+    world_id: null,
+    scopes: '["data:read"]',
+  };
+  apiKeyRows[fullHashVal] = {
+    namespace: "ns",
+    world_id: null,
+    scopes: '["data:read","data:write"]',
+  };
 
   const mockDb = {
     prepare: (sql: string) => ({
