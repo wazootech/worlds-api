@@ -349,7 +349,7 @@ export function registerImportExportRoutes(
         const quads = exported.kind === "quads" ? exported.quads : [];
         const data =
           fmt === "application/trig"
-            ? await serializeQuadsToTrig(quads)
+            ? serializeQuadsToTrig(quads)
             : serializeQuadsToJsonLd(quads);
 
         return c.text(data, 200, {
