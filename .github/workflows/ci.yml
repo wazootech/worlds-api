@@ -67,7 +67,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run health:local -- https://worlds-api-qa.wazoo.dev
+      - run: npm run health:local -- https://data-qa.wazoo.dev
         env:
           WORLDS_ADMIN_KEY: ${{ secrets.WORLDS_ADMIN_KEY }}
 
