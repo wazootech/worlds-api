@@ -146,7 +146,7 @@ export const openApiDocOptions = {
     description:
       "Data-plane API for Wazoo Worlds — search, SPARQL, import, export, and World lifecycle.",
   },
-  servers: [{ url: "https://worlds-api.wazoo.dev", description: "Worlds API" }],
+  servers: [{ url: "https://data.wazoo.dev", description: "Worlds API" }],
   security: [{ bearerWorldsToken: [] }],
 };
 

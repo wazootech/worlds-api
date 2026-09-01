@@ -3,11 +3,13 @@
 ## Local development setup
 
 1. Install dependencies:
+
    ```sh
    npm install
    ```
 
 2. Copy the local dev vars template:
+
    ```sh
    cp .dev.vars.example .dev.vars
    ```
@@ -15,6 +17,7 @@
 3. Fill in `.dev.vars` with real values.
 
 4. Start the local dev server:
+
    ```sh
    npm run dev
    ```
@@ -29,7 +32,7 @@
 ## Health checks
 
 - Local: `npm run health:local`
-- QA: `npm run health:local -- https://worlds-api-qa.wazoo.dev`
+- QA: `npm run health:local -- https://data-qa.wazoo.dev`
 
 Health checks require `WORLDS_ADMIN_KEY` to be set.
 

@@ -1,12 +1,12 @@
 # Worlds API
 
-Data-plane API for Wazoo worlds. This repo owns the `worlds-api.wazoo.dev`
+Data-plane API for Wazoo worlds. This repo owns the `data.wazoo.dev`
 Cloudflare Worker and the optional Docker image used by VPS compositions.
 
 ## Responsibility
 
 - World data metadata inside the data plane.
-- Quad/chunk storage backed by libSQL.
+- Quad/chunk storage backed by Cloudflare D1.
 - Search, import, and export endpoints.
 - World-scoped API keys with the `wzw_` prefix.
 - Deployment config for this one service: `wrangler.toml`, `Dockerfile`,
@@ -20,10 +20,10 @@ beta, `wazoo-api` passes `namespace = user.uid`.
 The Wazoo Worlds surface is split into two planes, each with its own auth
 surface and its own client package:
 
-| Plane                 | Service                               | Auth                     | Owns                                                                                                                                                | Client                                                                                 |
-| --------------------- | ------------------------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Platform (management) | `wazoo-api` (`api.wazoo.dev`)         | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the _policy facade_ over worlds                                                                | `@wazoo/client` (generated from the platform OpenAPI)                                  |
-| Data plane            | `worlds-api` (`worlds-api.wazoo.dev`) | world keys (`wzw_`)      | world _data_: per-world LibSQL databases, `worlds_metadata`, `api_keys`, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | the generated `@worlds/client` data-plane HTTP client and the embeddable `@worlds/sdk` |
+| Plane                 | Service                         | Auth                     | Owns                                                                                                                           | Client                                                                                 |
+| --------------------- | ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| Platform (management) | `wazoo-api` (`api.wazoo.dev`)   | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the _policy facade_ over worlds                                           | `@wazoo/client` (generated from the platform OpenAPI)                                  |
+| Data plane            | `worlds-api` (`data.wazoo.dev`) | world keys (`wzw_`)      | world data in shared Cloudflare D1, metadata, keys, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | the generated `@worlds/client` data-plane HTTP client and the embeddable `@worlds/sdk` |
 
 ### The cut (intentional)
 
@@ -93,16 +93,17 @@ admin-only and exist for the platform facade and account-deletion flows.
 
 ## Configuration
 
-- `LIBSQL_URL`: worlds data libSQL URL, e.g. `file:/data/worlds.db` or
-  `libsql://...`.
-- `LIBSQL_AUTH_TOKEN`: optional auth token for remote libSQL.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management.
+
+The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema is
+required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
+indexes, search tables, and schema compatibility checks.
 
 ## Health checks
 
 - Local: `npm run health:local`
-- QA: `npm run health:local -- https://worlds-api-qa.wazoo.dev`
+- QA: `npm run health:local -- https://data-qa.wazoo.dev`
 
 Requires `WORLDS_ADMIN_KEY` to exercise authenticated endpoints.
 
@@ -134,4 +135,4 @@ docker compose up
 
 GitHub Actions validates formatting, typechecking, build, Worker dry deploy,
 Docker build, publishes the GHCR image on `main`, and deploys
-`worlds-api.wazoo.dev` on `main`.
+`data.wazoo.dev` on `main`.

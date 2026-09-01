@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://worlds-api.wazoo.dev",
+      "url": "https://data.wazoo.dev",
       "description": "Worlds API"
     }
   ],
@@ -1283,7 +1283,7 @@
         ],
         "operationId": "importWorld",
         "summary": "Import graph data",
-        "description": "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's LibSQL database and indexed for vector search.",
+        "description": "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
         "x-mint": {
           "metadata": {
             "title": "Import graph data"

@@ -36,7 +36,7 @@ export function registerImportExportRoutes(
       operationId: "importWorld",
       summary: "Import graph data",
       description:
-        "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's LibSQL database and indexed for vector search.",
+        "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
       "x-mint": { metadata: { title: "Import graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
