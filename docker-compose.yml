@@ -3,10 +3,6 @@ services:
     build: .
     ports: ["8080:8080"]
     environment:
-      - LIBSQL_URL=file:/data/worlds.db
       - WORLDS_ADMIN_KEY=wzp_dev_admin_key
-    volumes:
-      - worlds-data:/data
-
-volumes:
-  worlds-data: {}
+    # worlds-api storage is bound at deploy time (Cloudflare D1); the
+    # container no longer accepts a Turso/LibSQL URL via environment.

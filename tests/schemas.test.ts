@@ -29,7 +29,7 @@ describe("CreateWorldRequestSchema", () => {
   it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
     const result = CreateWorldRequestSchema.safeParse({
       worldId: "my-world",
-      databaseUrl: "libsql://example.com",
+      databaseUrl: "d1://example.com",
     });
     expect(result.success).toBe(true);
     if (result.success) {
