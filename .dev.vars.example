@@ -1,21 +1,13 @@
 # Local development variables for worlds-api
 # Copy this file to `.dev.vars` and fill in real values.
 
-# Worlds data libSQL database URL.
-LIBSQL_URL="file:/data/worlds.db"
-
-# Optional auth token for remote libSQL.
-LIBSQL_AUTH_TOKEN=""
+# The data plane runs on a single Cloudflare D1 database. Wrangler supplies
+# the `DB` binding (see wrangler.toml) — no database URL is needed.
+# Apply schema with: npx wrangler d1 migrations apply worlds-api --local
 
 # Admin key used by wazoo-api for provisioning and API-key management.
 # Must match the WORLDS_API_ADMIN_KEY secret configured on the wazoo-api Worker.
 WORLDS_ADMIN_KEY="replace_me"
 
-# Turso platform credentials used to provision and destroy per-world databases.
-# Use a group-scoped token with least privilege.
-TURSO_ORG=""
-TURSO_GROUP=""
-TURSO_PLATFORM_API_TOKEN=""
-
-# Environment label used in the Turso database name (prod/qa).
+# Environment label.
 WAZOO_ENV="dev"
