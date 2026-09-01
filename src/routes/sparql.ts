@@ -23,7 +23,7 @@ const SPARQL_TIMEOUT_MESSAGE = "SPARQL query timed out";
 /**
  * materializeBindings drains SPARQL bindings before the response is
  * serialized. Engines may hand back a live stream; stream-evaluation errors
- * (e.g. an unhandled term comparator while sorting on an unbound OPTIONAL
+ * (e.g., an unhandled term comparator while sorting on an unbound OPTIONAL
  * variable) otherwise fire asynchronously during JSON serialization and
  * escape the route's try/catch, crashing the Worker with Error 1101.
  * Draining here turns those errors into a rejection the route can map to a
@@ -187,11 +187,6 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const client = await getWorldSdk(env, ref);
 
       try {
-        // The engine composes the caller signal with the timeout into one
-        // controller (first wins) and clears its timer on completion, so the
-        // route no longer races a second timer. The signal forwards the
-        // client disconnect (c.req.raw.signal) so an in-flight query aborts
-        // at the next evaluation boundary instead of burning a Worker slot.
         const result = await client.sparql({
           query: body.query,
           signal: c.req.raw.signal,
@@ -228,9 +223,6 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           400,
         );
       } catch (error) {
-        // Client disconnect: the request signal fired, so the response can
-        // never be delivered. Return an empty body rather than serializing a
-        // pointless error to a dead connection.
         if (c.req.raw.signal.aborted) {
           return c.body(null);
         }

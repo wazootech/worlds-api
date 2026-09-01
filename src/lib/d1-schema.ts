@@ -106,11 +106,11 @@ export async function ensurePerWorldSchema(db: D1Database): Promise<void> {
       // Table/index already exists — ignore
     }
   }
-  // FTS5 external-content table
+  // FTS5 external-content table (matches @worlds/cloudflare's D1SchemaBuilder)
   try {
     await db
       .prepare(
-        `CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(fts_value, world_uid UNINDEXED, quad_id UNINDEXED)`,
+        `CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(fts_value, content='chunks', content_rowid='id')`,
       )
       .run();
   } catch {
