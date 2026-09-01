@@ -1,10 +1,7 @@
 import app from "./app";
 import { fromBindings } from "./env";
 import { runPurgeSweep } from "./lib/purge";
-import {
-  ensureControlPlaneSchema,
-  ensurePerWorldSchema,
-} from "./lib/d1-schema";
+import { ensureControlPlaneSchema } from "./lib/d1-schema";
 
 export default {
   fetch: app.fetch,
@@ -15,9 +12,7 @@ export default {
   ) {
     const bindings = fromBindings(env as Record<string, unknown>);
     ctx.waitUntil(
-      ensureControlPlaneSchema(bindings.DB)
-        .then(() => ensurePerWorldSchema(bindings.DB))
-        .then(() => runPurgeSweep(bindings)),
+      ensureControlPlaneSchema(bindings.DB).then(() => runPurgeSweep(bindings)),
     );
   },
 };

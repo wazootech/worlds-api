@@ -2,7 +2,6 @@ import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
 import type { WorldsSdkInterface } from "@worlds/sdk";
 import type { Env } from "../env";
 import { queryOne } from "./db";
-import { WorldScopedD1 } from "./d1-world";
 
 /**
  * Per-world database reference. With the single-D1 model, there's no separate
@@ -57,9 +56,8 @@ export async function resolveWorldDatabase(
 
 /**
  * Returns a WorldsSdk backed by the single D1 binding, scoped to a specific
- * world via the WorldScopedD1 wrapper. The wrapper intercepts all D1 queries
- * to inject `world_uid` filtering, giving each world its own isolated view of
- * the shared database.
+ * world via the SDK's native worldUid option. The SDK owns all data-plane
+ * scoping and schema validation for the shared database.
  *
  * The SDK is cached per world_uid — initialization (schema check) only runs
  * once per world per worker lifetime.
@@ -71,10 +69,9 @@ export async function getWorldSdk(
   const cached = sdkCache.get(ref.worldUid);
   if (cached) return cached;
 
-  const scopedDb = new WorldScopedD1(env.DB, ref.worldUid);
-
   const sdk = await createCloudflareWorldsSdk({
-    database: scopedDb as any, // D1DatabaseLike structural match
+    database: env.DB,
+    worldUid: ref.worldUid,
   });
 
   sdkCache.set(ref.worldUid, sdk);

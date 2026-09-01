@@ -105,10 +105,7 @@ app.notFound((c) => {
 });
 
 import { registerReindexRoutes } from "./routes/reindex";
-import {
-  ensureControlPlaneSchema,
-  ensurePerWorldSchema,
-} from "./lib/d1-schema";
+import { ensureControlPlaneSchema } from "./lib/d1-schema";
 
 // One-time D1 schema initialization. Cloudflare Workers reuse the global
 // scope across requests within the same isolate, so this flag prevents
@@ -122,7 +119,6 @@ app.use("*", async (c, next) => {
     // Guard: skip if DB is a test mock without exec (tests mock DB as {})
     if (db && typeof (db as any).exec === "function") {
       await ensureControlPlaneSchema(db);
-      await ensurePerWorldSchema(db);
       schemaInitialized = true;
     }
   }

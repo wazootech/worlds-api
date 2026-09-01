@@ -1,9 +1,8 @@
 /**
- * D1 schema for the worlds-api.
+ * Control-plane D1 schema for worlds-api.
  *
- * The single D1 database holds both control-plane tables (worlds, api_keys)
- * and per-world data tables (quads, chunks, chunks_fts). Per-world tables
- * carry a `world_uid` column for logical separation.
+ * RDF quads, search chunks, FTS tables, and their indexes are data-plane
+ * objects owned and initialized by @worlds/cloudflare.
  */
 
 /** DDL for the control-plane tables. */
@@ -40,80 +39,21 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-/** DDL for per-world data tables (quads, chunks, FTS5). */
-export const PER_WORLD_DDL = [
-  // 10-column quads table matching @worlds/cloudflare's D1 schema
-  `CREATE TABLE IF NOT EXISTS quads (
-    id TEXT PRIMARY KEY,
-    s TEXT NOT NULL,
-    s_type TEXT NOT NULL,
-    p TEXT NOT NULL,
-    o TEXT NOT NULL,
-    o_type TEXT NOT NULL,
-    o_datatype TEXT,
-    o_lang TEXT,
-    g TEXT NOT NULL,
-    g_type TEXT NOT NULL,
-    world_uid TEXT NOT NULL DEFAULT ''
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_spog ON quads(s, p, o, g)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_sopg ON quads(s, o, p, g)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_pso ON quads(p, s, o)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_pos ON quads(p, o, s)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_ospg ON quads(o, s, p, g)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_opsg ON quads(o, p, s, g)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_gpso ON quads(g, p, s, o)`,
-  `CREATE INDEX IF NOT EXISTS idx_quads_world ON quads(world_uid)`,
-  // Chunks table for search content
-  `CREATE TABLE IF NOT EXISTS chunks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    quad_id TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    predicate TEXT NOT NULL,
-    graph TEXT NOT NULL,
-    value TEXT NOT NULL,
-    fts_value TEXT NOT NULL,
-    vector F32_BLOB(1536),
-    world_uid TEXT NOT NULL DEFAULT ''
-  )`,
-  `CREATE INDEX IF NOT EXISTS idx_chunks_quad_id ON chunks(quad_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_chunks_world ON chunks(world_uid)`,
-];
+/** @deprecated Data-plane tables are owned by @worlds/cloudflare. */
+export const PER_WORLD_DDL: string[] = [];
 
-/**
- * Initializes the control-plane schema. Idempotent — safe to call on every
- * worker startup.
- */
+/** Initializes the control-plane schema. Idempotent and safe at worker startup. */
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
     try {
       await db.prepare(ddl).run();
     } catch {
-      // Table/index already exists — ignore
+      // Table/index already exists.
     }
   }
 }
 
-/**
- * Initializes per-world data tables. Idempotent. Called once for the shared
- * database — the `world_uid` column provides logical separation.
- */
-export async function ensurePerWorldSchema(db: D1Database): Promise<void> {
-  for (const ddl of PER_WORLD_DDL) {
-    try {
-      await db.prepare(ddl).run();
-    } catch {
-      // Table/index already exists — ignore
-    }
-  }
-  // FTS5 external-content table (matches @worlds/cloudflare's D1SchemaBuilder)
-  try {
-    await db
-      .prepare(
-        `CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(fts_value, content='chunks', content_rowid='id')`,
-      )
-      .run();
-  } catch {
-    // FTS5 table may already exist — ignore
-  }
+/** @deprecated Data-plane schema initialization is performed by the SDK factory. */
+export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {
+  // Kept as a no-op compatibility shim for existing imports.
 }

@@ -23,7 +23,7 @@
     "@langchain/core": "^1.2.3",
     "@rdfjs/types": "^2.0.1",
     "@wazoo/sparql-engine": "npm:@jsr/wazoo__sparql-engine@^0.4.1",
-    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.4.1",
+    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.4.2",
     "@worlds/sdk": "npm:@jsr/worlds__sdk@^0.6.1",
     "@worlds/sqlite": "npm:@jsr/worlds__sqlite@^0.6.0",
     "hono": "^4.10.3",
