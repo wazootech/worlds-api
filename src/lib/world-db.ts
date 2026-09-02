@@ -87,19 +87,40 @@ export async function getWorldSdk(
   const cached = sdkCache.get(key);
   if (cached) return cached;
 
+  // Phase C (worlds-api#1): thread the Vectorize binding so the engine can
+  // fuse keyword + vector rankings. Embeddings remain unconfigured until the
+  // BYOK embedding-key API lands — the engine degrades to keyword-only
+  // gracefully without an embeddingService. An explicitly configured provider
+  // that isn't implemented yet must fail loudly rather than silently regress
+  // to keyword-only.
+  if (env.EMBEDDING_PROVIDER) {
+    throw new Error(
+      "EMBEDDING_PROVIDER is set but no embedding provider is implemented yet " +
+        "(worlds-api#1 BYOK is charted, not built); remove the var to stay keyword-only",
+    );
+  }
+
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
     worldUid: ref.worldUid,
     ...(candidateCount !== undefined && { candidateCount }),
+    ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),
   });
 
   sdkCache.set(key, sdk);
   return sdk;
 }
 
-/** Clear the SDK cache for a specific world (e.g., after state changes). */
+/**
+ * Clear the SDK cache for a specific world (e.g., after state changes),
+ * including candidateCount-suffixed instances (`worldUid:20` etc.).
+ */
 export function clearSdkCacheForWorld(worldUid: string): void {
-  sdkCache.delete(worldUid);
+  for (const key of [...sdkCache.keys()]) {
+    if (key === worldUid || key.startsWith(`${worldUid}:`)) {
+      sdkCache.delete(key);
+    }
+  }
 }
 
 /** Clear the entire SDK cache (e.g., after schema changes or namespace delete). */

@@ -206,6 +206,64 @@ describe("POST /worlds/:id/search endpoint", () => {
     expect(body.results[0]).not.toHaveProperty("object");
   });
 
+  it("passes through the engine's hybrid mode and cosine scoreType (Phase C)", async () => {
+    const search = mockSearchClient();
+    search.mockResolvedValue({
+      mode: "hybrid",
+      results: [
+        {
+          id: "id-0",
+          subject: "urn:s",
+          predicate: "urn:p",
+          graph: "",
+          text: "semantic hit",
+          score: 0.87,
+          scoreType: "cosine",
+        },
+        {
+          id: "id-1",
+          subject: "urn:s2",
+          predicate: "urn:p",
+          graph: "",
+          text: "keyword hit",
+          score: 0.9,
+          scoreType: "rrf",
+        },
+      ],
+    });
+
+    const res = await request({ query: "find me" });
+    const body = await res.json();
+    expect(body.mode).toBe("hybrid");
+    // The engine's cosine signal must not be erased at the API boundary.
+    expect(body.results[0].scoreType).toBe("cosine");
+    expect(body.results[0].score).toBe(0.87);
+    expect(body.results[0].content).toBe("semantic hit");
+  });
+
+  it("passes through semantic mode when only vectors matched", async () => {
+    const search = mockSearchClient();
+    search.mockResolvedValue({
+      mode: "semantic",
+      results: [
+        {
+          id: "id-0",
+          subject: "urn:s",
+          predicate: "urn:p",
+          graph: "",
+          text: "vector only",
+          score: 1.0,
+          scoreType: "cosine",
+        },
+      ],
+    });
+
+    const res = await request({ query: "###" });
+    const body = await res.json();
+    expect(body.mode).toBe("semantic");
+    expect(body.results[0].scoreType).toBe("cosine");
+  });
+
   it("normalized score scale: rank 0 emits 1.0", async () => {
     const search = mockSearchClient();
     search.mockResolvedValue({

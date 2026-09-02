@@ -25,6 +25,46 @@ declare module "@worlds/cloudflare" {
      * (100) when unset.
      */
     candidateCount?: number;
+    /**
+     * Vectorize binding for hybrid/semantic search (Phase C, worlds-api#1).
+     * Minimal duck-typed surface matching VectorizeIndexLike in the real
+     * package (same convention as D1DatabaseLike).
+     */
+    vectorize?: {
+      query(
+        vector: number[],
+        options?: {
+          topK?: number;
+          filter?: Record<string, string>;
+          returnValues?: boolean;
+          returnMetadata?: boolean;
+        },
+      ): Promise<{
+        matches: Array<{
+          id: string;
+          score: number;
+          // unknown keeps the real VectorizeIndex assignable (workers-types'
+          // VectorizeMatch.metadata is VectorizeVectorMetadata).
+          metadata?: unknown;
+        }>;
+        count: number;
+      }>;
+      upsert(
+        vectors: Array<{
+          id: string;
+          values: number[];
+          metadata?: Record<string, string>;
+        }>,
+      ): Promise<unknown>;
+      deleteByIds(ids: string[]): Promise<unknown>;
+    };
+    /**
+     * Embedding service that turns chunk text into query/chunk vectors. Only
+     * active together with `vectorize` — otherwise search is keyword-only.
+     */
+    embeddingService?: {
+      embed(inputs: string[]): Promise<number[][]>;
+    };
   }
 
   export function createCloudflareWorldsSdk(
@@ -54,6 +94,8 @@ declare module "@worlds/sdk" {
     scoreType?: "rrf" | "cosine" | "unranked";
   }
 
+  export type SearchMode = "semantic" | "keyword" | "hybrid" | "fallback";
+
   export interface WorldsSdkInterface {
     sparql(options: {
       query: string;
@@ -65,7 +107,7 @@ declare module "@worlds/sdk" {
         query: string;
         minScore?: number;
       } & QuadFilter,
-    ): Promise<{ results?: SearchResult[] }>;
+    ): Promise<{ results?: SearchResult[]; mode?: SearchMode }>;
     import(options: { source: any }): Promise<void>;
     export(options: { format: any }): Promise<any>;
     reindex?(): Promise<void>;
