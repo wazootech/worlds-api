@@ -120,7 +120,11 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
             score: r.score,
             scoreType: r.scoreType ?? "rrf",
           })),
-          mode: "keyword",
+          // Pass through the engine's reported mode (hybrid/semantic/keyword,
+          // Phase C, worlds-api#1) instead of hardcoding keyword — the engine
+          // reports which search mode actually ran per the hosted search
+          // contract D5 (worlds-api#30).
+          mode: response.mode ?? "keyword",
         });
       } catch {
         const likePattern = `%${body.query}%`;

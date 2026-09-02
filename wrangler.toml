@@ -15,6 +15,17 @@ binding = "DB"
 database_name = "worlds-api"
 database_id = "a30635e0-c584-4447-8966-69d9b1f8a4eb"
 
+# Phase C (worlds-api#1) seam: hybrid/semantic search activates only when this
+# Vectorize index exists AND an embedding provider is configured. Until then,
+# search is keyword-only (the engine degrades gracefully). Provision with:
+#   wrangler vectorize create worlds-api-v1 --dimensions 1536 --metric cosine --instruction ""
+#   wrangler vectorize create worlds-api-v1-metadata --dimensions 1536 --metric cosine
+# (the metadata-config index registers world_uid as a filterable property).
+# Uncomment when the embedding source (BYOK — pending #1 acceptance) lands:
+# [[vectorize]]
+# binding = "VECTORIZE_INDEX"
+# index_name = "worlds-api-v1-metadata"
+
 [vars]
 WAZOO_ENV = "prod"
 
@@ -31,6 +42,11 @@ crons = ["0 0 * * *"]
 binding = "DB"
 database_name = "worlds-api-qa"
 database_id = "35823dc3-c46f-43ad-9e7b-19fe1025493f"
+
+# Phase C seam — same Vectorize provisioning as prod (separate qa index).
+# [[env.qa.vectorize]]
+# binding = "VECTORIZE_INDEX"
+# index_name = "worlds-api-qa-v1-metadata"
 
 [env.qa.vars]
 WAZOO_ENV = "qa"
