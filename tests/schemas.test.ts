@@ -132,6 +132,50 @@ describe("SearchRequestSchema", () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it("rejects limit above the 100 contract cap", () => {
+    const result = SearchRequestSchema.safeParse({
+      query: "find me",
+      limit: 101,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("strips topK from the public contract", () => {
+    const result = SearchRequestSchema.safeParse({
+      query: "find me",
+      topK: 50,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.topK).toBeUndefined();
+    }
+  });
+
+  it("accepts include/exclude filter with subject/predicate/graph lists", () => {
+    const result = SearchRequestSchema.safeParse({
+      query: "find me",
+      filter: {
+        include: { predicates: ["http://schema.org/name"] },
+        exclude: { graphs: ["urn:private"] },
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.filter?.include?.predicates).toEqual([
+        "http://schema.org/name",
+      ]);
+      expect(result.data.filter?.exclude?.graphs).toEqual(["urn:private"]);
+    }
+  });
+
+  it("rejects filter with non-string subject lists", () => {
+    const result = SearchRequestSchema.safeParse({
+      query: "find me",
+      filter: { include: { subjects: [42] } },
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("SparqlRequestSchema", () => {
