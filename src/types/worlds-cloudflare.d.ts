@@ -18,6 +18,13 @@ declare module "@worlds/cloudflare" {
     worldUid?: string;
     textSplitter?: any;
     searchIndexOnImport?: "incremental" | "deferred" | "disabled";
+    /**
+     * candidateCount sizes the search-index candidate pool at the SQL level
+     * (provider-internal per the hosted search contract, worlds-api#30 D2).
+     * Routes pass max(limit, world.topK); defaults to the search index's limit
+     * (100) when unset.
+     */
+    candidateCount?: number;
   }
 
   export function createCloudflareWorldsSdk(
@@ -26,17 +33,39 @@ declare module "@worlds/cloudflare" {
 }
 
 declare module "@worlds/sdk" {
+  export interface QuadFilterValue {
+    subjects?: string[];
+    predicates?: string[];
+    graphs?: string[];
+  }
+
+  export interface QuadFilter {
+    include?: QuadFilterValue;
+    exclude?: QuadFilterValue;
+  }
+
+  export interface SearchResult {
+    id: string;
+    subject: string;
+    predicate: string;
+    graph: string;
+    text: string;
+    score: number;
+    scoreType?: "rrf" | "cosine" | "unranked";
+  }
+
   export interface WorldsSdkInterface {
     sparql(options: {
       query: string;
       signal?: AbortSignal;
       timeoutMs?: number;
     }): Promise<any>;
-    search(options: {
-      query: string;
-      topK?: number;
-      minScore?: number;
-    }): Promise<{ results: any[] }>;
+    search(
+      options: {
+        query: string;
+        minScore?: number;
+      } & QuadFilter,
+    ): Promise<{ results?: SearchResult[] }>;
     import(options: { source: any }): Promise<void>;
     export(options: { format: any }): Promise<any>;
     reindex?(): Promise<void>;

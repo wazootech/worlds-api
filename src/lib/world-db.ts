@@ -26,8 +26,19 @@ type WorldMetadataRow = {
   min_score: number;
 };
 
-/** Cache SDK instances by world_uid (one per active world). */
+/**
+ * Cache SDK instances keyed by world_uid plus candidateCount. The search
+ * candidate pool is provider-internal but sized per request (D2:
+ * max(limit, world.topK)), so worlds configured differently or queried with
+ * different limits may hold several SDK instances.
+ */
 const sdkCache = new Map<string, WorldsSdkInterface>();
+
+function sdkCacheKey(worldUid: string, candidateCount?: number): string {
+  return candidateCount === undefined
+    ? worldUid
+    : `${worldUid}:${candidateCount}`;
+}
 
 /**
  * Resolves a world's metadata by its canonical world_uid. Only worlds in an
@@ -59,22 +70,30 @@ export async function resolveWorldDatabase(
  * world via the SDK's native worldUid option. The SDK owns all data-plane
  * scoping and schema validation for the shared database.
  *
- * The SDK is cached per world_uid — initialization (schema check) only runs
- * once per world per worker lifetime.
+ * candidateCount sizes the search candidate pool at the SQL level
+ * (provider-internal per the hosted search contract, worlds-api#30 D2). Routes
+ * pass `max(limit, world.topK)`; omit it for non-search callers, which get the
+ * SDK's default (limit 100).
+ *
+ * The SDK is cached per world_uid and candidateCount — initialization (schema
+ * check) only runs once per distinct combination per worker lifetime.
  */
 export async function getWorldSdk(
   env: Env,
   ref: WorldDatabaseRef,
+  candidateCount?: number,
 ): Promise<WorldsSdkInterface> {
-  const cached = sdkCache.get(ref.worldUid);
+  const key = sdkCacheKey(ref.worldUid, candidateCount);
+  const cached = sdkCache.get(key);
   if (cached) return cached;
 
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
     worldUid: ref.worldUid,
+    ...(candidateCount !== undefined && { candidateCount }),
   });
 
-  sdkCache.set(ref.worldUid, sdk);
+  sdkCache.set(key, sdk);
   return sdk;
 }
 
