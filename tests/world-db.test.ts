@@ -43,7 +43,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldUid: "test-world",
+      worldId: "test-world",
       candidateCount: 40,
       vectorize: env.VECTORIZE_INDEX,
     });
@@ -55,7 +55,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: noVectorEnv.DB,
-      worldUid: "test-world",
+      worldId: "test-world",
     });
   });
 
@@ -64,7 +64,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldUid: "test-world",
+      worldId: "test-world",
       vectorize: env.VECTORIZE_INDEX,
     });
   });

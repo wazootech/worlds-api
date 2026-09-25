@@ -15,7 +15,7 @@ declare module "@worlds/cloudflare" {
     matchPageSize?: number;
     maxLookupChunkSize?: number;
     maxWriteBatchSize?: number;
-    worldUid?: string;
+    worldId?: string;
     textSplitter?: any;
     searchIndexOnImport?: "incremental" | "deferred" | "disabled";
     /**

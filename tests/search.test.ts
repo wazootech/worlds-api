@@ -310,11 +310,11 @@ describe("POST /worlds/:id/search endpoint", () => {
     expect(row.subject).toBe("urn:a");
     expect(row.graph).toBe("");
 
-    // The world_uid scope wraps all three LIKE clauses (regression for the
-    // operator-precedence leak where world_uid only bound to `o LIKE`).
+    // The world_id scope wraps all three LIKE clauses (regression for the
+    // operator-precedence leak where world_id only bound to `o LIKE`).
     expect(db.prepare).toHaveBeenCalledWith(
       expect.stringContaining(
-        "(s LIKE ? OR p LIKE ? OR o LIKE ?) AND world_uid = ?",
+        "(s LIKE ? OR p LIKE ? OR o LIKE ?) AND world_id = ?",
       ),
     );
     expect(db.bind).toHaveBeenCalledWith(

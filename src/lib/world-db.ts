@@ -5,7 +5,7 @@ import { queryOne } from "./db";
 
 /**
  * Per-world database reference. With the single-D1 model, there's no separate
- * database URL — all data lives in the same D1 binding, filtered by world_uid.
+ * database URL — all data lives in the same D1 binding, filtered by world_id.
  * The reference carries the world's metadata needed to initialize the SDK.
  */
 export type WorldDatabaseRef = {
@@ -27,7 +27,7 @@ type WorldMetadataRow = {
 };
 
 /**
- * Cache SDK instances keyed by world_uid plus candidateCount. The search
+ * Cache SDK instances keyed by world_id plus candidateCount. The search
  * candidate pool is provider-internal but sized per request (D2:
  * max(limit, world.topK)), so worlds configured differently or queried with
  * different limits may hold several SDK instances.
@@ -41,7 +41,7 @@ function sdkCacheKey(worldUid: string, candidateCount?: number): string {
 }
 
 /**
- * Resolves a world's metadata by its canonical world_uid. Only worlds in an
+ * Resolves a world's metadata by its canonical world_id. Only worlds in an
  * active state are reachable by the data plane; suspended or deleted worlds
  * resolve to null and routes reject with NOT_FOUND.
  */
@@ -67,7 +67,7 @@ export async function resolveWorldDatabase(
 
 /**
  * Returns a WorldsSdk backed by the single D1 binding, scoped to a specific
- * world via the SDK's native worldUid option. The SDK owns all data-plane
+ * world via the SDK's native worldId option. The SDK owns all data-plane
  * scoping and schema validation for the shared database.
  *
  * candidateCount sizes the search candidate pool at the SQL level
@@ -75,7 +75,7 @@ export async function resolveWorldDatabase(
  * pass `max(limit, world.topK)`; omit it for non-search callers, which get the
  * SDK's default (limit 100).
  *
- * The SDK is cached per world_uid and candidateCount — initialization (schema
+ * The SDK is cached per world_id and candidateCount — initialization (schema
  * check) only runs once per distinct combination per worker lifetime.
  */
 export async function getWorldSdk(
@@ -102,7 +102,7 @@ export async function getWorldSdk(
 
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
-    worldUid: ref.worldUid,
+    worldId: ref.worldUid,
     ...(candidateCount !== undefined && { candidateCount }),
     ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),
   });

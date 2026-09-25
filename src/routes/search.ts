@@ -129,11 +129,11 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       } catch {
         const likePattern = `%${body.query}%`;
 
-        // Fallback LIKE search. The world_uid scope must group all three LIKE
+        // Fallback LIKE search. The world_id scope must group all three LIKE
         // clauses or operator precedence binds it to `o LIKE` only, leaking
         // quads from other worlds (worlds-api#74).
         const stmt = env.DB.prepare(
-          "SELECT s, p, o, g FROM quads WHERE (s LIKE ? OR p LIKE ? OR o LIKE ?) AND world_uid = ? ORDER BY s LIMIT ?",
+          "SELECT s, p, o, g FROM quads WHERE (s LIKE ? OR p LIKE ? OR o LIKE ?) AND world_id = ? ORDER BY s LIMIT ?",
         ).bind(likePattern, likePattern, likePattern, worldUid, limit);
         const quadRows = await stmt.all<{
           s: string;
