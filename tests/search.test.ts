@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -72,7 +72,7 @@ function mockFallbackDb(
   return { prepare: vi.fn().mockReturnValue({ bind }), bind, all };
 }
 
-describe("POST /worlds/:id/search endpoint", () => {
+describe("POST /worlds/:worldId/search endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);

@@ -13,7 +13,7 @@ Cloudflare Worker and the optional Docker image used by VPS compositions.
   `docker-compose.yml`, and CI.
 
 This service treats `namespace` as an opaque grouping string. In Wazoo private
-beta, `wazoo-api` passes `namespace = user.uid`.
+beta, `wazoo-api` passes `namespace = userId`.
 
 ## Architecture and boundaries
 
@@ -40,7 +40,7 @@ surface and its own client package:
   `MAX_WORLDS_EXCEEDED`. The two `/worlds` surfaces are not peers — one is
   storage ownership, the other is policy.
 - `namespace` is the tenancy boundary between the planes: an opaque grouping
-  string (in the hosted beta, `wazoo-api` passes `namespace = user.uid`).
+  string (in the hosted beta, `wazoo-api` passes `namespace = userId`).
   Data-plane keys resolve namespace from the key; admin calls pass it
   explicitly.
 

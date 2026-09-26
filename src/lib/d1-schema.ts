@@ -1,14 +1,6 @@
-/**
- * Control-plane D1 schema for worlds-api.
- *
- * RDF quads, search chunks, FTS tables, and their indexes are data-plane
- * objects owned and initialized by @worlds/cloudflare.
- */
-
-/** DDL for the control-plane tables. */
-export const CONTROL_PLANE_DDL = [
+const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    uid TEXT PRIMARY KEY,
+    world_id TEXT PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',
@@ -26,7 +18,7 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_worlds_namespace ON worlds(namespace, state)`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_purge ON worlds(state, purge_status, expire_time)`,
   `CREATE TABLE IF NOT EXISTS api_keys (
-    uid TEXT PRIMARY KEY,
+    api_key_id TEXT PRIMARY KEY,
     key_hash TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
     namespace TEXT NOT NULL,
@@ -39,21 +31,69 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-/** @deprecated Data-plane tables are owned by @worlds/cloudflare. */
-export const PER_WORLD_DDL: string[] = [];
+const ID_COLUMN_MIGRATIONS = [
+  { table: "worlds", previous: "uid", current: "world_id" },
+  { table: "worlds_metadata", previous: "uid", current: "world_id" },
+  { table: "api_keys", previous: "uid", current: "api_key_id" },
+];
 
-/** Initializes the control-plane schema. Idempotent and safe at worker startup. */
-export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
-  for (const ddl of CONTROL_PLANE_DDL) {
-    try {
-      await db.prepare(ddl).run();
-    } catch {
-      // Table/index already exists.
+async function tableColumns(
+  db: D1Database,
+  table: string,
+): Promise<Set<string>> {
+  const result = await db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all<{ name: string }>();
+  return new Set(result.results.map((column) => column.name));
+}
+
+async function migrateIdentifierColumn(
+  db: D1Database,
+  migration: (typeof ID_COLUMN_MIGRATIONS)[number],
+): Promise<void> {
+  const columns = await tableColumns(db, migration.table);
+  if (columns.size === 0) return;
+
+  const hasPrevious = columns.has(migration.previous);
+  const hasCurrent = columns.has(migration.current);
+  if (hasPrevious && hasCurrent) {
+    throw new Error(
+      `Conflicting identifier columns in ${migration.table}: ${migration.previous} and ${migration.current}`,
+    );
+  }
+  if (!hasPrevious && !hasCurrent) {
+    throw new Error(
+      `Missing identifier column in ${migration.table}: expected ${migration.current}`,
+    );
+  }
+  if (!hasPrevious) return;
+
+  try {
+    await db
+      .prepare(
+        `ALTER TABLE ${migration.table} RENAME COLUMN ${migration.previous} TO ${migration.current}`,
+      )
+      .run();
+  } catch (error) {
+    const currentColumns = await tableColumns(db, migration.table);
+    if (
+      currentColumns.has(migration.current) &&
+      !currentColumns.has(migration.previous)
+    ) {
+      return;
     }
+    throw error;
   }
 }
 
-/** @deprecated Data-plane schema initialization is performed by the SDK factory. */
-export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {
-  // Kept as a no-op compatibility shim for existing imports.
+export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
+  for (const ddl of CONTROL_PLANE_DDL) {
+    await db.prepare(ddl).run();
+  }
+
+  for (const migration of ID_COLUMN_MIGRATIONS) {
+    await migrateIdentifierColumn(db, migration);
+  }
 }
+
+export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {}

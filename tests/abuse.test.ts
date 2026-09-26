@@ -33,7 +33,7 @@ const READ_ONLY_TOKEN = "test-read-only-token";
 const FULL_TOKEN = "test-full-token";
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -65,7 +65,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "mock-uid"),
+  newId: vi.fn(() => "mock-uid"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 

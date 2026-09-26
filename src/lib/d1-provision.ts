@@ -11,7 +11,7 @@ import { getDb, queryOne, execute, now } from "./db";
  */
 
 export interface WorldMetadata {
-  uid: string;
+  world_id: string;
   namespace: string;
   display_name: string;
   state: string;
@@ -33,7 +33,7 @@ export interface WorldMetadata {
  */
 export async function provisionWorld(
   env: Env,
-  worldUid: string,
+  worldId: string,
   namespace: string,
   options: {
     displayName?: string;
@@ -45,7 +45,7 @@ export async function provisionWorld(
 ): Promise<WorldMetadata> {
   const db = getDb(env);
   const ts = now();
-  const displayName = options.displayName ?? worldUid;
+  const displayName = options.displayName ?? worldId;
   const embeddingModel =
     options.embeddingModel ?? "tfjs-universal-sentence-encoder";
   const chunkSize = options.chunkSize ?? 1000;
@@ -54,11 +54,11 @@ export async function provisionWorld(
 
   const row = await queryOne<WorldMetadata>(
     db,
-    `INSERT INTO worlds (uid, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
+    `INSERT INTO worlds (world_id, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
      RETURNING *`,
     [
-      worldUid,
+      worldId,
       namespace,
       displayName,
       embeddingModel,
@@ -73,17 +73,17 @@ export async function provisionWorld(
 }
 
 /**
- * Resolves a world's metadata by uid. Returns null if not found or not active
+ * Resolves a world's metadata by world_id. Returns null if not found or not active
  * (for data-plane access).
  */
 export async function resolveWorld(
   env: Env,
-  worldUid: string,
+  worldId: string,
   includeDeleted = false,
 ): Promise<WorldMetadata | null> {
   const db = getDb(env);
   const sql = includeDeleted
-    ? "SELECT * FROM worlds WHERE uid = ? AND state = 'deleted'"
-    : "SELECT * FROM worlds WHERE uid = ? AND state != 'deleted'";
-  return queryOne<WorldMetadata>(db, sql, [worldUid]);
+    ? "SELECT * FROM worlds WHERE world_id = ? AND state = 'deleted'"
+    : "SELECT * FROM worlds WHERE world_id = ? AND state != 'deleted'";
+  return queryOne<WorldMetadata>(db, sql, [worldId]);
 }

@@ -18,9 +18,9 @@ export const WorldResourceSchema = z
   .object({
     name: z.string().openapi({
       description:
-        "Resource name in the form worlds/<uid>, e.g. worlds/w_a1b2c3d4.",
+        "Resource name in the form worlds/<worldId>, e.g. worlds/w_a1b2c3d4.",
     }),
-    uid: z.string().openapi({
+    worldId: z.string().openapi({
       description: "Unique world identifier, e.g. w_<uuid>.",
     }),
     displayName: z.string().openapi({
@@ -320,7 +320,7 @@ export const ApiKeyCreateRequestSchema = z
 
 export const ApiKeyCreateResponseSchema = z
   .object({
-    uid: z.string().openapi({
+    apiKeyId: z.string().openapi({
       description: "Unique identifier for the created API key.",
     }),
     token: z.string().openapi({
@@ -345,7 +345,7 @@ export const ApiKeyCreateResponseSchema = z
 
 export const ApiKeyResourceSchema = z
   .object({
-    uid: z.string().openapi({
+    apiKeyId: z.string().openapi({
       description: "Unique identifier for the API key.",
     }),
     name: z.string().openapi({
@@ -368,15 +368,15 @@ export const ApiKeyResourceSchema = z
   .openapi("ApiKeyResource");
 
 export const worldIdParam = z.object({
-  id: z.string().openapi({
-    param: { name: "id", in: "path", required: true },
-    description: "The canonical world_id, e.g. w_<uuid>.",
+  worldId: z.string().openapi({
+    param: { name: "worldId", in: "path", required: true },
+    description: "The canonical worldId, e.g. w_<uuid>.",
   }),
 });
 
-export const keyIdParam = z.object({
-  keyId: z.string().openapi({
-    param: { name: "keyId", in: "path", required: true },
+export const apiKeyIdParam = z.object({
+  apiKeyId: z.string().openapi({
+    param: { name: "apiKeyId", in: "path", required: true },
     description: "Unique identifier of the API key to revoke.",
   }),
 });

@@ -260,7 +260,7 @@ describe("ApiKeyCreateRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts with optional worldId (world_uid) and name", () => {
+  it("accepts with optional worldId (world_id) and name", () => {
     const result = ApiKeyCreateRequestSchema.safeParse({
       namespace: "my-namespace",
       worldId: "w_abc123",
@@ -288,7 +288,7 @@ describe("WorldResourceSchema", () => {
   it("accepts valid world resource", () => {
     const result = WorldResourceSchema.safeParse({
       name: "worlds/w_abc123",
-      uid: "w_abc123",
+      worldId: "w_abc123",
       displayName: "My World",
       state: "active",
       storage: "d1",
@@ -305,7 +305,7 @@ describe("WorldResourceSchema", () => {
   it("accepts with optional deleteTime and expireTime", () => {
     const result = WorldResourceSchema.safeParse({
       name: "worlds/w_abc123",
-      uid: "w_abc123",
+      worldId: "w_abc123",
       displayName: "My World",
       state: "deleted",
       storage: "d1",
@@ -324,7 +324,7 @@ describe("WorldResourceSchema", () => {
   it("rejects invalid storage value", () => {
     const result = WorldResourceSchema.safeParse({
       name: "worlds/w_abc123",
-      uid: "w_abc123",
+      worldId: "w_abc123",
       displayName: "My World",
       state: "active",
       storage: "invalid-storage",

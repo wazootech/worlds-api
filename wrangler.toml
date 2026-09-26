@@ -20,7 +20,7 @@ database_id = "a30635e0-c584-4447-8966-69d9b1f8a4eb"
 # search is keyword-only (the engine degrades gracefully). Provision with:
 #   wrangler vectorize create worlds-api-v1 --dimensions 1536 --metric cosine --instruction ""
 #   wrangler vectorize create worlds-api-v1-metadata --dimensions 1536 --metric cosine
-# (the metadata-config index registers world_uid as a filterable property).
+# (the metadata-config index registers world_id as a filterable property).
 # Uncomment when the embedding source (BYOK — pending #1 acceptance) lands:
 # [[vectorize]]
 # binding = "VECTORIZE_INDEX"

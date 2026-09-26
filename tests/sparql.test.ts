@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -50,7 +50,7 @@ function request(body: unknown, signal?: AbortSignal) {
   );
 }
 
-describe("POST /worlds/:id/sparql endpoint", () => {
+describe("POST /worlds/:worldId/sparql endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
