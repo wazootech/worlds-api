@@ -7,8 +7,14 @@ export default defineConfig({
       // Prevent vitest from following @worlds/cloudflare source files into
       // worlds-cloudflare's own node_modules (which have Deno-style imports
       // that Node can't resolve). Point at a lightweight stub instead.
-      "@worlds/cloudflare": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
-      "@worlds/sdk": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
+      "@worlds/cloudflare": resolve(
+        import.meta.dirname,
+        "src/types/worlds-cloudflare.d.ts",
+      ),
+      "@worlds/sdk": resolve(
+        import.meta.dirname,
+        "src/types/worlds-cloudflare.d.ts",
+      ),
     },
   },
   test: {
