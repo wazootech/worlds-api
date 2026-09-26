@@ -72,7 +72,7 @@ function mockFallbackDb(
   return { prepare: vi.fn().mockReturnValue({ bind }), bind, all };
 }
 
-describe("POST /worlds/:id/search endpoint", () => {
+describe("POST /worlds/:worldId/search endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);

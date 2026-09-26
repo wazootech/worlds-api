@@ -50,7 +50,7 @@ function request(body: unknown, signal?: AbortSignal) {
   );
 }
 
-describe("POST /worlds/:id/sparql endpoint", () => {
+describe("POST /worlds/:worldId/sparql endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
