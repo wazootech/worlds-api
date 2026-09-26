@@ -1,11 +1,5 @@
-/**
- * Control-plane D1 schema for worlds-api.
- *
- * RDF quads, search chunks, FTS tables, and their indexes are data-plane
- * objects owned and initialized by @worlds/cloudflare.
- */
+import type { D1Database } from "@cloudflare/workers-types";
 
-/** DDL for the control-plane tables. */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
     world_id TEXT PRIMARY KEY,
@@ -39,31 +33,48 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-const REQUIRED_ID_COLUMNS = {
-  worlds: "world_id",
-  api_keys: "api_key_id",
+const REQUIRED_IDENTITY_COLUMNS = {
+  worlds: ["world_id"],
+  api_keys: ["api_key_id", "world_id"],
 };
 
-/** Initializes and validates the canonical control-plane schema. */
-export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
-  for (const ddl of CONTROL_PLANE_DDL) {
-    await db.prepare(ddl).run();
-  }
-
-  for (const [table, requiredColumn] of Object.entries(REQUIRED_ID_COLUMNS)) {
+export async function assertCanonicalControlPlaneSchema(
+  db: D1Database,
+): Promise<void> {
+  for (const [table, requiredColumns] of Object.entries(
+    REQUIRED_IDENTITY_COLUMNS,
+  )) {
     const result = await db.prepare(`PRAGMA table_info(${table})`).all<{
       name: string;
     }>();
-    const columns = new Set(result.results.map((column) => column.name));
-    if (!columns.has(requiredColumn)) {
+    const actual = new Set(result.results.map((column) => column.name));
+    const missing = requiredColumns.filter((column) => !actual.has(column));
+    if (missing.length) {
       throw new Error(
-        `D1 schema is missing ${table}.${requiredColumn}; apply the platform identity cutover migration before serving requests`,
+        `D1 identity schema is incomplete for ${table}: missing ${missing.join(", ")}. Apply the platform ID migration before serving requests.`,
       );
     }
   }
 }
 
-/** @deprecated Data-plane schema initialization is performed by the SDK factory. */
-export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {
-  // Kept as a no-op compatibility shim for existing imports.
+export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
+  const existing = await db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('worlds', 'api_keys')",
+    )
+    .all<{ name: string }>();
+
+  if (existing.results.length) {
+    await assertCanonicalControlPlaneSchema(db);
+  }
+
+  for (const ddl of CONTROL_PLANE_DDL) {
+    await db.prepare(ddl).run();
+  }
+
+  await assertCanonicalControlPlaneSchema(db);
 }
+
+export const PER_WORLD_DDL: string[] = [];
+
+export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {}

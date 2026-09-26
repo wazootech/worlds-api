@@ -19,7 +19,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
+  randomUuid: vi.fn(() => "test-id"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -159,7 +159,7 @@ describe("world lifecycle", () => {
 
   it("creates a world with a server-minted worldId", async () => {
     provisionMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_test-id",
       namespace: "user-1",
       display_name: "My World",
       state: "active",

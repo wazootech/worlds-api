@@ -20,9 +20,9 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      world_id: "w_test-uid",
+      world_id: "w_test-id",
       namespace: "ns",
-      display_name: "w_test-uid",
+      display_name: "w_test-id",
       state: "active",
       embedding_model: "tfjs-universal-sentence-encoder",
       chunk_size: 1000,
@@ -36,9 +36,9 @@ describe("provisionWorld", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
 
-    const result = await provisionWorld(env, "w_test-uid", "ns");
+    const result = await provisionWorld(env, "w_test-id", "ns");
     expect(queryOneMock).toHaveBeenCalled();
-    expect(result.world_id).toBe("w_test-uid");
+    expect(result.world_id).toBe("w_test-id");
     expect(result.namespace).toBe("ns");
     expect(result.state).toBe("active");
   });
@@ -49,7 +49,7 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      world_id: "w_test-uid",
+      world_id: "w_test-id",
       namespace: "ns",
       display_name: "My World",
       state: "active",
@@ -65,7 +65,7 @@ describe("provisionWorld", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
 
-    const result = await provisionWorld(env, "w_test-uid", "ns", {
+    const result = await provisionWorld(env, "w_test-id", "ns", {
       displayName: "My World",
     });
     expect(result.display_name).toBe("My World");

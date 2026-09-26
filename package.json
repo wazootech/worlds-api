@@ -10,12 +10,13 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "sync:openapi": "node scripts/sync-openapi.mjs",
+    "migrate:platform-id-cutover": "node migrations/platform-id-cutover.mjs",
     "openapi:check": "vitest run tests/openapi-doc.test.ts",
     "health:local": "node scripts/local-health.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
-    "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --write",
-    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check"
+    "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" \"migrations/**/*.mjs\" --write",
+    "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" \"migrations/**/*.mjs\" --check"
   },
   "dependencies": {
     "@hono/node-server": "^1.17.1",

@@ -13,7 +13,7 @@ Cloudflare Worker and the optional Docker image used by VPS compositions.
   `docker-compose.yml`, and CI.
 
 This service treats `namespace` as an opaque grouping string. In Wazoo private
-beta, `wazoo-api` passes `namespace = user.uid`.
+beta, `wazoo-api` passes the platform account identifier as the namespace.
 
 ## Architecture and boundaries
 
@@ -29,7 +29,7 @@ surface and its own client package:
 
 - **The data plane is the single writer of world lifecycle and world keys.**
   `POST /worlds` provisions the per-world database and persists
-  `worlds_metadata`; `/api-keys` mints data-plane keys. A self-hosted
+  `worlds.world_id`; `/api-keys` mints data-plane keys. A self-hosted
   `worlds-api` is therefore fully functional standalone — worlds, keys, and data
   operations — with zero management-plane dependency. That is the original
   design goal: people can self-host the data plane without running the platform.
@@ -40,7 +40,7 @@ surface and its own client package:
   `MAX_WORLDS_EXCEEDED`. The two `/worlds` surfaces are not peers — one is
   storage ownership, the other is policy.
 - `namespace` is the tenancy boundary between the planes: an opaque grouping
-  string (in the hosted beta, `wazoo-api` passes `namespace = user.uid`).
+  string (in the hosted beta, `wazoo-api` passes the platform account ID).
   Data-plane keys resolve namespace from the key; admin calls pass it
   explicitly.
 
@@ -78,10 +78,10 @@ were never explicitly resolved. This section resolves them:
 
 ## Routes
 
-- Worlds: `/worlds`, `/worlds/:id`
-- Search: `/worlds/:id/search`
-- Import: `/worlds/:id/import`
-- Export: `/worlds/:id/export`
+- Worlds: `/worlds`, `/worlds/:worldId`
+- Search: `/worlds/:worldId/search`
+- Import: `/worlds/:worldId/import`
+- Export: `/worlds/:worldId/export`
 - API keys: `/api-keys`
 - Health: `/health`
 
@@ -96,9 +96,43 @@ admin-only and exist for the platform facade and account-deletion flows.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management.
 
-The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema is
-required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
-indexes, search tables, and schema compatibility checks.
+The data plane uses a shared Cloudflare D1 database. `@worlds/cloudflare` owns
+quad/chunk storage, search tables, and their indexes. The canonical storage
+identifier is `world_id`; API and generated-client surfaces use `worldId`.
+API key rows use `api_key_id` in storage and `apiKeyId` in responses. Runtime
+code has no compatibility aliases or fallback reads.
+
+### P0 identity cutover — not deployment-complete
+
+The one-time migration at `migrations/platform-id-cutover.mjs` is the only
+place that accepts legacy identity column names. It renames a lone legacy
+`worlds_metadata` table to `worlds`, renames identifier columns in place,
+checks row counts and world references, verifies `PRAGMA foreign_key_check`,
+and records a migration marker. The regression tests use the old-schema fixtures
+in `tests/fixtures/`.
+
+Back up the target D1 database first. Review a dry run, apply to QA, verify the
+migration output and health check, then schedule the production migration and
+worker deployment separately:
+
+```sh
+npm run migrate:platform-id-cutover -- --remote --env qa --dry-run
+npm run migrate:platform-id-cutover -- --remote --env qa --confirm-write
+npm run migrate:platform-id-cutover -- --remote --dry-run
+npm run migrate:platform-id-cutover -- --remote --confirm-write
+```
+
+For a local database, pass `--local --persist-to <path>` instead. Remote writes
+are refused unless `--confirm-write` is explicit. The worker does not perform
+this migration automatically and will fail closed when the canonical tables
+are not present.
+
+**Issue #86 remains open and this cutover is not deployment-complete.** It is
+not complete until the migration has been run and verified on every active D1
+database, the corresponding worker release has been verified against that
+schema, and the one-time migration input and old-schema fixture have been
+retired in a follow-up change. No production or QA migration has been run by
+this repository-local change.
 
 ## Health checks
 

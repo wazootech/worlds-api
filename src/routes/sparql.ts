@@ -59,7 +59,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       operationId: "sparqlNoWorld",
       summary: "SPARQL without world",
       description:
-        "Always returns 400. Use POST /worlds/{id}/sparql to execute a SPARQL query against a specific world.",
+        "Always returns 400. Use POST /worlds/{worldId}/sparql to execute a SPARQL query against a specific world.",
       "x-mint": { metadata: { title: "SPARQL without world" } },
       security: [{ bearerWorldsToken: [] }],
       responses: {
@@ -81,7 +81,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         {
           error: {
             code: "INVALID_ARGUMENT",
-            message: "Use /worlds/:id/sparql to query one World",
+            message: "Use /worlds/:worldId/sparql to query one World",
           },
         },
         400,
