@@ -106,7 +106,7 @@ describe("resolveWorldDatabase", () => {
     expect(result).toBeNull();
     expect(queryOneMock).toHaveBeenCalledWith(
       db,
-      expect.stringContaining("WHERE uid = ? AND state = 'active'"),
+      expect.stringContaining("WHERE world_id = ? AND state = 'active'"),
       ["nope"],
     );
   });

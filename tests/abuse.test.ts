@@ -65,7 +65,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "mock-uid"),
+  newId: vi.fn(() => "mock-id"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 

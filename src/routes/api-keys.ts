@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
-import { execute, getDb, now, query, uid } from "../lib/db";
+import { execute, getDb, now, query, newId } from "../lib/db";
 import { createToken, sha256Hex } from "../lib/crypto";
 import { authorize } from "../lib/auth";
 import { respond } from "../lib/respond";
@@ -14,7 +14,7 @@ import {
 } from "../lib/schemas";
 
 interface ApiKeyRow {
-  uid: string;
+  key_id: string;
   name: string;
   namespace: string;
   world_id: string | null;
@@ -107,14 +107,14 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const db = getDb(env);
       const token = createToken("wzw");
       const hash = await sha256Hex(token);
-      const keyUid = uid();
+      const keyId = newId();
       const ts = now();
 
       await execute(
         db,
-        "INSERT INTO api_keys (uid, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO api_keys (key_id, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
-          keyUid,
+          keyId,
           hash,
           body.name ?? "",
           body.namespace,
@@ -127,7 +127,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       return respond(
         c,
         {
-          uid: keyUid,
+          keyId,
           token,
           name: body.name ?? "",
           namespace: body.namespace,
@@ -193,7 +193,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const db = getDb(env);
 
       let sql =
-        "SELECT uid, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
+        "SELECT key_id, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
       const params: Array<string> = [];
 
       if (query_.namespace) {
@@ -207,7 +207,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
       return respond(c, {
         keys: rows.map((r) => ({
-          uid: r.uid,
+          keyId: r.key_id,
           name: r.name,
           namespace: r.namespace,
           worldId: r.world_id ?? undefined,
@@ -276,7 +276,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
       const result = await execute(
         db,
-        "UPDATE api_keys SET revoked_at = ? WHERE uid = ? AND revoked_at IS NULL",
+        "UPDATE api_keys SET revoked_at = ? WHERE key_id = ? AND revoked_at IS NULL",
         [ts, keyId],
       );
 

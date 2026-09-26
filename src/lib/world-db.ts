@@ -18,7 +18,7 @@ export type WorldDatabaseRef = {
 };
 
 type WorldMetadataRow = {
-  uid: string;
+  world_id: string;
   namespace: string;
   embedding_model: string;
   chunk_size: number;
@@ -51,12 +51,12 @@ export async function resolveWorldDatabase(
 ): Promise<WorldDatabaseRef | null> {
   const row = await queryOne<WorldMetadataRow>(
     env.DB,
-    "SELECT uid, namespace, embedding_model, chunk_size, top_k, min_score FROM worlds WHERE uid = ? AND state = 'active'",
+    "SELECT world_id, namespace, embedding_model, chunk_size, top_k, min_score FROM worlds WHERE world_id = ? AND state = 'active'",
     [worldId],
   );
   if (!row) return null;
   return {
-    worldId: row.uid,
+    worldId: row.world_id,
     namespace: row.namespace,
     embeddingModel: row.embedding_model,
     chunkSize: row.chunk_size,

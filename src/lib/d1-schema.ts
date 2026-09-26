@@ -8,7 +8,7 @@
 /** DDL for the control-plane tables. */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    uid TEXT PRIMARY KEY,
+    world_id TEXT PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',
@@ -26,7 +26,7 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_worlds_namespace ON worlds(namespace, state)`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_purge ON worlds(state, purge_status, expire_time)`,
   `CREATE TABLE IF NOT EXISTS api_keys (
-    uid TEXT PRIMARY KEY,
+    key_id TEXT PRIMARY KEY,
     key_hash TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
     namespace TEXT NOT NULL,
@@ -39,9 +39,6 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-/** @deprecated Data-plane tables are owned by @worlds/cloudflare. */
-export const PER_WORLD_DDL: string[] = [];
-
 /** Initializes the control-plane schema. Idempotent and safe at worker startup. */
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
@@ -51,9 +48,4 @@ export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
       // Table/index already exists.
     }
   }
-}
-
-/** @deprecated Data-plane schema initialization is performed by the SDK factory. */
-export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {
-  // Kept as a no-op compatibility shim for existing imports.
 }

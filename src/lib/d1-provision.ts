@@ -7,11 +7,11 @@ import { getDb, queryOne, execute, now } from "./db";
  * With the single-D1 model, "provisioning" a world is just an INSERT into the
  * `worlds` table — no external API calls, no database creation, no token
  * minting. All world data lives in the same D1 database, separated by
- * `world_uid` columns on the per-world tables.
+ * `world_id` columns on the per-world tables.
  */
 
 export interface WorldMetadata {
-  uid: string;
+  world_id: string;
   namespace: string;
   display_name: string;
   state: string;
@@ -54,7 +54,7 @@ export async function provisionWorld(
 
   const row = await queryOne<WorldMetadata>(
     db,
-    `INSERT INTO worlds (uid, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
+    `INSERT INTO worlds (world_id, namespace, display_name, state, embedding_model, chunk_size, top_k, min_score, create_time, update_time)
      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
      RETURNING *`,
     [
@@ -73,8 +73,8 @@ export async function provisionWorld(
 }
 
 /**
- * Resolves a world's metadata by uid. Returns null if not found or not active
- * (for data-plane access).
+ * Resolves a world's metadata by world_id. Returns null if not found or not
+ * active (for data-plane access).
  */
 export async function resolveWorld(
   env: Env,
@@ -83,7 +83,7 @@ export async function resolveWorld(
 ): Promise<WorldMetadata | null> {
   const db = getDb(env);
   const sql = includeDeleted
-    ? "SELECT * FROM worlds WHERE uid = ? AND state = 'deleted'"
-    : "SELECT * FROM worlds WHERE uid = ? AND state != 'deleted'";
+    ? "SELECT * FROM worlds WHERE world_id = ? AND state = 'deleted'"
+    : "SELECT * FROM worlds WHERE world_id = ? AND state != 'deleted'";
   return queryOne<WorldMetadata>(db, sql, [worldId]);
 }

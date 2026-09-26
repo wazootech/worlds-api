@@ -19,7 +19,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
+  newId: vi.fn(() => "test-id"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -157,9 +157,9 @@ describe("world lifecycle", () => {
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
-  it("creates a world with a server-minted world_uid", async () => {
+  it("creates a world with a server-minted world_id", async () => {
     provisionMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_test-id",
       namespace: "user-1",
       display_name: "My World",
       state: "active",
@@ -181,8 +181,8 @@ describe("world lifecycle", () => {
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.uid).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.uid}`);
+    expect(body.worldId).toMatch(/^w_/);
+    expect(body.name).toBe(`worlds/${body.worldId}`);
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
     expect(provisionMock).toHaveBeenCalled();

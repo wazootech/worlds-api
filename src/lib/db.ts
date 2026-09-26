@@ -5,7 +5,7 @@ import type { Env } from "../env";
  *
  * All control-plane tables (worlds, api_keys) live in the same D1 database
  * alongside per-world data (quads, chunks, chunks_fts), separated by a
- * `world_uid` column on per-world tables.
+ * `world_id` column on per-world tables.
  */
 
 type D1Db = import("@cloudflare/workers-types").D1Database;
@@ -53,7 +53,7 @@ export async function execute(
 }
 
 /** Generate a random UUID for primary keys. */
-export function uid(): string {
+export function newId(): string {
   return crypto.randomUUID();
 }
 

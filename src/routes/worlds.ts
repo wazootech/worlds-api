@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
-import { execute, getDb, now, query, queryOne, uid } from "../lib/db";
+import { execute, getDb, now, query, queryOne, newId } from "../lib/db";
 import {
   authorize,
   forbidden,
@@ -27,7 +27,7 @@ import {
 const GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface WorldRow {
-  uid: string;
+  world_id: string;
   namespace: string;
   display_name: string;
   state: string;
@@ -45,8 +45,8 @@ interface WorldRow {
 
 function worldResource(row: WorldRow) {
   return {
-    name: `worlds/${row.uid}`,
-    uid: row.uid,
+    name: `worlds/${row.world_id}`,
+    worldId: row.world_id,
     displayName: row.display_name,
     state: row.state,
     storage: "d1" as const,
@@ -69,8 +69,8 @@ async function resolveWorldRow(
   return queryOne<WorldRow>(
     db,
     deleted
-      ? "SELECT * FROM worlds WHERE uid = ? AND state = 'deleted'"
-      : "SELECT * FROM worlds WHERE uid = ? AND state != 'deleted'",
+      ? "SELECT * FROM worlds WHERE world_id = ? AND state = 'deleted'"
+      : "SELECT * FROM worlds WHERE world_id = ? AND state != 'deleted'",
     [worldId],
   );
 }
@@ -122,7 +122,7 @@ const createRouteDef = createRoute({
   operationId: "createWorld",
   summary: "Create world",
   description:
-    "Create a new world. Allocates a new world_uid in the shared D1 database and initializes the search and vector indexes.",
+    "Create a new world. Allocates a new world_id in the shared D1 database and initializes the search and vector indexes.",
   "x-mint": { metadata: { title: "Create world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -487,7 +487,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     );
     if (accessErr) return accessErr;
 
-    const worldId = `w_${uid()}`;
+    const worldId = `w_${newId()}`;
 
     const metadata = await provisionWorld(env, worldId, namespace, {
       displayName: body.displayName,
@@ -585,13 +585,13 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     await execute(
       db,
-      `UPDATE worlds SET ${setClauses.join(", ")} WHERE uid = ?`,
+      `UPDATE worlds SET ${setClauses.join(", ")} WHERE world_id = ?`,
       setArgs,
     );
 
     const updated = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
+      "SELECT * FROM worlds WHERE world_id = ?",
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
@@ -625,7 +625,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE uid = ?",
+      "UPDATE worlds SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE world_id = ?",
       [ts, expireTs, ts, worldId],
     );
     clearSdkCacheForWorld(worldId);
@@ -670,12 +670,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const ts = now();
     await execute(
       db,
-      "UPDATE worlds SET state = 'active', delete_time = NULL, expire_time = NULL, purge_status = 'none', update_time = ? WHERE uid = ?",
+      "UPDATE worlds SET state = 'active', delete_time = NULL, expire_time = NULL, purge_status = 'none', update_time = ? WHERE world_id = ?",
       [ts, worldId],
     );
     const restored = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
+      "SELECT * FROM worlds WHERE world_id = ?",
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
@@ -706,12 +706,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'suspended', update_time = ? WHERE uid = ?",
+      "UPDATE worlds SET state = 'suspended', update_time = ? WHERE world_id = ?",
       [now(), worldId],
     );
     const suspended = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
+      "SELECT * FROM worlds WHERE world_id = ?",
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
@@ -742,12 +742,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'active', update_time = ? WHERE uid = ?",
+      "UPDATE worlds SET state = 'active', update_time = ? WHERE world_id = ?",
       [now(), worldId],
     );
     const resumed = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
+      "SELECT * FROM worlds WHERE world_id = ?",
       [worldId],
     );
     clearSdkCacheForWorld(worldId);

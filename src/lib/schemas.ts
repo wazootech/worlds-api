@@ -18,10 +18,10 @@ export const WorldResourceSchema = z
   .object({
     name: z.string().openapi({
       description:
-        "Resource name in the form worlds/<uid>, e.g. worlds/w_a1b2c3d4.",
+        "Resource name in the form worlds/<worldId>, e.g. worlds/w_a1b2c3d4.",
     }),
-    uid: z.string().openapi({
-      description: "Unique world identifier, e.g. w_<uuid>.",
+    worldId: z.string().openapi({
+      description: "Canonical world identifier, e.g. w_<uuid>.",
     }),
     displayName: z.string().openapi({
       description:
@@ -33,7 +33,7 @@ export const WorldResourceSchema = z
     }),
     storage: z.literal("d1").openapi({
       description:
-        "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_uid.",
+        "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_id.",
     }),
     embeddingModel: z.string().openapi({
       description:
@@ -320,7 +320,7 @@ export const ApiKeyCreateRequestSchema = z
 
 export const ApiKeyCreateResponseSchema = z
   .object({
-    uid: z.string().openapi({
+    keyId: z.string().openapi({
       description: "Unique identifier for the created API key.",
     }),
     token: z.string().openapi({
@@ -345,7 +345,7 @@ export const ApiKeyCreateResponseSchema = z
 
 export const ApiKeyResourceSchema = z
   .object({
-    uid: z.string().openapi({
+    keyId: z.string().openapi({
       description: "Unique identifier for the API key.",
     }),
     name: z.string().openapi({
@@ -370,7 +370,7 @@ export const ApiKeyResourceSchema = z
 export const worldIdParam = z.object({
   id: z.string().openapi({
     param: { name: "id", in: "path", required: true },
-    description: "The canonical world_uid, e.g. w_<uuid>.",
+    description: "The canonical world ID (world_id), e.g. w_<uuid>.",
   }),
 });
 
