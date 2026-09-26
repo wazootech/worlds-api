@@ -69,7 +69,7 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 
@@ -90,7 +90,7 @@ export function registerImportExportRoutes(
         );
       }
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -107,7 +107,7 @@ export function registerImportExportRoutes(
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_WRITE,
       );
       if (accessErr) return accessErr;
@@ -254,13 +254,13 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const query = c.req.valid("query");
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -277,7 +277,7 @@ export function registerImportExportRoutes(
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_READ,
       );
       if (accessErr) return accessErr;

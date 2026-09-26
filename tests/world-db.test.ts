@@ -23,7 +23,7 @@ const env = {
 } as any;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -80,7 +80,7 @@ describe("getWorldSdk", () => {
   it("clearSdkCacheForWorld evicts only that world's SDK instances", async () => {
     await getWorldSdk(env, worldRef, 20);
     await getWorldSdk(env, worldRef, 40);
-    const otherRef = { ...worldRef, worldUid: "other-world" };
+    const otherRef = { ...worldRef, worldId: "other-world" };
     await getWorldSdk(env, otherRef);
     createSdkMock.mockClear();
 

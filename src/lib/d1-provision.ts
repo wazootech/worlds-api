@@ -33,7 +33,7 @@ export interface WorldMetadata {
  */
 export async function provisionWorld(
   env: Env,
-  worldUid: string,
+  worldId: string,
   namespace: string,
   options: {
     displayName?: string;
@@ -45,7 +45,7 @@ export async function provisionWorld(
 ): Promise<WorldMetadata> {
   const db = getDb(env);
   const ts = now();
-  const displayName = options.displayName ?? worldUid;
+  const displayName = options.displayName ?? worldId;
   const embeddingModel =
     options.embeddingModel ?? "tfjs-universal-sentence-encoder";
   const chunkSize = options.chunkSize ?? 1000;
@@ -58,7 +58,7 @@ export async function provisionWorld(
      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
      RETURNING *`,
     [
-      worldUid,
+      worldId,
       namespace,
       displayName,
       embeddingModel,
@@ -78,12 +78,12 @@ export async function provisionWorld(
  */
 export async function resolveWorld(
   env: Env,
-  worldUid: string,
+  worldId: string,
   includeDeleted = false,
 ): Promise<WorldMetadata | null> {
   const db = getDb(env);
   const sql = includeDeleted
     ? "SELECT * FROM worlds WHERE uid = ? AND state = 'deleted'"
     : "SELECT * FROM worlds WHERE uid = ? AND state != 'deleted'";
-  return queryOne<WorldMetadata>(db, sql, [worldUid]);
+  return queryOne<WorldMetadata>(db, sql, [worldId]);
 }

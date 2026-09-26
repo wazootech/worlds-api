@@ -54,13 +54,13 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("id");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -77,7 +77,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_READ,
       );
       if (accessErr) return accessErr;
@@ -134,7 +134,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         // quads from other worlds (worlds-api#74).
         const stmt = env.DB.prepare(
           "SELECT s, p, o, g FROM quads WHERE (s LIKE ? OR p LIKE ? OR o LIKE ?) AND world_id = ? ORDER BY s LIMIT ?",
-        ).bind(likePattern, likePattern, likePattern, worldUid, limit);
+        ).bind(likePattern, likePattern, likePattern, worldId, limit);
         const quadRows = await stmt.all<{
           s: string;
           p: string;
