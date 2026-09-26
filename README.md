@@ -28,8 +28,8 @@ surface and its own client package:
 ### The cut (intentional)
 
 - **The data plane is the single writer of world lifecycle and world keys.**
-  `POST /worlds` provisions the per-world database and persists
-  `worlds_metadata`; `/api-keys` mints data-plane keys. A self-hosted
+  `POST /worlds` provisions a world in the `worlds` table;
+  `/api-keys` mints data-plane keys. A self-hosted
   `worlds-api` is therefore fully functional standalone — worlds, keys, and data
   operations — with zero management-plane dependency. That is the original
   design goal: people can self-host the data plane without running the platform.
@@ -78,10 +78,10 @@ were never explicitly resolved. This section resolves them:
 
 ## Routes
 
-- Worlds: `/worlds`, `/worlds/:id`
-- Search: `/worlds/:id/search`
-- Import: `/worlds/:id/import`
-- Export: `/worlds/:id/export`
+- Worlds: `/worlds`, `/worlds/:worldId`
+- Search: `/worlds/:worldId/search`
+- Import: `/worlds/:worldId/import`
+- Export: `/worlds/:worldId/export`
 - API keys: `/api-keys`
 - Health: `/health`
 

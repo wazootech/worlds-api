@@ -115,7 +115,7 @@ await test("GET /worlds with invalid token returns 401", async () => {
 
 // ── Schema validation ───
 
-await test("POST /worlds/:id/search without body returns 400", async () => {
+await test("POST /worlds/:worldId/search without body returns 400", async () => {
   // Without a body, zod validation rejects
   const res = await fetch(`${BASE_URL}/worlds/test/search`, {
     method: "POST",
@@ -194,7 +194,7 @@ await test("POST /worlds with admin key (no namespace) returns 400", async () =>
   console.log(`        error: ${body.error.code}`);
 });
 
-await test("GET /worlds/:id for nonexistent world returns 404", async () => {
+await test("GET /worlds/:worldId for nonexistent world returns 404", async () => {
   const res = await fetch(
     `${BASE_URL}/worlds/nonexistent-zzz`,
     { headers: authHeaders() },

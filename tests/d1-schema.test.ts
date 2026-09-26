@@ -39,6 +39,22 @@ function columnNames(sqlite: DatabaseSync, table: string): string[] {
     .map((column) => (column as { name: string }).name);
 }
 
+function rowCount(sqlite: DatabaseSync, table: string): number {
+  return (
+    sqlite.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as {
+      count: number;
+    }
+  ).count;
+}
+
+function foreignKeyReferences(sqlite: DatabaseSync, table: string) {
+  return sqlite.prepare(`PRAGMA foreign_key_list(${table})`).all() as {
+    table: string;
+    from: string;
+    to: string;
+  }[];
+}
+
 describe("control-plane identifier migration", () => {
   it("renames existing identifiers and preserves rows and world relationships", async () => {
     const sqlite = new DatabaseSync(":memory:");
@@ -96,6 +112,11 @@ describe("control-plane identifier migration", () => {
       INSERT INTO quads VALUES ('quad_existing', 'user_existing', 'w_existing', 'subject');
       INSERT INTO chunks VALUES ('chunk_existing', 'user_existing', 'w_existing', 'Existing data');
     `);
+    const expectedCounts = new Map(
+      ["worlds", "api_keys", "worlds_metadata", "quads", "chunks"].map(
+        (table) => [table, rowCount(sqlite, table)],
+      ),
+    );
 
     try {
       await ensureControlPlaneSchema(asD1Database(sqlite));
@@ -128,7 +149,31 @@ describe("control-plane identifier migration", () => {
       expect(sqlite.prepare("SELECT world_id FROM chunks").get()).toEqual({
         world_id: "w_existing",
       });
+      expect(foreignKeyReferences(sqlite, "api_keys")).toContainEqual(
+        expect.objectContaining({
+          table: "worlds",
+          from: "world_id",
+          to: "world_id",
+        }),
+      );
+      expect(foreignKeyReferences(sqlite, "quads")).toContainEqual(
+        expect.objectContaining({
+          table: "worlds",
+          from: "world_id",
+          to: "world_id",
+        }),
+      );
+      expect(foreignKeyReferences(sqlite, "chunks")).toContainEqual(
+        expect.objectContaining({
+          table: "worlds",
+          from: "world_id",
+          to: "world_id",
+        }),
+      );
       expect(sqlite.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+      for (const [table, count] of expectedCounts) {
+        expect(rowCount(sqlite, table)).toBe(count);
+      }
 
       await expect(
         ensureControlPlaneSchema(asD1Database(sqlite)),
