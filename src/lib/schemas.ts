@@ -33,7 +33,7 @@ export const WorldResourceSchema = z
     }),
     storage: z.literal("d1").openapi({
       description:
-        "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_uid.",
+        "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_id.",
     }),
     embeddingModel: z.string().openapi({
       description:
@@ -370,7 +370,7 @@ export const ApiKeyResourceSchema = z
 export const worldIdParam = z.object({
   id: z.string().openapi({
     param: { name: "id", in: "path", required: true },
-    description: "The canonical world_uid, e.g. w_<uuid>.",
+    description: "The canonical world_id, e.g. w_<uuid>.",
   }),
 });
 

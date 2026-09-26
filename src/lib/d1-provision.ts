@@ -7,7 +7,7 @@ import { getDb, queryOne, execute, now } from "./db";
  * With the single-D1 model, "provisioning" a world is just an INSERT into the
  * `worlds` table — no external API calls, no database creation, no token
  * minting. All world data lives in the same D1 database, separated by
- * `world_uid` columns on the per-world tables.
+ * `world_id` columns on the per-world tables.
  */
 
 export interface WorldMetadata {
