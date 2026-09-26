@@ -100,6 +100,14 @@ The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema i
 required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
 indexes, search tables, and schema compatibility checks.
 
+### Identifiers
+
+World identity is stored as `world_id` and exposed by the API as `worldId`. API-key
+identity is stored as `api_key_id` and exposed as `apiKeyId`. On first request,
+the worker applies in-place D1 column renames to existing control-plane tables;
+world references in API keys, quads, and chunks retain their existing `world_id`
+values. No identifier aliases are served.
+
 ## Health checks
 
 - Local: `npm run health:local`

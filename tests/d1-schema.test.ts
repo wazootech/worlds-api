@@ -1,149 +1,160 @@
+import { DatabaseSync } from "node:sqlite";
+import type { D1Database } from "@cloudflare/workers-types";
 import { describe, expect, it } from "vitest";
 import { ensureControlPlaneSchema } from "../src/lib/d1-schema";
 
-type TableState = {
-  columns: string[];
-  rows: Record<string, unknown>[];
-};
-
-function mockDatabase(tables: Record<string, TableState>) {
-  const statements: string[] = [];
-  const db = {
+function asD1Database(sqlite: DatabaseSync): D1Database {
+  return {
     prepare(sql: string) {
+      const statement = sqlite.prepare(sql);
       return {
-        all: async <T>() => {
-          const table = sql.match(/^PRAGMA table_info\((\w+)\)$/)?.[1];
-          if (!table) throw new Error(`Unexpected query: ${sql}`);
+        bind(...values: unknown[]) {
           return {
-            results: (tables[table]?.columns ?? []).map((name) => ({
-              name,
-            })) as T[],
+            all: async <T>() => ({
+              results: statement.all(...(values as never[])) as T[],
+            }),
+            first: async <T>() =>
+              (statement.get(...(values as never[])) as T | undefined) ?? null,
+            run: async () => ({
+              meta: {
+                changes: Number(statement.run(...(values as never[])).changes),
+              },
+            }),
           };
         },
-        run: async () => {
-          statements.push(sql);
-          const rename = sql.match(
-            /^ALTER TABLE (\w+) RENAME COLUMN (\w+) TO (\w+)$/,
-          );
-          if (rename) {
-            const [, tableName, previous, current] = rename;
-            const table = tables[tableName];
-            if (!table.columns.includes(previous)) {
-              throw new Error(`Missing column ${previous}`);
-            }
-            table.columns = table.columns.map((column) =>
-              column === previous ? current : column,
-            );
-            table.rows = table.rows.map((row) => {
-              const { [previous]: value, ...rest } = row;
-              return { ...rest, [current]: value };
-            });
-          }
-          return { meta: { changes: 1 } };
-        },
-      };
+        all: async <T>() => ({ results: statement.all() as T[] }),
+        first: async <T>() => (statement.get() as T | undefined) ?? null,
+        run: async () => ({
+          meta: { changes: Number(statement.run().changes) },
+        }),
+      } as never;
     },
-  };
-  return { db: db as never, statements };
+  } as unknown as D1Database;
+}
+
+function columnNames(sqlite: DatabaseSync, table: string): string[] {
+  return sqlite
+    .prepare(`PRAGMA table_info(${table})`)
+    .all()
+    .map((column) => (column as { name: string }).name);
 }
 
 describe("control-plane identifier migration", () => {
-  it("renames existing identifiers while preserving world, key, and data relationships", async () => {
-    const tables: Record<string, TableState> = {
-      worlds: {
-        columns: ["uid", "namespace", "display_name", "state"],
-        rows: [
-          {
-            uid: "w_existing",
-            namespace: "user_existing",
-            display_name: "Existing world",
-            state: "active",
-          },
-        ],
-      },
-      api_keys: {
-        columns: ["uid", "key_hash", "namespace", "world_id", "scopes"],
-        rows: [
-          {
-            uid: "key_existing",
-            key_hash: "hash_existing",
-            namespace: "user_existing",
-            world_id: "w_existing",
-            scopes: '["data:read"]',
-          },
-        ],
-      },
-      quads: {
-        columns: ["id", "namespace", "world_id", "subject"],
-        rows: [
-          {
-            id: "quad_existing",
-            namespace: "user_existing",
-            world_id: "w_existing",
-            subject: "https://example.test/item",
-          },
-        ],
-      },
-      chunks: {
-        columns: ["id", "namespace", "world_id", "text"],
-        rows: [
-          {
-            id: "chunk_existing",
-            namespace: "user_existing",
-            world_id: "w_existing",
-            text: "Existing data",
-          },
-        ],
-      },
-    };
-    const { db, statements } = mockDatabase(tables);
+  it("renames existing identifiers and preserves rows and world relationships", async () => {
+    const sqlite = new DatabaseSync(":memory:");
+    sqlite.exec(`
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE worlds (
+        uid TEXT PRIMARY KEY,
+        namespace TEXT NOT NULL,
+        display_name TEXT NOT NULL,
+        state TEXT NOT NULL,
+        embedding_model TEXT NOT NULL,
+        chunk_size INTEGER NOT NULL,
+        top_k INTEGER NOT NULL,
+        min_score REAL NOT NULL,
+        delete_time TEXT,
+        expire_time TEXT,
+        purge_status TEXT NOT NULL,
+        purged_at TEXT,
+        create_time TEXT NOT NULL,
+        update_time TEXT NOT NULL
+      );
+      CREATE TABLE api_keys (
+        uid TEXT PRIMARY KEY,
+        key_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        namespace TEXT NOT NULL,
+        world_id TEXT REFERENCES worlds(uid),
+        scopes TEXT NOT NULL,
+        create_time TEXT NOT NULL,
+        revoked_at TEXT
+      );
+      CREATE TABLE worlds_metadata (uid TEXT PRIMARY KEY, namespace TEXT NOT NULL);
+      CREATE TABLE quads (
+        id TEXT PRIMARY KEY,
+        namespace TEXT NOT NULL,
+        world_id TEXT NOT NULL REFERENCES worlds(uid),
+        subject TEXT NOT NULL
+      );
+      CREATE TABLE chunks (
+        id TEXT PRIMARY KEY,
+        namespace TEXT NOT NULL,
+        world_id TEXT NOT NULL REFERENCES worlds(uid),
+        text TEXT NOT NULL
+      );
+      INSERT INTO worlds VALUES (
+        'w_existing', 'user_existing', 'Existing world', 'active',
+        'model', 1000, 20, 0.0, NULL, NULL, 'none', NULL,
+        '2026-09-01T00:00:00Z', '2026-09-01T00:00:00Z'
+      );
+      INSERT INTO api_keys VALUES (
+        'key_existing', 'hash_existing', 'Read key', 'user_existing',
+        'w_existing', '["data:read"]', '2026-09-01T00:00:00Z', NULL
+      );
+      INSERT INTO worlds_metadata VALUES ('w_existing', 'user_existing');
+      INSERT INTO quads VALUES ('quad_existing', 'user_existing', 'w_existing', 'subject');
+      INSERT INTO chunks VALUES ('chunk_existing', 'user_existing', 'w_existing', 'Existing data');
+    `);
 
-    await ensureControlPlaneSchema(db);
+    try {
+      await ensureControlPlaneSchema(asD1Database(sqlite));
 
-    expect(tables.worlds.columns).toContain("world_id");
-    expect(tables.worlds.columns).not.toContain("uid");
-    expect(tables.worlds.rows[0]).toEqual({
-      world_id: "w_existing",
-      namespace: "user_existing",
-      display_name: "Existing world",
-      state: "active",
-    });
-    expect(tables.api_keys.columns).toContain("api_key_id");
-    expect(tables.api_keys.columns).not.toContain("uid");
-    expect(tables.api_keys.rows[0]).toEqual({
-      api_key_id: "key_existing",
-      key_hash: "hash_existing",
-      namespace: "user_existing",
-      world_id: "w_existing",
-      scopes: '["data:read"]',
-    });
-    expect(tables.quads.rows[0].world_id).toBe("w_existing");
-    expect(tables.chunks.rows[0].world_id).toBe("w_existing");
-    expect(
-      statements.filter((statement) => statement.startsWith("ALTER TABLE")),
-    ).toHaveLength(2);
+      expect(columnNames(sqlite, "worlds")).toContain("world_id");
+      expect(columnNames(sqlite, "worlds")).not.toContain("uid");
+      expect(columnNames(sqlite, "api_keys")).toContain("api_key_id");
+      expect(columnNames(sqlite, "api_keys")).not.toContain("uid");
+      expect(columnNames(sqlite, "worlds_metadata")).toContain("world_id");
+      expect(columnNames(sqlite, "worlds_metadata")).not.toContain("uid");
+      expect(sqlite.prepare("SELECT * FROM worlds").get()).toMatchObject({
+        world_id: "w_existing",
+        namespace: "user_existing",
+        display_name: "Existing world",
+      });
+      expect(sqlite.prepare("SELECT * FROM api_keys").get()).toMatchObject({
+        api_key_id: "key_existing",
+        world_id: "w_existing",
+        key_hash: "hash_existing",
+        scopes: '["data:read"]',
+      });
+      expect(
+        sqlite.prepare("SELECT world_id FROM worlds_metadata").get(),
+      ).toEqual({
+        world_id: "w_existing",
+      });
+      expect(sqlite.prepare("SELECT world_id FROM quads").get()).toEqual({
+        world_id: "w_existing",
+      });
+      expect(sqlite.prepare("SELECT world_id FROM chunks").get()).toEqual({
+        world_id: "w_existing",
+      });
+      expect(sqlite.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
 
-    await ensureControlPlaneSchema(db);
-
-    expect(
-      statements.filter((statement) => statement.startsWith("ALTER TABLE")),
-    ).toHaveLength(2);
+      await expect(
+        ensureControlPlaneSchema(asD1Database(sqlite)),
+      ).resolves.toBeUndefined();
+    } finally {
+      sqlite.close();
+    }
   });
 
-  it("fails closed when both old and canonical columns exist", async () => {
-    const { db } = mockDatabase({
-      worlds: {
-        columns: ["uid", "world_id", "namespace"],
-        rows: [],
-      },
-      api_keys: {
-        columns: ["api_key_id", "namespace", "world_id"],
-        rows: [],
-      },
-    });
+  it("fails closed when both previous and canonical columns exist", async () => {
+    const sqlite = new DatabaseSync(":memory:");
+    sqlite.exec(`
+      CREATE TABLE worlds (uid TEXT, world_id TEXT, namespace TEXT, state TEXT,
+        display_name TEXT, embedding_model TEXT, chunk_size INTEGER, top_k INTEGER,
+        min_score REAL, delete_time TEXT, expire_time TEXT, purge_status TEXT,
+        purged_at TEXT, create_time TEXT, update_time TEXT);
+      CREATE TABLE api_keys (api_key_id TEXT, key_hash TEXT, namespace TEXT,
+        world_id TEXT, scopes TEXT, revoked_at TEXT);
+    `);
 
-    await expect(ensureControlPlaneSchema(db)).rejects.toThrow(
-      "Conflicting identifier columns in worlds",
-    );
+    try {
+      await expect(
+        ensureControlPlaneSchema(asD1Database(sqlite)),
+      ).rejects.toThrow("Conflicting identifier columns in worlds");
+    } finally {
+      sqlite.close();
+    }
   });
 });

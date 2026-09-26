@@ -58,7 +58,10 @@ describe("API key identifiers", () => {
   it("creates keys with apiKeyId and no generic identifier alias", async () => {
     const response = await adminRequest("/api-keys", {
       method: "POST",
-      body: JSON.stringify({ namespace: "user_existing", worldId: "w_existing" }),
+      body: JSON.stringify({
+        namespace: "user_existing",
+        worldId: "w_existing",
+      }),
     });
 
     expect(response.status).toBe(201);

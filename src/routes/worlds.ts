@@ -514,12 +514,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(
-      auth,
-      row,
-      worldId,
-      SCOPE_DATA_READ,
-    );
+    const worldAccess = requireWorldAccess(auth, row, worldId, SCOPE_DATA_READ);
     if (worldAccess) return worldAccess;
 
     return respond(c, worldResource(row));
