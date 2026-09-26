@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,

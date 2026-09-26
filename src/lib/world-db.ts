@@ -9,7 +9,7 @@ import { queryOne } from "./db";
  * The reference carries the world's metadata needed to initialize the SDK.
  */
 export type WorldDatabaseRef = {
-  worldUid: string;
+  worldId: string;
   namespace: string;
   embeddingModel: string;
   chunkSize: number;
@@ -34,10 +34,10 @@ type WorldMetadataRow = {
  */
 const sdkCache = new Map<string, WorldsSdkInterface>();
 
-function sdkCacheKey(worldUid: string, candidateCount?: number): string {
+function sdkCacheKey(worldId: string, candidateCount?: number): string {
   return candidateCount === undefined
-    ? worldUid
-    : `${worldUid}:${candidateCount}`;
+    ? worldId
+    : `${worldId}:${candidateCount}`;
 }
 
 /**
@@ -47,16 +47,16 @@ function sdkCacheKey(worldUid: string, candidateCount?: number): string {
  */
 export async function resolveWorldDatabase(
   env: Env,
-  worldUid: string,
+  worldId: string,
 ): Promise<WorldDatabaseRef | null> {
   const row = await queryOne<WorldMetadataRow>(
     env.DB,
     "SELECT uid, namespace, embedding_model, chunk_size, top_k, min_score FROM worlds WHERE uid = ? AND state = 'active'",
-    [worldUid],
+    [worldId],
   );
   if (!row) return null;
   return {
-    worldUid: row.uid,
+    worldId: row.uid,
     namespace: row.namespace,
     embeddingModel: row.embedding_model,
     chunkSize: row.chunk_size,
@@ -83,7 +83,7 @@ export async function getWorldSdk(
   ref: WorldDatabaseRef,
   candidateCount?: number,
 ): Promise<WorldsSdkInterface> {
-  const key = sdkCacheKey(ref.worldUid, candidateCount);
+  const key = sdkCacheKey(ref.worldId, candidateCount);
   const cached = sdkCache.get(key);
   if (cached) return cached;
 
@@ -102,7 +102,7 @@ export async function getWorldSdk(
 
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
-    worldId: ref.worldUid,
+    worldId: ref.worldId,
     ...(candidateCount !== undefined && { candidateCount }),
     ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),
   });
@@ -113,11 +113,11 @@ export async function getWorldSdk(
 
 /**
  * Clear the SDK cache for a specific world (e.g., after state changes),
- * including candidateCount-suffixed instances (`worldUid:20` etc.).
+ * including candidateCount-suffixed instances (`worldId:20` etc.).
  */
-export function clearSdkCacheForWorld(worldUid: string): void {
+export function clearSdkCacheForWorld(worldId: string): void {
   for (const key of [...sdkCache.keys()]) {
-    if (key === worldUid || key.startsWith(`${worldUid}:`)) {
+    if (key === worldId || key.startsWith(`${worldId}:`)) {
       sdkCache.delete(key);
     }
   }
