@@ -67,7 +67,14 @@ describe("API key identifiers", () => {
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body.apiKeyId).toBe("api-key-existing");
-    expect(body).not.toHaveProperty("uid");
+    expect(Object.keys(body).sort()).toEqual([
+      "apiKeyId",
+      "createTime",
+      "name",
+      "namespace",
+      "token",
+      "worldId",
+    ]);
     expect(body.worldId).toBe("w_existing");
     expect(execute).toHaveBeenCalledWith(
       db,
@@ -96,8 +103,14 @@ describe("API key identifiers", () => {
       apiKeyId: "api-key-existing",
       worldId: "w_existing",
     });
-    expect(body.keys[0]).not.toHaveProperty("uid");
-    expect(body.keys[0]).not.toHaveProperty("api_key_id");
+    expect(Object.keys(body.keys[0]).sort()).toEqual([
+      "apiKeyId",
+      "createTime",
+      "name",
+      "namespace",
+      "scopes",
+      "worldId",
+    ]);
   });
 
   it("revokes by apiKeyId", async () => {
