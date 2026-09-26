@@ -161,9 +161,9 @@ await test("POST /api-keys creates a key for the test namespace", async () => {
   await assertCreated(res);
   const body = await res.json();
   if (!body.token) throw new Error("Missing token in response");
-  if (!body.uid) throw new Error("Missing uid");
+  if (!body.apiKeyId) throw new Error("Missing apiKeyId");
   console.log(
-    `        key uid: ${body.uid}, token: ${body.token.slice(0, 8)}...`,
+    `        key API ID: ${body.apiKeyId}, token: ${body.token.slice(0, 8)}...`,
   );
 });
 
@@ -203,8 +203,7 @@ await test("GET /worlds/:id for nonexistent world returns 404", async () => {
 });
 
 // Cleanup: revoke the test key
-// We don't have the keyId directly, so skip this for now.
-// The test keys will be cleaned up by the API key revocation endpoint.
+// The returned API key ID is available but cleanup remains skipped.
 
 // ── Results ───
 

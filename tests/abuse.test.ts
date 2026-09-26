@@ -33,7 +33,7 @@ const READ_ONLY_TOKEN = "test-read-only-token";
 const FULL_TOKEN = "test-full-token";
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "test-world",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,

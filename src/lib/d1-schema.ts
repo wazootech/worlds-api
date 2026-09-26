@@ -8,7 +8,7 @@
 /** DDL for the control-plane tables. */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    uid TEXT PRIMARY KEY,
+    world_id TEXT PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',
@@ -26,7 +26,7 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_worlds_namespace ON worlds(namespace, state)`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_purge ON worlds(state, purge_status, expire_time)`,
   `CREATE TABLE IF NOT EXISTS api_keys (
-    uid TEXT PRIMARY KEY,
+    api_key_id TEXT PRIMARY KEY,
     key_hash TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
     namespace TEXT NOT NULL,
@@ -39,16 +39,26 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-/** @deprecated Data-plane tables are owned by @worlds/cloudflare. */
-export const PER_WORLD_DDL: string[] = [];
+const REQUIRED_ID_COLUMNS = {
+  worlds: "world_id",
+  api_keys: "api_key_id",
+};
 
-/** Initializes the control-plane schema. Idempotent and safe at worker startup. */
+/** Initializes and validates the canonical control-plane schema. */
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
-    try {
-      await db.prepare(ddl).run();
-    } catch {
-      // Table/index already exists.
+    await db.prepare(ddl).run();
+  }
+
+  for (const [table, requiredColumn] of Object.entries(REQUIRED_ID_COLUMNS)) {
+    const result = await db.prepare(`PRAGMA table_info(${table})`).all<{
+      name: string;
+    }>();
+    const columns = new Set(result.results.map((column) => column.name));
+    if (!columns.has(requiredColumn)) {
+      throw new Error(
+        `D1 schema is missing ${table}.${requiredColumn}; apply the platform identity cutover migration before serving requests`,
+      );
     }
   }
 }

@@ -53,7 +53,7 @@ export async function execute(
 }
 
 /** Generate a random UUID for primary keys. */
-export function uid(): string {
+export function randomUuid(): string {
   return crypto.randomUUID();
 }
 

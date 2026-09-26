@@ -5,7 +5,6 @@ vi.mock("../src/lib/db", () => ({
   getDb: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -21,7 +20,7 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_test-uid",
       namespace: "ns",
       display_name: "w_test-uid",
       state: "active",
@@ -39,7 +38,7 @@ describe("provisionWorld", () => {
 
     const result = await provisionWorld(env, "w_test-uid", "ns");
     expect(queryOneMock).toHaveBeenCalled();
-    expect(result.uid).toBe("w_test-uid");
+    expect(result.world_id).toBe("w_test-uid");
     expect(result.namespace).toBe("ns");
     expect(result.state).toBe("active");
   });
@@ -50,7 +49,7 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_test-uid",
       namespace: "ns",
       display_name: "My World",
       state: "active",
@@ -85,7 +84,7 @@ describe("resolveWorld", () => {
   it("returns world metadata for active world", async () => {
     const queryOneMock = vi.mocked(queryOne);
     queryOneMock.mockResolvedValue({
-      uid: "w_active",
+      world_id: "w_active",
       namespace: "ns",
       display_name: "Active World",
       state: "active",
@@ -102,7 +101,7 @@ describe("resolveWorld", () => {
     });
 
     const result = await resolveWorld(env, "w_active");
-    expect(result?.uid).toBe("w_active");
+    expect(result?.world_id).toBe("w_active");
     expect(result?.state).toBe("active");
   });
 
@@ -117,12 +116,12 @@ describe("resolveWorld", () => {
   it("returns world when includeDeleted is true", async () => {
     const queryOneMock = vi.mocked(queryOne);
     queryOneMock.mockResolvedValue({
-      uid: "w_deleted",
+      world_id: "w_deleted",
       state: "deleted",
     });
 
     const result = await resolveWorld(env, "w_deleted", true);
-    expect(result?.uid).toBe("w_deleted");
+    expect(result?.world_id).toBe("w_deleted");
     expect(result?.state).toBe("deleted");
   });
 });

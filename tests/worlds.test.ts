@@ -157,7 +157,7 @@ describe("world lifecycle", () => {
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
-  it("creates a world with a server-minted world_uid", async () => {
+  it("creates a world with a server-minted worldId", async () => {
     provisionMock.mockResolvedValue({
       uid: "w_test-uid",
       namespace: "user-1",
@@ -181,8 +181,8 @@ describe("world lifecycle", () => {
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.uid).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.uid}`);
+    expect(body.worldId).toMatch(/^w_/);
+    expect(body.name).toBe(`worlds/${body.worldId}`);
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
     expect(provisionMock).toHaveBeenCalled();

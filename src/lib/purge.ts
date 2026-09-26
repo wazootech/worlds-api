@@ -14,9 +14,9 @@ export async function runPurgeSweep(
   limit = 100,
 ): Promise<{ purged: number; failed: number }> {
   const db = getDb(env);
-  const rows = await query<{ uid: string }>(
+  const rows = await query<{ world_id: string }>(
     db,
-    "SELECT uid FROM worlds WHERE state = 'deleted' AND purge_status != 'purged' AND expire_time IS NOT NULL AND expire_time <= ? ORDER BY expire_time ASC LIMIT ?",
+    "SELECT world_id FROM worlds WHERE state = 'deleted' AND purge_status != 'purged' AND expire_time IS NOT NULL AND expire_time <= ? ORDER BY expire_time ASC LIMIT ?",
     [now(), limit],
   );
 
@@ -26,14 +26,14 @@ export async function runPurgeSweep(
     try {
       await execute(
         db,
-        "UPDATE worlds SET purge_status = 'purged', purged_at = ? WHERE uid = ?",
-        [now(), row.uid],
+        "UPDATE worlds SET purge_status = 'purged', purged_at = ? WHERE world_id = ?",
+        [now(), row.world_id],
       );
       purged++;
     } catch (err) {
       failed++;
       console.error(
-        `purge failed for ${row.uid}: ${
+        `purge failed for ${row.world_id}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );
