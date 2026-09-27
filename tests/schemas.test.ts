@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   ApiKeyCreateRequestSchema,
+  ApiKeyCreateResponseSchema,
+  ApiKeyResourceSchema,
   CreateWorldRequestSchema,
   ImportRequestSchema,
   SearchRequestSchema,
   SparqlRequestSchema,
   UpdateWorldRequestSchema,
   WorldResourceSchema,
+  worldIdParam,
 } from "../src/lib/schemas";
 
 describe("CreateWorldRequestSchema", () => {
@@ -263,7 +266,7 @@ describe("ApiKeyCreateRequestSchema", () => {
   it("accepts with optional worldId and name", () => {
     const result = ApiKeyCreateRequestSchema.safeParse({
       namespace: "my-namespace",
-      worldId: "w_abc123",
+      worldId: "w_00000000-0000-4000-8000-000000000001",
       name: "My Key",
     });
     expect(result.success).toBe(true);
@@ -285,10 +288,10 @@ describe("ApiKeyCreateRequestSchema", () => {
 });
 
 describe("WorldResourceSchema", () => {
-  it("accepts valid world resource", () => {
+  it("accepts a canonical world resource with only id", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      worldId: "w_abc123",
+      name: "worlds/w_00000000-0000-4000-8000-000000000001",
+      id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "active",
       storage: "d1",
@@ -300,12 +303,13 @@ describe("WorldResourceSchema", () => {
       updateTime: "2026-01-01T00:00:00.000Z",
     });
     expect(result.success).toBe(true);
+    if (result.success) expect(result.data).not.toHaveProperty("worldId");
   });
 
   it("accepts with optional deleteTime and expireTime", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      worldId: "w_abc123",
+      name: "worlds/w_00000000-0000-4000-8000-000000000001",
+      id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "deleted",
       storage: "d1",
@@ -323,8 +327,8 @@ describe("WorldResourceSchema", () => {
 
   it("rejects invalid storage value", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      worldId: "w_abc123",
+      name: "worlds/w_00000000-0000-4000-8000-000000000001",
+      id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "active",
       storage: "invalid-storage",
@@ -336,5 +340,42 @@ describe("WorldResourceSchema", () => {
       updateTime: "2026-01-01T00:00:00.000Z",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("worldIdParam", () => {
+  it("accepts worlds-api UUID IDs", () => {
+    expect(
+      worldIdParam.safeParse({
+        worldId: "w_00000000-0000-4000-8000-000000000001",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects user-chosen slugs", () => {
+    expect(worldIdParam.safeParse({ worldId: "my-world" }).success).toBe(false);
+  });
+});
+
+describe("API key record id", () => {
+  it("exposes id on created and listed API-key records", () => {
+    const resource = {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "test",
+      namespace: "ns",
+      scopes: ["data:read"],
+      createTime: "2026-01-01T00:00:00.000Z",
+    };
+    const listed = ApiKeyResourceSchema.safeParse(resource);
+    const created = ApiKeyCreateResponseSchema.safeParse({
+      ...resource,
+      token: "wzw_test",
+      worldId: null,
+    });
+
+    expect(listed.success).toBe(true);
+    expect(created.success).toBe(true);
+    if (listed.success) expect(listed.data).not.toHaveProperty("apiKeyId");
+    if (created.success) expect(created.data).not.toHaveProperty("apiKeyId");
   });
 });

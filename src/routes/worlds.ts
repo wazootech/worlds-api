@@ -46,7 +46,7 @@ interface WorldRow {
 function worldResource(row: WorldRow) {
   return {
     name: `worlds/${row.world_id}`,
-    worldId: row.world_id,
+    id: row.world_id,
     displayName: row.display_name,
     state: row.state,
     storage: "d1" as const,
@@ -155,7 +155,7 @@ const createRouteDef = createRoute({
 
 const getRoute = createRoute({
   method: "get",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "getWorld",
   summary: "Get world",
@@ -186,7 +186,7 @@ const getRoute = createRoute({
 
 const updateRoute = createRoute({
   method: "patch",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "updateWorld",
   summary: "Update world",
@@ -235,7 +235,7 @@ const updateRoute = createRoute({
 
 const deleteRoute = createRoute({
   method: "delete",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "deleteWorld",
   summary: "Delete world",
@@ -261,7 +261,7 @@ const deleteRoute = createRoute({
 
 const undeleteRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/undelete",
+  path: "/worlds/{worldId}/undelete",
   tags: ["Worlds"],
   operationId: "undeleteWorld",
   summary: "Undelete world",
@@ -302,7 +302,7 @@ const undeleteRoute = createRoute({
 
 const suspendRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/suspend",
+  path: "/worlds/{worldId}/suspend",
   tags: ["Worlds"],
   operationId: "suspendWorld",
   summary: "Suspend world",
@@ -333,7 +333,7 @@ const suspendRoute = createRoute({
 
 const resumeRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/resume",
+  path: "/worlds/{worldId}/resume",
   tags: ["Worlds"],
   operationId: "resumeWorld",
   summary: "Resume world",
@@ -502,7 +502,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(getRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
@@ -522,7 +522,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(updateRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const body = c.req.valid("json");
     const db = getDb(env);
@@ -600,7 +600,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(deleteRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
@@ -634,7 +634,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(undeleteRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
@@ -684,7 +684,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(suspendRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
@@ -720,7 +720,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(resumeRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldId = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 

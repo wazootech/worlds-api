@@ -23,7 +23,7 @@ const env = {
 } as any;
 
 const worldRef = {
-  worldId: "test-world",
+  worldId: "w_00000000-0000-4000-8000-000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -43,7 +43,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldId: "test-world",
+      worldId: "w_00000000-0000-4000-8000-000000000001",
       candidateCount: 40,
       vectorize: env.VECTORIZE_INDEX,
     });
@@ -55,7 +55,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: noVectorEnv.DB,
-      worldId: "test-world",
+      worldId: "w_00000000-0000-4000-8000-000000000001",
     });
   });
 
@@ -64,7 +64,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldId: "test-world",
+      worldId: "w_00000000-0000-4000-8000-000000000001",
       vectorize: env.VECTORIZE_INDEX,
     });
   });
@@ -80,11 +80,14 @@ describe("getWorldSdk", () => {
   it("clearSdkCacheForWorld evicts only that world's SDK instances", async () => {
     await getWorldSdk(env, worldRef, 20);
     await getWorldSdk(env, worldRef, 40);
-    const otherRef = { ...worldRef, worldId: "other-world" };
+    const otherRef = {
+      ...worldRef,
+      worldId: "w_00000000-0000-4000-8000-000000000002",
+    };
     await getWorldSdk(env, otherRef);
     createSdkMock.mockClear();
 
-    clearSdkCacheForWorld("test-world");
+    clearSdkCacheForWorld("w_00000000-0000-4000-8000-000000000001");
     await getWorldSdk(env, worldRef, 20);
     await getWorldSdk(env, worldRef, 40);
     // Other world's SDK is still cached.

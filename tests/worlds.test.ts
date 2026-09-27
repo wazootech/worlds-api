@@ -181,8 +181,8 @@ describe("world lifecycle", () => {
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.worldId).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.worldId}`);
+    expect(body.id).toMatch(/^w_/);
+    expect(body.name).toBe(`worlds/${body.id}`);
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
     expect(provisionMock).toHaveBeenCalled();
@@ -190,7 +190,9 @@ describe("world lifecycle", () => {
 
   it("rejects get for a missing world", async () => {
     queryOneMock.mockResolvedValue(null);
-    const res = await adminRequest("/worlds/w_nope");
+    const res = await adminRequest(
+      "/worlds/w_00000000-0000-4000-8000-000000000002",
+    );
     expect(res.status).toBe(404);
   });
 

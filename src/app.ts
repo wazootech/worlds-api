@@ -34,7 +34,8 @@ app.use(
 // OpenAPI endpoints so probes and spec fetches are never throttled.
 app.use("*", async (c, next) => {
   const path = new URL(c.req.url).pathname;
-  if (path === "/health" || path === "/openapi.json") return next();
+  if (path === "/health" || path === "/ready" || path === "/openapi.json")
+    return next();
 
   const header = c.req.header("Authorization");
   const token = header?.startsWith("Bearer ")
@@ -107,21 +108,35 @@ app.notFound((c) => {
 import { registerReindexRoutes } from "./routes/reindex";
 import { ensureControlPlaneSchema } from "./lib/d1-schema";
 
-// One-time D1 schema initialization. Cloudflare Workers reuse the global
-// scope across requests within the same isolate, so this flag prevents
-// re-running DDL on every request. The CREATE TABLE IF NOT EXISTS statements
-// are idempotent, but this avoids the latency of repeated exec calls.
 let schemaInitialized = false;
 
 app.use("*", async (c, next) => {
+  const path = c.req.path;
+  if (path === "/health" || path === "/openapi.json") return next();
+
   if (!schemaInitialized) {
     const db = (c.env as unknown as Env).DB;
-    // Guard: skip if DB is a test mock without exec (tests mock DB as {})
     if (db && typeof (db as any).exec === "function") {
-      await ensureControlPlaneSchema(db);
-      schemaInitialized = true;
+      try {
+        await ensureControlPlaneSchema(db);
+        schemaInitialized = true;
+      } catch (error) {
+        if (path === "/ready") {
+          return c.json(
+            {
+              status: "not_ready",
+              database: "unknown",
+              schema: "invalid",
+              error: "Control-plane schema initialization failed",
+            },
+            503,
+          );
+        }
+        throw error;
+      }
     }
   }
+
   return next();
 });
 

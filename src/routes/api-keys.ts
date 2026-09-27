@@ -10,11 +10,11 @@ import {
   ApiKeyCreateResponseSchema,
   ApiKeyResourceSchema,
   apiKeysListQuery,
-  keyIdParam,
+  apiKeyIdParam,
 } from "../lib/schemas";
 
 interface ApiKeyRow {
-  key_id: string;
+  api_key_id: string;
   name: string;
   namespace: string;
   world_id: string | null;
@@ -107,14 +107,14 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const db = getDb(env);
       const token = createToken("wzw");
       const hash = await sha256Hex(token);
-      const keyId = newId();
+      const apiKeyId = newId();
       const ts = now();
 
       await execute(
         db,
-        "INSERT INTO api_keys (key_id, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO api_keys (api_key_id, key_hash, name, namespace, world_id, scopes, create_time) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [
-          keyId,
+          apiKeyId,
           hash,
           body.name ?? "",
           body.namespace,
@@ -127,7 +127,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       return respond(
         c,
         {
-          keyId,
+          id: apiKeyId,
           token,
           name: body.name ?? "",
           namespace: body.namespace,
@@ -193,7 +193,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const db = getDb(env);
 
       let sql =
-        "SELECT key_id, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
+        "SELECT api_key_id, name, namespace, world_id, scopes, create_time FROM api_keys WHERE revoked_at IS NULL";
       const params: Array<string> = [];
 
       if (query_.namespace) {
@@ -207,7 +207,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
       return respond(c, {
         keys: rows.map((r) => ({
-          keyId: r.key_id,
+          id: r.api_key_id,
           name: r.name,
           namespace: r.namespace,
           worldId: r.world_id ?? undefined,
@@ -221,14 +221,14 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "delete",
-      path: "/api-keys/{keyId}",
+      path: "/api-keys/{apiKeyId}",
       tags: ["APIKeys"],
       operationId: "deleteApiKey",
       summary: "Revoke API key",
       description:
         "Permanently revoke an API key. The key immediately loses all access. This action cannot be undone.",
       "x-mint": { metadata: { title: "Revoke API key" } },
-      request: { params: keyIdParam },
+      request: { params: apiKeyIdParam },
       responses: {
         204: { description: "Revoked" },
         403: {
@@ -270,14 +270,14 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const keyId = c.req.param("keyId");
+      const apiKeyId = c.req.param("apiKeyId");
       const db = getDb(env);
       const ts = now();
 
       const result = await execute(
         db,
-        "UPDATE api_keys SET revoked_at = ? WHERE key_id = ? AND revoked_at IS NULL",
-        [ts, keyId],
+        "UPDATE api_keys SET revoked_at = ? WHERE api_key_id = ? AND revoked_at IS NULL",
+        [ts, apiKeyId],
       );
 
       if (result.rowsAffected === 0) {

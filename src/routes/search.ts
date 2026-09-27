@@ -16,7 +16,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/search",
+      path: "/worlds/{worldId}/search",
       tags: ["Search"],
       operationId: "searchWorld",
       summary: "Search world",
@@ -54,7 +54,7 @@ export function registerSearchRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 

@@ -31,7 +31,7 @@ export function registerImportExportRoutes(
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/import",
+      path: "/worlds/{worldId}/import",
       tags: ["ImportExport"],
       operationId: "importWorld",
       summary: "Import graph data",
@@ -69,7 +69,7 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 
@@ -215,7 +215,7 @@ export function registerImportExportRoutes(
   app.openapi(
     createRoute({
       method: "get",
-      path: "/worlds/{id}/export",
+      path: "/worlds/{worldId}/export",
       tags: ["ImportExport"],
       operationId: "exportWorld",
       summary: "Export graph data",
@@ -254,7 +254,7 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldId = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const query = c.req.valid("query");
 
