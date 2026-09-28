@@ -29,14 +29,16 @@ describe("CreateWorldRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
+  it("ignores caller-chosen world IDs, slugs, and storage URLs", () => {
     const result = CreateWorldRequestSchema.safeParse({
-      worldId: "my-world",
+      worldId: "w_00000000-0000-4000-8000-000000000001",
+      slug: "caller-chosen-slug",
       databaseUrl: "d1://example.com",
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.worldId).toBeUndefined();
+      expect(result.data.slug).toBeUndefined();
       expect(result.data.databaseUrl).toBeUndefined();
     }
   });
@@ -290,7 +292,6 @@ describe("ApiKeyCreateRequestSchema", () => {
 describe("WorldResourceSchema", () => {
   it("accepts a canonical world resource with only id", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_00000000-0000-4000-8000-000000000001",
       id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "active",
@@ -303,12 +304,14 @@ describe("WorldResourceSchema", () => {
       updateTime: "2026-01-01T00:00:00.000Z",
     });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data).not.toHaveProperty("worldId");
+    if (result.success) {
+      expect(result.data).not.toHaveProperty("name");
+      expect(result.data).not.toHaveProperty("worldId");
+    }
   });
 
   it("accepts with optional deleteTime and expireTime", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_00000000-0000-4000-8000-000000000001",
       id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "deleted",
@@ -327,7 +330,6 @@ describe("WorldResourceSchema", () => {
 
   it("rejects invalid storage value", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_00000000-0000-4000-8000-000000000001",
       id: "w_00000000-0000-4000-8000-000000000001",
       displayName: "My World",
       state: "active",
@@ -350,6 +352,14 @@ describe("worldIdParam", () => {
         worldId: "w_00000000-0000-4000-8000-000000000001",
       }).success,
     ).toBe(true);
+  });
+
+  it("rejects uppercase UUIDs", () => {
+    expect(
+      worldIdParam.safeParse({
+        worldId: "w_00000000-0000-4000-8000-00000000000A",
+      }).success,
+    ).toBe(false);
   });
 
   it("rejects user-chosen slugs", () => {

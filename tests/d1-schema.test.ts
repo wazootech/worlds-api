@@ -177,6 +177,27 @@ describe("control-plane schema readiness", () => {
     expect((await ready.json()).status).toBe("not_ready");
     expect(ready.status).toBe(503);
   });
+
+  it("creates runtime control-plane tables with canonical primary keys", () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      for (const ddl of CONTROL_PLANE_DDL) db.exec(ddl);
+      for (const [table, expectedKey] of Object.entries({
+        worlds: "world_id",
+        api_keys: "api_key_id",
+      })) {
+        const primaryKeys = (
+          db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+            name: string;
+            pk: number;
+          }>
+        ).filter((column) => column.pk > 0);
+        expect(primaryKeys.map((column) => column.name)).toEqual([expectedKey]);
+      }
+    } finally {
+      db.close();
+    }
+  });
 });
 
 describe("standalone schema identity contract", () => {

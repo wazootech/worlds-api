@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
 const WORLD_ID_PATTERN =
-  /^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 export const ErrorResponseSchema = z
   .object({
@@ -19,10 +19,6 @@ export const ErrorResponseSchema = z
 
 export const WorldResourceSchema = z
   .object({
-    name: z.string().openapi({
-      description:
-        "Resource name in the form worlds/<id>, e.g. worlds/w_<uuid>.",
-    }),
     id: z.string().regex(WORLD_ID_PATTERN).openapi({
       description: "Immutable ID minted by worlds-api, e.g. w_<uuid>.",
     }),

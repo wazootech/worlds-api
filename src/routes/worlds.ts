@@ -45,7 +45,6 @@ interface WorldRow {
 
 function worldResource(row: WorldRow) {
   return {
-    name: `worlds/${row.world_id}`,
     id: row.world_id,
     displayName: row.display_name,
     state: row.state,
