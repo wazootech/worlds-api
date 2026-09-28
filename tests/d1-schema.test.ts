@@ -7,6 +7,8 @@ import {
   ensureControlPlaneSchema,
 } from "../src/lib/d1-schema";
 import { getDb } from "../src/lib/db";
+import { DatabaseSync } from "node:sqlite";
+import { readFileSync } from "node:fs";
 
 vi.mock("../src/lib/db", () => ({
   getDb: vi.fn(),
@@ -46,7 +48,11 @@ const apiKeyColumns = [
 ];
 
 function database(
-  options: { failFirstDdl?: boolean; missingWorldId?: boolean } = {},
+  options: {
+    failFirstDdl?: boolean;
+    missingWorldId?: boolean;
+    wrongWorldPrimaryKey?: boolean;
+  } = {},
 ) {
   let ddlRuns = 0;
   const db = {
@@ -63,14 +69,35 @@ function database(
       }),
       first: vi.fn(async () => ({ value: 1 })),
       all: vi.fn(async () => {
-        const columns = sql.includes("table_info('worlds')")
-          ? options.missingWorldId
-            ? worldColumns.map((name) => ({
-                name: name === "world_id" ? "old_identifier" : name,
-              }))
-            : worldColumns.map((name) => ({ name }))
-          : apiKeyColumns.map((name) => ({ name }));
-        return { results: columns, success: true, meta: { changes: 0 } };
+        const table = sql.includes("table_info('worlds')")
+          ? "worlds"
+          : "api_keys";
+        const names =
+          table === "worlds"
+            ? options.missingWorldId
+              ? worldColumns.map((name) =>
+                  name === "world_id" ? "old_identifier" : name,
+                )
+              : worldColumns
+            : apiKeyColumns;
+        const expectedPrimaryKey =
+          table === "worlds" ? "world_id" : "api_key_id";
+        const primaryKey =
+          table === "worlds" && options.wrongWorldPrimaryKey
+            ? "id"
+            : expectedPrimaryKey;
+        const results = names.map((name) => ({
+          name,
+          pk: name === primaryKey ? 1 : 0,
+        }));
+        if (table === "worlds" && options.wrongWorldPrimaryKey) {
+          results.push({ name: "id", pk: 1 });
+        }
+        return {
+          results,
+          success: true,
+          meta: { changes: 0 },
+        };
       }),
     })),
   };
@@ -103,6 +130,14 @@ describe("control-plane schema readiness", () => {
 
     await expect(assertControlPlaneSchema(mock.db as never)).rejects.toThrow(
       "Control-plane schema mismatch in worlds: missing world_id",
+    );
+  });
+
+  it("rejects a world table with a noncanonical primary key", async () => {
+    const mock = database({ wrongWorldPrimaryKey: true });
+
+    await expect(assertControlPlaneSchema(mock.db as never)).rejects.toThrow(
+      "Control-plane schema mismatch in worlds: primary key must be world_id, found id",
     );
   });
 
@@ -141,5 +176,31 @@ describe("control-plane schema readiness", () => {
     expect(live.status).toBe(200);
     expect((await ready.json()).status).toBe("not_ready");
     expect(ready.status).toBe(503);
+  });
+});
+
+describe("standalone schema identity contract", () => {
+  it("uses entity-specific primary keys in every persisted entity table", () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      db.exec(readFileSync("schema.sql", "utf8"));
+      const expected = {
+        worlds_metadata: "world_id",
+        api_keys: "api_key_id",
+        quads: "quad_id",
+        chunks: "chunk_id",
+      } as const;
+      for (const [table, key] of Object.entries(expected)) {
+        const primaryKeys = (
+          db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+            name: string;
+            pk: number;
+          }>
+        ).filter((column) => column.pk > 0);
+        expect(primaryKeys.map((column) => column.name)).toEqual([key]);
+      }
+    } finally {
+      db.close();
+    }
   });
 });

@@ -269,6 +269,9 @@ export const ImportResponseSchema = z
 
 export const QuadSchema = z
   .object({
+    id: z.string().openapi({
+      description: "Stable content-addressed identifier for this RDF quad.",
+    }),
     subject: z.string().openapi({
       description: "RDF subject URI.",
     }),

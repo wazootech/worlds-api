@@ -62,6 +62,11 @@ const CONTROL_PLANE_COLUMNS = {
   ],
 } as const;
 
+const CONTROL_PLANE_PRIMARY_KEYS = {
+  worlds: "world_id",
+  api_keys: "api_key_id",
+} as const;
+
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
     try {
@@ -79,6 +84,7 @@ export async function assertControlPlaneSchema(db: D1Database): Promise<void> {
   )) {
     const result = await db.prepare(`PRAGMA table_info('${table}')`).all<{
       name: string;
+      pk: number;
     }>();
     const actualColumns = new Set(
       (result.results ?? []).map((column) => column.name),
@@ -89,6 +95,23 @@ export async function assertControlPlaneSchema(db: D1Database): Promise<void> {
     if (missingColumns.length > 0) {
       throw new Error(
         `Control-plane schema mismatch in ${table}: missing ${missingColumns.join(", ")}`,
+      );
+    }
+    const primaryKeys = (result.results ?? []).filter(
+      (column) => column.pk > 0,
+    );
+    const expectedPrimaryKey =
+      CONTROL_PLANE_PRIMARY_KEYS[
+        table as keyof typeof CONTROL_PLANE_PRIMARY_KEYS
+      ];
+    if (
+      primaryKeys.length !== 1 ||
+      primaryKeys[0]?.name !== expectedPrimaryKey
+    ) {
+      const found =
+        primaryKeys.map((column) => column.name).join(", ") || "none";
+      throw new Error(
+        `Control-plane schema mismatch in ${table}: primary key must be ${expectedPrimaryKey}, found ${found}`,
       );
     }
   }

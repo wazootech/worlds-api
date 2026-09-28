@@ -33,7 +33,7 @@ surface and its own client package:
 
 - **The data plane is the single writer of world lifecycle and world keys.**
   `POST /worlds` provisions the per-world database and persists
-  `worlds_metadata`; `/api-keys` mints data-plane keys. A self-hosted
+  the world metadata row; `/api-keys` mints data-plane keys. A self-hosted
   `worlds-api` is therefore fully functional standalone — worlds, keys, and data
   operations — with zero management-plane dependency. That is the original
   design goal: people can self-host the data plane without running the platform.
@@ -100,9 +100,14 @@ admin-only and exist for the platform facade and account-deletion flows.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management.
 
-The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema is
-required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
-indexes, search tables, and schema compatibility checks.
+The data plane uses a shared Cloudflare D1 database. This clean-break rollout
+requires a fresh schema and preserves no rows. Use `migrations/README.md` and
+`migrations/2026-09-27-platform-id-clean-reset.sql` for the Worlds API reset;
+the reset leaves Cloudflare-managed tables untouched. The Worker creates its
+control-plane tables on the first non-health, non-OpenAPI request (including
+`/ready`) or scheduled event; `@worlds/cloudflare` creates its data-plane tables,
+indexes, search tables, and schema-version record when the SDK opens a world.
+Verify a full write/read round trip after the coordinated QA deployment.
 
 ## Health checks
 

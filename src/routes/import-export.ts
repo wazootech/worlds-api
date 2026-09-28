@@ -14,6 +14,7 @@ import {
   worldIdParam,
 } from "../lib/schemas";
 import {
+  serializeQuadsToApiRecords,
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../lib/export-serializers";
@@ -295,13 +296,9 @@ export function registerImportExportRoutes(
         const quads = exported.kind === "quads" ? exported.quads : [];
 
         return respond(c, {
-          quads: quads.slice(offset, offset + limit).map((q: any) => ({
-            subject: q.subject.value,
-            predicate: q.predicate.value,
-            object: q.object.value,
-            graph:
-              q.graph.termType === "DefaultGraph" ? undefined : q.graph.value,
-          })),
+          quads: await serializeQuadsToApiRecords(
+            quads.slice(offset, offset + limit),
+          ),
           nextOffset:
             quads.length > offset + limit ? offset + limit : undefined,
         });

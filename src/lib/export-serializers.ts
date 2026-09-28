@@ -1,4 +1,5 @@
 import { serializeTurtle } from "@wazoo/sparql-engine";
+import { hashQuads } from "@worlds/sdk/quad-store";
 import type * as rdfjs from "@rdfjs/types";
 
 /**
@@ -99,4 +100,16 @@ export function serializeQuadsToJsonLd(quads: rdfjs.Quad[]): string {
   }
 
   return JSON.stringify({ "@context": {}, "@graph": graphEntries }, null, 2);
+}
+
+export async function serializeQuadsToApiRecords(quads: rdfjs.Quad[]) {
+  const ids = await hashQuads(quads);
+  return quads.map((quad, index) => ({
+    id: ids[index],
+    subject: quad.subject.value,
+    predicate: quad.predicate.value,
+    object: quad.object.value,
+    graph:
+      quad.graph.termType === "DefaultGraph" ? undefined : quad.graph.value,
+  }));
 }

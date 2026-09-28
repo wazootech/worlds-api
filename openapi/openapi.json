@@ -229,6 +229,10 @@
       "Quad": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable content-addressed identifier for this RDF quad."
+          },
           "subject": {
             "type": "string",
             "description": "RDF subject URI."
@@ -247,6 +251,7 @@
           }
         },
         "required": [
+          "id",
           "subject",
           "predicate",
           "object"
