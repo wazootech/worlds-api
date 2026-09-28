@@ -4,7 +4,7 @@ This is a destructive, no-preservation cutover. The reset files drop only applic
 
 ## QA order
 
-First verify the Cloudflare account and each database name against `wrangler.toml`. The live QA databases are `worlds-api-qa` and `wazoo-api-qa`.
+Before any reset, stop all QA API traffic and writers, confirm the Cloudflare account and each exact database name against `wrangler.toml`, and record approval for the destructive QA reset. Keep traffic stopped until compatible deployments and smoke tests succeed. The live QA databases are `worlds-api-qa` and `wazoo-api-qa`.
 
 From the Worlds API cutover checkout, reset the data-plane database:
 
