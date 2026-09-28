@@ -1,14 +1,8 @@
-/**
- * Control-plane D1 schema for worlds-api.
- *
- * RDF quads, search chunks, FTS tables, and their indexes are data-plane
- * objects owned and initialized by @worlds/cloudflare.
- */
+import type { D1Database } from "@cloudflare/workers-types";
 
-/** DDL for the control-plane tables. */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    uid TEXT PRIMARY KEY,
+    world_id TEXT PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',
@@ -26,7 +20,7 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_worlds_namespace ON worlds(namespace, state)`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_purge ON worlds(state, purge_status, expire_time)`,
   `CREATE TABLE IF NOT EXISTS api_keys (
-    uid TEXT PRIMARY KEY,
+    api_key_id TEXT PRIMARY KEY,
     key_hash TEXT NOT NULL,
     name TEXT NOT NULL DEFAULT '',
     namespace TEXT NOT NULL,
@@ -39,21 +33,86 @@ export const CONTROL_PLANE_DDL = [
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
 ];
 
-/** @deprecated Data-plane tables are owned by @worlds/cloudflare. */
-export const PER_WORLD_DDL: string[] = [];
+const CONTROL_PLANE_COLUMNS = {
+  worlds: [
+    "world_id",
+    "namespace",
+    "display_name",
+    "state",
+    "embedding_model",
+    "chunk_size",
+    "top_k",
+    "min_score",
+    "delete_time",
+    "expire_time",
+    "purge_status",
+    "purged_at",
+    "create_time",
+    "update_time",
+  ],
+  api_keys: [
+    "api_key_id",
+    "key_hash",
+    "name",
+    "namespace",
+    "world_id",
+    "scopes",
+    "create_time",
+    "revoked_at",
+  ],
+} as const;
 
-/** Initializes the control-plane schema. Idempotent and safe at worker startup. */
+const CONTROL_PLANE_PRIMARY_KEYS = {
+  worlds: "world_id",
+  api_keys: "api_key_id",
+} as const;
+
 export async function ensureControlPlaneSchema(db: D1Database): Promise<void> {
   for (const ddl of CONTROL_PLANE_DDL) {
     try {
       await db.prepare(ddl).run();
-    } catch {
-      // Table/index already exists.
+    } catch (error) {
+      console.error("Control-plane schema DDL failed", { ddl, error });
+      throw error;
     }
   }
 }
 
-/** @deprecated Data-plane schema initialization is performed by the SDK factory. */
-export async function ensurePerWorldSchema(_db: D1Database): Promise<void> {
-  // Kept as a no-op compatibility shim for existing imports.
+export async function assertControlPlaneSchema(db: D1Database): Promise<void> {
+  for (const [table, expectedColumns] of Object.entries(
+    CONTROL_PLANE_COLUMNS,
+  )) {
+    const result = await db.prepare(`PRAGMA table_info('${table}')`).all<{
+      name: string;
+      pk: number;
+    }>();
+    const actualColumns = new Set(
+      (result.results ?? []).map((column) => column.name),
+    );
+    const missingColumns = expectedColumns.filter(
+      (column) => !actualColumns.has(column),
+    );
+    if (missingColumns.length > 0) {
+      throw new Error(
+        `Control-plane schema mismatch in ${table}: missing ${missingColumns.join(", ")}`,
+      );
+    }
+    const primaryKeys = (result.results ?? []).filter(
+      (column) => column.pk > 0,
+    );
+    const expectedPrimaryKey =
+      CONTROL_PLANE_PRIMARY_KEYS[
+        table as keyof typeof CONTROL_PLANE_PRIMARY_KEYS
+      ];
+    if (
+      primaryKeys.length !== 1 ||
+      primaryKeys[0]?.name !== expectedPrimaryKey
+    ) {
+      const found =
+        primaryKeys.map((column) => column.name).join(", ") || "none";
+      throw new Error(
+        `Control-plane schema mismatch in ${table}: primary key must be ${expectedPrimaryKey}, found ${found}`,
+      );
+    }
+  }
 }

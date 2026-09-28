@@ -86,6 +86,15 @@ await test("GET /health returns ok (or degraded if no DB)", async () => {
   console.log(`        status: ${body.status}`);
 });
 
+await test("GET /ready confirms the canonical schema", async () => {
+  const res = await fetch(`${BASE_URL}/ready`);
+  await assertOk(res);
+  const body = await res.json();
+  if (body.status !== "ready" || body.schema !== "canonical") {
+    throw new Error(`Unexpected readiness response: ${JSON.stringify(body)}`);
+  }
+});
+
 await test("GET /openapi.json returns OpenAPI spec", async () => {
   const res = await fetch(`${BASE_URL}/openapi.json`);
   await assertOk(res);
@@ -115,9 +124,9 @@ await test("GET /worlds with invalid token returns 401", async () => {
 
 // ── Schema validation ───
 
-await test("POST /worlds/:id/search without body returns 400", async () => {
+await test("POST /worlds/:worldId/search without body returns 400", async () => {
   // Without a body, zod validation rejects
-  const res = await fetch(`${BASE_URL}/worlds/test/search`, {
+  const res = await fetch(`${BASE_URL}/worlds/w_00000000-0000-4000-8000-000000000002/search`, {
     method: "POST",
     headers: authHeaders(),
   });
@@ -138,6 +147,7 @@ await test("POST /worlds/sparql without world id returns 400", async () => {
 // ── Authenticated health flow ───
 
 const testNamespace = `health-${Date.now()}`;
+let healthTestApiKeyId = "";
 
 await test("GET /worlds returns list (may be empty)", async () => {
   const res = await fetch(
@@ -161,10 +171,9 @@ await test("POST /api-keys creates a key for the test namespace", async () => {
   await assertCreated(res);
   const body = await res.json();
   if (!body.token) throw new Error("Missing token in response");
-  if (!body.uid) throw new Error("Missing uid");
-  console.log(
-    `        key uid: ${body.uid}, token: ${body.token.slice(0, 8)}...`,
-  );
+  if (!body.id) throw new Error("Missing id");
+  healthTestApiKeyId = body.id;
+  console.log(`        key API ID: ${body.id}`);
 });
 
 await test("GET /api-keys lists created keys", async () => {
@@ -175,6 +184,9 @@ await test("GET /api-keys lists created keys", async () => {
   await assertOk(res);
   const body = await res.json();
   if (!Array.isArray(body.keys)) throw new Error("keys is not an array");
+  if (!body.keys.some((key) => key.id === healthTestApiKeyId)) {
+    throw new Error("Created key is missing from the key list");
+  }
   console.log(`        keys for namespace: ${body.keys.length}`);
 });
 
@@ -194,17 +206,22 @@ await test("POST /worlds with admin key (no namespace) returns 400", async () =>
   console.log(`        error: ${body.error.code}`);
 });
 
-await test("GET /worlds/:id for nonexistent world returns 404", async () => {
+await test("GET /worlds/:worldId for nonexistent world returns 404", async () => {
   const res = await fetch(
-    `${BASE_URL}/worlds/nonexistent-zzz`,
+    `${BASE_URL}/worlds/w_00000000-0000-4000-8000-000000000003`,
     { headers: authHeaders() },
   );
   await assertNotFound(res);
 });
 
-// Cleanup: revoke the test key
-// We don't have the keyId directly, so skip this for now.
-// The test keys will be cleaned up by the API key revocation endpoint.
+await test("DELETE /api-keys/:apiKeyId revokes the health test key", async () => {
+  if (!healthTestApiKeyId) throw new Error("No health test key was created");
+  const res = await fetch(
+    `${BASE_URL}/api-keys/${encodeURIComponent(healthTestApiKeyId)}`,
+    { method: "DELETE", headers: authHeaders() },
+  );
+  await assertStatus(res, 204);
+});
 
 // ── Results ───
 

@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "w_00000000-0000-4000-8000-000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -37,7 +37,7 @@ function request(
   overrides?: { db?: unknown; authHeader?: string },
 ) {
   return app.request(
-    "/worlds/test-world/search",
+    "/worlds/w_00000000-0000-4000-8000-000000000001/search",
     {
       method: "POST",
       headers: {
@@ -72,7 +72,7 @@ function mockFallbackDb(
   return { prepare: vi.fn().mockReturnValue({ bind }), bind, all };
 }
 
-describe("POST /worlds/:id/search endpoint", () => {
+describe("POST /worlds/:worldId/search endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
@@ -80,7 +80,7 @@ describe("POST /worlds/:id/search endpoint", () => {
 
   it("rejects request without authorization token", async () => {
     const res = await app.request(
-      "/worlds/test-world/search",
+      "/worlds/w_00000000-0000-4000-8000-000000000001/search",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -321,7 +321,7 @@ describe("POST /worlds/:id/search endpoint", () => {
       "%result%",
       "%result%",
       "%result%",
-      "test-world",
+      "w_00000000-0000-4000-8000-000000000001",
       1,
     );
   });

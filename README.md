@@ -13,7 +13,7 @@ Cloudflare Worker and the optional Docker image used by VPS compositions.
   `docker-compose.yml`, and CI.
 
 This service treats `namespace` as an opaque grouping string. In Wazoo private
-beta, `wazoo-api` passes `namespace = user.uid`.
+beta, `wazoo-api` passes `namespace = user.id`.
 
 ## Architecture and boundaries
 
@@ -25,11 +25,15 @@ surface and its own client package:
 | Platform (management) | `wazoo-api` (`api.wazoo.dev`)   | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the _policy facade_ over worlds                                           | `@wazoo/client` (generated from the platform OpenAPI)                                  |
 | Data plane            | `worlds-api` (`data.wazoo.dev`) | world keys (`wzw_`)      | world data in shared Cloudflare D1, metadata, keys, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | the generated `@worlds/client` data-plane HTTP client and the embeddable `@worlds/sdk` |
 
+### IDs and resource names
+
+`worlds-api` mints each immutable `w_<uuid>` identifier and exposes it as the resource `id`. Create requests take a display name only; clients do not choose world IDs or slugs. The database stores the identity as `worlds.world_id`; data-plane API-key rows use `api_keys.api_key_id`, while both resource types expose their key as `id`. Path parameters remain explicitly named `worldId` to distinguish them from other identifiers.
+
 ### The cut (intentional)
 
 - **The data plane is the single writer of world lifecycle and world keys.**
   `POST /worlds` provisions the per-world database and persists
-  `worlds_metadata`; `/api-keys` mints data-plane keys. A self-hosted
+  the world metadata row; `/api-keys` mints data-plane keys. A self-hosted
   `worlds-api` is therefore fully functional standalone — worlds, keys, and data
   operations — with zero management-plane dependency. That is the original
   design goal: people can self-host the data plane without running the platform.
@@ -40,7 +44,7 @@ surface and its own client package:
   `MAX_WORLDS_EXCEEDED`. The two `/worlds` surfaces are not peers — one is
   storage ownership, the other is policy.
 - `namespace` is the tenancy boundary between the planes: an opaque grouping
-  string (in the hosted beta, `wazoo-api` passes `namespace = user.uid`).
+  string (in the hosted beta, `wazoo-api` passes `namespace = user.id`).
   Data-plane keys resolve namespace from the key; admin calls pass it
   explicitly.
 
@@ -78,10 +82,10 @@ were never explicitly resolved. This section resolves them:
 
 ## Routes
 
-- Worlds: `/worlds`, `/worlds/:id`
-- Search: `/worlds/:id/search`
-- Import: `/worlds/:id/import`
-- Export: `/worlds/:id/export`
+- Worlds: `/worlds`, `/worlds/:worldId`
+- Search: `/worlds/:worldId/search`
+- Import: `/worlds/:worldId/import`
+- Export: `/worlds/:worldId/export`
 - API keys: `/api-keys`
 - Health: `/health`
 
@@ -96,9 +100,14 @@ admin-only and exist for the platform facade and account-deletion flows.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management.
 
-The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema is
-required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
-indexes, search tables, and schema compatibility checks.
+The data plane uses a shared Cloudflare D1 database. This clean-break rollout
+requires a fresh schema and preserves no rows. Use `migrations/README.md` and
+`migrations/2026-09-27-platform-id-clean-reset.sql` for the Worlds API reset;
+the reset leaves Cloudflare-managed tables untouched. The Worker creates its
+control-plane tables on the first non-health, non-OpenAPI request (including
+`/ready`) or scheduled event; `@worlds/cloudflare` creates its data-plane tables,
+indexes, search tables, and schema-version record when the SDK opens a world.
+Verify a full write/read round trip after the coordinated QA deployment.
 
 ## Health checks
 

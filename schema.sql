@@ -1,11 +1,10 @@
 PRAGMA foreign_keys = ON;
 
--- worlds_metadata: single source of truth for world identity, lifecycle, and
--- storage. `uid` is the canonical, machine-minted `world_uid` and is the public
--- resource identifier (`worlds/{world_uid}`). `namespace` is the internal
--- tenancy key (`user_uid` in hosted mode) and is never exposed publicly.
+-- worlds_metadata stores the machine-minted world identity as world_id. The
+-- public Worlds API exposes that value as the resource id. namespace is an
+-- internal tenancy key and is never exposed publicly.
 CREATE TABLE IF NOT EXISTS worlds_metadata (
-  uid TEXT PRIMARY KEY,
+  world_id TEXT PRIMARY KEY,
   namespace TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
   state TEXT NOT NULL DEFAULT 'active',
@@ -31,7 +30,7 @@ CREATE INDEX IF NOT EXISTS idx_worlds_metadata_purge
   WHERE state = 'deleted';
 
 CREATE TABLE IF NOT EXISTS api_keys (
-  uid TEXT PRIMARY KEY,
+  api_key_id TEXT PRIMARY KEY,
   key_hash TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL DEFAULT '',
   namespace TEXT NOT NULL,
@@ -48,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_namespace
   ON api_keys(namespace);
 
 CREATE TABLE IF NOT EXISTS quads (
-  id TEXT PRIMARY KEY,
+  quad_id TEXT PRIMARY KEY,
   namespace TEXT NOT NULL,
   world_id TEXT NOT NULL,
   subject TEXT NOT NULL,
@@ -68,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_quads_predicate
   ON quads(predicate);
 
 CREATE TABLE IF NOT EXISTS chunks (
-  id TEXT PRIMARY KEY,
+  chunk_id TEXT PRIMARY KEY,
   namespace TEXT NOT NULL,
   world_id TEXT NOT NULL,
   subject TEXT NOT NULL,

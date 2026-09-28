@@ -19,7 +19,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
+  newId: vi.fn(() => "11111111-1111-4111-8111-111111111111"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -157,9 +157,9 @@ describe("world lifecycle", () => {
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
-  it("creates a world with a server-minted world_uid", async () => {
+  it("creates a world with a server-minted world_id", async () => {
     provisionMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_11111111-1111-4111-8111-111111111111",
       namespace: "user-1",
       display_name: "My World",
       state: "active",
@@ -177,20 +177,31 @@ describe("world lifecycle", () => {
 
     const res = await userRequest("/worlds", {
       method: "POST",
-      body: JSON.stringify({ displayName: "My World" }),
+      body: JSON.stringify({
+        displayName: "My World",
+        worldId: "w_00000000-0000-4000-8000-000000000001",
+        slug: "caller-chosen-slug",
+      }),
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.uid).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.uid}`);
+    expect(body.id).toBe("w_11111111-1111-4111-8111-111111111111");
+    expect(body).not.toHaveProperty("name");
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
-    expect(provisionMock).toHaveBeenCalled();
+    expect(provisionMock).toHaveBeenCalledWith(
+      env,
+      "w_11111111-1111-4111-8111-111111111111",
+      "user-1",
+      expect.objectContaining({ displayName: "My World" }),
+    );
   });
 
   it("rejects get for a missing world", async () => {
     queryOneMock.mockResolvedValue(null);
-    const res = await adminRequest("/worlds/w_nope");
+    const res = await adminRequest(
+      "/worlds/w_00000000-0000-4000-8000-000000000002",
+    );
     expect(res.status).toBe(404);
   });
 

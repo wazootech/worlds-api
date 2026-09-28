@@ -3,7 +3,11 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
-import { resolveWorldDatabase } from "../lib/world-db";
+import {
+  clearSdkCacheForWorld,
+  getWorldSdk,
+  resolveWorldDatabase,
+} from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { worldIdParam } from "../lib/schemas";
 
@@ -11,7 +15,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/reindex",
+      path: "/worlds/{worldId}/reindex",
       tags: ["Reindex"],
       operationId: "reindexWorld",
       summary: "Reindex world vector & FTS indexes",
@@ -48,12 +52,12 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -70,12 +74,21 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_WRITE,
       );
       if (accessErr) return accessErr;
 
-      return respond(c, { ok: true, status: "completed" });
+      try {
+        const sdk = await getWorldSdk(env, ref);
+        if (typeof sdk.reindex !== "function") {
+          throw new Error("Worlds SDK does not support reindex");
+        }
+        await sdk.reindex();
+        return respond(c, { ok: true, status: "completed" });
+      } finally {
+        clearSdkCacheForWorld(worldId);
+      }
     },
   );
 }

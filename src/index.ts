@@ -11,6 +11,7 @@ export default {
     ctx: { waitUntil: (promise: Promise<unknown>) => void },
   ) {
     const bindings = fromBindings(env as Record<string, unknown>);
+    if (bindings.CUTOVER_MAINTENANCE === "true") return;
     ctx.waitUntil(
       ensureControlPlaneSchema(bindings.DB).then(() => runPurgeSweep(bindings)),
     );

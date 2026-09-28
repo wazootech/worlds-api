@@ -8,6 +8,10 @@ export default defineConfig({
       // worlds-cloudflare's own node_modules (which have Deno-style imports
       // that Node can't resolve). Point at a lightweight stub instead.
       "@worlds/cloudflare": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
+      "@worlds/sdk/quad-store": resolve(
+        __dirname,
+        "node_modules/@worlds/sdk/src/client/quad-store/mod.js",
+      ),
       "@worlds/sdk": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
     },
   },

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type * as rdfjs from "@rdfjs/types";
 import {
+  serializeQuadsToApiRecords,
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../src/lib/export-serializers";
@@ -90,6 +91,28 @@ function sampleQuads(): rdfjs.Quad[] {
     ),
   ];
 }
+
+describe("serializeQuadsToApiRecords", () => {
+  it("returns a stable id with each quad resource", async () => {
+    const quads = sampleQuads();
+    const resources = await serializeQuadsToApiRecords(quads);
+    const repeated = await serializeQuadsToApiRecords(quads);
+
+    expect(resources).toHaveLength(quads.length);
+    expect(resources[0]).toMatchObject({
+      id: expect.any(String),
+      subject: "urn:subject:alice",
+      predicate: "urn:predicate:name",
+      object: "Alice",
+    });
+    expect(resources.map((resource) => resource.id)).toEqual(
+      repeated.map((resource) => resource.id),
+    );
+    expect(new Set(resources.map((resource) => resource.id)).size).toBe(
+      resources.length,
+    );
+  });
+});
 
 describe("serializeQuadsToTrig", () => {
   it("emits default-graph quads as triples and named-graph quads in named blocks", () => {

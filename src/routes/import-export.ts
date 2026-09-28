@@ -14,6 +14,7 @@ import {
   worldIdParam,
 } from "../lib/schemas";
 import {
+  serializeQuadsToApiRecords,
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../lib/export-serializers";
@@ -31,7 +32,7 @@ export function registerImportExportRoutes(
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/import",
+      path: "/worlds/{worldId}/import",
       tags: ["ImportExport"],
       operationId: "importWorld",
       summary: "Import graph data",
@@ -69,7 +70,7 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 
@@ -90,7 +91,7 @@ export function registerImportExportRoutes(
         );
       }
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -107,7 +108,7 @@ export function registerImportExportRoutes(
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_WRITE,
       );
       if (accessErr) return accessErr;
@@ -215,7 +216,7 @@ export function registerImportExportRoutes(
   app.openapi(
     createRoute({
       method: "get",
-      path: "/worlds/{id}/export",
+      path: "/worlds/{worldId}/export",
       tags: ["ImportExport"],
       operationId: "exportWorld",
       summary: "Export graph data",
@@ -254,13 +255,13 @@ export function registerImportExportRoutes(
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const query = c.req.valid("query");
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -277,7 +278,7 @@ export function registerImportExportRoutes(
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_READ,
       );
       if (accessErr) return accessErr;
@@ -295,13 +296,9 @@ export function registerImportExportRoutes(
         const quads = exported.kind === "quads" ? exported.quads : [];
 
         return respond(c, {
-          quads: quads.slice(offset, offset + limit).map((q: any) => ({
-            subject: q.subject.value,
-            predicate: q.predicate.value,
-            object: q.object.value,
-            graph:
-              q.graph.termType === "DefaultGraph" ? undefined : q.graph.value,
-          })),
+          quads: await serializeQuadsToApiRecords(
+            quads.slice(offset, offset + limit),
+          ),
           nextOffset:
             quads.length > offset + limit ? offset + limit : undefined,
         });
