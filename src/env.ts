@@ -29,6 +29,7 @@ export type Env = {
   RATE_LIMIT_RPM?: string;
   RATE_LIMIT_BURST?: string;
   CORS_ORIGINS?: string;
+  CUTOVER_MAINTENANCE?: string;
 };
 
 export function fromBindings(env: Record<string, unknown>): Env {
@@ -64,6 +65,9 @@ export function fromBindings(env: Record<string, unknown>): Env {
       ? String(env.RATE_LIMIT_BURST)
       : undefined,
     CORS_ORIGINS: env.CORS_ORIGINS ? String(env.CORS_ORIGINS) : undefined,
+    CUTOVER_MAINTENANCE: env.CUTOVER_MAINTENANCE
+      ? String(env.CUTOVER_MAINTENANCE)
+      : undefined,
   };
 }
 
@@ -87,5 +91,6 @@ export function fromProcessEnv(): Env {
     RATE_LIMIT_RPM: process.env.RATE_LIMIT_RPM,
     RATE_LIMIT_BURST: process.env.RATE_LIMIT_BURST,
     CORS_ORIGINS: process.env.CORS_ORIGINS,
+    CUTOVER_MAINTENANCE: process.env.CUTOVER_MAINTENANCE,
   };
 }

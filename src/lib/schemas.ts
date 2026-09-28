@@ -335,7 +335,7 @@ export const ApiKeyCreateResponseSchema = z
     namespace: z.string().openapi({
       description: "Namespace the key is scoped to.",
     }),
-    worldId: z.string().nullable().openapi({
+    worldId: z.string().regex(WORLD_ID_PATTERN).nullable().openapi({
       description:
         "World ID the key is scoped to, or null if the key has namespace-wide access.",
     }),
@@ -356,7 +356,7 @@ export const ApiKeyResourceSchema = z
     namespace: z.string().openapi({
       description: "Namespace the key is scoped to.",
     }),
-    worldId: z.string().optional().openapi({
+    worldId: z.string().regex(WORLD_ID_PATTERN).optional().openapi({
       description:
         "World ID the key is scoped to, or absent for namespace-wide keys.",
     }),

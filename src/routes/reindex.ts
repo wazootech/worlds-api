@@ -3,7 +3,11 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
-import { resolveWorldDatabase } from "../lib/world-db";
+import {
+  clearSdkCacheForWorld,
+  getWorldSdk,
+  resolveWorldDatabase,
+} from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { worldIdParam } from "../lib/schemas";
 
@@ -75,7 +79,16 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       );
       if (accessErr) return accessErr;
 
-      return respond(c, { ok: true, status: "completed" });
+      try {
+        const sdk = await getWorldSdk(env, ref);
+        if (typeof sdk.reindex !== "function") {
+          throw new Error("Worlds SDK does not support reindex");
+        }
+        await sdk.reindex();
+        return respond(c, { ok: true, status: "completed" });
+      } finally {
+        clearSdkCacheForWorld(worldId);
+      }
     },
   );
 }

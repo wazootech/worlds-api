@@ -388,4 +388,37 @@ describe("API key record id", () => {
     if (listed.success) expect(listed.data).not.toHaveProperty("apiKeyId");
     if (created.success) expect(created.data).not.toHaveProperty("apiKeyId");
   });
+
+  it("constrains referenced world IDs to the canonical format", () => {
+    const worldId = "w_00000000-0000-4000-8000-000000000001";
+    const resource = {
+      id: "00000000-0000-4000-8000-000000000001",
+      name: "test",
+      namespace: "ns",
+      scopes: ["data:read"],
+      createTime: "2026-01-01T00:00:00.000Z",
+    };
+
+    expect(
+      ApiKeyResourceSchema.safeParse({ ...resource, worldId }).success,
+    ).toBe(true);
+    expect(
+      ApiKeyResourceSchema.safeParse({ ...resource, worldId: "my-world" })
+        .success,
+    ).toBe(false);
+    expect(
+      ApiKeyCreateResponseSchema.safeParse({
+        ...resource,
+        token: "wzw_test",
+        worldId,
+      }).success,
+    ).toBe(true);
+    expect(
+      ApiKeyCreateResponseSchema.safeParse({
+        ...resource,
+        token: "wzw_test",
+        worldId: "my-world",
+      }).success,
+    ).toBe(false);
+  });
 });

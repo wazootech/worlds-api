@@ -30,6 +30,21 @@ app.use(
   }),
 );
 
+app.use("*", async (c, next) => {
+  if ((c.env as unknown as Env).CUTOVER_MAINTENANCE === "true") {
+    return c.json(
+      {
+        error: {
+          code: "MAINTENANCE",
+          message: "Cutover maintenance in progress",
+        },
+      },
+      503,
+    );
+  }
+  return next();
+});
+
 // Per-key token-bucket rate limiting (in-memory). Exempts the health and
 // OpenAPI endpoints so probes and spec fetches are never throttled.
 app.use("*", async (c, next) => {

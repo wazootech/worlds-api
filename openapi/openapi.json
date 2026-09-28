@@ -449,6 +449,7 @@
           "worldId": {
             "type": "string",
             "nullable": true,
+            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
             "description": "World ID the key is scoped to, or null if the key has namespace-wide access."
           },
           "createTime": {
@@ -515,6 +516,7 @@
           },
           "worldId": {
             "type": "string",
+            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
             "description": "World ID the key is scoped to, or absent for namespace-wide keys."
           },
           "scopes": {
