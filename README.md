@@ -83,7 +83,8 @@ were never explicitly resolved. This section resolves them:
 - Import: `/worlds/:worldId/import`
 - Export: `/worlds/:worldId/export`
 - API keys: `/api-keys`
-- Health: `/health`
+- Liveness: `/health`
+- Readiness: `/ready`
 
 ## World identity
 
@@ -100,16 +101,19 @@ admin-only and exist for the platform facade and account-deletion flows.
 - `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management.
 
-The data plane uses a shared Cloudflare D1 database. A fresh data-plane schema is
-required for this clean-break rollout; `@worlds/cloudflare` owns its tables,
-indexes, search tables, and schema compatibility checks.
+Worlds API's control-plane DDL is defined in `src/lib/d1-schema.ts`. The
+`@worlds/cloudflare` package owns data-plane tables, indexes, and schema
+compatibility checks. Schema initialization is not an in-place migration; any
+database reset remains a separately approved rollout action.
 
 ## Health checks
 
 - Local: `npm run health:local`
 - QA: `npm run health:local -- https://data-qa.wazoo.dev`
 
-Requires `WORLDS_ADMIN_KEY` to exercise authenticated endpoints.
+`/health` checks liveness and database connectivity. `/ready` checks that the
+control-plane schema matches this service. The health script probes both and
+requires `WORLDS_ADMIN_KEY` for its authenticated checks.
 
 ## Development
 

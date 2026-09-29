@@ -1,9 +1,14 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
+import type { ReindexResponse } from "@worlds/sdk/search-index";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
-import { resolveWorldDatabase } from "../lib/world-db";
+import {
+  clearSdkCacheForWorld,
+  getWorldSdk,
+  resolveWorldDatabase,
+} from "../lib/world-db";
 import { respond } from "../lib/respond";
 import { worldIdParam } from "../lib/schemas";
 
@@ -24,18 +29,30 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       },
       responses: {
         200: {
-          description: "Reindex initiated successfully",
+          description: "Reindex completed successfully",
           content: {
             "application/json": {
               schema: z.object({
-                ok: z.boolean(),
-                status: z.string(),
+                ok: z.literal(true),
+                status: z.literal("completed"),
+                processedQuadCount: z.number().int().nonnegative(),
+                chunkRowCount: z.number().int().nonnegative(),
               }),
             },
           },
         },
         404: {
           description: "World database not found",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
+              }),
+            },
+          },
+        },
+        500: {
+          description: "Reindex failed",
           content: {
             "application/json": {
               schema: z.object({
@@ -75,7 +92,16 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       );
       if (accessErr) return accessErr;
 
-      return respond(c, { ok: true, status: "completed" });
+      try {
+        const sdk = await getWorldSdk(env, ref);
+        if (typeof sdk.reindex !== "function") {
+          throw new Error("Configured Worlds SDK does not support reindexing");
+        }
+        const report = (await sdk.reindex()) as unknown as ReindexResponse;
+        return respond(c, { ok: true, status: "completed", ...report });
+      } finally {
+        clearSdkCacheForWorld(worldId);
+      }
     },
   );
 }

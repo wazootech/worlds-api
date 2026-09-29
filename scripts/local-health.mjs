@@ -4,6 +4,24 @@
 //   Set WORLDS_ADMIN_KEY env var for authenticated tests
 
 const BASE_URL = process.argv[2] ?? "http://localhost:8787";
+try {
+  const url = new URL(BASE_URL);
+  if (
+    !(
+      url.protocol === "http:" &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1")
+    ) &&
+    !(url.protocol === "https:" && url.hostname === "data-qa.wazoo.dev")
+  ) {
+    throw new Error(
+      `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
+    );
+  }
+} catch (err) {
+  throw new Error(
+    `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
+  );
+}
 const ADMIN_KEY = required("WORLDS_ADMIN_KEY");
 
 function required(name) {
@@ -74,6 +92,13 @@ function authHeaders() {
 console.log(`\nWorlds API local health test`);
 console.log(`  Base URL: ${BASE_URL}\n`);
 
+const readyResponse = await fetch(`${BASE_URL}/ready`);
+await assertOk(readyResponse);
+const readyBody = await readyResponse.json();
+if (readyBody.status !== "ready") {
+  throw new Error(`Readiness preflight failed: status is ${readyBody.status}`);
+}
+
 // ── Health ───
 
 await test("GET /health returns ok (or degraded if no DB)", async () => {
@@ -137,13 +162,12 @@ await test("POST /worlds/sparql without world id returns 400", async () => {
 
 // ── Authenticated health flow ───
 
+let testKeyUid;
+
 const testNamespace = `health-${Date.now()}`;
 
 await test("GET /worlds returns list (may be empty)", async () => {
-  const res = await fetch(
-    `${BASE_URL}/worlds`,
-    { headers: authHeaders() },
-  );
+  const res = await fetch(`${BASE_URL}/worlds`, { headers: authHeaders() });
   await assertOk(res);
   const body = await res.json();
   if (!Array.isArray(body.worlds)) throw new Error("worlds is not an array");
@@ -162,16 +186,16 @@ await test("POST /api-keys creates a key for the test namespace", async () => {
   const body = await res.json();
   if (!body.token) throw new Error("Missing token in response");
   if (!body.uid) throw new Error("Missing uid");
+  testKeyUid = body.uid;
   console.log(
     `        key uid: ${body.uid}, token: ${body.token.slice(0, 8)}...`,
   );
 });
 
 await test("GET /api-keys lists created keys", async () => {
-  const res = await fetch(
-    `${BASE_URL}/api-keys?namespace=${testNamespace}`,
-    { headers: authHeaders() },
-  );
+  const res = await fetch(`${BASE_URL}/api-keys?namespace=${testNamespace}`, {
+    headers: authHeaders(),
+  });
   await assertOk(res);
   const body = await res.json();
   if (!Array.isArray(body.keys)) throw new Error("keys is not an array");
@@ -196,15 +220,21 @@ await test("POST /worlds with admin key (no namespace) returns 400", async () =>
 
 await test("GET /worlds/:id for nonexistent world returns 404", async () => {
   const res = await fetch(
-    `${BASE_URL}/worlds/nonexistent-zzz`,
+    `${BASE_URL}/worlds/w_00000000-0000-4000-8000-000000000000`,
     { headers: authHeaders() },
   );
   await assertNotFound(res);
 });
 
-// Cleanup: revoke the test key
-// We don't have the keyId directly, so skip this for now.
-// The test keys will be cleaned up by the API key revocation endpoint.
+if (testKeyUid) {
+  await test("DELETE /api-keys/:keyId revokes the test key", async () => {
+    const res = await fetch(`${BASE_URL}/api-keys/${testKeyUid}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+    if (res.status !== 204) await assertStatus(res, 204);
+  });
+}
 
 // ── Results ───
 
