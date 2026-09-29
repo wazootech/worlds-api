@@ -28,11 +28,11 @@ surface and its own client package:
 ### The cut (intentional)
 
 - **The data plane is the single writer of world lifecycle and world keys.**
-  `POST /worlds` provisions the per-world database and persists
-  `worlds_metadata`; `/api-keys` mints data-plane keys. A self-hosted
-  `worlds-api` is therefore fully functional standalone — worlds, keys, and data
-  operations — with zero management-plane dependency. That is the original
-  design goal: people can self-host the data plane without running the platform.
+  `POST /worlds` provisions the world metadata row in the shared D1 control
+  plane; `/api-keys` mints data-plane keys. A self-hosted `worlds-api` is
+  therefore fully functional standalone — worlds, keys, and data operations —
+  with zero management-plane dependency. That is the original design goal:
+  people can self-host the data plane without running the platform.
 - **The platform plane is a policy facade over the data plane.** `wazoo-api`
   `/v1/worlds` CRUD and world-token endpoints call `worlds-api` admin endpoints
   (`/api-keys`, world lifecycle) with `WORLDS_API_ADMIN_KEY`, then layer
@@ -65,6 +65,10 @@ were never explicitly resolved. This section resolves them:
    public API; self-hosted deployments use the same endpoints with their own
    admin key.
 
+### World identity
+
+`POST /worlds` mints an immutable `w_<UUIDv4>` ID; clients cannot choose a World ID or slug. World responses expose it as `id`, and the control-plane `worlds.world_id` column stores and references it.
+
 ### Consequences for client packages
 
 - `@wazoo/client` covers the platform plane only (management-plane operations).
@@ -78,10 +82,10 @@ were never explicitly resolved. This section resolves them:
 
 ## Routes
 
-- Worlds: `/worlds`, `/worlds/:id`
-- Search: `/worlds/:id/search`
-- Import: `/worlds/:id/import`
-- Export: `/worlds/:id/export`
+- Worlds: `/worlds`, `/worlds/:worldId`
+- Search: `/worlds/:worldId/search`
+- Import: `/worlds/:worldId/import`
+- Export: `/worlds/:worldId/export`
 - API keys: `/api-keys`
 - Health: `/health`
 

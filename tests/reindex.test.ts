@@ -6,10 +6,10 @@ const executionCtx = {
   passThroughOnException: () => {},
 } as unknown as ExecutionContext;
 
-describe("POST /worlds/:id/reindex endpoint", () => {
+describe("POST /worlds/:worldId/reindex endpoint", () => {
   it("rejects request without authorization token", async () => {
     const res = await app.request(
-      "/worlds/test-world/reindex",
+      "/worlds/w_123e4567-e89b-42d3-a456-426614174000/reindex",
       { method: "POST" },
       {},
       executionCtx,

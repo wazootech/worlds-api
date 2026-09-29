@@ -19,7 +19,7 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
+  uid: vi.fn(() => "123e4567-e89b-42d3-a456-426614174000"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -157,9 +157,10 @@ describe("world lifecycle", () => {
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
-  it("creates a world with a server-minted world_uid", async () => {
+  it("creates a world with a server-minted world_id", async () => {
+    const worldId = "w_123e4567-e89b-42d3-a456-426614174000";
     provisionMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: worldId,
       namespace: "user-1",
       display_name: "My World",
       state: "active",
@@ -177,20 +178,33 @@ describe("world lifecycle", () => {
 
     const res = await userRequest("/worlds", {
       method: "POST",
-      body: JSON.stringify({ displayName: "My World" }),
+      body: JSON.stringify({
+        displayName: "My World",
+        id: "w_123e4567-e89b-42d3-a456-426614174001",
+        worldId: "w_123e4567-e89b-42d3-a456-426614174002",
+        slug: "caller-chosen-slug",
+      }),
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.uid).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.uid}`);
+    expect(body.id).toBe(worldId);
+    expect(body).not.toHaveProperty("uid");
+    expect(body).not.toHaveProperty("name");
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
-    expect(provisionMock).toHaveBeenCalled();
+    expect(provisionMock).toHaveBeenCalledWith(
+      env,
+      worldId,
+      "user-1",
+      expect.objectContaining({ displayName: "My World" }),
+    );
   });
 
   it("rejects get for a missing world", async () => {
     queryOneMock.mockResolvedValue(null);
-    const res = await adminRequest("/worlds/w_nope");
+    const res = await adminRequest(
+      "/worlds/w_123e4567-e89b-42d3-a456-426614174003",
+    );
     expect(res.status).toBe(404);
   });
 
