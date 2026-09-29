@@ -1,5 +1,8 @@
 import { z } from "@hono/zod-openapi";
 
+const WORLD_ID_PATTERN =
+  /^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
 export const ErrorResponseSchema = z
   .object({
     error: z.object({
@@ -16,12 +19,8 @@ export const ErrorResponseSchema = z
 
 export const WorldResourceSchema = z
   .object({
-    name: z.string().openapi({
-      description:
-        "Resource name in the form worlds/<uid>, e.g. worlds/w_a1b2c3d4.",
-    }),
-    uid: z.string().openapi({
-      description: "Unique world identifier, e.g. w_<uuid>.",
+    id: z.string().regex(WORLD_ID_PATTERN).openapi({
+      description: "Immutable World ID minted by Worlds API as `w_<UUIDv4>`.",
     }),
     displayName: z.string().openapi({
       description:
@@ -300,7 +299,7 @@ export const ApiKeyCreateRequestSchema = z
       description:
         "Namespace to scope the API key to. Required. The key can only access worlds within this namespace.",
     }),
-    worldId: z.string().optional().openapi({
+    worldId: z.string().regex(WORLD_ID_PATTERN).optional().openapi({
       description:
         "Optional world ID to scope the key to a single world. Omit to allow access to all worlds in the namespace.",
     }),
@@ -333,7 +332,7 @@ export const ApiKeyCreateResponseSchema = z
     namespace: z.string().openapi({
       description: "Namespace the key is scoped to.",
     }),
-    worldId: z.string().nullable().openapi({
+    worldId: z.string().regex(WORLD_ID_PATTERN).nullable().openapi({
       description:
         "World ID the key is scoped to, or null if the key has namespace-wide access.",
     }),
@@ -354,7 +353,7 @@ export const ApiKeyResourceSchema = z
     namespace: z.string().openapi({
       description: "Namespace the key is scoped to.",
     }),
-    worldId: z.string().optional().openapi({
+    worldId: z.string().regex(WORLD_ID_PATTERN).optional().openapi({
       description:
         "World ID the key is scoped to, or absent for namespace-wide keys.",
     }),
@@ -368,10 +367,13 @@ export const ApiKeyResourceSchema = z
   .openapi("ApiKeyResource");
 
 export const worldIdParam = z.object({
-  id: z.string().openapi({
-    param: { name: "id", in: "path", required: true },
-    description: "The canonical world_id, e.g. w_<uuid>.",
-  }),
+  worldId: z
+    .string()
+    .regex(WORLD_ID_PATTERN)
+    .openapi({
+      param: { name: "worldId", in: "path", required: true },
+      description: "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+    }),
 });
 
 export const keyIdParam = z.object({

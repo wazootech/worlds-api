@@ -27,7 +27,7 @@ import {
 const GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 interface WorldRow {
-  uid: string;
+  world_id: string;
   namespace: string;
   display_name: string;
   state: string;
@@ -45,8 +45,7 @@ interface WorldRow {
 
 function worldResource(row: WorldRow) {
   return {
-    name: `worlds/${row.uid}`,
-    uid: row.uid,
+    id: row.world_id,
     displayName: row.display_name,
     state: row.state,
     storage: "d1" as const,
@@ -63,29 +62,29 @@ function worldResource(row: WorldRow) {
 
 async function resolveWorldRow(
   db: ReturnType<typeof getDb>,
-  worldUid: string,
+  worldId: string,
   deleted = false,
 ): Promise<WorldRow | null> {
   return queryOne<WorldRow>(
     db,
     deleted
-      ? "SELECT * FROM worlds WHERE uid = ? AND state = 'deleted'"
-      : "SELECT * FROM worlds WHERE uid = ? AND state != 'deleted'",
-    [worldUid],
+      ? "SELECT * FROM worlds WHERE world_id = ? AND state = 'deleted'"
+      : "SELECT * FROM worlds WHERE world_id = ? AND state != 'deleted'",
+    [worldId],
   );
 }
 
 function requireWorldAccess(
   auth: Awaited<ReturnType<typeof authorize>>,
   row: WorldRow,
-  worldUid: string,
+  worldId: string,
   requiredScope?: string,
 ): Response | null {
   if (auth.admin) return null;
   if (!auth.namespace || auth.namespace !== row.namespace) {
     return unauthorized();
   }
-  if (auth.worldId && auth.worldId !== worldUid) return forbidden();
+  if (auth.worldId && auth.worldId !== worldId) return forbidden();
   if (requiredScope && !hasScope(auth, requiredScope)) {
     return forbiddenScope(requiredScope);
   }
@@ -122,7 +121,7 @@ const createRouteDef = createRoute({
   operationId: "createWorld",
   summary: "Create world",
   description:
-    "Create a new world. Allocates a new world_id in the shared D1 database and initializes the search and vector indexes.",
+    "Create a new World metadata record in the shared D1 database. Worlds API mints its ID as w_<UUIDv4>; callers cannot choose the ID or a slug.",
   "x-mint": { metadata: { title: "Create world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -155,7 +154,7 @@ const createRouteDef = createRoute({
 
 const getRoute = createRoute({
   method: "get",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "getWorld",
   summary: "Get world",
@@ -186,7 +185,7 @@ const getRoute = createRoute({
 
 const updateRoute = createRoute({
   method: "patch",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "updateWorld",
   summary: "Update world",
@@ -235,7 +234,7 @@ const updateRoute = createRoute({
 
 const deleteRoute = createRoute({
   method: "delete",
-  path: "/worlds/{id}",
+  path: "/worlds/{worldId}",
   tags: ["Worlds"],
   operationId: "deleteWorld",
   summary: "Delete world",
@@ -261,7 +260,7 @@ const deleteRoute = createRoute({
 
 const undeleteRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/undelete",
+  path: "/worlds/{worldId}/undelete",
   tags: ["Worlds"],
   operationId: "undeleteWorld",
   summary: "Undelete world",
@@ -302,7 +301,7 @@ const undeleteRoute = createRoute({
 
 const suspendRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/suspend",
+  path: "/worlds/{worldId}/suspend",
   tags: ["Worlds"],
   operationId: "suspendWorld",
   summary: "Suspend world",
@@ -333,7 +332,7 @@ const suspendRoute = createRoute({
 
 const resumeRoute = createRoute({
   method: "post",
-  path: "/worlds/{id}/resume",
+  path: "/worlds/{worldId}/resume",
   tags: ["Worlds"],
   operationId: "resumeWorld",
   summary: "Resume world",
@@ -487,9 +486,9 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     );
     if (accessErr) return accessErr;
 
-    const worldUid = `w_${uid()}`;
+    const worldId = `w_${uid()}`;
 
-    const metadata = await provisionWorld(env, worldUid, namespace, {
+    const metadata = await provisionWorld(env, worldId, namespace, {
       displayName: body.displayName,
       embeddingModel: body.embeddingModel,
       chunkSize: body.chunkSize,
@@ -502,11 +501,11 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(getRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid);
+    const row = await resolveWorldRow(db, worldId);
     if (!row) {
       return respond(
         c,
@@ -514,12 +513,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(
-      auth,
-      row,
-      worldUid,
-      SCOPE_DATA_READ,
-    );
+    const worldAccess = requireWorldAccess(auth, row, worldId, SCOPE_DATA_READ);
     if (worldAccess) return worldAccess;
 
     return respond(c, worldResource(row));
@@ -527,12 +521,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
   app.openapi(updateRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const body = c.req.valid("json");
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid);
+    const row = await resolveWorldRow(db, worldId);
     if (!row) {
       return respond(
         c,
@@ -543,7 +537,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(
       auth,
       row,
-      worldUid,
+      worldId,
       SCOPE_DATA_WRITE,
     );
     if (worldAccess) return worldAccess;
@@ -586,30 +580,30 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }
 
     setClauses.push("update_time = ?");
-    setArgs.push(now(), worldUid);
+    setArgs.push(now(), worldId);
 
     await execute(
       db,
-      `UPDATE worlds SET ${setClauses.join(", ")} WHERE uid = ?`,
+      `UPDATE worlds SET ${setClauses.join(", ")} WHERE world_id = ?`,
       setArgs,
     );
 
     const updated = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
-      [worldUid],
+      "SELECT * FROM worlds WHERE world_id = ?",
+      [worldId],
     );
-    clearSdkCacheForWorld(worldUid);
+    clearSdkCacheForWorld(worldId);
     return respond(c, worldResource(updated!));
   });
 
   app.openapi(deleteRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid);
+    const row = await resolveWorldRow(db, worldId);
     if (!row) {
       return respond(
         c,
@@ -620,7 +614,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(
       auth,
       row,
-      worldUid,
+      worldId,
       SCOPE_DATA_WRITE,
     );
     if (worldAccess) return worldAccess;
@@ -630,20 +624,20 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE uid = ?",
-      [ts, expireTs, ts, worldUid],
+      "UPDATE worlds SET state = 'deleted', delete_time = ?, expire_time = ?, purge_status = 'pending', update_time = ? WHERE world_id = ?",
+      [ts, expireTs, ts, worldId],
     );
-    clearSdkCacheForWorld(worldUid);
+    clearSdkCacheForWorld(worldId);
     return c.body(null, 204) as any;
   });
 
   app.openapi(undeleteRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid, true);
+    const row = await resolveWorldRow(db, worldId, true);
     if (!row) {
       return respond(
         c,
@@ -654,7 +648,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(
       auth,
       row,
-      worldUid,
+      worldId,
       SCOPE_DATA_WRITE,
     );
     if (worldAccess) return worldAccess;
@@ -675,25 +669,25 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const ts = now();
     await execute(
       db,
-      "UPDATE worlds SET state = 'active', delete_time = NULL, expire_time = NULL, purge_status = 'none', update_time = ? WHERE uid = ?",
-      [ts, worldUid],
+      "UPDATE worlds SET state = 'active', delete_time = NULL, expire_time = NULL, purge_status = 'none', update_time = ? WHERE world_id = ?",
+      [ts, worldId],
     );
     const restored = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
-      [worldUid],
+      "SELECT * FROM worlds WHERE world_id = ?",
+      [worldId],
     );
-    clearSdkCacheForWorld(worldUid);
+    clearSdkCacheForWorld(worldId);
     return respond(c, worldResource(restored!));
   });
 
   app.openapi(suspendRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid);
+    const row = await resolveWorldRow(db, worldId);
     if (!row) {
       return respond(
         c,
@@ -704,32 +698,32 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(
       auth,
       row,
-      worldUid,
+      worldId,
       SCOPE_DATA_WRITE,
     );
     if (worldAccess) return worldAccess;
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'suspended', update_time = ? WHERE uid = ?",
-      [now(), worldUid],
+      "UPDATE worlds SET state = 'suspended', update_time = ? WHERE world_id = ?",
+      [now(), worldId],
     );
     const suspended = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
-      [worldUid],
+      "SELECT * FROM worlds WHERE world_id = ?",
+      [worldId],
     );
-    clearSdkCacheForWorld(worldUid);
+    clearSdkCacheForWorld(worldId);
     return respond(c, worldResource(suspended!));
   });
 
   app.openapi(resumeRoute, async (c) => {
     const env = c.env as unknown as Env;
-    const worldUid = c.req.param("id");
+    const worldId = c.req.param("worldId");
     const auth = await authorize(c.req.raw, env);
     const db = getDb(env);
 
-    const row = await resolveWorldRow(db, worldUid);
+    const row = await resolveWorldRow(db, worldId);
     if (!row) {
       return respond(
         c,
@@ -740,22 +734,22 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(
       auth,
       row,
-      worldUid,
+      worldId,
       SCOPE_DATA_WRITE,
     );
     if (worldAccess) return worldAccess;
 
     await execute(
       db,
-      "UPDATE worlds SET state = 'active', update_time = ? WHERE uid = ?",
-      [now(), worldUid],
+      "UPDATE worlds SET state = 'active', update_time = ? WHERE world_id = ?",
+      [now(), worldId],
     );
     const resumed = await queryOne<WorldRow>(
       db,
-      "SELECT * FROM worlds WHERE uid = ?",
-      [worldUid],
+      "SELECT * FROM worlds WHERE world_id = ?",
+      [worldId],
     );
-    clearSdkCacheForWorld(worldUid);
+    clearSdkCacheForWorld(worldId);
     return respond(c, worldResource(resumed!));
   });
 

@@ -59,7 +59,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       operationId: "sparqlNoWorld",
       summary: "SPARQL without world",
       description:
-        "Always returns 400. Use POST /worlds/{id}/sparql to execute a SPARQL query against a specific world.",
+        "Always returns 400. Use POST /worlds/{worldId}/sparql to execute a SPARQL query against a specific world.",
       "x-mint": { metadata: { title: "SPARQL without world" } },
       security: [{ bearerWorldsToken: [] }],
       responses: {
@@ -81,7 +81,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         {
           error: {
             code: "INVALID_ARGUMENT",
-            message: "Use /worlds/:id/sparql to query one World",
+            message: "Use /worlds/:worldId/sparql to query one World",
           },
         },
         400,
@@ -92,7 +92,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/sparql",
+      path: "/worlds/{worldId}/sparql",
       tags: ["SPARQL"],
       operationId: "sparqlWorld",
       summary: "Execute SPARQL query",
@@ -132,13 +132,13 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
       const body = c.req.valid("json");
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -155,7 +155,7 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_READ,
       );
       if (accessErr) return accessErr;

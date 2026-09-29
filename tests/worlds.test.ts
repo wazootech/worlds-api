@@ -19,9 +19,11 @@ vi.mock("../src/lib/db", () => ({
   query: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
-  uid: vi.fn(() => "test-uid"),
+  uid: vi.fn(() => "00000000-0000-4000-8000-000000000001"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
+
+const WORLD_ID = "w_00000000-0000-4000-8000-000000000001";
 
 const provisionMock = vi.mocked(provisionWorld);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
@@ -47,6 +49,7 @@ const executionCtx = {
 
 const ADMIN_KEY = "test-admin-key";
 const USER_TOKEN = "test-user-token";
+const WORLD_SCOPED_TOKEN = "world-scoped-token";
 
 function request(token: string | null, path: string, init: RequestInit = {}) {
   return app.request(
@@ -73,9 +76,11 @@ function userRequest(path: string, init: RequestInit = {}) {
 }
 
 let userTokenHash = "";
+let worldScopedTokenHash = "";
 
 beforeAll(async () => {
   userTokenHash = await sha256Hex(USER_TOKEN);
+  worldScopedTokenHash = await sha256Hex(WORLD_SCOPED_TOKEN);
 });
 
 beforeEach(() => {
@@ -114,6 +119,11 @@ beforeEach(() => {
   apiKeyRows[userTokenHash] = {
     namespace: "user-1",
     world_id: null,
+    scopes: '["data:read","data:write"]',
+  };
+  apiKeyRows[worldScopedTokenHash] = {
+    namespace: "user-1",
+    world_id: "w_00000000-0000-4000-8000-000000000002",
     scopes: '["data:read","data:write"]',
   };
 
@@ -157,9 +167,9 @@ describe("world lifecycle", () => {
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
-  it("creates a world with a server-minted world_uid", async () => {
+  it("creates a world with a server-minted world ID", async () => {
     provisionMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: WORLD_ID,
       namespace: "user-1",
       display_name: "My World",
       state: "active",
@@ -181,16 +191,104 @@ describe("world lifecycle", () => {
     });
     expect(res.status).toBe(201);
     const body = await res.json();
-    expect(body.uid).toMatch(/^w_/);
-    expect(body.name).toBe(`worlds/${body.uid}`);
+    expect(body.id).toBe(WORLD_ID);
+    expect(body.uid).toBeUndefined();
+    expect(body.name).toBeUndefined();
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
     expect(provisionMock).toHaveBeenCalled();
+    expect(provisionMock).toHaveBeenCalledWith(
+      env,
+      WORLD_ID,
+      "user-1",
+      expect.objectContaining({ displayName: "My World" }),
+    );
+  });
+
+  it("accepts get for a world", async () => {
+    queryOneMock.mockResolvedValue({
+      world_id: WORLD_ID,
+      namespace: "user-1",
+      display_name: "My World",
+      state: "active",
+      embedding_model: "tfjs-universal-sentence-encoder",
+      chunk_size: 1000,
+      top_k: 20,
+      min_score: 0.0,
+      delete_time: null,
+      expire_time: null,
+      purge_status: "none",
+      purged_at: null,
+      create_time: "2026-01-01T00:00:00.000Z",
+      update_time: "2026-01-01T00:00:00.000Z",
+    });
+    const res = await adminRequest(
+      "/worlds/w_00000000-0000-4000-8000-000000000001",
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.id).toBe(WORLD_ID);
+    expect(body.uid).toBeUndefined();
+    expect(body.name).toBeUndefined();
+    expect(body.displayName).toBe("My World");
+    expect(body.storage).toBe("d1");
+  });
+
+  it("enforces world-scoped authorization for a valid World ID", async () => {
+    queryOneMock.mockResolvedValue({
+      world_id: WORLD_ID,
+      namespace: "user-1",
+      display_name: "My World",
+      state: "active",
+      embedding_model: "tfjs-universal-sentence-encoder",
+      chunk_size: 1000,
+      top_k: 20,
+      min_score: 0.0,
+      delete_time: null,
+      expire_time: null,
+      purge_status: "none",
+      purged_at: null,
+      create_time: "2026-01-01T00:00:00.000Z",
+      update_time: "2026-01-01T00:00:00.000Z",
+    });
+    const res = await request(WORLD_SCOPED_TOKEN, `/worlds/${WORLD_ID}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("accepts list for a world", async () => {
+    queryMock.mockResolvedValue([
+      {
+        world_id: WORLD_ID,
+        namespace: "user-1",
+        display_name: "My World",
+        state: "active",
+        embedding_model: "tfjs-universal-sentence-encoder",
+        chunk_size: 1000,
+        top_k: 20,
+        min_score: 0.0,
+        delete_time: null,
+        expire_time: null,
+        purge_status: "none",
+        purged_at: null,
+        create_time: "2026-01-01T00:00:00.000Z",
+        update_time: "2026-01-01T00:00:00.000Z",
+      },
+    ]);
+    const res = await userRequest("/worlds");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.worlds[0].id).toBe(WORLD_ID);
+    expect(body.worlds[0].uid).toBeUndefined();
+    expect(body.worlds[0].name).toBeUndefined();
+    expect(body.worlds[0].displayName).toBe("My World");
+    expect(body.worlds[0].storage).toBe("d1");
   });
 
   it("rejects get for a missing world", async () => {
     queryOneMock.mockResolvedValue(null);
-    const res = await adminRequest("/worlds/w_nope");
+    const res = await adminRequest(
+      "/worlds/w_00000000-0000-4000-8000-000000000002",
+    );
     expect(res.status).toBe(404);
   });
 
@@ -213,5 +311,10 @@ describe("world lifecycle", () => {
       method: "POST",
     });
     expect(res.status).toBe(403);
+  });
+
+  it("rejects malformed world ID", async () => {
+    const res = await userRequest("/worlds/not-a-world-id");
+    expect(res.status).toBe(400);
   });
 });
