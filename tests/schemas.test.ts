@@ -7,6 +7,7 @@ import {
   SparqlRequestSchema,
   UpdateWorldRequestSchema,
   WorldResourceSchema,
+  worldIdParam,
 } from "../src/lib/schemas";
 
 describe("CreateWorldRequestSchema", () => {
@@ -28,11 +29,14 @@ describe("CreateWorldRequestSchema", () => {
 
   it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
     const result = CreateWorldRequestSchema.safeParse({
-      worldId: "my-world",
+      id: "w_123e4567-e89b-42d3-a456-426614174000",
+      worldId: "w_123e4567-e89b-42d3-a456-426614174000",
+      slug: "my-world",
       databaseUrl: "d1://example.com",
     });
     expect(result.success).toBe(true);
     if (result.success) {
+      expect(result.data.id).toBeUndefined();
       expect(result.data.worldId).toBeUndefined();
       expect(result.data.databaseUrl).toBeUndefined();
     }
@@ -260,10 +264,10 @@ describe("ApiKeyCreateRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("accepts with optional worldId (world_uid) and name", () => {
+  it("accepts with optional worldId reference and name", () => {
     const result = ApiKeyCreateRequestSchema.safeParse({
       namespace: "my-namespace",
-      worldId: "w_abc123",
+      worldId: "w_123e4567-e89b-42d3-a456-426614174000",
       name: "My Key",
     });
     expect(result.success).toBe(true);
@@ -284,11 +288,24 @@ describe("ApiKeyCreateRequestSchema", () => {
   });
 });
 
+describe("worldIdParam", () => {
+  it("accepts a server-minted UUIDv4 world id", () => {
+    expect(
+      worldIdParam.safeParse({
+        worldId: "w_123e4567-e89b-42d3-a456-426614174000",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("rejects non-canonical world ids", () => {
+    expect(worldIdParam.safeParse({ worldId: "world-1" }).success).toBe(false);
+  });
+});
+
 describe("WorldResourceSchema", () => {
   it("accepts valid world resource", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      uid: "w_abc123",
+      id: "w_123e4567-e89b-42d3-a456-426614174000",
       displayName: "My World",
       state: "active",
       storage: "d1",
@@ -304,8 +321,7 @@ describe("WorldResourceSchema", () => {
 
   it("accepts with optional deleteTime and expireTime", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      uid: "w_abc123",
+      id: "w_123e4567-e89b-42d3-a456-426614174000",
       displayName: "My World",
       state: "deleted",
       storage: "d1",
@@ -323,8 +339,7 @@ describe("WorldResourceSchema", () => {
 
   it("rejects invalid storage value", () => {
     const result = WorldResourceSchema.safeParse({
-      name: "worlds/w_abc123",
-      uid: "w_abc123",
+      id: "w_123e4567-e89b-42d3-a456-426614174000",
       displayName: "My World",
       state: "active",
       storage: "invalid-storage",

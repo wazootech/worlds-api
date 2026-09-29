@@ -8,7 +8,7 @@
 /** DDL for the control-plane tables. */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    uid TEXT PRIMARY KEY,
+    world_id TEXT PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',

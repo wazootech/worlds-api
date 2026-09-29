@@ -1,11 +1,10 @@
 PRAGMA foreign_keys = ON;
 
--- worlds_metadata: single source of truth for world identity, lifecycle, and
--- storage. `uid` is the canonical, machine-minted `world_uid` and is the public
--- resource identifier (`worlds/{world_uid}`). `namespace` is the internal
--- tenancy key (`user_uid` in hosted mode) and is never exposed publicly.
+-- worlds_metadata stores the machine-minted world identity as world_id. The
+-- public Worlds API exposes that value as the resource id. namespace is an
+-- internal tenancy key and is never exposed publicly.
 CREATE TABLE IF NOT EXISTS worlds_metadata (
-  uid TEXT PRIMARY KEY,
+  world_id TEXT PRIMARY KEY,
   namespace TEXT NOT NULL,
   display_name TEXT NOT NULL DEFAULT '',
   state TEXT NOT NULL DEFAULT 'active',

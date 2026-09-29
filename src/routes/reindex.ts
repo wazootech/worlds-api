@@ -11,7 +11,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(
     createRoute({
       method: "post",
-      path: "/worlds/{id}/reindex",
+      path: "/worlds/{worldId}/reindex",
       tags: ["Reindex"],
       operationId: "reindexWorld",
       summary: "Reindex world vector & FTS indexes",
@@ -48,12 +48,12 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     }),
     async (c) => {
       const env = c.env as unknown as Env;
-      const worldUid = c.req.param("id");
+      const worldId = c.req.param("worldId");
       const auth = await authorize(c.req.raw, env);
 
       if (!auth.admin && !auth.namespace) return unauthorized();
 
-      const ref = await resolveWorldDatabase(env, worldUid);
+      const ref = await resolveWorldDatabase(env, worldId);
       if (!ref) {
         return respond(
           c,
@@ -70,7 +70,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       const accessErr = requireAccess(
         auth,
         ref.namespace,
-        worldUid,
+        worldId,
         SCOPE_DATA_WRITE,
       );
       if (accessErr) return accessErr;
