@@ -7,7 +7,7 @@ import {
 
 const canonicalSchema = {
   worlds: [
-    { name: "world_id", pk: 1 },
+    { name: "world_id", pk: 1, notnull: 1 },
     { name: "namespace", pk: 0 },
     { name: "display_name", pk: 0 },
     { name: "state", pk: 0 },
@@ -35,7 +35,10 @@ const canonicalSchema = {
 };
 
 function makeDb(
-  schemas: Record<string, Array<{ name: string; pk: number }>> = {},
+  schemas: Record<
+    string,
+    Array<{ name: string; pk: number; notnull?: number }>
+  > = {},
   run: (sql: string) => Promise<unknown> = async () => ({ success: true }),
 ) {
   return {
@@ -82,6 +85,19 @@ describe("Worlds API control-plane schema", () => {
     await expect(
       assertControlPlaneSchema(makeDb(canonicalSchema)),
     ).resolves.toBeUndefined();
+  });
+
+  it("rejects a nullable world_id primary key", async () => {
+    const nullableWorldId = {
+      ...canonicalSchema,
+      worlds: canonicalSchema.worlds.map((column) =>
+        column.name === "world_id" ? { ...column, notnull: 0 } : column,
+      ),
+    };
+
+    await expect(
+      assertControlPlaneSchema(makeDb(nullableWorldId)),
+    ).rejects.toThrow(/world_id must be NOT NULL/);
   });
 
   it("rejects legacy world identity columns alongside world_id", async () => {
