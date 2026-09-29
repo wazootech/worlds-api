@@ -4,6 +4,21 @@
 //   Set WORLDS_ADMIN_KEY env var for authenticated tests
 
 const BASE_URL = process.argv[2] ?? "http://localhost:8787";
+try {
+  const url = new URL(BASE_URL);
+  if (
+    !(url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1")) &&
+    !(url.protocol === "https:" && url.hostname === "data-qa.wazoo.dev")
+  ) {
+    throw new Error(
+      `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
+    );
+  }
+} catch (err) {
+  throw new Error(
+    `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
+  );
+}
 const ADMIN_KEY = required("WORLDS_ADMIN_KEY");
 
 function required(name) {
@@ -74,6 +89,13 @@ function authHeaders() {
 console.log(`\nWorlds API local health test`);
 console.log(`  Base URL: ${BASE_URL}\n`);
 
+const readyResponse = await fetch(`${BASE_URL}/ready`);
+await assertOk(readyResponse);
+const readyBody = await readyResponse.json();
+if (readyBody.status !== "ready") {
+  throw new Error(`Readiness preflight failed: status is ${readyBody.status}`);
+}
+
 // ── Health ───
 
 await test("GET /health returns ok (or degraded if no DB)", async () => {
@@ -84,13 +106,6 @@ await test("GET /health returns ok (or degraded if no DB)", async () => {
   }
   if (!body.status) throw new Error("Missing status");
   console.log(`        status: ${body.status}`);
-});
-
-await test("GET /ready validates the control-plane schema", async () => {
-  const res = await fetch(`${BASE_URL}/ready`);
-  await assertOk(res);
-  const body = await res.json();
-  if (body.status !== "ready") throw new Error("Readiness status is not ready");
 });
 
 await test("GET /openapi.json returns OpenAPI spec", async () => {
