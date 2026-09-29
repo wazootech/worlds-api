@@ -8,7 +8,7 @@ import type { D1Database } from "@cloudflare/workers-types";
  */
 export const CONTROL_PLANE_DDL = [
   `CREATE TABLE IF NOT EXISTS worlds (
-    world_id TEXT PRIMARY KEY,
+    world_id TEXT NOT NULL PRIMARY KEY,
     namespace TEXT NOT NULL,
     display_name TEXT NOT NULL,
     state TEXT NOT NULL DEFAULT 'active',
@@ -97,7 +97,7 @@ export async function assertControlPlaneSchema(db: D1Database): Promise<void> {
   >) {
     const result = await db
       .prepare(`PRAGMA table_info('${table}')`)
-      .all<{ name: string; pk: number }>();
+      .all<{ name: string; pk: number; notnull: number }>();
     const rows = result.results ?? [];
     const names = new Set(rows.map((row) => row.name));
     const missing = REQUIRED_COLUMNS[table].filter(
@@ -119,6 +119,12 @@ export async function assertControlPlaneSchema(db: D1Database): Promise<void> {
     if (primaryKeys.length !== 1 || primaryKeys[0]?.name !== primaryKey) {
       const found = primaryKeys.map((row) => row.name).join(", ") || "none";
       details.push(`expected primary key ${primaryKey}, found ${found}`);
+    }
+    if (
+      table === "worlds" &&
+      Number(rows.find((row) => row.name === "world_id")?.notnull) !== 1
+    ) {
+      details.push("world_id must be NOT NULL");
     }
 
     if (details.length > 0) {

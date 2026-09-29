@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const schema = {
   worlds: [
-    { name: "world_id", pk: 1 },
+    { name: "world_id", pk: 1, notnull: 1 },
     { name: "namespace", pk: 0 },
     { name: "display_name", pk: 0 },
     { name: "state", pk: 0 },
@@ -30,7 +30,10 @@ const schema = {
 };
 
 function makeDb(
-  schemas: Record<string, Array<{ name: string; pk: number }>>,
+  schemas: Record<
+    string,
+    Array<{ name: string; pk: number; notnull?: number }>
+  >,
   run: (sql: string) => Promise<unknown> = async () => ({ success: true }),
 ) {
   return {
@@ -86,6 +89,22 @@ describe("GET /ready", () => {
     const res = await requestReady(makeDb(schema));
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toEqual({ status: "ready" });
+  });
+
+  it("rejects a nullable world_id primary key", async () => {
+    const nullable = {
+      ...schema,
+      worlds: schema.worlds.map((column) =>
+        column.name === "world_id" ? { ...column, notnull: 0 } : column,
+      ),
+    };
+    const res = await requestReady(makeDb(nullable));
+
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toMatchObject({
+      status: "not_ready",
+      error: expect.stringMatching(/world_id must be NOT NULL/),
+    });
   });
 
   it("rejects the legacy worlds.uid schema", async () => {
