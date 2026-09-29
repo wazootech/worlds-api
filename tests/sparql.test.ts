@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "w_00000000-0000-4000-8000-000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -34,7 +34,7 @@ const ALLOWED_ORIGIN = "https://console.wazoo.dev";
 
 function request(body: unknown, signal?: AbortSignal) {
   return app.request(
-    "/worlds/test-world/sparql",
+    "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
     {
       method: "POST",
       headers: {
@@ -50,7 +50,7 @@ function request(body: unknown, signal?: AbortSignal) {
   );
 }
 
-describe("POST /worlds/:id/sparql endpoint", () => {
+describe("POST /worlds/:worldId/sparql endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resolveWorldDatabaseMock.mockResolvedValue(worldRef as never);
@@ -58,7 +58,7 @@ describe("POST /worlds/:id/sparql endpoint", () => {
 
   it("rejects request without authorization token", async () => {
     const res = await app.request(
-      "/worlds/test-world/sparql",
+      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
       {
         method: "POST",
         headers: { "content-type": "application/json" },

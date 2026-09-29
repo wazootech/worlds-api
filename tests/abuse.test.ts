@@ -33,7 +33,7 @@ const READ_ONLY_TOKEN = "test-read-only-token";
 const FULL_TOKEN = "test-full-token";
 
 const worldRef = {
-  worldUid: "test-world",
+  worldId: "w_00000000-0000-4000-8000-000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -181,13 +181,17 @@ describe("import caps", () => {
       predicate: "urn:p",
       object: `urn:o${i}`,
     }));
-    const res = await request(FULL_TOKEN, "/worlds/test-world/import", {
-      method: "POST",
-      body: JSON.stringify({
-        contentType: "application/json",
-        data: JSON.stringify(quads),
-      }),
-    });
+    const res = await request(
+      FULL_TOKEN,
+      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          contentType: "application/json",
+          data: JSON.stringify(quads),
+        }),
+      },
+    );
     expect(res.status).toBe(413);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("PAYLOAD_TOO_LARGE");
@@ -195,25 +199,33 @@ describe("import caps", () => {
 
   it("rejects a plain-text import above the chunk cap with 413", async () => {
     const lines = Array.from({ length: 11 }, (_, i) => `chunk ${i}`);
-    const res = await request(FULL_TOKEN, "/worlds/test-world/import", {
-      method: "POST",
-      body: JSON.stringify({
-        contentType: "text/plain",
-        data: lines.join("\n"),
-      }),
-    });
+    const res = await request(
+      FULL_TOKEN,
+      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          contentType: "text/plain",
+          data: lines.join("\n"),
+        }),
+      },
+    );
     expect(res.status).toBe(413);
   });
 });
 
 describe("SPARQL guards", () => {
   it("rejects queries above the length cap before touching the engine", async () => {
-    const res = await request(FULL_TOKEN, "/worlds/test-world/sparql", {
-      method: "POST",
-      body: JSON.stringify({
-        query: "SELECT * WHERE { ?s ?p ?o } ".repeat(20),
-      }),
-    });
+    const res = await request(
+      FULL_TOKEN,
+      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          query: "SELECT * WHERE { ?s ?p ?o } ".repeat(20),
+        }),
+      },
+    );
     expect(res.status).toBe(400);
     const body = (await res.json()) as { error?: { code?: string } };
     expect(body.error?.code).toBe("QUERY_TOO_LARGE");
@@ -223,10 +235,14 @@ describe("SPARQL guards", () => {
 
 describe("scope enforcement", () => {
   it("rejects a data:read key on a write route (import) with 403", async () => {
-    const res = await request(READ_ONLY_TOKEN, "/worlds/test-world/import", {
-      method: "POST",
-      body: JSON.stringify({ data: "x", contentType: "text/plain" }),
-    });
+    const res = await request(
+      READ_ONLY_TOKEN,
+      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      {
+        method: "POST",
+        body: JSON.stringify({ data: "x", contentType: "text/plain" }),
+      },
+    );
     expect(res.status).toBe(403);
     const body = (await res.json()) as {
       error?: { code?: string; message?: string };
@@ -237,10 +253,14 @@ describe("scope enforcement", () => {
   });
 
   it("allows a data:read key on a read route (sparql)", async () => {
-    const res = await request(READ_ONLY_TOKEN, "/worlds/test-world/sparql", {
-      method: "POST",
-      body: JSON.stringify({ query: "SELECT * WHERE { ?s ?p ?o }" }),
-    });
+    const res = await request(
+      READ_ONLY_TOKEN,
+      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      {
+        method: "POST",
+        body: JSON.stringify({ query: "SELECT * WHERE { ?s ?p ?o }" }),
+      },
+    );
     expect(res.status).toBe(200);
   });
 });

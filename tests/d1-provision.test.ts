@@ -21,9 +21,9 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_01234567-89ab-4def-8abc-0123456789ab",
       namespace: "ns",
-      display_name: "w_test-uid",
+      display_name: "w_01234567-89ab-4def-8abc-0123456789ab",
       state: "active",
       embedding_model: "tfjs-universal-sentence-encoder",
       chunk_size: 1000,
@@ -37,9 +37,16 @@ describe("provisionWorld", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
 
-    const result = await provisionWorld(env, "w_test-uid", "ns");
+    const result = await provisionWorld(
+      env,
+      "w_01234567-89ab-4def-8abc-0123456789ab",
+      "ns",
+    );
     expect(queryOneMock).toHaveBeenCalled();
-    expect(result.uid).toBe("w_test-uid");
+    expect((queryOneMock as any).mock.calls[0][1]).toContain(
+      "INSERT INTO worlds (world_id,",
+    );
+    expect(result.world_id).toBe("w_01234567-89ab-4def-8abc-0123456789ab");
     expect(result.namespace).toBe("ns");
     expect(result.state).toBe("active");
   });
@@ -50,7 +57,7 @@ describe("provisionWorld", () => {
 
     executeMock.mockResolvedValue({ rowsAffected: 1 });
     queryOneMock.mockResolvedValue({
-      uid: "w_test-uid",
+      world_id: "w_01234567-89ab-4def-8abc-0123456789ab",
       namespace: "ns",
       display_name: "My World",
       state: "active",
@@ -66,9 +73,14 @@ describe("provisionWorld", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
 
-    const result = await provisionWorld(env, "w_test-uid", "ns", {
-      displayName: "My World",
-    });
+    const result = await provisionWorld(
+      env,
+      "w_01234567-89ab-4def-8abc-0123456789ab",
+      "ns",
+      {
+        displayName: "My World",
+      },
+    );
     expect(result.display_name).toBe("My World");
   });
 });
@@ -85,7 +97,7 @@ describe("resolveWorld", () => {
   it("returns world metadata for active world", async () => {
     const queryOneMock = vi.mocked(queryOne);
     queryOneMock.mockResolvedValue({
-      uid: "w_active",
+      world_id: "w_01234567-89ab-4def-8abc-0123456789ab",
       namespace: "ns",
       display_name: "Active World",
       state: "active",
@@ -101,8 +113,11 @@ describe("resolveWorld", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
 
-    const result = await resolveWorld(env, "w_active");
-    expect(result?.uid).toBe("w_active");
+    const result = await resolveWorld(
+      env,
+      "w_01234567-89ab-4def-8abc-0123456789ab",
+    );
+    expect(result?.world_id).toBe("w_01234567-89ab-4def-8abc-0123456789ab");
     expect(result?.state).toBe("active");
   });
 
@@ -110,19 +125,27 @@ describe("resolveWorld", () => {
     const queryOneMock = vi.mocked(queryOne);
     queryOneMock.mockResolvedValue(null);
 
-    const result = await resolveWorld(env, "w_deleted", false);
+    const result = await resolveWorld(
+      env,
+      "w_01234567-89ab-4def-8abc-0123456789ab",
+      false,
+    );
     expect(result).toBeNull();
   });
 
   it("returns world when includeDeleted is true", async () => {
     const queryOneMock = vi.mocked(queryOne);
     queryOneMock.mockResolvedValue({
-      uid: "w_deleted",
+      world_id: "w_01234567-89ab-4def-8abc-0123456789ab",
       state: "deleted",
     });
 
-    const result = await resolveWorld(env, "w_deleted", true);
-    expect(result?.uid).toBe("w_deleted");
+    const result = await resolveWorld(
+      env,
+      "w_01234567-89ab-4def-8abc-0123456789ab",
+      true,
+    );
+    expect(result?.world_id).toBe("w_01234567-89ab-4def-8abc-0123456789ab");
     expect(result?.state).toBe("deleted");
   });
 });
