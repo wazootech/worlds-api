@@ -69,26 +69,11 @@ export const WorldResourceSchema = z
 
 export const CreateWorldRequestSchema = z
   .object({
-    displayName: z.string().optional().openapi({
+    displayName: z.string().min(1).openapi({
       description: "User-facing display name for the new world.",
     }),
-    embeddingModel: z.string().optional().openapi({
-      description:
-        "Embedding model to use for vector search. Defaults to the platform default.",
-    }),
-    chunkSize: z.number().int().positive().optional().openapi({
-      description:
-        "Maximum quads per chunk for vector search indexing. Defaults to the platform default.",
-    }),
-    topK: z.number().int().positive().optional().openapi({
-      description:
-        "Default number of top results for search queries against this world.",
-    }),
-    minScore: z.number().min(0).max(1).optional().openapi({
-      description:
-        "Default minimum relevance score (0–1) for search results in this world.",
-    }),
   })
+  .strict()
   .openapi("CreateWorldRequest");
 
 export const UpdateWorldRequestSchema = z

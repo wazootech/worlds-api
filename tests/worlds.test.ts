@@ -213,6 +213,27 @@ describe("world lifecycle", () => {
     );
   });
 
+  it("rejects empty create", async () => {
+    const res = await userRequest("/worlds", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    expect(res.status).toBe(400);
+    expect(provisionMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects extra-field create", async () => {
+    const res = await userRequest("/worlds", {
+      method: "POST",
+      body: JSON.stringify({
+        displayName: "My World",
+        embeddingModel: "caller-choice",
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(provisionMock).not.toHaveBeenCalled();
+  });
+
   it("accepts get for a world", async () => {
     queryOneMock.mockResolvedValue({
       world_id: WORLD_ID,
