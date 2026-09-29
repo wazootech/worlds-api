@@ -50,6 +50,7 @@ const executionCtx = {
 const ADMIN_KEY = "test-admin-key";
 const USER_TOKEN = "test-user-token";
 const WORLD_SCOPED_TOKEN = "world-scoped-token";
+const OTHER_NAMESPACE_TOKEN = "other-namespace-token";
 
 function request(token: string | null, path: string, init: RequestInit = {}) {
   return app.request(
@@ -77,10 +78,12 @@ function userRequest(path: string, init: RequestInit = {}) {
 
 let userTokenHash = "";
 let worldScopedTokenHash = "";
+let otherNamespaceTokenHash = "";
 
 beforeAll(async () => {
   userTokenHash = await sha256Hex(USER_TOKEN);
   worldScopedTokenHash = await sha256Hex(WORLD_SCOPED_TOKEN);
+  otherNamespaceTokenHash = await sha256Hex(OTHER_NAMESPACE_TOKEN);
 });
 
 beforeEach(() => {
@@ -124,6 +127,11 @@ beforeEach(() => {
   apiKeyRows[worldScopedTokenHash] = {
     namespace: "user-1",
     world_id: "w_00000000-0000-4000-8000-000000000002",
+    scopes: '["data:read","data:write"]',
+  };
+  apiKeyRows[otherNamespaceTokenHash] = {
+    namespace: "user-2",
+    world_id: null,
     scopes: '["data:read","data:write"]',
   };
 
@@ -253,6 +261,27 @@ describe("world lifecycle", () => {
     });
     const res = await request(WORLD_SCOPED_TOKEN, `/worlds/${WORLD_ID}`);
     expect(res.status).toBe(403);
+  });
+
+  it("denies a valid World ID to a key from another namespace", async () => {
+    queryOneMock.mockResolvedValue({
+      world_id: WORLD_ID,
+      namespace: "user-1",
+      display_name: "My World",
+      state: "active",
+      embedding_model: "tfjs-universal-sentence-encoder",
+      chunk_size: 1000,
+      top_k: 20,
+      min_score: 0.0,
+      delete_time: null,
+      expire_time: null,
+      purge_status: "none",
+      purged_at: null,
+      create_time: "2026-01-01T00:00:00.000Z",
+      update_time: "2026-01-01T00:00:00.000Z",
+    });
+    const res = await request(OTHER_NAMESPACE_TOKEN, `/worlds/${WORLD_ID}`);
+    expect(res.status).toBe(401);
   });
 
   it("accepts list for a world", async () => {
