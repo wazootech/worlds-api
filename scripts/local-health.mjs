@@ -86,6 +86,13 @@ await test("GET /health returns ok (or degraded if no DB)", async () => {
   console.log(`        status: ${body.status}`);
 });
 
+await test("GET /ready validates the control-plane schema", async () => {
+  const res = await fetch(`${BASE_URL}/ready`);
+  await assertOk(res);
+  const body = await res.json();
+  if (body.status !== "ready") throw new Error("Readiness status is not ready");
+});
+
 await test("GET /openapi.json returns OpenAPI spec", async () => {
   const res = await fetch(`${BASE_URL}/openapi.json`);
   await assertOk(res);

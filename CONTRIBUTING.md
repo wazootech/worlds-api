@@ -34,13 +34,15 @@
 - Local: `npm run health:local`
 - QA: `npm run health:local -- https://data-qa.wazoo.dev`
 
-Health checks require `WORLDS_ADMIN_KEY` to be set.
+The script checks `/health` for liveness and `/ready` for the control-plane schema. Its authenticated checks require `WORLDS_ADMIN_KEY`.
 
 ## Environment files
 
 - `.dev.vars` — local development secrets (gitignored).
-- `.env.qa` — QA reference values (gitignored).
-- `.env.production` — production reference values (gitignored).
+- `.env.qa` — QA health-check values (gitignored).
+- `.env.production` — production health-check values (gitignored).
+
+Cloudflare provides the D1 binding; no Turso or libSQL credentials are used.
 - `.dev.vars.example`, `.env.qa.example`, `.env.production.example` — committed
   templates.
 

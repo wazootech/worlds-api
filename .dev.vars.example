@@ -1,13 +1,3 @@
-# Local development variables for worlds-api
-# Copy this file to `.dev.vars` and fill in real values.
-
-# The data plane runs on a single Cloudflare D1 database. Wrangler supplies
-# the `DB` binding (see wrangler.toml) — no database URL is needed.
-# Apply schema with: npx wrangler d1 migrations apply worlds-api --local
-
-# Admin key used by wazoo-api for provisioning and API-key management.
-# Must match the WORLDS_API_ADMIN_KEY secret configured on the wazoo-api Worker.
+# Wrangler supplies the D1 binding from wrangler.toml; the service initializes its control-plane schema.
 WORLDS_ADMIN_KEY="replace_me"
-
-# Environment label.
 WAZOO_ENV="dev"
