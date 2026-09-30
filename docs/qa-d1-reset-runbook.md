@@ -6,32 +6,43 @@ part of [wazootech/wazoo-api#71](https://github.com/wazootech/wazoo-api/issues/7
 **Scope: QA only.** Production databases are `worlds-api` and `wazoo-api`. Nothing in
 this document applies to them, and no step here may be run against them.
 
-Every claim below was verified against `main` and against live QA on 2026-09-29.
+This records the QA reset procedure and the pre-reset observations from 2026-09-29.
 Commands are copy-pasteable. Run them from the repository root named in each step.
+
+**Current verification, 2026-09-30:** both QA `/ready` endpoints return 200.
+[The scheduled platform smoke gate](https://github.com/wazootech/wazoo-api/actions/runs/36710451330)
+passed world creation, scoped-token minting, SPARQL insert/select, and cleanup.
+[The Worlds API CI run](https://github.com/wazootech/worlds-api/actions/runs/36738191061)
+passed QA deployment and its authenticated health suite, including API-key creation
+and revocation. A manual key re-seed is not a current prerequisite for QA proof.
+
+**Do not repeat the destructive reset based on the historical 503 observations
+below.** Re-measure the target and obtain fresh authorization before any reset.
 
 ---
 
-## 1. What is actually wrong today
+## 1. Historical pre-reset failure (2026-09-29)
 
-Both QA services are live and healthy, and both correctly refuse to serve:
+Before the reset, both QA services were live and healthy, but correctly refused to
+serve:
 
-| Endpoint | `/health` | `/ready` |
-| --- | --- | --- |
-| `https://data-qa.wazoo.dev` | 200 | **503** |
-| `https://api-qa.wazoo.dev` | 200 | **503** |
+| Endpoint                    | `/health` | `/ready` |
+| --------------------------- | --------- | -------- |
+| `https://data-qa.wazoo.dev` | 200       | **503**  |
+| `https://api-qa.wazoo.dev`  | 200       | **503**  |
 
 This is not a deployment failure. The code is correct; the **databases are
 pre-cutover**. The readiness gates are naming the exact condition.
 
 Observed QA state, read-only:
 
-| | `worlds-api-qa` (data plane) | `wazoo-api-qa` (control plane) |
-| --- | --- | --- |
-| `worlds` primary key | `uid` | `uid` |
-| `worlds` has `world_id` | no | yes, but not the key |
-| `worlds` has `worlds_api_uid` | no | **yes** |
-| `worlds` has `slug` | no | **yes** |
-| rows | 95 worlds, 36 quads, 172 chunks, 167 api_keys | 96 users, 81 worlds, 5 usage_events, 27 tokens |
+|                               | `worlds-api-qa` (data plane)                  | `wazoo-api-qa` (control plane)                 |
+| ----------------------------- | --------------------------------------------- | ---------------------------------------------- |
+| `worlds` primary key          | `uid`                                         | `uid`                                          |
+| `worlds` has `world_id`       | no                                            | yes, but not the key                           |
+| `worlds` has `worlds_api_uid` | no                                            | **yes**                                        |
+| `worlds` has `slug`           | no                                            | **yes**                                        |
+| rows                          | 95 worlds, 36 quads, 172 chunks, 167 api_keys | 96 users, 81 worlds, 5 usage_events, 27 tokens |
 
 `wazoo-api-qa` is worse than the campaign record assumed: it carries **both**
 `worlds_api_uid` and `slug`, which are exactly the columns
@@ -52,14 +63,14 @@ flag that only latches on success, and `/ready` fails closed if the DDL throws.
 > **Operational consequence:** you do **not** apply control-plane DDL by hand.
 > **You must drop `worlds` and `api_keys` too.** This is the step most likely to be
 > got wrong, and it was wrong in the first draft of this runbook. `CREATE TABLE IF
-> NOT EXISTS` is a **no-op against a table that already exists**, so a pre-cutover
+NOT EXISTS` is a **no-op against a table that already exists**, so a pre-cutover
 > `worlds` table is never repaired — the service creates the canonical schema only
-> when the table is *absent*, and asserts forever when it is present-but-wrong.
+> when the table is _absent_, and asserts forever when it is present-but-wrong.
 >
 > Observed on 2026-09-29 while executing this runbook: after dropping only the
 > data-plane tables, `/ready` kept returning 503 with
 > `missing columns: world_id; legacy columns present: uid; expected primary key
-> world_id, found uid`. Dropping `worlds` and `api_keys` fixed it immediately.
+world_id, found uid`. Dropping `worlds` and `api_keys` fixed it immediately.
 >
 > `schema.sql` does not exist in this repo and must not be reintroduced
 > (it was deleted in merged #93 — [worlds-api#88](https://github.com/wazootech/worlds-api/issues/88)).
@@ -185,7 +196,7 @@ take effect.
 curl -s -o /dev/null -w "%{http_code}\n" https://data-qa.wazoo.dev/ready
 ```
 
-This one request initializes the control plane *and*, on the first world-scoped
+This one request initializes the control plane _and_, on the first world-scoped
 call, the data plane. If it returns **503**, the error body names the table and
 column that failed — read it before continuing.
 
@@ -285,27 +296,31 @@ version is **4**; `idx_worlds_world_id` present.
 
 Destroyed, and **not** recoverable — this is a hard cut, approved for this campaign:
 
-| Database | Lost |
-| --- | --- |
-| `worlds-api-qa` | 95 world rows, 167 API keys, 36 quads, 172 chunks |
-| `wazoo-api-qa` | 96 users, 81 worlds, 27 platform tokens, 5 usage events |
+| Database        | Lost                                                    |
+| --------------- | ------------------------------------------------------- |
+| `worlds-api-qa` | 95 world rows, 167 API keys, 36 quads, 172 chunks       |
+| `wazoo-api-qa`  | 96 users, 81 worlds, 27 platform tokens, 5 usage events |
 
 **Data-plane rows are not orphaned — they are deleted.** The single-D1 model means
 `quads`/`chunks` live in the same database, shared across all worlds and scoped by a
 `world_id` column. There are no per-world databases, and no separate data-plane
-instance to clean. Confirmed in `src/lib/purge.ts`: *"there's no external database to
-destroy."*
+instance to clean. Confirmed in `src/lib/purge.ts`: _"there's no external database to
+destroy."_
 
 ### Restoring access
 
-The reset empties `api_keys` and `platform_api_tokens`, so both services are
-locked out until credentials are re-seeded. Both recovery paths use **secrets that
-survive a database reset**, so neither requires the data being destroyed:
+The reset empties `api_keys` and `platform_api_tokens`, invalidating database-backed
+credentials. It does not lock out environment-admin access: `worlds-api` accepts
+`WORLDS_ADMIN_KEY` before consulting `api_keys`, and `wazoo-api` accepts the matching
+`WAZOO_PLATFORM_ADMIN_TOKEN` before consulting `platform_api_tokens`. Cross-service
+admin access can therefore mint fresh world keys without a manual database re-seed.
+Use the recovery paths below only when replacing database-backed credentials is
+actually required; the environment secrets survive a database reset:
 
 **`worlds-api`** — `WORLDS_ADMIN_KEY` exists as a QA secret
 (`npx wrangler secret list --env qa`). `src/lib/auth.ts:60` accepts it as
-`{ admin: true }`, bypassing `api_keys` entirely. Re-seed data-plane API keys with
-`POST /v1/api-keys` using that key.
+`{ admin: true }`, bypassing `api_keys` entirely. Create replacement data-plane API
+keys with `POST /api-keys` (also exposed at `/v1/api-keys`) using that key if needed.
 
 **`wazoo-api`** — `WAZOO_PLATFORM_ADMIN_TOKEN` exists as a QA secret. Re-seed with
 `scripts/seed-admin-token-d1.mjs`, which requires `CLOUDFLARE_D1_DATABASE`:
@@ -319,7 +334,7 @@ CLOUDFLARE_D1_DATABASE=wazoo-api-qa \
 
 > **Note on `--env qa`:** that script builds its own `wrangler d1 execute` invocation
 > **without** `--env qa`, so a bare database name resolves against the top-level
-> `[[d1_databases]]` binding. Its intended home is *inside* the OIDC-enabled CI job
+> `[[d1_databases]]` binding. Its intended home is _inside_ the OIDC-enabled CI job
 > (see below), where `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are already
 > exported; the hazard is running it from a laptop with a production-capable token
 > present. If you do run it locally, verify the generated command or seed the row by
@@ -339,16 +354,18 @@ verification can both happen in CI, with no secret handled by hand.
 Two caveats:
 
 - **Infisical feeds the CI job, not the Worker.** No workflow runs `wrangler secret
-  put` or a bulk secret sync; `deploy` is plain `wrangler deploy`. Worker secrets are
+put` or a bulk secret sync; `deploy` is plain `wrangler deploy`. Worker secrets are
   still set in Cloudflare and survive a database reset — which is what this section
-  relies on. Infisical is the source of truth for what *CI* can read.
-- **`worlds-api` has no Infisical wiring** (zero references on its `main`). The
-  data-plane `POST /v1/api-keys` re-seed is therefore still manual.
+  relies on. Infisical is the source of truth for what _CI_ can read.
+- **`worlds-api` has no Infisical wiring** (zero references on its `main`). Its
+  health CI uses the GitHub Actions `WORLDS_ADMIN_KEY` secret and can create/revoke
+  test API keys. Moving that credential to Infisical remains separate follow-up
+  work, not a prerequisite for the now-passing QA smoke proof.
 
 > **Check before you reset:** confirm the Infisical `qa` value of
 > `WAZOO_PLATFORM_ADMIN_TOKEN` is identical to the value on the QA Worker secret.
 > They must match for the smoke gate to authenticate after the re-seed. If they
-> differ, decide which is authoritative and align them *first* — after a reset there
+> differ, decide which is authoritative and align them _first_ — after a reset there
 > is no data to fall back on.
 
 ## 8. Rollback position
@@ -358,10 +375,10 @@ and the pre-cutover schema cannot be reconstructed from `schema.sql` — the QA
 `worlds` table carried `uid` as PK plus `worlds_api_uid` and `slug`, and the rows
 that populated them are gone.
 
-This is acceptable **only because nothing is serving canonical traffic today**. Both
-`/ready` endpoints are 503, so no user-visible capability is lost by proceeding.
-That is the whole reason this reset is safe today, and it is also why it stops being
-safe the moment `/ready` goes green somewhere.
+The original reset was justified by the observed pre-reset failure of both QA
+readiness gates. That authorization is historical, not permission to repeat it:
+**both `/ready` endpoints now return 200**, and authenticated QA operations pass.
+A new reset would destroy working QA data and requires a fresh decision.
 
 If post-flight verification fails, the state is: schema dropped and partially
 recreated, some tables present and some absent, **zero data**. Recovery is forward
