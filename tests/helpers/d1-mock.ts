@@ -61,7 +61,7 @@ export function createMockD1Env() {
   const db = new MockD1Database();
   return {
     DB: db as any,
-    WORLDS_ADMIN_KEY: "test-admin-key",
+    WORLDS_API_ADMIN_KEY: "test-admin-key",
     WAZOO_ENV: "test",
     RATE_LIMIT_RPM: "6000",
     RATE_LIMIT_BURST: "1000",

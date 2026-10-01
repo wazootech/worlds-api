@@ -14,7 +14,7 @@ const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 
 const env = {
   DB: {} as any,
-  WORLDS_ADMIN_KEY: "test-admin-key",
+  WORLDS_API_ADMIN_KEY: "test-admin-key",
   RATE_LIMIT_RPM: "6000",
   RATE_LIMIT_BURST: "1000",
   MAX_IMPORT_QUADS: "10",

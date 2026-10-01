@@ -13,6 +13,9 @@ This repository contains the Worlds API service.
 - Run `npm run typecheck` and `npm test` for service behavior changes when
   practical.
 - Run health checks for API changes that affect runtime behavior. Health checks
-  require `WORLDS_ADMIN_KEY`.
+  require `WORLDS_API_ADMIN_KEY`.
 - Document environment variables and remote-service assumptions before
   finishing.
+- Secrets are injected from Infisical at runtime (`npm run dev`, or
+  `infisical run --env=<env> -- <command>`); never write them to disk, and do
+  not add code that reads `.env*` or `.dev.vars`.

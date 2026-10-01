@@ -1,7 +1,7 @@
 // Local health test for worlds-api
 // Usage: node scripts/local-health.mjs [baseUrl]
 //   Defaults to http://localhost:8787 for wrangler dev
-//   Set WORLDS_ADMIN_KEY env var for authenticated tests
+//   Set WORLDS_API_ADMIN_KEY env var for authenticated tests
 
 const BASE_URL = process.argv[2] ?? "http://localhost:8787";
 try {
@@ -22,7 +22,7 @@ try {
     `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
   );
 }
-const ADMIN_KEY = required("WORLDS_ADMIN_KEY");
+const ADMIN_KEY = required("WORLDS_API_ADMIN_KEY");
 
 function required(name) {
   const value = process.env[name];

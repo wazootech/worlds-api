@@ -302,8 +302,9 @@ The reset empties `api_keys` and `platform_api_tokens`, so both services are
 locked out until credentials are re-seeded. Both recovery paths use **secrets that
 survive a database reset**, so neither requires the data being destroyed:
 
-**`worlds-api`** — `WORLDS_ADMIN_KEY` exists as a QA secret
-(`npx wrangler secret list --env qa`). `src/lib/auth.ts:60` accepts it as
+**`worlds-api`** — `WORLDS_API_ADMIN_KEY` is published to the QA Worker by the
+Cloudflare Workers Secret Sync and shows up in
+`npx wrangler secret list --env qa`. `src/lib/auth.ts:60` accepts it as
 `{ admin: true }`, bypassing `api_keys` entirely. Re-seed data-plane API keys with
 `POST /v1/api-keys` using that key.
 
@@ -338,12 +339,18 @@ verification can both happen in CI, with no secret handled by hand.
 
 Two caveats:
 
-- **Infisical feeds the CI job, not the Worker.** No workflow runs `wrangler secret
-  put` or a bulk secret sync; `deploy` is plain `wrangler deploy`. Worker secrets are
-  still set in Cloudflare and survive a database reset — which is what this section
-  relies on. Infisical is the source of truth for what *CI* can read.
-- **`worlds-api` has no Infisical wiring** (zero references on its `main`). The
-  data-plane `POST /v1/api-keys` re-seed is therefore still manual.
+- **Worker secrets come from a Secret Sync, not from the deploy.** No workflow runs
+  `wrangler secret put`; `deploy` is plain `wrangler deploy`. Infisical pushes Worker
+  secrets to Cloudflare through **Project Integrations → Secret Syncs** (see
+  [secret-registry.md](../secret-registry.md)), so the vault — not a hand-run command
+  and not the CI job — is what keeps the Workers provisioned. Those secrets survive a
+  database reset, which is what this section relies on.
+- **`worlds-api` now reads the canonical key name.** It consumes
+  `WORLDS_API_ADMIN_KEY` (previously `WORLDS_ADMIN_KEY`) in `src/env.ts`,
+  `src/lib/auth.ts`, and `scripts/local-health.mjs`, matching the name the vault and
+  `wazoo-api` use. Check the QA sync lists that exact name before resetting: a sync
+  still publishing the old name leaves the Worker with no admin key, which is
+  indistinguishable from a failed re-seed.
 
 > **Check before you reset:** confirm the Infisical `qa` value of
 > `WAZOO_PLATFORM_ADMIN_TOKEN` is identical to the value on the QA Worker secret.
