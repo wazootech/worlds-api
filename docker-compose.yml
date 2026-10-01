@@ -3,6 +3,9 @@ services:
     build: .
     ports: ["8080:8080"]
     environment:
-      - WORLDS_ADMIN_KEY=wzp_dev_admin_key
+      # Passed through from the invoking shell — run the stack through the CLI
+      # so Infisical injects it: `infisical run --env=dev -- docker compose up`.
+      # No admin key is written into this file.
+      - WORLDS_API_ADMIN_KEY
     # worlds-api storage is bound at deploy time (Cloudflare D1); the
     # container no longer accepts a Turso/LibSQL URL via environment.

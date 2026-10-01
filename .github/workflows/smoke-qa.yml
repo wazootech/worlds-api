@@ -1,0 +1,53 @@
+name: smoke-qa
+
+# Scheduled QA canary. Exists to catch a stale or missing credential on a timer
+# rather than on the merge path: on 2026-09-25 health-qa went red only because a
+# merge happened to exercise it, and a branch sitting unmerged — or a secret
+# rotating with no deploy — was invisible until then. See issue #80.
+#
+# This reuses the existing `health:local` script. There is deliberately no second
+# health script and no second copy of the check list; the canary and `health-qa`
+# in ci.yml run the identical code path, so they cannot disagree about what
+# "healthy" means.
+on:
+  schedule:
+    # Daily at 06:00 UTC, matching wazoo-api's smoke-qa so the platform's
+    # QA assertions line up in one window.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      worldsApiUrl:
+        description: "Data API base URL"
+        required: false
+        default: "https://data-qa.wazoo.dev"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  canary:
+    name: QA health canary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Same fetch as health-qa in ci.yml. The canary's whole value depends on
+      # it: without a credential from the vault, an authenticated failure is
+      # indistinguishable from the stale-credential failure it exists to catch.
+      - name: Fetch secrets from Infisical (qa)
+        uses: Infisical/secrets-action@v1.0.17
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: "qa"
+      # Reuse the same script health-qa runs. scripts/local-health.mjs validates
+      # the base URL itself and only permits https://data-qa.wazoo.dev, so a
+      # mistyped dispatch input fails closed rather than probing a prod host.
+      - name: Probe QA health
+        run: npm run health:local -- ${{ inputs.worldsApiUrl || 'https://data-qa.wazoo.dev' }}

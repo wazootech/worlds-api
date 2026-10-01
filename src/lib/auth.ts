@@ -57,7 +57,7 @@ export async function authorize(
 
   const token = header.slice("Bearer ".length).trim();
 
-  if (env.WORLDS_ADMIN_KEY && token === env.WORLDS_ADMIN_KEY) {
+  if (env.WORLDS_API_ADMIN_KEY && token === env.WORLDS_API_ADMIN_KEY) {
     return { admin: true };
   }
 

@@ -1,3 +1,3 @@
 # Wrangler supplies the D1 binding from wrangler.toml; the service initializes its control-plane schema.
-WORLDS_ADMIN_KEY="replace_me"
+WORLDS_API_ADMIN_KEY="replace_me"
 WAZOO_ENV="dev"
