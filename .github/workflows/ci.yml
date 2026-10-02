@@ -80,10 +80,10 @@ jobs:
       - run: npm ci
       # The admin key comes from the vault, not from a GitHub secret. Requires
       # two repo VARIABLES (non-secret): INFISICAL_MACHINE_ID and
-      # INFISICAL_PROJECT_SLUG, plus a machine identity in Infisical whose
-      # subject is repo:wazootech/worlds-api:ref:refs/heads/main. This fetches
-      # into the job environment only; the deployed Worker's copy is owned by the
-      # Cloudflare Workers Secret Sync, not by this step.
+      # INFISICAL_PROJECT_SLUG, plus an OIDC identity restricted to
+      # repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main.
+      # Only the canonical admin key is injected into this job. The deployed
+      # Worker's copy is owned by the Cloudflare Workers Secret Sync.
       - name: Fetch secrets from Infisical (qa)
         uses: Infisical/secrets-action@v1.0.17
         with:
@@ -91,6 +91,7 @@ jobs:
           identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
           project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
           env-slug: "qa"
+          secret-name: WORLDS_API_ADMIN_KEY
       - run: npm run health:local -- https://data-qa.wazoo.dev
 
   deploy-prod:
