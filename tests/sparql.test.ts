@@ -12,7 +12,7 @@ const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 
 const env = {
   DB: {} as any,
-  WORLDS_ADMIN_KEY: "test-admin-key",
+  WORLDS_API_ADMIN_KEY: "test-admin-key",
   RATE_LIMIT_RPM: "0",
 } as unknown as Env;
 

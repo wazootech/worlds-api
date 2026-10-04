@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
   packages: write
+  # Required for the Infisical OIDC exchange (secrets-action method: oidc). No
+  # long-lived Infisical token is stored in GitHub.
+  id-token: write
 
 jobs:
   verify:
@@ -43,6 +46,11 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
 
+  # The deploy jobs fetch no secrets. `wrangler deploy` uploads code and sets
+  # no secrets; the deployed Worker's copy is pushed continuously by the
+  # Infisical Cloudflare Workers Secret Sync. Injecting prod values into a job
+  # that cannot use them would only widen exposure. `health-qa` is the one job
+  # that genuinely needs a secret, so it is the one job that fetches.
   deploy-qa:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
@@ -70,9 +78,20 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The admin key comes from the vault, not from a GitHub secret. Requires
+      # two repo VARIABLES (non-secret): INFISICAL_MACHINE_ID and
+      # INFISICAL_PROJECT_SLUG, plus a machine identity in Infisical whose
+      # subject is repo:wazootech/worlds-api:ref:refs/heads/main. This fetches
+      # into the job environment only; the deployed Worker's copy is owned by the
+      # Cloudflare Workers Secret Sync, not by this step.
+      - name: Fetch secrets from Infisical (qa)
+        uses: Infisical/secrets-action@v1.0.17
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: "qa"
       - run: npm run health:local -- https://data-qa.wazoo.dev
-        env:
-          WORLDS_ADMIN_KEY: ${{ secrets.WORLDS_ADMIN_KEY }}
 
   deploy-prod:
     if: github.event_name == 'workflow_dispatch'

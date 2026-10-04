@@ -98,8 +98,14 @@ admin-only and exist for the platform facade and account-deletion flows.
 
 ## Configuration
 
-- `WORLDS_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
-  management.
+- `WORLDS_API_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
+  management. This is the only secret worlds-api reads.
+
+Secrets are stored centrally in Infisical and injected at process start; they
+are never written to a local file. See [CONTRIBUTING.md](CONTRIBUTING.md) for CLI
+setup and the wrapped commands (`.infisical.json`, the committed project link,
+holds no secret values), and [secret-registry.md](secret-registry.md) for how
+local dev, the Workers Secret Sync, and CI each receive it.
 
 Worlds API's control-plane DDL is defined in `src/lib/d1-schema.ts`. The
 `@worlds/cloudflare` package owns data-plane tables, indexes, and schema
@@ -113,17 +119,27 @@ database reset remains a separately approved rollout action.
 
 `/health` checks liveness and database connectivity. `/ready` checks that the
 control-plane schema matches this service. The health script probes both and
-requires `WORLDS_ADMIN_KEY` for its authenticated checks.
+requires `WORLDS_API_ADMIN_KEY` for its authenticated checks, so run it through the
+CLI to inject that value:
+
+```sh
+infisical run --env=dev -- npm run health:local
+infisical run --env=qa -- npm run health:local -- https://data-qa.wazoo.dev
+```
 
 ## Development
 
 ```sh
 npm install
-cp .dev.vars.example .dev.vars
-npm run dev
+infisical login   # once per machine
+infisical init    # once per checkout
+npm run dev       # secrets injected from Infisical at runtime
 npm run typecheck
 npm run build
 ```
+
+`.dev.vars` is no longer required. If you still have one, rename it to
+`.dev.vars.backup` so local runs are proven to use Infisical rather than disk.
 
 ## Deployment
 

@@ -66,7 +66,7 @@ describe("POST /worlds/:worldId/reindex endpoint", () => {
         method: "POST",
         headers: { Authorization: "Bearer admin-token" },
       },
-      { WORLDS_ADMIN_KEY: "admin-token" },
+      { WORLDS_API_ADMIN_KEY: "admin-token" },
       executionCtx,
     );
 
@@ -90,7 +90,7 @@ describe("POST /worlds/:worldId/reindex endpoint", () => {
         method: "POST",
         headers: { Authorization: "Bearer admin-token" },
       },
-      { WORLDS_ADMIN_KEY: "admin-token" },
+      { WORLDS_API_ADMIN_KEY: "admin-token" },
       executionCtx,
     );
 
@@ -114,7 +114,7 @@ describe("POST /worlds/:worldId/reindex endpoint", () => {
         method: "POST",
         headers: { Authorization: "Bearer admin-token" },
       },
-      { WORLDS_ADMIN_KEY: "admin-token" },
+      { WORLDS_API_ADMIN_KEY: "admin-token" },
       executionCtx,
     );
 

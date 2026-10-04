@@ -17,7 +17,14 @@ export type Env = {
    * silently ignoring a configured provider that isn't implemented yet.
    */
   EMBEDDING_PROVIDER?: string;
-  WORLDS_ADMIN_KEY?: string;
+  /**
+   * Platform→data-plane admin key. The name is canonical platform-wide: the
+   * value lives in Infisical as `WORLDS_API_ADMIN_KEY`, is injected locally by
+   * `infisical run`, and is delivered to the deployed Worker by the Cloudflare
+   * Workers Secret Sync. `src/lib/auth.ts` accepts it as `{ admin: true }`,
+   * bypassing `api_keys`.
+   */
+  WORLDS_API_ADMIN_KEY?: string;
   WAZOO_ENV?: string;
   PORT?: string;
   // Abuse-prevention knobs (all optional, defaults applied in code).
@@ -39,8 +46,8 @@ export function fromBindings(env: Record<string, unknown>): Env {
     EMBEDDING_PROVIDER: env.EMBEDDING_PROVIDER
       ? String(env.EMBEDDING_PROVIDER)
       : undefined,
-    WORLDS_ADMIN_KEY: env.WORLDS_ADMIN_KEY
-      ? String(env.WORLDS_ADMIN_KEY)
+    WORLDS_API_ADMIN_KEY: env.WORLDS_API_ADMIN_KEY
+      ? String(env.WORLDS_API_ADMIN_KEY)
       : undefined,
     WAZOO_ENV: env.WAZOO_ENV ? String(env.WAZOO_ENV) : undefined,
     PORT: env.PORT ? String(env.PORT) : undefined,
@@ -76,7 +83,7 @@ export function fromProcessEnv(): Env {
     VECTORIZE_INDEX: (globalThis as any)?.__VECTORIZE_INDEX__ as
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
     EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
-    WORLDS_ADMIN_KEY: process.env.WORLDS_ADMIN_KEY,
+    WORLDS_API_ADMIN_KEY: process.env.WORLDS_API_ADMIN_KEY,
     WAZOO_ENV: process.env.WAZOO_ENV,
     PORT: process.env.PORT,
     SPARQL_TIMEOUT_MS: process.env.SPARQL_TIMEOUT_MS,
