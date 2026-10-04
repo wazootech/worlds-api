@@ -46,6 +46,7 @@ jobs:
           identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
           project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
           env-slug: "qa"
+          secret-name: WORLDS_API_ADMIN_KEY
       # Reuse the same script health-qa runs. scripts/local-health.mjs validates
       # the base URL itself and only permits https://data-qa.wazoo.dev, so a
       # mistyped dispatch input fails closed rather than probing a prod host.
