@@ -183,6 +183,19 @@ describe("world lifecycle", () => {
     const body = await res.json();
     expect(body.worldId).toMatch(/^w_/);
     expect(body.name).toBe(`worlds/${body.worldId}`);
+    expect(Object.keys(body).sort()).toEqual([
+      "chunkSize",
+      "createTime",
+      "displayName",
+      "embeddingModel",
+      "minScore",
+      "name",
+      "state",
+      "storage",
+      "topK",
+      "updateTime",
+      "worldId",
+    ]);
     expect(body.displayName).toBe("My World");
     expect(body.storage).toBe("d1");
     expect(provisionMock).toHaveBeenCalled();
