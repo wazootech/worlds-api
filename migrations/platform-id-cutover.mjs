@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const MIGRATION_ID = "platform-id-cutover-v1";
@@ -18,6 +18,27 @@ const repoRoot = resolve(dirname(scriptPath), "..");
 
 function quoteIdentifier(value) {
   return `"${value.replaceAll('"', '""')}"`;
+}
+
+async function applyAtomicStatements(database, statements) {
+  if (typeof database.executeBatch === "function") {
+    await database.executeBatch(statements);
+    return;
+  }
+  if (typeof database.exec === "function") {
+    try {
+      database.exec(`BEGIN IMMEDIATE;\n${statements.join(";\n")};\nCOMMIT;`);
+    } catch (error) {
+      try {
+        database.exec("ROLLBACK;");
+      } catch {}
+      throw error;
+    }
+    return;
+  }
+  throw new Error(
+    "Database adapter must support atomic D1 batch execution or SQLite transactions",
+  );
 }
 
 async function rows(database, sql) {
@@ -139,37 +160,34 @@ async function migrationPlan(database, tables) {
   };
 }
 
-async function assertNoWorldOrphans(
+async function countUnmatchedWorldReferenceRows(
   database,
   tables,
   columns,
   parentTable,
   parentColumn,
 ) {
-  for (const relation of WORLD_RELATIONS) {
-    if (relation.table === parentTable || !tables.has(relation.table)) continue;
-    const childColumns = columns.get(relation.table);
-    const childWorldColumn = childColumns?.has(relation.legacy)
-      ? relation.legacy
-      : relation.canonical;
+  const counts = {};
+  for (const table of ["api_keys", "quads", "chunks"]) {
+    if (!tables.has(table)) continue;
+    const childColumns = columns.get(table);
+    const childWorldColumn = childColumns?.has("world_uid")
+      ? "world_uid"
+      : "world_id";
     if (!childColumns?.has(childWorldColumn)) continue;
 
     const child = quoteIdentifier(childWorldColumn);
     const parent = quoteIdentifier(parentColumn);
     const result = await rows(
       database,
-      `SELECT COUNT(*) AS orphan_count
-       FROM ${quoteIdentifier(relation.table)} AS child
+      `SELECT COUNT(*) AS unmatched_count
+       FROM ${quoteIdentifier(table)} AS child
        LEFT JOIN ${quoteIdentifier(parentTable)} AS parent ON parent.${parent} = child.${child}
        WHERE child.${child} IS NOT NULL AND parent.${parent} IS NULL`,
     );
-    const orphanCount = Number(result[0]?.orphan_count ?? 0);
-    if (orphanCount > 0) {
-      throw new Error(
-        `${relation.table} contains ${orphanCount} world reference(s) without a matching world; refusing the cutover`,
-      );
-    }
+    counts[table] = Number(result[0]?.unmatched_count ?? 0);
   }
+  return counts;
 }
 
 export async function migratePlatformIds(database, { dryRun = false } = {}) {
@@ -184,13 +202,14 @@ export async function migratePlatformIds(database, { dryRun = false } = {}) {
       `Database has ${initialViolations.length} foreign-key violation(s) before the cutover; repair the source data first`,
     );
   }
-  await assertNoWorldOrphans(
-    database,
-    tables,
-    plan.columns,
-    plan.worldTable,
-    parentColumn,
-  );
+  const unmatchedWorldReferenceRowsBefore =
+    await countUnmatchedWorldReferenceRows(
+      database,
+      tables,
+      plan.columns,
+      plan.worldTable,
+      parentColumn,
+    );
 
   const rowCountsBefore = new Map();
   for (const table of plan.identityTables) {
@@ -204,25 +223,31 @@ export async function migratePlatformIds(database, { dryRun = false } = {}) {
       renames: plan.renames,
       tableRenames: plan.tableRenames,
       rowCounts: Object.fromEntries(rowCountsBefore),
+      unmatchedWorldReferenceRows: unmatchedWorldReferenceRowsBefore,
       foreignKeyViolations: 0,
       migrationRecorded: false,
     };
   }
 
+  const modifications = [];
   for (const rename of plan.renames) {
-    await database
-      .prepare(
-        `ALTER TABLE ${quoteIdentifier(rename.table)} RENAME COLUMN ${quoteIdentifier(rename.from)} TO ${quoteIdentifier(rename.to)}`,
-      )
-      .run();
+    modifications.push(
+      `ALTER TABLE ${quoteIdentifier(rename.table)} RENAME COLUMN ${quoteIdentifier(rename.from)} TO ${quoteIdentifier(rename.to)}`,
+    );
   }
   for (const rename of plan.tableRenames) {
-    await database
-      .prepare(
-        `ALTER TABLE ${quoteIdentifier(rename.from)} RENAME TO ${quoteIdentifier(rename.to)}`,
-      )
-      .run();
+    modifications.push(
+      `ALTER TABLE ${quoteIdentifier(rename.from)} RENAME TO ${quoteIdentifier(rename.to)}`,
+    );
   }
+  modifications.push(
+    "CREATE TABLE IF NOT EXISTS worlds_api_migrations (migration_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now'))) ",
+  );
+  modifications.push(
+    `INSERT OR IGNORE INTO worlds_api_migrations (migration_id) VALUES ('${MIGRATION_ID}')`,
+  );
+
+  await applyAtomicStatements(database, modifications);
 
   const tablesAfter = await tableNames(database);
   const columnsAfter = new Map();
@@ -253,13 +278,22 @@ export async function migratePlatformIds(database, { dryRun = false } = {}) {
     }
   }
 
-  await assertNoWorldOrphans(
-    database,
-    tablesAfter,
-    columnsAfter,
-    "worlds",
-    "world_id",
-  );
+  const unmatchedWorldReferenceRowsAfter =
+    await countUnmatchedWorldReferenceRows(
+      database,
+      tablesAfter,
+      columnsAfter,
+      "worlds",
+      "world_id",
+    );
+  if (
+    JSON.stringify(unmatchedWorldReferenceRowsAfter) !==
+    JSON.stringify(unmatchedWorldReferenceRowsBefore)
+  ) {
+    throw new Error(
+      "Cutover verification failed: unmatched world-reference row counts changed",
+    );
+  }
   const finalViolations = await foreignKeyViolations(database);
   if (finalViolations.length > 0) {
     throw new Error(
@@ -279,17 +313,6 @@ export async function migratePlatformIds(database, { dryRun = false } = {}) {
     }
   }
 
-  await database
-    .prepare(
-      "CREATE TABLE IF NOT EXISTS worlds_api_migrations (migration_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now'))) ",
-    )
-    .run();
-  await database
-    .prepare(
-      `INSERT OR IGNORE INTO worlds_api_migrations (migration_id) VALUES ('${MIGRATION_ID}')`,
-    )
-    .run();
-
   return {
     migrationId: MIGRATION_ID,
     dryRun: false,
@@ -297,6 +320,7 @@ export async function migratePlatformIds(database, { dryRun = false } = {}) {
     renames: plan.renames,
     tableRenames: plan.tableRenames,
     rowCounts: Object.fromEntries(rowCountsAfter),
+    unmatchedWorldReferenceRows: unmatchedWorldReferenceRowsAfter,
     foreignKeyViolations: 0,
     migrationRecorded: true,
   };
@@ -316,17 +340,18 @@ class WranglerD1Database {
     };
   }
 
-  execute(sql) {
+  execute(sql, inputFlag = "--command") {
     const executable = resolve(repoRoot, "node_modules/.bin/wrangler");
     if (!existsSync(executable)) {
       throw new Error(
         "Install repository dependencies before running this migration",
       );
     }
-    const args = ["d1", "execute", "worlds-api"];
+    const args = ["d1", "execute", "DB"];
     if (this.environment) args.push("--env", this.environment);
-    args.push(this.location, "--yes", "--json", "--command", sql);
+    args.push(this.location, "--yes", "--json");
     if (this.persistTo) args.push("--persist-to", this.persistTo);
+    args.push(inputFlag, sql);
 
     const result = spawnSync(executable, args, {
       cwd: repoRoot,
@@ -354,6 +379,19 @@ class WranglerD1Database {
       throw new Error(JSON.stringify(failure.errors ?? failure, null, 2));
     }
     return responses.flatMap((response) => response.results ?? []);
+  }
+
+  executeBatch(statements) {
+    const sqlDirectory = mkdtempSync(
+      resolve(repoRoot, ".platform-id-cutover-"),
+    );
+    const sqlFile = join(sqlDirectory, "batch.sql");
+    try {
+      writeFileSync(sqlFile, `${statements.join(";\n")};\n`, "utf8");
+      return this.execute(sqlFile, "--file");
+    } finally {
+      rmSync(sqlDirectory, { recursive: true, force: true });
+    }
   }
 }
 
@@ -387,12 +425,17 @@ async function main(args) {
   const options = parseArgs(args);
   if (options.help) {
     console.log(
-      "Usage: npm run migrate:platform-id-cutover -- (--remote [--env qa] [--dry-run] [--confirm-write] | --local --persist-to PATH [--dry-run])",
+      "Usage: npm run migrate:platform-id-cutover -- (--remote --env qa [--dry-run | --confirm-write] | --local --persist-to PATH [--dry-run])",
     );
     return;
   }
   if (!options.location) {
     throw new Error("Choose exactly one of --local or --remote");
+  }
+  if (options.location === "--remote" && options.environment !== "qa") {
+    throw new Error(
+      "Remote cutover is restricted to QA; pass --env qa. Production requires a separate approved runbook.",
+    );
   }
   if (options.location === "--local" && !options.persistTo) {
     throw new Error("Pass --persist-to when using --local");

@@ -50,6 +50,11 @@ describe("platform identity cutover migration", () => {
 
       const result = await migratePlatformIds(db as never);
 
+      expect(result.unmatchedWorldReferenceRows).toEqual({
+        api_keys: 0,
+        quads: 0,
+        chunks: 0,
+      });
       expect(result.renames).toEqual([
         { table: "worlds", from: "uid", to: "world_id" },
         { table: "worlds_metadata", from: "uid", to: "world_id" },
@@ -120,6 +125,47 @@ describe("platform identity cutover migration", () => {
     }
   });
 
+  it("preserves unmatched non-foreign-key world references without dropping rows", async () => {
+    const db = new DatabaseSync(":memory:");
+    try {
+      const fixtureWithoutForeignKeys = fixture
+        .replaceAll(" REFERENCES worlds(uid)", "")
+        .replaceAll(" REFERENCES quads(id)", "");
+      db.exec(fixtureWithoutForeignKeys);
+      db.prepare("INSERT INTO quads VALUES (?, ?, ?, ?)").run(
+        "quad-orphan",
+        "w_orphan",
+        "https://example.test/orphan",
+        "orphan payload",
+      );
+      db.prepare("INSERT INTO chunks VALUES (?, ?, ?, ?)").run(
+        "chunk-orphan",
+        "w_orphan",
+        "quad-orphan",
+        "orphan chunk",
+      );
+      const quadsBefore = rows(db, "SELECT * FROM quads ORDER BY id");
+      const chunksBefore = rows(db, "SELECT * FROM chunks ORDER BY id");
+
+      const result = await migratePlatformIds(db as never);
+
+      expect(result.unmatchedWorldReferenceRows).toEqual({
+        api_keys: 0,
+        quads: 1,
+        chunks: 1,
+      });
+      expect(rows(db, "SELECT * FROM quads ORDER BY id")).toEqual(
+        renameField(quadsBefore, "world_uid", "world_id"),
+      );
+      expect(rows(db, "SELECT * FROM chunks ORDER BY id")).toEqual(
+        renameField(chunksBefore, "world_uid", "world_id"),
+      );
+      expect(rows(db, "PRAGMA foreign_key_check")).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
   it("renames the legacy worlds_metadata table while preserving dependent rows", async () => {
     const db = new DatabaseSync(":memory:");
     try {
@@ -173,6 +219,78 @@ describe("platform identity cutover migration", () => {
       expect(result.renames).toHaveLength(5);
       expect(columnNames(db, "worlds")).toContain("uid");
       expect(columnNames(db, "worlds")).not.toContain("world_id");
+      expect(rows(db, "PRAGMA foreign_key_check")).toEqual([]);
+    } finally {
+      db.close();
+    }
+  });
+
+  it.each([
+    ["worlds identity", "ALTER TABLE worlds ADD COLUMN world_id TEXT"],
+    ["API-key identity", "ALTER TABLE api_keys ADD COLUMN api_key_id TEXT"],
+    ["quad world reference", "ALTER TABLE quads ADD COLUMN world_id TEXT"],
+  ])(
+    "rejects ambiguous %s schemas before changing anything",
+    async (_name, alter) => {
+      const db = new DatabaseSync(":memory:");
+      try {
+        db.exec(fixture);
+        db.exec(alter);
+
+        await expect(migratePlatformIds(db as never)).rejects.toThrow(
+          /contains both/i,
+        );
+        expect(columnNames(db, "worlds")).toContain("uid");
+        expect(columnNames(db, "api_keys")).toContain("uid");
+        expect(
+          rows(
+            db,
+            "SELECT name FROM sqlite_master WHERE name = 'worlds_api_migrations'",
+          ),
+        ).toEqual([]);
+        expect(rows(db, "PRAGMA foreign_key_check")).toEqual([]);
+      } finally {
+        db.close();
+      }
+    },
+  );
+
+  it("applies every change in one atomic batch and leaves no partial schema on failure", async () => {
+    const db = new DatabaseSync(":memory:");
+    let batchCalls = 0;
+    let statementCount = 0;
+    try {
+      db.exec(fixture);
+      const database = {
+        prepare: (sql: string) => db.prepare(sql),
+        async executeBatch(statements: string[]) {
+          batchCalls += 1;
+          statementCount = statements.length;
+          db.exec("BEGIN IMMEDIATE;");
+          try {
+            db.exec(`${statements[0]};`);
+            throw new Error("injected atomic batch failure");
+          } catch (error) {
+            db.exec("ROLLBACK;");
+            throw error;
+          }
+        },
+      };
+
+      await expect(migratePlatformIds(database as never)).rejects.toThrow(
+        "injected atomic batch failure",
+      );
+      expect(batchCalls).toBe(1);
+      expect(statementCount).toBe(7);
+      expect(columnNames(db, "worlds")).toContain("uid");
+      expect(columnNames(db, "worlds")).not.toContain("world_id");
+      expect(columnNames(db, "api_keys")).toContain("uid");
+      expect(
+        rows(
+          db,
+          "SELECT name FROM sqlite_master WHERE name = 'worlds_api_migrations'",
+        ),
+      ).toEqual([]);
       expect(rows(db, "PRAGMA foreign_key_check")).toEqual([]);
     } finally {
       db.close();

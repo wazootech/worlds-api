@@ -105,27 +105,27 @@ code has no compatibility aliases or fallback reads.
 ### P0 identity cutover — not deployment-complete
 
 The one-time migration at `migrations/platform-id-cutover.mjs` is the only
-place that accepts legacy identity column names. It renames a lone legacy
-`worlds_metadata` table to `worlds`, renames identifier columns in place,
-checks row counts and world references, verifies `PRAGMA foreign_key_check`,
-and records a migration marker. The regression tests use the old-schema fixtures
-in `tests/fixtures/`.
+place that accepts legacy identity column names. It rejects mixed legacy and
+canonical columns, renames a lone legacy `worlds_metadata` table to `worlds`,
+and batches every DDL change plus the migration marker into one atomic D1 file
+execution. It then checks row counts and world references and verifies
+`PRAGMA foreign_key_check`. Regression tests compare complete rows against the
+old-schema fixtures in `tests/fixtures/`, including rollback on a failed batch.
 
-Back up the target D1 database first. Review a dry run, apply to QA, verify the
-migration output and health check, then schedule the production migration and
-worker deployment separately:
+Back up the QA D1 database first. The runner selects the environment-specific
+`DB` binding (not the production database name), requires `--env qa`, and refuses
+all remote environments other than QA. Review a dry run, apply to QA, then
+verify the migration output and health check:
 
 ```sh
 npm run migrate:platform-id-cutover -- --remote --env qa --dry-run
 npm run migrate:platform-id-cutover -- --remote --env qa --confirm-write
-npm run migrate:platform-id-cutover -- --remote --dry-run
-npm run migrate:platform-id-cutover -- --remote --confirm-write
 ```
 
 For a local database, pass `--local --persist-to <path>` instead. Remote writes
 are refused unless `--confirm-write` is explicit. The worker does not perform
 this migration automatically and will fail closed when the canonical tables
-are not present.
+are not present. Production requires a separate approved runbook.
 
 **Issue #86 remains open and this cutover is not deployment-complete.** It is
 not complete until the migration has been run and verified on every active D1
