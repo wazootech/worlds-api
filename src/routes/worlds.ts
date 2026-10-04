@@ -490,10 +490,6 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     const metadata = await provisionWorld(env, worldId, namespace, {
       displayName: body.displayName,
-      embeddingModel: body.embeddingModel,
-      chunkSize: body.chunkSize,
-      topK: body.topK,
-      minScore: body.minScore,
     });
 
     return respond(c, worldResource(metadata as WorldRow), 201);

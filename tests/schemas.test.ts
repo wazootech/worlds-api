@@ -14,45 +14,37 @@ const WORLD_ID = "w_00000000-0000-4000-8000-000000000001";
 
 describe("CreateWorldRequestSchema", () => {
   it("accepts a minimal create world request", () => {
-    const result = CreateWorldRequestSchema.safeParse({});
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts with all optional fields", () => {
     const result = CreateWorldRequestSchema.safeParse({
       displayName: "My World",
-      embeddingModel: "tfjs-universal-sentence-encoder",
-      chunkSize: 1000,
-      topK: 20,
-      minScore: 0.0,
     });
     expect(result.success).toBe(true);
   });
 
-  it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
+  it("rejects empty request", () => {
+    const result = CreateWorldRequestSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects empty displayName", () => {
+    const result = CreateWorldRequestSchema.safeParse({
+      displayName: "",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a request containing extra id, worldId, slug, databaseUrl, embeddingModel, chunkSize, topK, minScore, and namespace properties", () => {
     const result = CreateWorldRequestSchema.safeParse({
       id: "w_00000000-0000-4000-8000-000000000001",
       worldId: "my-world",
       slug: "my-world",
       databaseUrl: "d1://example.com",
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.id).toBeUndefined();
-      expect(result.data.worldId).toBeUndefined();
-      expect(result.data.slug).toBeUndefined();
-      expect(result.data.databaseUrl).toBeUndefined();
-    }
-  });
-
-  it("strips a client-supplied namespace", () => {
-    const result = CreateWorldRequestSchema.safeParse({
+      embeddingModel: "tfjs-universal-sentence-encoder",
+      chunkSize: 1000,
+      topK: 20,
+      minScore: 0.0,
       namespace: "my-namespace",
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.namespace).toBeUndefined();
-    }
+    expect(result.success).toBe(false);
   });
 });
 
