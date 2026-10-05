@@ -37,3 +37,6 @@ This repository contains the Worlds API service.
 - The Worker admin key is provisioned by the Infisical Cloudflare Workers Secret
   Sync, not by a deploy. Rotating it is a vault edit; the canonical name is
   `WORLDS_API_ADMIN_KEY` (see `secret-registry.md`).
+## Agent skills
+
+This repo uses a lightweight skills/config scaffold under docs/agents/. The canonical triage state labels are defined in docs/agents/triage-labels.md. For how to file, label, and decide issues, follow docs/agents/issue-tracker.md. Domain expectations live in docs/agents/domain.md.
