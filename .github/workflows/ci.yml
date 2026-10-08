@@ -14,6 +14,16 @@ permissions:
   id-token: write
 
 jobs:
+  contract-lint:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - name: Credential-free contract lint (R1-R5)
+        uses: wazootech/workspace-cli/skills/contract-lint@9841b8de3539b5350ec85b527018afb256480b16
+
   verify:
     runs-on: ubuntu-latest
     steps:
@@ -46,11 +56,10 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository }}:latest
 
-  # The deploy jobs fetch no secrets. `wrangler deploy` uploads code and sets
-  # no secrets; the deployed Worker's copy is pushed continuously by the
-  # Infisical Cloudflare Workers Secret Sync. Injecting prod values into a job
-  # that cannot use them would only widen exposure. `health-qa` is the one job
-  # that genuinely needs a secret, so it is the one job that fetches.
+  # Deploy jobs fetch only the named Cloudflare API token needed by Wrangler.
+  # Application secrets remain owned by the Infisical Cloudflare Workers Secret
+  # Sync; health-qa separately fetches only the admin key it needs.
+  # deploy-prod is still on the legacy GitHub secret wiring pending its rollout.
   deploy-qa:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
@@ -62,10 +71,17 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Fetch Cloudflare deploy token from Infisical (qa)
+        uses: Infisical/secrets-action@v1.0.17
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: "qa"
+          secret-name: CLOUDFLARE_API_TOKEN
       - run: npm run deploy -- --env qa
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
   health-qa:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
