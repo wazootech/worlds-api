@@ -122,7 +122,7 @@ and `method: oidc`, so `WORLDS_API_ADMIN_KEY` arrives as a job environment
 variable. The workflow therefore needs `permissions: id-token: write` and no
 long-lived Infisical credential.
 
-This wiring is not live yet. Tracked in
+This wiring is **live**. The tracking issues are all closed:
 [#97](https://github.com/wazootech/worlds-api/issues/97) (identity + variables),
 [#98](https://github.com/wazootech/worlds-api/issues/98) (Worker syncs),
 [#99](https://github.com/wazootech/worlds-api/issues/99) (retire the GitHub
@@ -183,8 +183,8 @@ is the failure this repo already hit:
 Consumers of the QA value, all of which must agree or the platform breaks:
 this repo's `health-qa` and `smoke-qa` canary; `wazoo-api`'s `smoke-qa` gate
 (same `qa` value, different repo); and the `data-qa` Worker's own secret. The
-canary needs the OIDC fetch from above, so it is blocked on
-[#97](https://github.com/wazootech/worlds-api/issues/97).
+canary needs the OIDC fetch from above, which is now in place (see
+[#97](https://github.com/wazootech/worlds-api/issues/97)).
 
 ## Pull request workflow
 

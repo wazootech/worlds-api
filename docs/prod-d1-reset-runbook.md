@@ -13,14 +13,31 @@ which is a separate and still-unresolved scope.
 
 Every claim below was verified read-only against live production on **2026-10-04**.
 
+> **Status — procedure completed.** The reset described here was executed on
+> 2026-10-05 and production is now green. Verified read-only against live
+> `data.wazoo.dev`:
+>
+> - `GET /health` → 200 `{"status":"ok"}`
+> - `GET /ready` → 200 `{"status":"ready"}`
+> - `GET /worlds` (no auth) → 401 — bearer-only, fail-closed
+> - `GET /worlds` (bearer `$WORLDS_API_ADMIN_KEY`) → 200 `{"worlds":[]}`
+> - D1 `worlds` PK is now `world_id TEXT NOT NULL PRIMARY KEY`; schema version is 4
+>   (applied 2026-10-05 20:03:10)
+>
+> The pre-flight table in §1 reflects the state that **was** wrong, now resolved.
+
 ---
 
-## 1. What is wrong with production today
+## 1. What was wrong with production (pre-cutover, resolved)
 
-Production is serving an **8-day-old build on a pre-cutover database**. Both halves
-are true and they compound.
+> This section describes the pre-cutover state that justified the reset. The
+> procedure in §2–§6 has been executed; production is now green (see the status
+> banner above).
 
-| | Production today | Target | Action |
+Production was serving an **8-day-old build on a pre-cutover database**. Both halves
+were true and they compounded.
+
+| | Production (pre-cutover) | Target | Action |
 | --- | --- | --- | --- |
 | `worlds` primary key | `uid` | `world_id` | drop and recreate |
 | `worlds` legacy columns | — | `uid` / `worlds_api_uid` / `slug` forbidden | recreated clean |
@@ -29,15 +46,15 @@ are true and they compound.
 | `https://data.wazoo.dev/health` | 200 | — | live |
 | `https://data.wazoo.dev/ready` | **404** | 200 | route absent on the pre-cutover build |
 
-A `404` on `/ready` rather than a `503` is diagnostic: the route does not exist on
-the deployed build at all. Production is not failing closed on a readiness gate —
-it simply predates the gate. That is why deploying the merged code against the
-current database would break silently rather than loudly.
+A `404` on `/ready` rather than a `503` was diagnostic: the route did not exist on
+the deployed build at all. Production was not failing closed on a readiness gate —
+it simply predated the gate. That was why deploying the merged code against the
+current database would have broken silently rather than loudly.
 
 Row counts at time of writing: **12 worlds, 3 quads, 21 chunks, 25 api_keys**
 (16 namespace-scoped, 9 world-linked, 0 revoked), 2 schema-marker rows.
 
-**All of this data is approved for discard**, including the 25 `api_keys` rows.
+**All of this data was approved for discard**, including the 25 `api_keys` rows.
 
 ### Why the admin key survives the wipe
 
