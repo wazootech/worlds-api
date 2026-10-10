@@ -77,9 +77,10 @@ shell, and are deliberately **not** in the vault.
   OIDC and the Workers get it via the sync. No workflow reads a GitHub secret:
   both deploy jobs fetch `CLOUDFLARE_API_TOKEN` from Infisical (`qa` / `prod`)
   and read the account ID from a repository variable. The legacy
-  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets are now
-  unreferenced; deleting them is a separate, approved step once a prod deploy
-  has succeeded on the vault token.
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets were
+  deleted on 2026-10-10, after a prod deploy succeeded on the vault token
+  ([workspace#184](https://github.com/wazootech/workspace/issues/184)); this
+  repo has no GitHub Actions secrets.
 
 ## Single source of truth for `WORLDS_API_ADMIN_KEY`
 
