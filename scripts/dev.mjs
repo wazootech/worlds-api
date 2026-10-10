@@ -27,7 +27,7 @@ const wranglerBin = join(
 
 if (!existsSync(wranglerBin)) {
   console.error(`Cannot find the Wrangler entry point at ${wranglerBin}.`);
-  console.error("Run `npm install` in this checkout and try again.");
+  console.error("Run `pnpm install` in this checkout and try again.");
   process.exit(1);
 }
 

@@ -2,6 +2,7 @@
   "name": "worlds-api",
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@12.11.2",
   "private": true,
   "scripts": {
     "dev": "infisical run --env=dev -- node scripts/dev.mjs",
@@ -31,11 +32,11 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "latest",
+    "@cloudflare/workers-types": "^5.20260718.1",
     "@types/node": "^26.1.1",
     "prettier": "^3.9.5",
     "typescript": "^5.9.2",
     "vitest": "^4.1.10",
-    "wrangler": "latest"
+    "wrangler": "^4.112.0"
   }
 }
