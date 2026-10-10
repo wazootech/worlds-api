@@ -17,6 +17,22 @@ import {
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../lib/export-serializers";
+import { parseTurtleQuads } from "@wazoo/sparql-engine";
+
+/**
+ * RDF_IMPORT_CONTENT_TYPES are the serialized RDF formats import parses.
+ * sparql-engine's parser reads the TriG grammar, a superset of Turtle,
+ * N-Triples and N-Quads (the same parser the SDK uses), so one path covers
+ * all of them. JSON-LD is not parsed anywhere in
+ * the stack and is rejected rather than advertised.
+ */
+export const RDF_IMPORT_CONTENT_TYPES = [
+  "text/turtle",
+  "application/trig",
+  "application/n-triples",
+  "application/n-quads",
+  "text/n3",
+] as const;
 
 interface QuadRow {
   subject: string;
@@ -36,7 +52,7 @@ export function registerImportExportRoutes(
       operationId: "importWorld",
       summary: "Import graph data",
       description:
-        "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
+        "Import RDF data into a world. Accepts Turtle (the default), TriG, N-Triples, N-Quads, or N3 payloads; application/json quad rows; or text/plain chunks. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
       "x-mint": { metadata: { title: "Import graph data" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
@@ -199,12 +215,51 @@ export function registerImportExportRoutes(
         });
       }
 
+      const mediaType = contentType.split(";")[0].trim().toLowerCase();
+      if ((RDF_IMPORT_CONTENT_TYPES as readonly string[]).includes(mediaType)) {
+        let quads;
+        try {
+          quads = parseTurtleQuads(body.data);
+        } catch (error) {
+          return respond(
+            c,
+            {
+              error: {
+                code: "INVALID_ARGUMENT",
+                message: `Could not parse ${mediaType}: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            },
+            400,
+          );
+        }
+        if (quads.length > quadsCap) {
+          return respond(
+            c,
+            {
+              error: {
+                code: "PAYLOAD_TOO_LARGE",
+                message: `Import exceeds the ${quadsCap} quad limit per request`,
+              },
+            },
+            413,
+          );
+        }
+        await client.import({ source: { kind: "quads", quads } });
+        return respond(c, { imported: { quads: quads.length, chunks: 0 } });
+      }
+
       return respond(
         c,
         {
           error: {
             code: "UNSUPPORTED_CONTENT_TYPE",
-            message: `Content type '${contentType}' is not supported. Use 'application/json' for quads or 'text/plain' for chunks.`,
+            message: `Content type '${contentType}' is not supported. Use ${[
+              ...RDF_IMPORT_CONTENT_TYPES,
+              "application/json",
+              "text/plain",
+            ].join(", ")}.`,
           },
         },
         400,
