@@ -59,7 +59,8 @@ jobs:
   # Deploy jobs fetch only the named Cloudflare API token needed by Wrangler.
   # Application secrets remain owned by the Infisical Cloudflare Workers Secret
   # Sync; health-qa separately fetches only the admin key it needs.
-  # deploy-prod is still on the legacy GitHub secret wiring pending its rollout.
+  # deploy-qa and deploy-prod each read CLOUDFLARE_API_TOKEN from their own
+  # Infisical environment (qa / prod); neither uses a GitHub secret.
   deploy-qa:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: verify
@@ -121,7 +122,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Fetch Cloudflare deploy token from Infisical (prod)
+        uses: Infisical/secrets-action@v1.0.17
+        with:
+          method: oidc
+          identity-id: ${{ vars.INFISICAL_MACHINE_ID }}
+          project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+          env-slug: "prod"
+          secret-name: CLOUDFLARE_API_TOKEN
       - run: npm run deploy
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
