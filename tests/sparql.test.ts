@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldId: "w_00000000-0000-4000-8000-000000000001",
+  worldId: "w_00000000000000000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -34,7 +34,7 @@ const ALLOWED_ORIGIN = "https://console.wazoo.dev";
 
 function request(body: unknown, signal?: AbortSignal) {
   return app.request(
-    "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+    "/worlds/w_00000000000000000000000001/sparql",
     {
       method: "POST",
       headers: {
@@ -58,7 +58,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
 
   it("rejects request without authorization token", async () => {
     const res = await app.request(
-      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      "/worlds/w_00000000000000000000000001/sparql",
       {
         method: "POST",
         headers: { "content-type": "application/json" },

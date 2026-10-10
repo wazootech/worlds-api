@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
-const WORLD_ID_PATTERN =
-  /^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+/** `w_` + lowercase Crockford base32 ULID; the first char caps the 48-bit time. */
+export const WORLD_ID_PATTERN = /^w_[0-7][0-9a-hjkmnp-tv-z]{25}$/;
 
 export const ErrorResponseSchema = z
   .object({
@@ -20,7 +20,7 @@ export const ErrorResponseSchema = z
 export const WorldResourceSchema = z
   .object({
     id: z.string().regex(WORLD_ID_PATTERN).openapi({
-      description: "Immutable World ID minted by Worlds API as `w_<UUIDv4>`.",
+      description: "Immutable World ID minted by Worlds API as `w_<ULID>`.",
     }),
     displayName: z.string().openapi({
       description:
@@ -372,7 +372,8 @@ export const worldIdParam = z.object({
     .regex(WORLD_ID_PATTERN)
     .openapi({
       param: { name: "worldId", in: "path", required: true },
-      description: "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+      description:
+        "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
     }),
 });
 

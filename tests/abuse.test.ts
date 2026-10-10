@@ -33,7 +33,7 @@ const READ_ONLY_TOKEN = "test-read-only-token";
 const FULL_TOKEN = "test-full-token";
 
 const worldRef = {
-  worldId: "w_00000000-0000-4000-8000-000000000001",
+  worldId: "w_00000000000000000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -66,6 +66,7 @@ vi.mock("../src/lib/db", () => ({
   queryOne: vi.fn(),
   execute: vi.fn(),
   uid: vi.fn(() => "mock-uid"),
+  newWorldId: vi.fn(() => "w_00000000000000000000000001"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -183,7 +184,7 @@ describe("import caps", () => {
     }));
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({
@@ -201,7 +202,7 @@ describe("import caps", () => {
     const lines = Array.from({ length: 11 }, (_, i) => `chunk ${i}`);
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({
@@ -218,7 +219,7 @@ describe("SPARQL guards", () => {
   it("rejects queries above the length cap before touching the engine", async () => {
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      "/worlds/w_00000000000000000000000001/sparql",
       {
         method: "POST",
         body: JSON.stringify({
@@ -237,7 +238,7 @@ describe("scope enforcement", () => {
   it("rejects a data:read key on a write route (import) with 403", async () => {
     const res = await request(
       READ_ONLY_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({ data: "x", contentType: "text/plain" }),
@@ -255,7 +256,7 @@ describe("scope enforcement", () => {
   it("allows a data:read key on a read route (sparql)", async () => {
     const res = await request(
       READ_ONLY_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      "/worlds/w_00000000000000000000000001/sparql",
       {
         method: "POST",
         body: JSON.stringify({ query: "SELECT * WHERE { ?s ?p ?o }" }),
@@ -266,7 +267,7 @@ describe("scope enforcement", () => {
 });
 
 describe("serialized RDF import (worlds-api#25)", () => {
-  const path = "/worlds/w_00000000-0000-4000-8000-000000000001/import";
+  const path = "/worlds/w_00000000000000000000000001/import";
   const post = (body: Record<string, unknown>) =>
     request(FULL_TOKEN, path, { method: "POST", body: JSON.stringify(body) });
   const importMock = async () =>
