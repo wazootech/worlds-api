@@ -20,14 +20,14 @@ Every claim below was verified read-only against live production on **2026-10-04
 Production is serving an **8-day-old build on a pre-cutover database**. Both halves
 are true and they compound.
 
-| | Production today | Target | Action |
-| --- | --- | --- | --- |
-| `worlds` primary key | `uid` | `world_id` | drop and recreate |
-| `worlds` legacy columns | — | `uid` / `worlds_api_uid` / `slug` forbidden | recreated clean |
-| `api_keys` primary key | `uid` | `uid` | schema already correct, **rows discarded** |
-| data-plane schema marker | version 2 (v1, v2 rows) | version 4 | dropped, re-stamped |
-| `https://data.wazoo.dev/health` | 200 | — | live |
-| `https://data.wazoo.dev/ready` | **404** | 200 | route absent on the pre-cutover build |
+|                                 | Production today        | Target                                      | Action                                     |
+| ------------------------------- | ----------------------- | ------------------------------------------- | ------------------------------------------ |
+| `worlds` primary key            | `uid`                   | `world_id`                                  | drop and recreate                          |
+| `worlds` legacy columns         | —                       | `uid` / `worlds_api_uid` / `slug` forbidden | recreated clean                            |
+| `api_keys` primary key          | `uid`                   | `uid`                                       | schema already correct, **rows discarded** |
+| data-plane schema marker        | version 2 (v1, v2 rows) | version 4                                   | dropped, re-stamped                        |
+| `https://data.wazoo.dev/health` | 200                     | —                                           | live                                       |
+| `https://data.wazoo.dev/ready`  | **404**                 | 200                                         | route absent on the pre-cutover build      |
 
 A `404` on `/ready` rather than a `503` is diagnostic: the route does not exist on
 the deployed build at all. Production is not failing closed on a readiness gate —
@@ -69,17 +69,17 @@ Run from the repository root:
 ```bash
 cd repos/worlds-api
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT sql FROM sqlite_master WHERE name IN ('worlds','api_keys')" --json
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT * FROM worlds_data_plane_schema ORDER BY version" --json
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT (SELECT COUNT(*) FROM worlds) worlds, (SELECT COUNT(*) FROM quads) quads,
           (SELECT COUNT(*) FROM chunks) chunks, (SELECT COUNT(*) FROM api_keys) api_keys" --json
 
-npx wrangler secret list
+pnpm exec wrangler secret list
 ```
 
 **Confirm all of these before proceeding:**
@@ -104,7 +104,7 @@ plainly.
 `ensureControlPlaneSchema` in `src/lib/d1-schema.ts` is guarded by a
 `schemaInitialized` flag and runs `CREATE TABLE IF NOT EXISTS`. **That statement is
 a no-op against a table that already exists.** The service creates the canonical
-schema only when a table is *absent*; when a table is *present but wrong* it
+schema only when a table is _absent_; when a table is _present but wrong_ it
 asserts forever and `/ready` fails closed. Observed on QA on 2026-09-29: dropping
 only the data-plane tables left `/ready` returning 503 with
 `missing columns: world_id; legacy columns present: uid`.
@@ -138,7 +138,7 @@ triggers `@worlds/cloudflare` 0.8.0 creates are `chunks_ai` and `chunks_ad`.
 ```bash
 cd repos/worlds-api
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "DROP TRIGGER IF EXISTS chunks_ai;
    DROP TRIGGER IF EXISTS chunks_ad;
    DROP TABLE IF EXISTS chunks_fts;
@@ -175,7 +175,7 @@ WID=$(curl -s -X POST "$BASE/worlds" -H "$AUTH" -H "Content-Type: application/js
 curl -s -X POST "$BASE/worlds/$WID/reindex" -H "$AUTH" | jq .
 
 # 3. Confirm the data plane now exists at version 4
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT * FROM worlds_data_plane_schema" --json
 ```
 
@@ -197,10 +197,10 @@ discarded.
 After a successful rebuild, confirm the shapes are what the code expects:
 
 ```bash
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "PRAGMA table_info('worlds')" --json
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT * FROM worlds_data_plane_schema" --json
 ```
 
@@ -216,7 +216,7 @@ required primary key, and production is still running the pre-cutover build.
 
 `deploy-prod` is a **job inside `.github/workflows/ci.yml`**, not a separate
 workflow file. It runs only on `workflow_dispatch`, `needs: verify`, and invokes
-`npm run deploy` with no `--env`, which targets production.
+`pnpm run deploy` with no `--env`, which targets production.
 
 ```bash
 gh workflow run ci.yml --repo wazootech/worlds-api --ref main
@@ -255,11 +255,11 @@ still live.
 ### Schema assertions
 
 ```bash
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT name FROM pragma_table_info('worlds') WHERE name IN ('uid','worlds_api_uid','slug')" --json
 # expect [] — no forbidden columns
 
-npx wrangler d1 execute worlds-api --remote --command \
+pnpm exec wrangler d1 execute worlds-api --remote --command \
   "SELECT version FROM worlds_data_plane_schema" --json
 # expect 4
 ```
@@ -271,12 +271,12 @@ npx wrangler d1 execute worlds-api --remote --command \
 **Read this before §4 Step 1.** Production `wazoo-api` is **also** pre-cutover, and
 this runbook does not fix it. Verified read-only on 2026-10-04:
 
-| Production `wazoo-api` | Value |
-| --- | --- |
-| `worlds` primary key | `uid` |
-| forbidden columns present | `worlds_api_uid`, `slug` |
-| `https://api.wazoo.dev/ready` | **404** (pre-cutover build) |
-| rows | 28 users, 12 worlds, 6 `platform_api_tokens` |
+| Production `wazoo-api`        | Value                                        |
+| ----------------------------- | -------------------------------------------- |
+| `worlds` primary key          | `uid`                                        |
+| forbidden columns present     | `worlds_api_uid`, `slug`                     |
+| `https://api.wazoo.dev/ready` | **404** (pre-cutover build)                  |
+| rows                          | 28 users, 12 worlds, 6 `platform_api_tokens` |
 
 `wazoo-api` main's `schema.sql` requires `world_id TEXT NOT NULL PRIMARY KEY` and
 carries neither forbidden column. So the two services are on opposite sides of the
@@ -315,10 +315,10 @@ irreversible drop).
 `3cc346dd-abe7-4e38-98d2-cbefba344c03`, in **both** environments, with **identical
 values** (hash-compared 2026-10-04):
 
-| Path | Environments | Consumers |
-| --- | --- | --- |
-| `/` | qa, prod | `wazoo-api` Worker (prod+qa), `wazoo-console` Worker (prod+qa) |
-| `/worlds-api` | qa, prod | `worlds-api` Worker sync (prod+qa) |
+| Path          | Environments | Consumers                                                      |
+| ------------- | ------------ | -------------------------------------------------------------- |
+| `/`           | qa, prod     | `wazoo-api` Worker (prod+qa), `wazoo-console` Worker (prod+qa) |
+| `/worlds-api` | qa, prod     | `worlds-api` Worker sync (prod+qa)                             |
 
 **Decision: `/` is the single authority; `/worlds-api` gets deleted.**
 
