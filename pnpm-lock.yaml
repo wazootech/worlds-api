@@ -178,6 +178,9 @@ importers:
       '@rdfjs/types':
         specifier: ^2.0.1
         version: 2.0.1
+      '@std/ulid':
+        specifier: npm:@jsr/std__ulid@^1.0.0
+        version: '@jsr/std__ulid@1.0.0'
       '@wazoo/sparql-engine':
         specifier: npm:@jsr/wazoo__sparql-engine@^0.4.4
         version: '@jsr/wazoo__sparql-engine@0.4.4'
@@ -650,6 +653,9 @@ packages:
 
   '@jsr/std__path@1.1.6':
     resolution: {integrity: sha512-H1Cmg6z8jFyIsQbVV+vZB4eOx4k6Qg8lyUM6l7nZysj5MZumg89kb0M1bsPBTGQis3fw6mJFkJELo5+AK6oCFA==, tarball: https://npm.jsr.io/~/11/@jsr/std__path/1.1.6.tgz}
+
+  '@jsr/std__ulid@1.0.0':
+    resolution: {integrity: sha512-RvVolUwRoFtoSuYZROBmhCYEIuI4xsxeHjGGbJQZVDCBnDBJwfm16vOJyE1Va9+BnTl1iW7o1nCloBI+EQAWVg==, tarball: https://npm.jsr.io/~/11/@jsr/std__ulid/1.0.0.tgz}
 
   '@jsr/wazoo__sparql-engine@0.4.4':
     resolution: {integrity: sha512-Qk6Sj1LyLQvyzA12cYOSuHN5hvJnr/BJPCyHsWAXFkKuifVV/t+trfLKaxbL8BHq3znDW6bL5uB0P39qfy9yIA==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__sparql-engine/0.4.4.tgz}
@@ -1862,6 +1868,8 @@ snapshots:
   '@jsr/std__path@1.1.6':
     dependencies:
       '@jsr/std__internal': 1.0.14
+
+  '@jsr/std__ulid@1.0.0': {}
 
   '@jsr/wazoo__sparql-engine@0.4.4':
     dependencies:

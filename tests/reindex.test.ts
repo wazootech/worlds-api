@@ -20,7 +20,7 @@ vi.mock("../src/lib/world-db", () => ({
   resolveWorldDatabase: mocks.resolveWorldDatabase,
 }));
 
-const worldId = "w_00000000-0000-4000-8000-000000000001";
+const worldId = "w_00000000000000000000000001";
 const worldRef = {
   worldId,
   namespace: "health-test",

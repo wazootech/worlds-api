@@ -88,7 +88,7 @@ were never explicitly resolved. This section resolves them:
 
 ## World identity
 
-Worlds API mints `w_<UUIDv4>` IDs; clients provide display name and optional configuration, not a slug or ID. World responses expose the value as `id`, storage uses `world_id`, and every world-scoped route uses the same value as its `worldId` path parameter. There is no slug or legacy-identity fallback.
+Worlds API mints `w_<ULID>` IDs; clients provide display name and optional configuration, not a slug or ID. World responses expose the value as `id`, storage uses `world_id`, and every world-scoped route uses the same value as its `worldId` path parameter. There is no slug or legacy-identity fallback.
 
 Normal data-plane keys resolve namespace from the key. Admin calls pass
 `namespace` in the request body or query string.

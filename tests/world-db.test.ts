@@ -23,7 +23,7 @@ const env = {
 } as any;
 
 const worldRef = {
-  worldId: "w_00000000-0000-4000-8000-000000000001",
+  worldId: "w_00000000000000000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -43,7 +43,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldId: "w_00000000-0000-4000-8000-000000000001",
+      worldId: "w_00000000000000000000000001",
       candidateCount: 40,
       vectorize: env.VECTORIZE_INDEX,
     });
@@ -55,7 +55,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: noVectorEnv.DB,
-      worldId: "w_00000000-0000-4000-8000-000000000001",
+      worldId: "w_00000000000000000000000001",
     });
   });
 
@@ -64,7 +64,7 @@ describe("getWorldSdk", () => {
 
     expect(createSdkMock).toHaveBeenCalledWith({
       database: env.DB,
-      worldId: "w_00000000-0000-4000-8000-000000000001",
+      worldId: "w_00000000000000000000000001",
       vectorize: env.VECTORIZE_INDEX,
     });
   });
@@ -82,12 +82,12 @@ describe("getWorldSdk", () => {
     await getWorldSdk(env, worldRef, 40);
     const otherRef = {
       ...worldRef,
-      worldId: "w_00000000-0000-4000-8000-000000000002",
+      worldId: "w_00000000000000000000000002",
     };
     await getWorldSdk(env, otherRef);
     createSdkMock.mockClear();
 
-    clearSdkCacheForWorld("w_00000000-0000-4000-8000-000000000001");
+    clearSdkCacheForWorld("w_00000000000000000000000001");
     await getWorldSdk(env, worldRef, 20);
     await getWorldSdk(env, worldRef, 40);
     // Other world's SDK is still cached.
@@ -107,13 +107,13 @@ describe("resolveWorldDatabase", () => {
     );
     const result = await resolveWorldDatabase(
       envWithDb,
-      "w_00000000-0000-4000-8000-000000000003",
+      "w_00000000000000000000000003",
     );
     expect(result).toBeNull();
     expect(queryOneMock).toHaveBeenCalledWith(
       db,
       expect.stringContaining("WHERE world_id = ? AND state = 'active'"),
-      ["w_00000000-0000-4000-8000-000000000003"],
+      ["w_00000000000000000000000003"],
     );
   });
 });
