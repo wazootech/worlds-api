@@ -92,6 +92,15 @@ describe("export paging applies to every format (#103)", () => {
     });
   }
 
+  it("keeps returning the whole world for serialized formats when limit is omitted", async () => {
+    const res = await exportWorld("format=application%2Fn-quads");
+    expect(res.headers.get("X-Next-Offset")).toBeNull();
+    const body = await res.text();
+    for (const subject of ["urn:s1", "urn:s3", "urn:c2"]) {
+      expect(body).toContain(subject);
+    }
+  });
+
   it("pages application/json with nextOffset in the body and the header", async () => {
     const res = await exportWorld("format=application%2Fjson&limit=3");
     expect(res.headers.get("X-Next-Offset")).toBe("3");

@@ -45,6 +45,9 @@ const TURTLE_FORMATS = {
 } as const;
 type TurtleExportFormat = keyof typeof TURTLE_FORMATS;
 
+/** DEFAULT_EXPORT_LIMIT is the page size for formats that page by default. */
+const DEFAULT_EXPORT_LIMIT = 1000;
+
 export const RDF_IMPORT_CONTENT_TYPES = [
   "text/turtle",
   "application/trig",
@@ -357,7 +360,17 @@ export function registerImportExportRoutes(
       if (accessErr) return accessErr;
 
       const fmt = query.format ?? "application/json";
-      const limit = Number(query.limit ?? "1000");
+      // JSON and text chunks have always paged by default. Serialized RDF
+      // formats return the whole world when no limit is given, as they did
+      // before #103, so existing full-file exports (the console's download)
+      // keep working; an explicit limit pages them like every other format.
+      const pagesByDefault = fmt === "application/json" || fmt === "text/plain";
+      const limit =
+        query.limit !== undefined
+          ? Number(query.limit)
+          : pagesByDefault
+            ? DEFAULT_EXPORT_LIMIT
+            : Number.MAX_SAFE_INTEGER;
       const offset = Number(query.offset ?? "0");
       if (!Number.isInteger(limit) || limit < 1) {
         return respond(
@@ -396,8 +409,8 @@ export function registerImportExportRoutes(
         );
       }
 
-      // Every format pages the same way (#103): read the quads once, take
-      // the [offset, offset + limit) slice, and serialize only that page.
+      // Every format honors limit/offset the same way (#103): read the quads
+      // once, take the [offset, offset + limit) slice, and serialize only it.
       // X-Next-Offset is set whenever more data remains, so serialized
       // formats (whose bodies cannot carry a JSON field) signal it too.
       const client = await getWorldSdk(env, ref);

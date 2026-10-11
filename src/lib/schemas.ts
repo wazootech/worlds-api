@@ -400,7 +400,7 @@ export const exportQuery = z.object({
     .openapi({
       param: { name: "limit", in: "query" },
       description:
-        "Maximum number of quads in this page (a positive integer; default 1000). Applies to every format. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies).",
+        "Maximum number of quads in this page (a positive integer). Honored by every format. Defaults to 1000 for application/json and text/plain; serialized RDF formats return the whole world when limit is omitted. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies).",
     }),
   offset: z
     .string()
