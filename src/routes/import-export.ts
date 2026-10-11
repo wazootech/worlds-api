@@ -17,7 +17,7 @@ import {
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
 } from "../lib/export-serializers";
-import { parseTurtleQuads } from "@wazoo/sparql-engine";
+import { parseTurtleQuads, serializeTurtle } from "@wazoo/sparql-engine";
 
 /**
  * RDF_IMPORT_CONTENT_TYPES are the serialized RDF formats import parses.
@@ -26,6 +26,28 @@ import { parseTurtleQuads } from "@wazoo/sparql-engine";
  * all of them. JSON-LD is not parsed anywhere in
  * the stack and is rejected rather than advertised.
  */
+/** EXPORT_FORMATS are the content types export can serialize. */
+const EXPORT_FORMATS = [
+  "application/json",
+  "text/plain",
+  "application/n-quads",
+  "application/n-triples",
+  "text/turtle",
+  "application/trig",
+  "application/ld+json",
+] as const;
+type ExportFormat = (typeof EXPORT_FORMATS)[number];
+
+const TURTLE_FORMATS = {
+  "application/n-quads": "n-quads",
+  "application/n-triples": "n-triples",
+  "text/turtle": "turtle",
+} as const;
+type TurtleExportFormat = keyof typeof TURTLE_FORMATS;
+
+/** DEFAULT_EXPORT_LIMIT is the page size for formats that page by default. */
+const DEFAULT_EXPORT_LIMIT = 1000;
+
 export const RDF_IMPORT_CONTENT_TYPES = [
   "text/turtle",
   "application/trig",
@@ -338,87 +360,102 @@ export function registerImportExportRoutes(
       if (accessErr) return accessErr;
 
       const fmt = query.format ?? "application/json";
-      const limit = parseInt(query.limit ?? "1000", 10);
-      const offset = parseInt(query.offset ?? "0", 10);
+      // JSON and text chunks have always paged by default. Serialized RDF
+      // formats return the whole world when no limit is given, as they did
+      // before #103, so existing full-file exports (the console's download)
+      // keep working; an explicit limit pages them like every other format.
+      const pagesByDefault = fmt === "application/json" || fmt === "text/plain";
+      const limit =
+        query.limit !== undefined
+          ? Number(query.limit)
+          : pagesByDefault
+            ? DEFAULT_EXPORT_LIMIT
+            : Number.MAX_SAFE_INTEGER;
+      const offset = Number(query.offset ?? "0");
+      if (!Number.isInteger(limit) || limit < 1) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message: "limit must be a positive integer",
+            },
+          },
+          400,
+        );
+      }
+      if (!Number.isInteger(offset) || offset < 0) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message: "offset must be a non-negative integer",
+            },
+          },
+          400,
+        );
+      }
+      if (!EXPORT_FORMATS.includes(fmt as ExportFormat)) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "UNSUPPORTED_FORMAT",
+              message: `Export format '${fmt}' is not supported. Use ${EXPORT_FORMATS.map((f) => `'${f}'`).join(", ")}.`,
+            },
+          },
+          400,
+        );
+      }
 
+      // Every format honors limit/offset the same way (#103): read the quads
+      // once, take the [offset, offset + limit) slice, and serialize only it.
+      // X-Next-Offset is set whenever more data remains, so serialized
+      // formats (whose bodies cannot carry a JSON field) signal it too.
       const client = await getWorldSdk(env, ref);
+      const exported = await client.export({ format: { kind: "quads" } });
+      const all = exported.kind === "quads" ? exported.quads : [];
+      const source =
+        fmt === "text/plain"
+          ? all.filter(
+              (q: any) => q.predicate.value === "http://schema.org/text",
+            )
+          : all;
+      const page = source.slice(offset, offset + limit);
+      const nextOffset =
+        source.length > offset + limit ? offset + limit : undefined;
+      const pagingHeaders: Record<string, string> =
+        nextOffset === undefined ? {} : { "X-Next-Offset": String(nextOffset) };
 
       if (fmt === "application/json") {
-        const exported = await client.export({
-          format: { kind: "quads" },
-        });
-        const quads = exported.kind === "quads" ? exported.quads : [];
-
+        if (nextOffset !== undefined) {
+          c.header("X-Next-Offset", String(nextOffset));
+        }
         return respond(c, {
-          quads: quads.slice(offset, offset + limit).map((q: any) => ({
+          quads: page.map((q: any) => ({
             subject: q.subject.value,
             predicate: q.predicate.value,
             object: q.object.value,
             graph:
               q.graph.termType === "DefaultGraph" ? undefined : q.graph.value,
           })),
-          nextOffset:
-            quads.length > offset + limit ? offset + limit : undefined,
+          nextOffset,
         });
       }
-
-      if (fmt === "text/plain") {
-        const exported = await client.export({
-          format: { kind: "quads" },
-        });
-        const quads = exported.kind === "quads" ? exported.quads : [];
-
-        const lines = quads
-          .filter((q: any) => q.predicate.value === "http://schema.org/text")
-          .slice(offset, offset + limit)
-          .map((q: any) => `${q.subject.value}\t${q.object.value}`);
-
-        return c.text(lines.join("\n"));
-      }
-
-      if (
-        fmt === "application/n-quads" ||
-        fmt === "application/n-triples" ||
-        fmt === "text/turtle"
-      ) {
-        const exported = await client.export({
-          format: { kind: "serialized", contentType: fmt },
-        });
-
-        return c.text(
-          exported.kind === "serialized" ? exported.data : "",
-          200,
-          {
-            "Content-Type": fmt,
-          },
-        );
-      }
-
-      if (fmt === "application/trig" || fmt === "application/ld+json") {
-        const exported = await client.export({
-          format: { kind: "quads" },
-        });
-        const quads = exported.kind === "quads" ? exported.quads : [];
-        const data =
-          fmt === "application/trig"
-            ? serializeQuadsToTrig(quads)
-            : serializeQuadsToJsonLd(quads);
-
-        return c.text(data, 200, {
-          "Content-Type": fmt,
-        });
-      }
-
-      return respond(
-        c,
-        {
-          error: {
-            code: "UNSUPPORTED_FORMAT",
-            message: `Export format '${fmt}' is not supported. Use 'application/json', 'text/plain', 'application/n-quads', 'application/n-triples', 'text/turtle', 'application/trig', or 'application/ld+json'.`,
-          },
-        },
-        400,
-      );
+      const body =
+        fmt === "text/plain"
+          ? page
+              .map((q: any) => `${q.subject.value}\t${q.object.value}`)
+              .join("\n")
+          : fmt === "application/trig"
+            ? serializeQuadsToTrig(page)
+            : fmt === "application/ld+json"
+              ? serializeQuadsToJsonLd(page)
+              : serializeTurtle(page, {
+                  format: TURTLE_FORMATS[fmt as TurtleExportFormat],
+                });
+      return c.text(body, 200, { "Content-Type": fmt, ...pagingHeaders });
     },
   );
 }
