@@ -392,14 +392,15 @@ export const exportQuery = z.object({
     .openapi({
       param: { name: "format", in: "query" },
       description:
-        "Export format. Supported: application/json (RDF/JSON array), text/turtle (Turtle), application/trig (TriG), application/ld+json (JSON-LD). Defaults to application/json.",
+        "Export format. Supported: application/json (quad rows), text/plain (text chunks), application/n-quads, application/n-triples, text/turtle, application/trig, application/ld+json. Defaults to application/json.",
     }),
   limit: z
     .string()
     .optional()
     .openapi({
       param: { name: "limit", in: "query" },
-      description: "Maximum number of quads to return in this page.",
+      description:
+        "Maximum number of quads in this page (a positive integer; default 1000). Applies to every format. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies).",
     }),
   offset: z
     .string()
@@ -407,7 +408,7 @@ export const exportQuery = z.object({
     .openapi({
       param: { name: "offset", in: "query" },
       description:
-        "Pagination offset. Use the nextOffset value from the previous response.",
+        "Pagination offset (a non-negative integer). Use the X-Next-Offset header, or nextOffset in JSON bodies, from the previous response.",
     }),
 });
 
