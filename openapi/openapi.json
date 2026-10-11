@@ -533,6 +533,49 @@
           "scopes",
           "createTime"
         ]
+      },
+      "VectorSyncReport": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "attempted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "upserted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedUpserts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "embeddingFailures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "staleDeleteFailures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "enabled",
+          "attempted",
+          "upserted",
+          "failedUpserts",
+          "embeddingFailures",
+          "staleDeleteFailures",
+          "errors"
+        ]
       }
     },
     "parameters": {}
@@ -2173,7 +2216,7 @@
         ],
         "operationId": "reindexWorld",
         "summary": "Reindex world vector & FTS indexes",
-        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality.",
+        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it.",
         "x-mint": {
           "metadata": {
             "title": "Reindex world vector & FTS indexes"
@@ -2199,7 +2242,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Reindex completed successfully",
+            "description": "Reindex ran. status is completed, or completed_with_vector_errors when the vector index could not be fully synced (see vectorSync).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2214,7 +2257,8 @@
                     "status": {
                       "type": "string",
                       "enum": [
-                        "completed"
+                        "completed",
+                        "completed_with_vector_errors"
                       ]
                     },
                     "processedQuadCount": {
@@ -2224,6 +2268,9 @@
                     "chunkRowCount": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "vectorSync": {
+                      "$ref": "#/components/schemas/VectorSyncReport"
                     }
                   },
                   "required": [

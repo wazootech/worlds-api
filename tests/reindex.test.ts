@@ -126,3 +126,77 @@ describe("POST /worlds/:worldId/reindex endpoint", () => {
     expect(clearSdkCacheForWorldMock).toHaveBeenCalledWith(worldId);
   });
 });
+
+describe("reindex vector sync status (worlds-cloudflare#40)", () => {
+  const vectorSync = {
+    enabled: true,
+    attempted: 3,
+    upserted: 3,
+    failedUpserts: 0,
+    embeddingFailures: 0,
+    staleDeleteFailures: 0,
+    errors: [],
+  };
+  const reindexWith = async (report: unknown) => {
+    mocks.reindex.mockResolvedValue(report);
+    const res = await app.request(
+      `/worlds/${worldId}/reindex`,
+      {
+        method: "POST",
+        headers: { Authorization: "Bearer test-admin-key" },
+      },
+      { WORLDS_API_ADMIN_KEY: "test-admin-key" },
+      executionCtx,
+    );
+    expect(res.status).toBe(200);
+    return (await res.json()) as Record<string, unknown>;
+  };
+
+  it("reports completed with the vector sync report when nothing failed", async () => {
+    const body = await reindexWith({
+      processedQuadCount: 7,
+      chunkRowCount: 3,
+      vectorSync,
+    });
+    expect(body).toEqual({
+      ok: true,
+      status: "completed",
+      processedQuadCount: 7,
+      chunkRowCount: 3,
+      vectorSync,
+    });
+  });
+
+  for (const failure of [
+    { failedUpserts: 3, upserted: 0 },
+    { embeddingFailures: 2 },
+    { staleDeleteFailures: 1 },
+  ]) {
+    it(`reports completed_with_vector_errors for ${Object.keys(failure)[0]}`, async () => {
+      const body = await reindexWith({
+        processedQuadCount: 7,
+        chunkRowCount: 3,
+        vectorSync: {
+          ...vectorSync,
+          ...failure,
+          errors: ["upsert: vectorize 503"],
+        },
+      });
+      expect(body.ok).toBe(true);
+      expect(body.status).toBe("completed_with_vector_errors");
+      expect((body.vectorSync as { errors: string[] }).errors).toEqual([
+        "upsert: vectorize 503",
+      ]);
+    });
+  }
+
+  it("omits vectorSync and reports completed when the SDK does not report it", async () => {
+    const body = await reindexWith({ processedQuadCount: 7, chunkRowCount: 3 });
+    expect(body).toEqual({
+      ok: true,
+      status: "completed",
+      processedQuadCount: 7,
+      chunkRowCount: 3,
+    });
+  });
+});
