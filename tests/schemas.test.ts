@@ -7,10 +7,12 @@ import {
   SparqlRequestSchema,
   UpdateWorldRequestSchema,
   WorldResourceSchema,
+  WORLD_ID_PATTERN,
   worldIdParam,
 } from "../src/lib/schemas";
+import { newWorldId } from "../src/lib/db";
 
-const WORLD_ID = "w_00000000-0000-4000-8000-000000000001";
+const WORLD_ID = "w_00000000000000000000000001";
 
 describe("CreateWorldRequestSchema", () => {
   it("accepts a minimal create world request", () => {
@@ -31,7 +33,7 @@ describe("CreateWorldRequestSchema", () => {
 
   it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
     const result = CreateWorldRequestSchema.safeParse({
-      id: "w_00000000-0000-4000-8000-000000000001",
+      id: "w_00000000000000000000000001",
       worldId: "my-world",
       slug: "my-world",
       databaseUrl: "d1://example.com",
@@ -298,12 +300,32 @@ describe("worldIdParam", () => {
   it("slug `my-world` fails", () => {
     expect(worldIdParam.safeParse({ worldId: "my-world" }).success).toBe(false);
   });
-  it("UUIDv1 `w_00000000-0000-1000-8000-000000000001` fails", () => {
+  it("legacy UUIDv4 `w_00000000-0000-4000-8000-000000000001` fails", () => {
     expect(
       worldIdParam.safeParse({
-        worldId: "w_00000000-0000-1000-8000-000000000001",
+        worldId: "w_00000000-0000-4000-8000-000000000001",
       }).success,
     ).toBe(false);
+  });
+  it("uppercase ULID fails", () => {
+    expect(
+      worldIdParam.safeParse({ worldId: "w_01JBZ3K9X7C4M2Q8R5T6V0W1YZ" })
+        .success,
+    ).toBe(false);
+  });
+  it("excluded letter, timestamp overflow, and short length fail", () => {
+    for (const worldId of [
+      "w_01jbz3k9x7c4m2q8r5t6v0w1yu",
+      "w_81jbz3k9x7c4m2q8r5t6v0w1yz",
+      "w_01jbz3k9x7c4m2q8r5t6v0w1y",
+    ]) {
+      expect(worldIdParam.safeParse({ worldId }).success).toBe(false);
+    }
+  });
+  it("minted IDs match the pattern", () => {
+    for (let i = 0; i < 100; i++) {
+      expect(newWorldId()).toMatch(WORLD_ID_PATTERN);
+    }
   });
   it("bare UUID `00000000-0000-4000-8000-000000000001` fails", () => {
     expect(

@@ -20,10 +20,11 @@ vi.mock("../src/lib/db", () => ({
   queryOne: vi.fn(),
   execute: vi.fn(),
   uid: vi.fn(() => "00000000-0000-4000-8000-000000000001"),
+  newWorldId: vi.fn(() => "w_00000000000000000000000001"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
-const WORLD_ID = "w_00000000-0000-4000-8000-000000000001";
+const WORLD_ID = "w_00000000000000000000000001";
 
 const provisionMock = vi.mocked(provisionWorld);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
@@ -126,7 +127,7 @@ beforeEach(() => {
   };
   apiKeyRows[worldScopedTokenHash] = {
     namespace: "user-1",
-    world_id: "w_00000000-0000-4000-8000-000000000002",
+    world_id: "w_00000000000000000000000002",
     scopes: '["data:read","data:write"]',
   };
   apiKeyRows[otherNamespaceTokenHash] = {
@@ -230,9 +231,7 @@ describe("world lifecycle", () => {
       create_time: "2026-01-01T00:00:00.000Z",
       update_time: "2026-01-01T00:00:00.000Z",
     });
-    const res = await adminRequest(
-      "/worlds/w_00000000-0000-4000-8000-000000000001",
-    );
+    const res = await adminRequest("/worlds/w_00000000000000000000000001");
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.id).toBe(WORLD_ID);
@@ -315,9 +314,7 @@ describe("world lifecycle", () => {
 
   it("rejects get for a missing world", async () => {
     queryOneMock.mockResolvedValue(null);
-    const res = await adminRequest(
-      "/worlds/w_00000000-0000-4000-8000-000000000002",
-    );
+    const res = await adminRequest("/worlds/w_00000000000000000000000002");
     expect(res.status).toBe(404);
   });
 

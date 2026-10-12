@@ -1,7 +1,7 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
-import { execute, getDb, now, query, queryOne, uid } from "../lib/db";
+import { execute, getDb, newWorldId, now, query, queryOne } from "../lib/db";
 import {
   authorize,
   forbidden,
@@ -121,7 +121,7 @@ const createRouteDef = createRoute({
   operationId: "createWorld",
   summary: "Create world",
   description:
-    "Create a new World metadata record in the shared D1 database. Worlds API mints its ID as w_<UUIDv4>; callers cannot choose the ID or a slug.",
+    "Create a new World metadata record in the shared D1 database. Worlds API mints its ID as w_<ULID>; callers cannot choose the ID or a slug.",
   "x-mint": { metadata: { title: "Create world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -486,7 +486,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     );
     if (accessErr) return accessErr;
 
-    const worldId = `w_${uid()}`;
+    const worldId = newWorldId();
 
     const metadata = await provisionWorld(env, worldId, namespace, {
       displayName: body.displayName,

@@ -31,11 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-          cache: npm
-      - run: npm ci
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       # Same fetch as health-qa in ci.yml. The canary's whole value depends on
       # it: without a credential from the vault, an authenticated failure is
       # indistinguishable from the stale-credential failure it exists to catch.
@@ -51,4 +52,4 @@ jobs:
       # the base URL itself and only permits https://data-qa.wazoo.dev, so a
       # mistyped dispatch input fails closed rather than probing a prod host.
       - name: Probe QA health
-        run: npm run health:local -- ${{ inputs.worldsApiUrl || 'https://data-qa.wazoo.dev' }}
+        run: pnpm run health:local ${{ inputs.worldsApiUrl || 'https://data-qa.wazoo.dev' }}

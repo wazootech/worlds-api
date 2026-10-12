@@ -88,7 +88,7 @@ were never explicitly resolved. This section resolves them:
 
 ## World identity
 
-Worlds API mints `w_<UUIDv4>` IDs; clients provide display name and optional configuration, not a slug or ID. World responses expose the value as `id`, storage uses `world_id`, and every world-scoped route uses the same value as its `worldId` path parameter. There is no slug or legacy-identity fallback.
+Worlds API mints `w_<ULID>` IDs; clients provide display name and optional configuration, not a slug or ID. World responses expose the value as `id`, storage uses `world_id`, and every world-scoped route uses the same value as its `worldId` path parameter. There is no slug or legacy-identity fallback.
 
 Normal data-plane keys resolve namespace from the key. Admin calls pass
 `namespace` in the request body or query string.
@@ -114,8 +114,8 @@ database reset remains a separately approved rollout action.
 
 ## Health checks
 
-- Local: `npm run health:local`
-- QA: `npm run health:local -- https://data-qa.wazoo.dev`
+- Local: `pnpm run health:local`
+- QA: `pnpm run health:local https://data-qa.wazoo.dev`
 
 `/health` checks liveness and database connectivity. `/ready` checks that the
 control-plane schema matches this service. The health script probes both and
@@ -123,19 +123,19 @@ requires `WORLDS_API_ADMIN_KEY` for its authenticated checks, so run it through 
 CLI to inject that value:
 
 ```sh
-infisical run --env=dev -- npm run health:local
-infisical run --env=qa -- npm run health:local -- https://data-qa.wazoo.dev
+infisical run --env=dev -- pnpm run health:local
+infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 ```
 
 ## Development
 
 ```sh
-npm install
+pnpm install
 infisical login   # once per machine
 infisical init    # once per checkout
-npm run dev       # secrets injected from Infisical at runtime
-npm run typecheck
-npm run build
+pnpm run dev       # secrets injected from Infisical at runtime
+pnpm run typecheck
+pnpm run build
 ```
 
 `.dev.vars` is no longer required. If you still have one, rename it to
@@ -146,8 +146,8 @@ npm run build
 Cloudflare Worker:
 
 ```sh
-npm run deploy -- --dry-run
-npm run deploy
+pnpm run deploy --dry-run
+pnpm run deploy
 ```
 
 Docker component:

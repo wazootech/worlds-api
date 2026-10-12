@@ -2,10 +2,12 @@
 
 ## Local development setup
 
-1. Install dependencies:
+1. Install dependencies with [pnpm](https://pnpm.io) (version pinned by
+   `packageManager`; install it with `npm install -g pnpm`, since Corepack
+   cannot run pnpm 12 yet):
 
    ```sh
-   npm install
+   pnpm install
    ```
 
 2. Install and authenticate the Infisical CLI (once per machine). See the
@@ -32,26 +34,26 @@
    environment at process start, so no local secret file is needed:
 
    ```sh
-   npm run dev
+   pnpm run dev
    ```
 
 5. Run checks:
    ```sh
-   npm run typecheck
-   npm run test
-   npm run format:check
+   pnpm run typecheck
+   pnpm run test
+   pnpm run format:check
    ```
 
 ## Health checks
 
-- Local: `npm run health:local`
-- QA: `npm run health:local -- https://data-qa.wazoo.dev`
+- Local: `pnpm run health:local`
+- QA: `pnpm run health:local https://data-qa.wazoo.dev`
 
 The script checks `/health` for liveness and `/ready` for the control-plane schema. Its authenticated checks require `WORLDS_API_ADMIN_KEY`, supplied by Infisical — run it through the CLI so the value is injected:
 
 ```sh
-infisical run --env=dev -- npm run health:local
-infisical run --env=qa -- npm run health:local -- https://data-qa.wazoo.dev
+infisical run --env=dev -- pnpm run health:local
+infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 ```
 
 ## Verifying the wiring
@@ -59,13 +61,13 @@ infisical run --env=qa -- npm run health:local -- https://data-qa.wazoo.dev
 Once the CLI is linked, prove that secrets come from Infisical rather than disk:
 
 ```sh
-npm run secrets:check
+pnpm run secrets:check
 ```
 
 The script reports only key names, whether each resolved, and its length — never
 a secret value — and exits non-zero if a required secret is missing. Then rename
 the legacy `.dev.vars` to `.dev.vars.backup` (already covered by `.gitignore`),
-restart `npm run dev`, and confirm the service still starts.
+restart `pnpm run dev`, and confirm the service still starts.
 
 ## Environment files
 
@@ -74,7 +76,7 @@ secret is written to disk:
 
 - `.infisical.json` — CLI project link (committed; contains no secrets).
 - `infisical run --env=<env> -- <command>` — injects secrets into any command,
-  for example `infisical run --env=dev -- npm run health:local`.
+  for example `infisical run --env=dev -- pnpm run health:local`.
 - `.dev.vars`, `.env.qa`, `.env.production` — legacy local secret files. They
   stay gitignored and are superseded by Infisical; rename `.dev.vars` to
   `.dev.vars.backup` once the CLI is linked so local runs cannot silently fall
@@ -90,13 +92,13 @@ Run the check through the CLI. It reports each key name, whether it resolved, an
 the length of its value — never the value itself:
 
 ```sh
-npm run secrets:check
+pnpm run secrets:check
 ```
 
 It exits non-zero when a required secret is unresolved, which makes it a usable
 CI gate. To prove secrets come from Infisical and not from disk, rename the old
-`.dev.vars` (or `.env`) to `.dev.vars.backup`, then run `npm run secrets:check`
-and `npm run dev` again — both should still work. The check also warns when a
+`.dev.vars` (or `.env`) to `.dev.vars.backup`, then run `pnpm run secrets:check`
+and `pnpm run dev` again — both should still work. The check also warns when a
 leftover secret file is present, so a pass can't be a false green.
 
 ## CI/CD
@@ -155,12 +157,12 @@ secrets into a job that cannot use them would only widen exposure.
 ### The QA canary
 
 Two jobs exercise the QA data plane, and they run the **same** script
-(`scripts/local-health.mjs` via `npm run health:local`):
+(`scripts/local-health.mjs` via `pnpm run health:local`):
 
-| Job | Workflow | When | Purpose |
-| --- | -------- | ---- | ------- |
-| `health-qa` | `ci.yml` | push to `main`, after `deploy-qa` | merge-path gate |
-| `canary` | `smoke-qa.yml` | daily 06:00 UTC + manual dispatch | drift detection off the merge path |
+| Job         | Workflow       | When                              | Purpose                            |
+| ----------- | -------------- | --------------------------------- | ---------------------------------- |
+| `health-qa` | `ci.yml`       | push to `main`, after `deploy-qa` | merge-path gate                    |
+| `canary`    | `smoke-qa.yml` | daily 06:00 UTC + manual dispatch | drift detection off the merge path |
 
 The canary exists because a merge is a bad place to discover a stale credential.
 On 2026-09-25 `health-qa` went red purely because a merge exercised it, while a
@@ -176,7 +178,7 @@ is the failure this repo already hit:
    differ).
 2. Wait for the Cloudflare Workers Secret Sync to report `Synced`, or dispatch
    `smoke-qa.yml` to confirm the Worker picked it up.
-3. Confirm `npx wrangler secret list --env qa` shows the name
+3. Confirm `pnpm exec wrangler secret list --env qa` shows the name
    `WORLDS_API_ADMIN_KEY`.
 4. Watch the next `smoke-qa` run, or dispatch it.
 
@@ -190,6 +192,6 @@ canary needs the OIDC fetch from above, which is now in place (see
 
 1. Create a feature worktree from a clean `main` baseline.
 2. Make focused, atomic commits.
-3. Run `npm run format:check`, `npm run typecheck`, and `npm test` before
+3. Run `pnpm run format:check`, `pnpm run typecheck`, and `pnpm test` before
    pushing.
 4. Open a PR and wait for CI to pass.

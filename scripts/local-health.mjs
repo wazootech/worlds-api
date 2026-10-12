@@ -220,7 +220,7 @@ await test("POST /worlds with admin key (no namespace) returns 400", async () =>
 
 await test("GET /worlds/:id for nonexistent world returns 404", async () => {
   const res = await fetch(
-    `${BASE_URL}/worlds/w_00000000-0000-4000-8000-000000000000`,
+    `${BASE_URL}/worlds/w_00000000000000000000000000`,
     { headers: authHeaders() },
   );
   await assertNotFound(res);

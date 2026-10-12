@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
-const WORLD_ID_PATTERN =
-  /^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+/** `w_` + lowercase Crockford base32 ULID; the first char caps the 48-bit time. */
+export const WORLD_ID_PATTERN = /^w_[0-7][0-9a-hjkmnp-tv-z]{25}$/;
 
 export const ErrorResponseSchema = z
   .object({
@@ -20,7 +20,7 @@ export const ErrorResponseSchema = z
 export const WorldResourceSchema = z
   .object({
     id: z.string().regex(WORLD_ID_PATTERN).openapi({
-      description: "Immutable World ID minted by Worlds API as `w_<UUIDv4>`.",
+      description: "Immutable World ID minted by Worlds API as `w_<ULID>`.",
     }),
     displayName: z.string().openapi({
       description:
@@ -240,7 +240,7 @@ export const ImportRequestSchema = z
     }),
     contentType: z.string().optional().default("text/turtle").openapi({
       description:
-        "MIME type of the import payload. Supported values: text/turtle, application/n-quads, application/n-triples, application/trig, application/ld+json. Defaults to text/turtle.",
+        "MIME type of the import payload. Supported values: text/turtle, application/trig, application/n-triples, application/n-quads, text/n3, application/json (quad rows), text/plain or application/x-ndjson (text chunks). Defaults to text/turtle.",
     }),
   })
   .openapi("ImportRequest");
@@ -372,7 +372,8 @@ export const worldIdParam = z.object({
     .regex(WORLD_ID_PATTERN)
     .openapi({
       param: { name: "worldId", in: "path", required: true },
-      description: "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+      description:
+        "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
     }),
 });
 
@@ -391,14 +392,15 @@ export const exportQuery = z.object({
     .openapi({
       param: { name: "format", in: "query" },
       description:
-        "Export format. Supported: application/json (RDF/JSON array), text/turtle (Turtle), application/trig (TriG), application/ld+json (JSON-LD). Defaults to application/json.",
+        "Export format. Supported: application/json (quad rows), text/plain (text chunks), application/n-quads, application/n-triples, text/turtle, application/trig, application/ld+json. Defaults to application/json.",
     }),
   limit: z
     .string()
     .optional()
     .openapi({
       param: { name: "limit", in: "query" },
-      description: "Maximum number of quads to return in this page.",
+      description:
+        "Maximum number of quads in this page (a positive integer). Honored by every format. Defaults to 1000 for application/json and text/plain; serialized RDF formats return the whole world when limit is omitted. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies).",
     }),
   offset: z
     .string()
@@ -406,7 +408,7 @@ export const exportQuery = z.object({
     .openapi({
       param: { name: "offset", in: "query" },
       description:
-        "Pagination offset. Use the nextOffset value from the previous response.",
+        "Pagination offset (a non-negative integer). Use the X-Next-Offset header, or nextOffset in JSON bodies, from the previous response.",
     }),
 });
 

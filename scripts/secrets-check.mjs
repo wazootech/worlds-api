@@ -4,7 +4,7 @@
 //
 // Run it through the Infisical CLI so the values come from the vault:
 //
-//   npm run secrets:check
+//   pnpm run secrets:check
 //
 // Exits non-zero when a required secret is missing. The secrets themselves are
 // never written to stdout, stderr, or disk.
