@@ -257,7 +257,13 @@ today only asserts a keyword hit and prints `mode`):
       (`/admin/namespaces/{ns}/delete`) and its vectors (`deleteByIds`, ids
       enumerated from D1 chunk rows), verified in a test.
 
-## 8. Decisions needed from Ethan
+## 8. Decisions
+
+**Status (2026-10-12): D1–D7, D9 and D10 accepted as recommended.** D8 stays
+open: it needs a human to provision a capped QA-only provider key into
+Infisical `qa`; until then CI uses a fake provider and the live acceptance test
+(`roundtrip:qa` expecting `hybrid` and `vectorSync.enabled: true`) is not run.
+The table keeps the options considered; the bold entry is the decision.
 
 | #  | Decision                       | Options                                                                          | Recommendation                                              |
 | -- | ------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
