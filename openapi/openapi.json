@@ -51,7 +51,19 @@
           },
           "embeddingModel": {
             "type": "string",
-            "description": "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small."
+            "description": "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only."
+          },
+          "embeddingStatus": {
+            "type": "string",
+            "enum": [
+              "unconfigured",
+              "no_credential",
+              "invalid",
+              "stale",
+              "partial",
+              "ready"
+            ],
+            "description": "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current."
           },
           "chunkSize": {
             "type": "integer",
@@ -88,6 +100,7 @@
           "state",
           "storage",
           "embeddingModel",
+          "embeddingStatus",
           "chunkSize",
           "topK",
           "minScore",
@@ -104,7 +117,12 @@
           },
           "embeddingModel": {
             "type": "string",
-            "description": "Embedding model to use for vector search. Defaults to the platform default."
+            "enum": [
+              "openai/text-embedding-3-small",
+              "openai/text-embedding-3-large",
+              "openai/text-embedding-ada-002"
+            ],
+            "description": "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), and legacy openai/text-embedding-ada-002. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen."
           },
           "chunkSize": {
             "type": "integer",
@@ -136,7 +154,12 @@
           },
           "embeddingModel": {
             "type": "string",
-            "description": "New embedding model. Changing this triggers a reindex of existing data."
+            "enum": [
+              "openai/text-embedding-3-small",
+              "openai/text-embedding-3-large",
+              "openai/text-embedding-ada-002"
+            ],
+            "description": "New embedding model, as provider/model. Requires an active embedding credential for the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget."
           },
           "chunkSize": {
             "type": "integer",
@@ -484,10 +507,11 @@
               "type": "string",
               "enum": [
                 "data:read",
-                "data:write"
+                "data:write",
+                "embeddings:admin"
               ]
             },
-            "description": "Optional scope grant. Defaults to [\"data:read\", \"data:write\"]. Use [\"data:read\"] for read-only keys."
+            "description": "Optional scope grant. Defaults to [\"data:read\", \"data:write\"]. Use [\"data:read\"] for read-only keys. embeddings:admin grants management of the namespace embedding credential and is never part of the default grant."
           }
         },
         "required": [
@@ -575,6 +599,99 @@
           "embeddingFailures",
           "staleDeleteFailures",
           "errors"
+        ]
+      },
+      "EmbeddingCredential": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai"
+            ],
+            "description": "Embedding provider."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "invalid",
+              "revoked"
+            ],
+            "description": "active: usable. invalid: the provider rejected the key repeatedly; rotate it. revoked: deleted; worlds fall back to keyword-only search."
+          },
+          "fingerprint": {
+            "type": "string",
+            "description": "First 8 hex characters of the key's SHA-256, for support."
+          },
+          "last4": {
+            "type": "string",
+            "description": "Last four characters of the key."
+          },
+          "createTime": {
+            "type": "string",
+            "description": "ISO 8601 creation time."
+          },
+          "rotateTime": {
+            "type": "string",
+            "description": "ISO 8601 time of the most recent rotation."
+          },
+          "revokeTime": {
+            "type": "string",
+            "description": "ISO 8601 time the credential was revoked."
+          }
+        },
+        "required": [
+          "provider",
+          "status",
+          "fingerprint",
+          "last4",
+          "createTime"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code, e.g. NOT_FOUND, INVALID_ARGUMENT, RATE_LIMITED."
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error message describing what went wrong."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "EmbeddingCredentialRequest": {
+        "type": "object",
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "openai"
+            ],
+            "description": "Embedding provider the key belongs to."
+          },
+          "apiKey": {
+            "type": "string",
+            "description": "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed."
+          }
+        },
+        "required": [
+          "provider",
+          "apiKey"
         ]
       }
     },
@@ -902,7 +1019,7 @@
         ],
         "operationId": "updateWorld",
         "summary": "Update world",
-        "description": "Update a world's display name, embedding model, or search configuration. Changing the embedding model triggers a reindex.",
+        "description": "Update a world's display name, embedding model, or search configuration. Changing the embedding model marks the world stale (embeddingStatus stale): search runs keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically, because reindexing spends the namespace's embedding budget. Setting a model requires an active embedding credential for the namespace.",
         "x-mint": {
           "metadata": {
             "title": "Update world"
@@ -2216,7 +2333,7 @@
         ],
         "operationId": "reindexWorld",
         "summary": "Reindex world vector & FTS indexes",
-        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it.",
+        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Required after changing the embedding model (the world is stale and search is keyword-only until it completes) and useful to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it. Embedding spend is checked against the namespace's daily budget first; an exhausted budget returns 429 EMBEDDING_BUDGET_EXCEEDED.",
         "x-mint": {
           "metadata": {
             "title": "Reindex world vector & FTS indexes"
@@ -2313,6 +2430,36 @@
               }
             }
           },
+          "429": {
+            "description": "The namespace's daily embedding budget is exhausted (EMBEDDING_BUDGET_EXCEEDED). Nothing was reindexed or spent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
           "500": {
             "description": "Reindex failed",
             "content": {
@@ -2339,6 +2486,231 @@
                   "required": [
                     "error"
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/namespaces/{namespace}/embedding-credential": {
+      "put": {
+        "tags": [
+          "Embeddings"
+        ],
+        "operationId": "setEmbeddingCredential",
+        "summary": "Set embedding credential",
+        "description": "Store or rotate the namespace's embedding provider API key (bring your own key). The key is encrypted at rest with a key held only as a Worker secret and is write-only: it is never returned or logged. Requires the embeddings:admin scope (or an admin key); world-scoped tokens are refused. Returns 503 EMBEDDINGS_NOT_CONFIGURED when the deployment has no key-encryption key.",
+        "x-mint": {
+          "metadata": {
+            "title": "Set embedding credential"
+          }
+        },
+        "security": [
+          {
+            "bearerWorldsToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "namespace",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingCredentialRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Credential stored; metadata only",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingCredential"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Embeddings are not configured on this deployment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Embeddings"
+        ],
+        "operationId": "getEmbeddingCredential",
+        "summary": "Get embedding credential status",
+        "description": "Returns the namespace embedding credential's metadata (provider, status, fingerprint, last four characters, timestamps). The key itself is never returned. Requires the embeddings:admin scope.",
+        "x-mint": {
+          "metadata": {
+            "title": "Get embedding credential status"
+          }
+        },
+        "security": [
+          {
+            "bearerWorldsToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "namespace",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credential metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingCredential"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Embeddings"
+        ],
+        "operationId": "deleteEmbeddingCredential",
+        "summary": "Revoke embedding credential",
+        "description": "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Existing vectors are kept. Requires the embeddings:admin scope.",
+        "x-mint": {
+          "metadata": {
+            "title": "Revoke embedding credential"
+          }
+        },
+        "security": [
+          {
+            "bearerWorldsToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "namespace",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Revoked"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

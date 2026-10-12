@@ -11,12 +11,27 @@ export type Env = {
    */
   VECTORIZE_INDEX?: import("@cloudflare/workers-types").VectorizeIndex;
   /**
-   * Which embedding provider supplies chunk/query vectors. Currently only
-   * unset is supported (keyword-only); "workers-ai" / BYOK wiring is charted
-   * under worlds-api#1. Present so deployments can fail loudly instead of
-   * silently ignoring a configured provider that isn't implemented yet.
+   * Embedding mode switch (worlds-api#1). `byok` enables customer-key
+   * embeddings; unset (or any other value) keeps every world keyword-only,
+   * which is also the kill switch. Never throws on read paths.
    */
   EMBEDDING_PROVIDER?: string;
+  /**
+   * Key-encryption keys for customer embedding credentials: base64 of 32
+   * random bytes, delivered as Worker secrets by the Infisical sync (see
+   * `secret-registry.md`). Writes use the highest configured version; reads
+   * use the version stored on the record. Absent or malformed means the
+   * credential store fails closed (keyword-only search, credential routes 503).
+   */
+  EMBEDDING_KEK_V1?: string;
+  EMBEDDING_KEK_V2?: string;
+  /**
+   * Max texts embedded per namespace per UTC day across index and query
+   * operations (default 20000). Enforced in D1 before the provider is called.
+   */
+  EMBEDDING_DAILY_BUDGET?: string;
+  /** Max texts one reindex call may embed (default 5000). */
+  EMBEDDING_REINDEX_MAX_CHUNKS?: string;
   /**
    * Platform→data-plane admin key. The name is canonical platform-wide: the
    * value lives in Infisical as `WORLDS_API_ADMIN_KEY`, is injected locally by
@@ -45,6 +60,18 @@ export function fromBindings(env: Record<string, unknown>): Env {
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
     EMBEDDING_PROVIDER: env.EMBEDDING_PROVIDER
       ? String(env.EMBEDDING_PROVIDER)
+      : undefined,
+    EMBEDDING_KEK_V1: env.EMBEDDING_KEK_V1
+      ? String(env.EMBEDDING_KEK_V1)
+      : undefined,
+    EMBEDDING_KEK_V2: env.EMBEDDING_KEK_V2
+      ? String(env.EMBEDDING_KEK_V2)
+      : undefined,
+    EMBEDDING_DAILY_BUDGET: env.EMBEDDING_DAILY_BUDGET
+      ? String(env.EMBEDDING_DAILY_BUDGET)
+      : undefined,
+    EMBEDDING_REINDEX_MAX_CHUNKS: env.EMBEDDING_REINDEX_MAX_CHUNKS
+      ? String(env.EMBEDDING_REINDEX_MAX_CHUNKS)
       : undefined,
     WORLDS_API_ADMIN_KEY: env.WORLDS_API_ADMIN_KEY
       ? String(env.WORLDS_API_ADMIN_KEY)
@@ -83,6 +110,10 @@ export function fromProcessEnv(): Env {
     VECTORIZE_INDEX: (globalThis as any)?.__VECTORIZE_INDEX__ as
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
     EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
+    EMBEDDING_KEK_V1: process.env.EMBEDDING_KEK_V1,
+    EMBEDDING_KEK_V2: process.env.EMBEDDING_KEK_V2,
+    EMBEDDING_DAILY_BUDGET: process.env.EMBEDDING_DAILY_BUDGET,
+    EMBEDDING_REINDEX_MAX_CHUNKS: process.env.EMBEDDING_REINDEX_MAX_CHUNKS,
     WORLDS_API_ADMIN_KEY: process.env.WORLDS_API_ADMIN_KEY,
     WAZOO_ENV: process.env.WAZOO_ENV,
     PORT: process.env.PORT,

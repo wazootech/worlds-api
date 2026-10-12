@@ -15,6 +15,13 @@ import {
 import { provisionWorld } from "../lib/d1-provision";
 import { clearSdkCache, clearSdkCacheForWorld } from "../lib/world-db";
 import { runPurgeSweep } from "../lib/purge";
+import {
+  getCredential,
+  loadEmbeddingStatuses,
+  revokeNamespaceCredentials,
+  setWorldState,
+  type EmbeddingStatus,
+} from "../lib/embeddings/store";
 import { respond } from "../lib/respond";
 import {
   CreateWorldRequestSchema,
@@ -43,13 +50,14 @@ interface WorldRow {
   update_time: string;
 }
 
-function worldResource(row: WorldRow) {
+function worldResource(row: WorldRow, embeddingStatus: EmbeddingStatus) {
   return {
     id: row.world_id,
     displayName: row.display_name,
     state: row.state,
     storage: "d1" as const,
     embeddingModel: row.embedding_model,
+    embeddingStatus,
     chunkSize: row.chunk_size,
     topK: row.top_k,
     minScore: row.min_score,
@@ -72,6 +80,11 @@ async function resolveWorldRow(
       : "SELECT * FROM worlds WHERE world_id = ? AND state != 'deleted'",
     [worldId],
   );
+}
+
+async function statusFor(env: Env, row: WorldRow): Promise<EmbeddingStatus> {
+  const statuses = await loadEmbeddingStatuses(env, [row]);
+  return statuses.get(row.world_id) ?? "unconfigured";
 }
 
 function requireWorldAccess(
@@ -190,7 +203,7 @@ const updateRoute = createRoute({
   operationId: "updateWorld",
   summary: "Update world",
   description:
-    "Update a world's display name, embedding model, or search configuration. Changing the embedding model triggers a reindex.",
+    "Update a world's display name, embedding model, or search configuration. Changing the embedding model marks the world stale (embeddingStatus stale): search runs keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically, because reindexing spends the namespace's embedding budget. Setting a model requires an active embedding credential for the namespace.",
   "x-mint": { metadata: { title: "Update world" } },
   security: [{ bearerWorldsToken: [] }],
   request: {
@@ -456,7 +469,12 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         : "SELECT * FROM worlds WHERE namespace = ? AND state != 'deleted' ORDER BY create_time DESC",
       auth.admin ? [] : [auth.namespace!],
     );
-    return respond(c, { worlds: rows.map(worldResource) });
+    const statuses = await loadEmbeddingStatuses(env, rows ?? []);
+    return respond(c, {
+      worlds: (rows ?? []).map((row) =>
+        worldResource(row, statuses.get(row.world_id) ?? "unconfigured"),
+      ),
+    });
   });
 
   app.openapi(createRouteDef, async (c) => {
@@ -496,7 +514,14 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       minScore: body.minScore,
     });
 
-    return respond(c, worldResource(metadata as WorldRow), 201);
+    return respond(
+      c,
+      worldResource(
+        metadata as WorldRow,
+        await statusFor(env, metadata as WorldRow),
+      ),
+      201,
+    );
   });
 
   app.openapi(getRoute, async (c) => {
@@ -516,7 +541,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(auth, row, worldId, SCOPE_DATA_READ);
     if (worldAccess) return worldAccess;
 
-    return respond(c, worldResource(row));
+    return respond(c, worldResource(row, await statusFor(env, row)));
   });
 
   app.openapi(updateRoute, async (c) => {
@@ -549,9 +574,28 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       setClauses.push("display_name = ?");
       setArgs.push(body.displayName);
     }
-    if (body.embeddingModel) {
+    const modelChanged =
+      body.embeddingModel !== undefined &&
+      body.embeddingModel !== row.embedding_model;
+    if (modelChanged) {
+      // A model change is a state transition, not just a column write: it
+      // needs a usable credential and leaves the world stale (design 4.1).
+      const credential = await getCredential(env, row.namespace);
+      if (!credential || credential.status !== "active") {
+        return respond(
+          c,
+          {
+            error: {
+              code: "EMBEDDING_CREDENTIAL_REQUIRED",
+              message:
+                "Set an active embedding credential for the namespace before choosing an embedding model",
+            },
+          },
+          409,
+        );
+      }
       setClauses.push("embedding_model = ?");
-      setArgs.push(body.embeddingModel);
+      setArgs.push(body.embeddingModel!);
     }
     if (body.chunkSize !== undefined) {
       setClauses.push("chunk_size = ?");
@@ -588,13 +632,19 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       setArgs,
     );
 
+    if (modelChanged) {
+      // Search stays keyword-only until an explicit reindex rebuilds vectors
+      // with the new model.
+      await setWorldState(env, worldId, "stale", body.embeddingModel!);
+    }
+
     const updated = await queryOne<WorldRow>(
       db,
       "SELECT * FROM worlds WHERE world_id = ?",
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(updated!));
+    return respond(c, worldResource(updated!, await statusFor(env, updated!)));
   });
 
   app.openapi(deleteRoute, async (c) => {
@@ -678,7 +728,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(restored!));
+    return respond(
+      c,
+      worldResource(restored!, await statusFor(env, restored!)),
+    );
   });
 
   app.openapi(suspendRoute, async (c) => {
@@ -714,7 +767,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(suspended!));
+    return respond(
+      c,
+      worldResource(suspended!, await statusFor(env, suspended!)),
+    );
   });
 
   app.openapi(resumeRoute, async (c) => {
@@ -750,7 +806,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(resumed!));
+    return respond(c, worldResource(resumed!, await statusFor(env, resumed!)));
   });
 
   app.openapi(namespaceDeleteRoute, async (c) => {
@@ -784,6 +840,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       "UPDATE api_keys SET revoked_at = ? WHERE namespace = ? AND revoked_at IS NULL",
       [ts, namespace],
     );
+
+    // The namespace's embedding credential dies with the namespace. Vector
+    // cleanup is not part of this endpoint (see design section 7, deletion).
+    await revokeNamespaceCredentials(env, namespace);
 
     // Invalidate all cached SDKs since multiple worlds may have been affected.
     clearSdkCache();

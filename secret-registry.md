@@ -31,7 +31,11 @@ worlds-api consumes it.
 | `WORLDS_API_ADMIN_KEY` | dev, qa, prod | via sync    | via sync  | injected    | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | qa, prod | not consumed | not consumed | n/a | Present in the vault for sibling services; worlds-api does not read it.   |
 
-Only `WORLDS_API_ADMIN_KEY` is consumed by this service. The name is canonical
+| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **not yet provisioned** | injected (optional) | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Optional binding: when absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
+| `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | Optional next KEK. Writes use the highest configured version. |
+
+Only `WORLDS_API_ADMIN_KEY` and the optional `EMBEDDING_KEK_V<n>` secrets are
+consumed by this service. The name is canonical
 platform-wide — it matches the vault, `wazoo-api`, and the console's registry.
 It was previously `WORLDS_ADMIN_KEY` in this repo; that name is retired and will
 not resolve. A Worker provisioned with only the old name has **no admin key**,
@@ -41,7 +45,23 @@ which looks identical to a failed credential re-seed.
 
 `WAZOO_ENV`, `PORT`, `CORS_ORIGINS`, `EMBEDDING_PROVIDER`, and the abuse
 knobs (`SPARQL_*`, `MAX_IMPORT_*`, `RATE_LIMIT_*`) are configuration, not
-secrets. They live in `wrangler.toml` `[vars]` / `[env.qa.vars]` or in the local
+secrets.
+
+BYOK embedding configuration (worlds-api#1), all unset by default:
+
+- `EMBEDDING_PROVIDER=byok` turns customer-key embeddings on. Unset (or any
+  other value) is the kill switch: every world is keyword-only and no data
+  changes. Nothing in `wrangler.toml` sets it; enable per environment only
+  after the KEK secret and a QA provider key exist.
+- `EMBEDDING_DAILY_BUDGET` (default `20000`): texts one namespace may embed per
+  UTC day across index and query operations, enforced in D1 before the provider
+  is called.
+- `EMBEDDING_REINDEX_MAX_CHUNKS` (default `5000`): texts one reindex call may
+  embed.
+
+Customer provider keys are never Worker secrets; they live envelope-encrypted
+(AES-256-GCM, AAD `namespace|credential_id|provider`) in D1 under the KEK
+above. They live in `wrangler.toml` `[vars]` / `[env.qa.vars]` or in the local
 shell, and are deliberately **not** in the vault.
 
 ## Runtime delivery

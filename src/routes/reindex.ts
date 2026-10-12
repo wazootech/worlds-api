@@ -10,6 +10,12 @@ import {
   resolveWorldDatabase,
 } from "../lib/world-db";
 import { respond } from "../lib/respond";
+import { getEmbeddingModel } from "../lib/embeddings/catalog";
+import {
+  getCredential,
+  remainingBudget,
+  setWorldState,
+} from "../lib/embeddings/store";
 import { worldIdParam } from "../lib/schemas";
 
 /**
@@ -55,7 +61,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       operationId: "reindexWorld",
       summary: "Reindex world vector & FTS indexes",
       description:
-        "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it.",
+        "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Required after changing the embedding model (the world is stale and search is keyword-only until it completes) and useful to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it. Embedding spend is checked against the namespace's daily budget first; an exhausted budget returns 429 EMBEDDING_BUDGET_EXCEEDED.",
       "x-mint": { metadata: { title: "Reindex world vector & FTS indexes" } },
       security: [{ bearerWorldsToken: [] }],
       request: {
@@ -73,6 +79,17 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
                 processedQuadCount: z.number().int().nonnegative(),
                 chunkRowCount: z.number().int().nonnegative(),
                 vectorSync: VectorSyncSchema.optional(),
+              }),
+            },
+          },
+        },
+        429: {
+          description:
+            "The namespace's daily embedding budget is exhausted (EMBEDDING_BUDGET_EXCEEDED). Nothing was reindexed or spent.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                error: z.object({ code: z.string(), message: z.string() }),
               }),
             },
           },
@@ -128,13 +145,59 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       );
       if (accessErr) return accessErr;
 
+      // Spend guard (design 4.3): refuse before any provider call when the
+      // namespace has no budget left and an embedder would actually run. The
+      // embedder re-checks atomically per batch, so a lookup failure here only
+      // skips the early refusal.
+      let budgetExhausted = false;
       try {
-        const sdk = await getWorldSdk(env, ref);
+        budgetExhausted =
+          Boolean(getEmbeddingModel(ref.embeddingModel)) &&
+          (await getCredential(env, ref.namespace))?.status === "active" &&
+          (await remainingBudget(env, ref.namespace)) <= 0;
+      } catch {
+        budgetExhausted = false;
+      }
+      if (budgetExhausted) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "EMBEDDING_BUDGET_EXCEEDED",
+              message:
+                "The daily embedding budget for this namespace is used up",
+            },
+          },
+          429,
+        );
+      }
+
+      try {
+        const sdk = await getWorldSdk(env, ref, undefined, {
+          forReindex: true,
+        });
         if (typeof sdk.reindex !== "function") {
           throw new Error("Configured Worlds SDK does not support reindexing");
         }
         const report = (await sdk.reindex()) as unknown as ReindexResponse;
         const vectorSync = readVectorSync(report);
+        // Reconcile embedding state from what the engine actually wrote:
+        // ready only with zero failures, partial once some vectors landed. A
+        // failed state write leaves the world stale (keyword-only), never a 500.
+        if (vectorSync?.enabled) {
+          const next = !vectorSyncFailed(vectorSync)
+            ? "ready"
+            : vectorSync.upserted > 0
+              ? "partial"
+              : "stale";
+          try {
+            await setWorldState(env, worldId, next, ref.embeddingModel);
+          } catch {
+            console.warn("embedding state not recorded after reindex", {
+              worldId,
+            });
+          }
+        }
         return respond(c, {
           ok: true,
           status: vectorSyncFailed(vectorSync)
