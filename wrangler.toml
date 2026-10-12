@@ -17,11 +17,15 @@ database_id = "a30635e0-c584-4447-8966-69d9b1f8a4eb"
 
 # Phase C (worlds-api#1) seam: hybrid/semantic search activates only when this
 # Vectorize index exists AND an embedding provider is configured. Until then,
-# search is keyword-only (the engine degrades gracefully). Provision with:
-#   wrangler vectorize create worlds-api-v1 --dimensions 1536 --metric cosine --instruction ""
+# search is keyword-only (the engine degrades gracefully). Provision ONE index
+# per environment (run by a human; a deploy never creates it), in this order:
 #   wrangler vectorize create worlds-api-v1-metadata --dimensions 1536 --metric cosine
-# (the metadata-config index registers world_uid as a filterable property).
-# Uncomment when the embedding source (BYOK — pending #1 acceptance) lands:
+#   wrangler vectorize create-metadata-index worlds-api-v1-metadata --propertyName world_id --type string
+#   deno task vectorize:verify worlds-api-v1-metadata   # in wazootech/worlds-cloudflare
+# `world_id` must be registered as a filterable string property BEFORE vectors
+# are written, and dimensions must equal the embedding model width (immutable).
+# Do NOT uncomment the binding until the index exists: wrangler deploy fails on
+# a binding whose index is missing. Tracking: wazootech/worlds-cloudflare#38.
 # [[vectorize]]
 # binding = "VECTORIZE_INDEX"
 # index_name = "worlds-api-v1-metadata"
