@@ -77,9 +77,10 @@ shell, and are deliberately **not** in the vault.
   OIDC and the Workers get it via the sync. No workflow reads a GitHub secret:
   both deploy jobs fetch `CLOUDFLARE_API_TOKEN` from Infisical (`qa` / `prod`)
   and read the account ID from a repository variable. The legacy
-  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets are now
-  unreferenced; deleting them is a separate, approved step once a prod deploy
-  has succeeded on the vault token.
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets were
+  deleted on 2026-10-10, after a prod deploy succeeded on the vault token
+  ([workspace-v1#184](https://github.com/wazootech/workspace-v1/issues/184)); this
+  repo has no GitHub Actions secrets.
 
 ## Single source of truth for `WORLDS_API_ADMIN_KEY`
 
@@ -112,18 +113,19 @@ broader than the fetch.
 
 ### Remaining gap: the production deploy
 
-QA runs the cutover code and accepts the canonical key. Production does **not**.
-The prod Worker is still pre-cutover, and the deploy is gated on a D1 schema
-rebuild, not on this secret work:
+**Resolved.** Production ran the cutover on 2026-10-05, following the runbook
+added in commit `8caa8a2` ("docs: add the production worlds D1 reset
+runbook"). Verified live read-only against `data.wazoo.dev`:
 
-- prod `worlds` still has primary key `uid` with no `world_id` column, which
-  `assertControlPlaneSchema` rejects and the new queries cannot read;
-- prod's data-plane schema version is 2 while the deployed SDK requires 4, and
-  `@worlds/cloudflare` asserts rather than migrates.
+- `GET /health` → 200 `{"status":"ok"}`
+- `GET /ready` → 200 `{"status":"ready"}`
+- `GET /worlds` (no auth) → 401 — bearer-only, fail-closed
+- `GET /worlds` (bearer `$WORLDS_API_ADMIN_KEY`) → 200 `{"worlds":[]}`
+- D1 `worlds` PK is `world_id TEXT NOT NULL PRIMARY KEY`; schema version is 4
+  (applied 2026-10-05 20:03:10).
 
-The production database holds live rows (12 worlds, 25 API keys, 3 quads, 21
-chunks as of 2026-10-04), so this is a data-affecting migration, not a config
-change. The QA reset runbook (`docs/qa-d1-reset-runbook.md`) is explicitly QA-only
-and must not be run against production.
+The production reset followed the procedure in `docs/prod-d1-reset-runbook.md`.
+This closes the schema gate only: later `main` pipeline runs can still fail on
+unrelated deploy steps, so check the latest `ci` run before assuming a deploy.
 
-Last audited: 2026-10-04
+Last audited: 2026-10-05

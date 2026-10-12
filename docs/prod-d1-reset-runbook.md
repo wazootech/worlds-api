@@ -13,31 +13,48 @@ which is a separate and still-unresolved scope.
 
 Every claim below was verified read-only against live production on **2026-10-04**.
 
+> **Status — procedure completed.** The reset described here was executed on
+> 2026-10-05 and production is now green. Verified read-only against live
+> `data.wazoo.dev`:
+>
+> - `GET /health` → 200 `{"status":"ok"}`
+> - `GET /ready` → 200 `{"status":"ready"}`
+> - `GET /worlds` (no auth) → 401 — bearer-only, fail-closed
+> - `GET /worlds` (bearer `$WORLDS_API_ADMIN_KEY`) → 200 `{"worlds":[]}`
+> - D1 `worlds` PK is now `world_id TEXT NOT NULL PRIMARY KEY`; schema version is 4
+>   (applied 2026-10-05 20:03:10)
+>
+> The pre-flight table in §1 reflects the state that **was** wrong, now resolved.
+
 ---
 
-## 1. What is wrong with production today
+## 1. What was wrong with production (pre-cutover, resolved)
 
-Production is serving an **8-day-old build on a pre-cutover database**. Both halves
-are true and they compound.
+> This section describes the pre-cutover state that justified the reset. The
+> procedure in §2–§6 has been executed; production is now green (see the status
+> banner above).
 
-|                                 | Production today        | Target                                      | Action                                     |
-| ------------------------------- | ----------------------- | ------------------------------------------- | ------------------------------------------ |
-| `worlds` primary key            | `uid`                   | `world_id`                                  | drop and recreate                          |
-| `worlds` legacy columns         | —                       | `uid` / `worlds_api_uid` / `slug` forbidden | recreated clean                            |
-| `api_keys` primary key          | `uid`                   | `uid`                                       | schema already correct, **rows discarded** |
-| data-plane schema marker        | version 2 (v1, v2 rows) | version 4                                   | dropped, re-stamped                        |
-| `https://data.wazoo.dev/health` | 200                     | —                                           | live                                       |
-| `https://data.wazoo.dev/ready`  | **404**                 | 200                                         | route absent on the pre-cutover build      |
+Production was serving an **8-day-old build on a pre-cutover database**. Both halves
+were true and they compounded.
 
-A `404` on `/ready` rather than a `503` is diagnostic: the route does not exist on
-the deployed build at all. Production is not failing closed on a readiness gate —
-it simply predates the gate. That is why deploying the merged code against the
-current database would break silently rather than loudly.
+|                                 | Production (pre-cutover) | Target                                      | Action                                     |
+| ------------------------------- | ------------------------ | ------------------------------------------- | ------------------------------------------ |
+| `worlds` primary key            | `uid`                    | `world_id`                                  | drop and recreate                          |
+| `worlds` legacy columns         | —                        | `uid` / `worlds_api_uid` / `slug` forbidden | recreated clean                            |
+| `api_keys` primary key          | `uid`                    | `uid`                                       | schema already correct, **rows discarded** |
+| data-plane schema marker        | version 2 (v1, v2 rows)  | version 4                                   | dropped, re-stamped                        |
+| `https://data.wazoo.dev/health` | 200                      | —                                           | live                                       |
+| `https://data.wazoo.dev/ready`  | **404**                  | 200                                         | route absent on the pre-cutover build      |
+
+A `404` on `/ready` rather than a `503` was diagnostic: the route did not exist on
+the deployed build at all. Production was not failing closed on a readiness gate —
+it simply predated the gate. That was why deploying the merged code against the
+current database would have broken silently rather than loudly.
 
 Row counts at time of writing: **12 worlds, 3 quads, 21 chunks, 25 api_keys**
 (16 namespace-scoped, 9 world-linked, 0 revoked), 2 schema-marker rows.
 
-**All of this data is approved for discard**, including the 25 `api_keys` rows.
+**All of this data was approved for discard**, including the 25 `api_keys` rows.
 
 ### Why the admin key survives the wipe
 
@@ -184,11 +201,12 @@ world-scoped **and** index-touching; `POST /worlds` alone only creates the
 control-plane row. If reindex returns an error, read its body — it names the
 table and column that failed.
 
-> `$WID` is **server-minted** and looks like `w_<uuidv4>`. World IDs are validated
-> against `/^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/`,
-> so a hand-written UUID is rejected with a `400 ZodError` on `worldId` — a
-> validation error, **not** an auth error. If you see a `400` with `ZodError`,
-> check the ID format before suspecting the reset.
+> `$WID` is **server-minted** and looks like `w_<ULID>` (a `w_` prefix and a
+> lowercase 26-character ULID; minted this way since #118). World IDs are validated
+> against `/^w_[0-7][0-9a-hjkmnp-tv-z]{25}$/` (`WORLD_ID_PATTERN` in
+> `src/lib/schemas.ts`), so a hand-written UUID is rejected with a `400` on
+> `worldId`: a validation error, **not** an auth error. If you see a `400`, check
+> the ID format before suspecting the reset.
 
 Leave the throwaway world in place or delete it with
 `DELETE /worlds/$WID`; either is fine, since all pre-cutover worlds were already
