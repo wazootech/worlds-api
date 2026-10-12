@@ -2,6 +2,7 @@
   "name": "worlds-api",
   "version": "0.1.0",
   "type": "module",
+  "packageManager": "pnpm@12.11.2",
   "private": true,
   "scripts": {
     "dev": "infisical run --env=dev -- node scripts/dev.mjs",
@@ -23,19 +24,20 @@
     "@hono/zod-openapi": "^1.5.1",
     "@langchain/core": "^1.2.3",
     "@rdfjs/types": "^2.0.1",
-    "@wazoo/sparql-engine": "npm:@jsr/wazoo__sparql-engine@^0.4.1",
-    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.8.0",
+    "@std/ulid": "npm:@jsr/std__ulid@^1.0.0",
+    "@wazoo/sparql-engine": "npm:@jsr/wazoo__sparql-engine@^0.4.4",
+    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.10.0",
     "@worlds/sdk": "npm:@jsr/worlds__sdk@^0.9.0",
     "@worlds/sqlite": "npm:@jsr/worlds__sqlite@^0.6.0",
     "hono": "^4.10.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "latest",
+    "@cloudflare/workers-types": "^5.20260718.1",
     "@types/node": "^26.1.1",
     "prettier": "^3.9.5",
     "typescript": "^5.9.2",
     "vitest": "^4.1.10",
-    "wrangler": "latest"
+    "wrangler": "^4.112.0"
   }
 }

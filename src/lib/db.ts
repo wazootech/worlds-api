@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { ulid } from "@std/ulid";
 
 /**
  * Control-plane database helpers over a single Cloudflare D1 binding.
@@ -50,6 +51,11 @@ export async function execute(
     args && args.length > 0 ? db.prepare(sql).bind(...args) : db.prepare(sql);
   const result = await stmt.run();
   return { rowsAffected: result.meta?.changes ?? 0 };
+}
+
+/** Mint a world ID: `w_` + lowercase ULID. */
+export function newWorldId(): string {
+  return `w_${ulid().toLowerCase()}`;
 }
 
 /** Generate a random UUID for primary keys. */

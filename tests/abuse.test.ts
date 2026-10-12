@@ -33,7 +33,7 @@ const READ_ONLY_TOKEN = "test-read-only-token";
 const FULL_TOKEN = "test-full-token";
 
 const worldRef = {
-  worldId: "w_00000000-0000-4000-8000-000000000001",
+  worldId: "w_00000000000000000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -66,6 +66,7 @@ vi.mock("../src/lib/db", () => ({
   queryOne: vi.fn(),
   execute: vi.fn(),
   uid: vi.fn(() => "mock-uid"),
+  newWorldId: vi.fn(() => "w_00000000000000000000000001"),
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
@@ -183,7 +184,7 @@ describe("import caps", () => {
     }));
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({
@@ -201,7 +202,7 @@ describe("import caps", () => {
     const lines = Array.from({ length: 11 }, (_, i) => `chunk ${i}`);
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({
@@ -218,7 +219,7 @@ describe("SPARQL guards", () => {
   it("rejects queries above the length cap before touching the engine", async () => {
     const res = await request(
       FULL_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      "/worlds/w_00000000000000000000000001/sparql",
       {
         method: "POST",
         body: JSON.stringify({
@@ -237,7 +238,7 @@ describe("scope enforcement", () => {
   it("rejects a data:read key on a write route (import) with 403", async () => {
     const res = await request(
       READ_ONLY_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/import",
+      "/worlds/w_00000000000000000000000001/import",
       {
         method: "POST",
         body: JSON.stringify({ data: "x", contentType: "text/plain" }),
@@ -255,12 +256,80 @@ describe("scope enforcement", () => {
   it("allows a data:read key on a read route (sparql)", async () => {
     const res = await request(
       READ_ONLY_TOKEN,
-      "/worlds/w_00000000-0000-4000-8000-000000000001/sparql",
+      "/worlds/w_00000000000000000000000001/sparql",
       {
         method: "POST",
         body: JSON.stringify({ query: "SELECT * WHERE { ?s ?p ?o }" }),
       },
     );
     expect(res.status).toBe(200);
+  });
+});
+
+describe("serialized RDF import (worlds-api#25)", () => {
+  const path = "/worlds/w_00000000000000000000000001/import";
+  const post = (body: Record<string, unknown>) =>
+    request(FULL_TOKEN, path, { method: "POST", body: JSON.stringify(body) });
+  const importMock = async () =>
+    (
+      (await getWorldSdkMock.mock.results[0]?.value) as {
+        import: ReturnType<typeof vi.fn>;
+      }
+    ).import;
+
+  it("imports Turtle when contentType is omitted (the documented default)", async () => {
+    const res = await post({
+      data: '@prefix ex: <http://example.org/> .\nex:a ex:name "A" ; ex:knows ex:b .',
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ imported: { quads: 2, chunks: 0 } });
+    const imported = (await importMock()).mock.calls[0][0];
+    expect(imported.source.kind).toBe("quads");
+    expect(imported.source.quads).toHaveLength(2);
+  });
+
+  it("keeps TriG named graphs", async () => {
+    const res = await post({
+      contentType: "application/trig",
+      data: '<http://example.org/g> { <http://example.org/s> <http://example.org/p> "o" . }',
+    });
+    expect(res.status).toBe(200);
+    const imported = (await importMock()).mock.calls[0][0];
+    expect(imported.source.quads[0].graph.value).toBe("http://example.org/g");
+  });
+
+  it("imports N-Triples, ignoring media-type parameters", async () => {
+    const res = await post({
+      contentType: "application/n-triples; charset=utf-8",
+      data: '<http://example.org/s> <http://example.org/p> "o" .\n',
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ imported: { quads: 1, chunks: 0 } });
+  });
+
+  it("rejects malformed Turtle with 400, not a 500", async () => {
+    const res = await post({ contentType: "text/turtle", data: "ex:a ex:b ." });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: { code?: string } };
+    expect(body.error?.code).toBe("INVALID_ARGUMENT");
+  });
+
+  it("enforces the quad cap on parsed Turtle", async () => {
+    const lines = Array.from(
+      { length: 11 },
+      (_, i) => `<urn:s${i}> <urn:p> <urn:o${i}> .`,
+    ).join("\n");
+    const res = await post({ contentType: "text/turtle", data: lines });
+    expect(res.status).toBe(413);
+  });
+
+  it("rejects JSON-LD, which is not parsed, naming the supported types", async () => {
+    const res = await post({ contentType: "application/ld+json", data: "{}" });
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as {
+      error?: { code?: string; message?: string };
+    };
+    expect(body.error?.code).toBe("UNSUPPORTED_CONTENT_TYPE");
+    expect(body.error?.message).toContain("text/turtle");
   });
 });

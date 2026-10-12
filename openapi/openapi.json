@@ -31,8 +31,8 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-            "description": "Immutable World ID minted by Worlds API as `w_<UUIDv4>`."
+            "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+            "description": "Immutable World ID minted by Worlds API as `w_<ULID>`."
           },
           "displayName": {
             "type": "string",
@@ -195,7 +195,7 @@
           "contentType": {
             "type": "string",
             "default": "text/turtle",
-            "description": "MIME type of the import payload. Supported values: text/turtle, application/n-quads, application/n-triples, application/trig, application/ld+json. Defaults to text/turtle."
+            "description": "MIME type of the import payload. Supported values: text/turtle, application/trig, application/n-triples, application/n-quads, text/n3, application/json (quad rows), text/plain or application/x-ndjson (text chunks). Defaults to text/turtle."
           }
         },
         "required": [
@@ -444,7 +444,7 @@
           "worldId": {
             "type": "string",
             "nullable": true,
-            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
             "description": "World ID the key is scoped to, or null if the key has namespace-wide access."
           },
           "createTime": {
@@ -471,7 +471,7 @@
           },
           "worldId": {
             "type": "string",
-            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
             "description": "Optional world ID to scope the key to a single world. Omit to allow access to all worlds in the namespace."
           },
           "name": {
@@ -511,7 +511,7 @@
           },
           "worldId": {
             "type": "string",
-            "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+            "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
             "description": "World ID the key is scoped to, or absent for namespace-wide keys."
           },
           "scopes": {
@@ -532,6 +532,49 @@
           "namespace",
           "scopes",
           "createTime"
+        ]
+      },
+      "VectorSyncReport": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "attempted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "upserted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedUpserts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "embeddingFailures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "staleDeleteFailures": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "enabled",
+          "attempted",
+          "upserted",
+          "failedUpserts",
+          "embeddingFailures",
+          "staleDeleteFailures",
+          "errors"
         ]
       }
     },
@@ -714,7 +757,7 @@
         ],
         "operationId": "createWorld",
         "summary": "Create world",
-        "description": "Create a new World metadata record in the shared D1 database. Worlds API mints its ID as w_<UUIDv4>; callers cannot choose the ID or a slug.",
+        "description": "Create a new World metadata record in the shared D1 database. Worlds API mints its ID as w_<ULID>; callers cannot choose the ID or a slug.",
         "x-mint": {
           "metadata": {
             "title": "Create world"
@@ -801,11 +844,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -874,11 +917,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -987,11 +1030,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1055,11 +1098,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1160,11 +1203,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1235,11 +1278,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1453,7 +1496,7 @@
         ],
         "operationId": "importWorld",
         "summary": "Import graph data",
-        "description": "Import RDF data into a world. Accepts Turtle, N-Quads, N-Triples, TriG, or JSON-LD payloads. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
+        "description": "Import RDF data into a world. Accepts Turtle (the default), TriG, N-Triples, N-Quads, or N3 payloads; application/json quad rows; or text/plain chunks. Quads are stored in the world's Cloudflare D1 database and indexed for vector search.",
         "x-mint": {
           "metadata": {
             "title": "Import graph data"
@@ -1468,11 +1511,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1553,11 +1596,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           },
@@ -1565,30 +1608,30 @@
             "schema": {
               "type": "string",
               "default": "application/json",
-              "description": "Export format. Supported: application/json (RDF/JSON array), text/turtle (Turtle), application/trig (TriG), application/ld+json (JSON-LD). Defaults to application/json."
+              "description": "Export format. Supported: application/json (quad rows), text/plain (text chunks), application/n-quads, application/n-triples, text/turtle, application/trig, application/ld+json. Defaults to application/json."
             },
             "required": false,
-            "description": "Export format. Supported: application/json (RDF/JSON array), text/turtle (Turtle), application/trig (TriG), application/ld+json (JSON-LD). Defaults to application/json.",
+            "description": "Export format. Supported: application/json (quad rows), text/plain (text chunks), application/n-quads, application/n-triples, text/turtle, application/trig, application/ld+json. Defaults to application/json.",
             "name": "format",
             "in": "query"
           },
           {
             "schema": {
               "type": "string",
-              "description": "Maximum number of quads to return in this page."
+              "description": "Maximum number of quads in this page (a positive integer). Honored by every format. Defaults to 1000 for application/json and text/plain; serialized RDF formats return the whole world when limit is omitted. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies)."
             },
             "required": false,
-            "description": "Maximum number of quads to return in this page.",
+            "description": "Maximum number of quads in this page (a positive integer). Honored by every format. Defaults to 1000 for application/json and text/plain; serialized RDF formats return the whole world when limit is omitted. When more data remains, the response carries an X-Next-Offset header (and nextOffset in JSON bodies).",
             "name": "limit",
             "in": "query"
           },
           {
             "schema": {
               "type": "string",
-              "description": "Pagination offset. Use the nextOffset value from the previous response."
+              "description": "Pagination offset (a non-negative integer). Use the X-Next-Offset header, or nextOffset in JSON bodies, from the previous response."
             },
             "required": false,
-            "description": "Pagination offset. Use the nextOffset value from the previous response.",
+            "description": "Pagination offset (a non-negative integer). Use the X-Next-Offset header, or nextOffset in JSON bodies, from the previous response.",
             "name": "offset",
             "in": "query"
           }
@@ -1689,11 +1732,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -1826,11 +1869,11 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
@@ -2173,7 +2216,7 @@
         ],
         "operationId": "reindexWorld",
         "summary": "Reindex world vector & FTS indexes",
-        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality.",
+        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Use after changing the embedding model or to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it.",
         "x-mint": {
           "metadata": {
             "title": "Reindex world vector & FTS indexes"
@@ -2188,18 +2231,18 @@
           {
             "schema": {
               "type": "string",
-              "pattern": "^w_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
-              "description": "The world-api-minted world ID, a w_ prefix and UUIDv4."
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
             },
             "required": true,
-            "description": "The world-api-minted world ID, a w_ prefix and UUIDv4.",
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
             "name": "worldId",
             "in": "path"
           }
         ],
         "responses": {
           "200": {
-            "description": "Reindex completed successfully",
+            "description": "Reindex ran. status is completed, or completed_with_vector_errors when the vector index could not be fully synced (see vectorSync).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2214,7 +2257,8 @@
                     "status": {
                       "type": "string",
                       "enum": [
-                        "completed"
+                        "completed",
+                        "completed_with_vector_errors"
                       ]
                     },
                     "processedQuadCount": {
@@ -2224,6 +2268,9 @@
                     "chunkRowCount": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "vectorSync": {
+                      "$ref": "#/components/schemas/VectorSyncReport"
                     }
                   },
                   "required": [

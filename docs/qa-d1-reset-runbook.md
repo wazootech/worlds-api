@@ -15,23 +15,23 @@ Commands are copy-pasteable. Run them from the repository root named in each ste
 
 Both QA services are live and healthy, and both correctly refuse to serve:
 
-| Endpoint | `/health` | `/ready` |
-| --- | --- | --- |
-| `https://data-qa.wazoo.dev` | 200 | **503** |
-| `https://api-qa.wazoo.dev` | 200 | **503** |
+| Endpoint                    | `/health` | `/ready` |
+| --------------------------- | --------- | -------- |
+| `https://data-qa.wazoo.dev` | 200       | **503**  |
+| `https://api-qa.wazoo.dev`  | 200       | **503**  |
 
 This is not a deployment failure. The code is correct; the **databases are
 pre-cutover**. The readiness gates are naming the exact condition.
 
 Observed QA state, read-only:
 
-| | `worlds-api-qa` (data plane) | `wazoo-api-qa` (control plane) |
-| --- | --- | --- |
-| `worlds` primary key | `uid` | `uid` |
-| `worlds` has `world_id` | no | yes, but not the key |
-| `worlds` has `worlds_api_uid` | no | **yes** |
-| `worlds` has `slug` | no | **yes** |
-| rows | 95 worlds, 36 quads, 172 chunks, 167 api_keys | 96 users, 81 worlds, 5 usage_events, 27 tokens |
+|                               | `worlds-api-qa` (data plane)                  | `wazoo-api-qa` (control plane)                 |
+| ----------------------------- | --------------------------------------------- | ---------------------------------------------- |
+| `worlds` primary key          | `uid`                                         | `uid`                                          |
+| `worlds` has `world_id`       | no                                            | yes, but not the key                           |
+| `worlds` has `worlds_api_uid` | no                                            | **yes**                                        |
+| `worlds` has `slug`           | no                                            | **yes**                                        |
+| rows                          | 95 worlds, 36 quads, 172 chunks, 167 api_keys | 96 users, 81 worlds, 5 usage_events, 27 tokens |
 
 `wazoo-api-qa` is worse than the campaign record assumed: it carries **both**
 `worlds_api_uid` and `slug`, which are exactly the columns
@@ -52,14 +52,14 @@ flag that only latches on success, and `/ready` fails closed if the DDL throws.
 > **Operational consequence:** you do **not** apply control-plane DDL by hand.
 > **You must drop `worlds` and `api_keys` too.** This is the step most likely to be
 > got wrong, and it was wrong in the first draft of this runbook. `CREATE TABLE IF
-> NOT EXISTS` is a **no-op against a table that already exists**, so a pre-cutover
+NOT EXISTS` is a **no-op against a table that already exists**, so a pre-cutover
 > `worlds` table is never repaired — the service creates the canonical schema only
-> when the table is *absent*, and asserts forever when it is present-but-wrong.
+> when the table is _absent_, and asserts forever when it is present-but-wrong.
 >
 > Observed on 2026-09-29 while executing this runbook: after dropping only the
 > data-plane tables, `/ready` kept returning 503 with
 > `missing columns: world_id; legacy columns present: uid; expected primary key
-> world_id, found uid`. Dropping `worlds` and `api_keys` fixed it immediately.
+world_id, found uid`. Dropping `worlds` and `api_keys` fixed it immediately.
 >
 > `schema.sql` does not exist in this repo and must not be reintroduced
 > (it was deleted in merged #93 — [worlds-api#88](https://github.com/wazootech/worlds-api/issues/88)).
@@ -119,23 +119,23 @@ window. No traffic coordination is required.
 Run from `workspaces/wazootech/repos/worlds-api`:
 
 ```bash
-npx wrangler d1 execute worlds-api-qa --remote --env qa \
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa \
   --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name" --json
 
-npx wrangler d1 execute worlds-api-qa --remote --env qa \
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa \
   --command "PRAGMA table_info('worlds')" --json
 
-npx wrangler d1 execute worlds-api-qa --remote --env qa \
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa \
   --command "SELECT * FROM worlds_data_plane_schema" --json
 ```
 
 Run from `workspaces/wazootech/repos/wazoo-api`:
 
 ```bash
-npx wrangler d1 execute wazoo-api-qa --remote --env qa \
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa \
   --command "PRAGMA table_info('worlds')" --json
 
-npx wrangler d1 execute wazoo-api-qa --remote --env qa \
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa \
   --command "SELECT (SELECT COUNT(*) FROM users) AS users, (SELECT COUNT(*) FROM worlds) AS worlds, (SELECT COUNT(*) FROM usage_events) AS usage_events, (SELECT COUNT(*) FROM platform_api_tokens) AS tokens" --json
 ```
 
@@ -155,7 +155,7 @@ along with it.
 
 ```bash
 cd workspaces/wazootech/repos/worlds-api
-npx wrangler d1 execute worlds-api-qa --remote --env qa --command \
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa --command \
   "DROP TABLE IF EXISTS chunks_fts;
    DROP TRIGGER IF EXISTS chunks_ai;
    DROP TRIGGER IF EXISTS chunks_ad;
@@ -170,7 +170,7 @@ service.
 
 ```bash
 cd workspaces/wazootech/repos/worlds-api
-npx wrangler d1 execute worlds-api-qa --remote --env qa --command \
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa --command \
   "DROP TABLE IF EXISTS api_keys;
    DROP TABLE IF EXISTS worlds;"
 ```
@@ -185,7 +185,7 @@ take effect.
 curl -s -o /dev/null -w "%{http_code}\n" https://data-qa.wazoo.dev/ready
 ```
 
-This one request initializes the control plane *and*, on the first world-scoped
+This one request initializes the control plane _and_, on the first world-scoped
 call, the data plane. If it returns **503**, the error body names the table and
 column that failed — read it before continuing.
 
@@ -206,7 +206,7 @@ children first:
 
 ```bash
 cd workspaces/wazootech/repos/wazoo-api
-npx wrangler d1 execute wazoo-api-qa --remote --env qa --command \
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --command \
   "DROP TABLE IF EXISTS usage_events;
    DROP TABLE IF EXISTS world_limits;
    DROP TABLE IF EXISTS worlds;
@@ -227,14 +227,14 @@ rows.)
 
 ```bash
 cd workspaces/wazootech/repos/wazoo-api
-npx wrangler d1 execute wazoo-api-qa --remote --env qa --file schema.sql
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --file schema.sql
 ```
 
 ### Step 5 — apply the unique index (required, not optional)
 
 ```bash
 cd workspaces/wazootech/repos/wazoo-api
-npx wrangler d1 execute wazoo-api-qa --remote --env qa --file migrations/2026-09-29-world-id-global-unique.sql
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --file migrations/2026-09-29-world-id-global-unique.sql
 ```
 
 `/ready` **does not assert indexes** — it checks columns, primary keys, foreign keys
@@ -270,12 +270,12 @@ Then confirm the shapes are genuinely canonical, not merely gate-passing:
 
 ```bash
 cd workspaces/wazootech/repos/worlds-api
-npx wrangler d1 execute worlds-api-qa --remote --env qa --command "PRAGMA table_info('worlds')" --json
-npx wrangler d1 execute worlds-api-qa --remote --env qa --command "SELECT * FROM worlds_data_plane_schema" --json
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa --command "PRAGMA table_info('worlds')" --json
+pnpm exec wrangler d1 execute worlds-api-qa --remote --env qa --command "SELECT * FROM worlds_data_plane_schema" --json
 
 cd ../../wazoo-api
-npx wrangler d1 execute wazoo-api-qa --remote --env qa --command "PRAGMA table_info('worlds')" --json
-npx wrangler d1 execute wazoo-api-qa --remote --env qa --command "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='worlds'" --json
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --command "PRAGMA table_info('worlds')" --json
+pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --command "SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='worlds'" --json
 ```
 
 Expect: `worlds` PK is `world_id` with no `uid`/`worlds_api_uid`/`slug`; data-plane
@@ -285,16 +285,16 @@ version is **4**; `idx_worlds_world_id` present.
 
 Destroyed, and **not** recoverable — this is a hard cut, approved for this campaign:
 
-| Database | Lost |
-| --- | --- |
-| `worlds-api-qa` | 95 world rows, 167 API keys, 36 quads, 172 chunks |
-| `wazoo-api-qa` | 96 users, 81 worlds, 27 platform tokens, 5 usage events |
+| Database        | Lost                                                    |
+| --------------- | ------------------------------------------------------- |
+| `worlds-api-qa` | 95 world rows, 167 API keys, 36 quads, 172 chunks       |
+| `wazoo-api-qa`  | 96 users, 81 worlds, 27 platform tokens, 5 usage events |
 
 **Data-plane rows are not orphaned — they are deleted.** The single-D1 model means
 `quads`/`chunks` live in the same database, shared across all worlds and scoped by a
 `world_id` column. There are no per-world databases, and no separate data-plane
-instance to clean. Confirmed in `src/lib/purge.ts`: *"there's no external database to
-destroy."*
+instance to clean. Confirmed in `src/lib/purge.ts`: _"there's no external database to
+destroy."_
 
 ### Restoring access
 
@@ -304,7 +304,7 @@ survive a database reset**, so neither requires the data being destroyed:
 
 **`worlds-api`** — `WORLDS_API_ADMIN_KEY` is published to the QA Worker by the
 Cloudflare Workers Secret Sync and shows up in
-`npx wrangler secret list --env qa`. `src/lib/auth.ts:60` accepts it as
+`pnpm exec wrangler secret list --env qa`. `src/lib/auth.ts:60` accepts it as
 `{ admin: true }`, bypassing `api_keys` entirely. Re-seed data-plane API keys with
 `POST /v1/api-keys` using that key.
 
@@ -320,7 +320,7 @@ CLOUDFLARE_D1_DATABASE=wazoo-api-qa \
 
 > **Note on `--env qa`:** that script builds its own `wrangler d1 execute` invocation
 > **without** `--env qa`, so a bare database name resolves against the top-level
-> `[[d1_databases]]` binding. Its intended home is *inside* the OIDC-enabled CI job
+> `[[d1_databases]]` binding. Its intended home is _inside_ the OIDC-enabled CI job
 > (see below), where `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are already
 > exported; the hazard is running it from a laptop with a production-capable token
 > present. If you do run it locally, verify the generated command or seed the row by
@@ -355,7 +355,7 @@ Two caveats:
 > **Check before you reset:** confirm the Infisical `qa` value of
 > `WAZOO_PLATFORM_ADMIN_TOKEN` is identical to the value on the QA Worker secret.
 > They must match for the smoke gate to authenticate after the re-seed. If they
-> differ, decide which is authoritative and align them *first* — after a reset there
+> differ, decide which is authoritative and align them _first_ — after a reset there
 > is no data to fall back on.
 
 ## 8. Rollback position

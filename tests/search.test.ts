@@ -22,7 +22,7 @@ const executionCtx = {
 } as unknown as ExecutionContext;
 
 const worldRef = {
-  worldId: "w_00000000-0000-4000-8000-000000000001",
+  worldId: "w_00000000000000000000000001",
   namespace: "ns",
   embeddingModel: "use",
   chunkSize: 1000,
@@ -37,7 +37,7 @@ function request(
   overrides?: { db?: unknown; authHeader?: string },
 ) {
   return app.request(
-    "/worlds/w_00000000-0000-4000-8000-000000000001/search",
+    "/worlds/w_00000000000000000000000001/search",
     {
       method: "POST",
       headers: {
@@ -80,7 +80,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
 
   it("rejects request without authorization token", async () => {
     const res = await app.request(
-      "/worlds/w_00000000-0000-4000-8000-000000000001/search",
+      "/worlds/w_00000000000000000000000001/search",
       {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -321,7 +321,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
       "%result%",
       "%result%",
       "%result%",
-      "w_00000000-0000-4000-8000-000000000001",
+      "w_00000000000000000000000001",
       1,
     );
   });
