@@ -31,7 +31,7 @@ worlds-api consumes it.
 | `WORLDS_API_ADMIN_KEY` | dev, qa, prod | via sync    | via sync  | injected    | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | qa, prod | not consumed | not consumed | n/a | Present in the vault for sibling services; worlds-api does not read it.   |
 
-| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **not yet provisioned** | injected (optional) | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Optional binding: when absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
+| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | injected (optional) | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Optional binding: when absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
 | `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | Optional next KEK. Writes use the highest configured version. |
 
 Only `WORLDS_API_ADMIN_KEY` and the optional `EMBEDDING_KEK_V<n>` secrets are

@@ -57,6 +57,13 @@ index_name = "worlds-api-qa-v1-metadata"
 
 [env.qa.vars]
 WAZOO_ENV = "qa"
+# worlds-api#1 hybrid-search enable gate (QA only). Merge only after
+# EMBEDDING_KEK_V1 exists as a QA Worker secret (Infisical sync) and a capped
+# QA provider key is available for the canary namespace. Absent a KEK this is
+# inert: credential routes return 503 and every world stays keyword-only.
+# Unsetting this line is the kill switch — no data changes. See
+# docs/byok-embeddings-design.md §6 and secret-registry.md.
+EMBEDDING_PROVIDER = "byok"
 
 [observability]
 enabled = true
