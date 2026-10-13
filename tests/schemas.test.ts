@@ -23,7 +23,7 @@ describe("CreateWorldRequestSchema", () => {
   it("accepts with all optional fields", () => {
     const result = CreateWorldRequestSchema.safeParse({
       displayName: "My World",
-      embeddingModel: "tfjs-universal-sentence-encoder",
+      embeddingModel: "openai/text-embedding-3-small",
       chunkSize: 1000,
       topK: 20,
       minScore: 0.0,
@@ -344,6 +344,7 @@ describe("WorldResourceSchema", () => {
       state: "active",
       storage: "d1",
       embeddingModel: "tfjs-universal-sentence-encoder",
+      embeddingStatus: "unconfigured",
       chunkSize: 1000,
       topK: 20,
       minScore: 0.0,
@@ -360,6 +361,7 @@ describe("WorldResourceSchema", () => {
       state: "deleted",
       storage: "d1",
       embeddingModel: "tfjs-universal-sentence-encoder",
+      embeddingStatus: "unconfigured",
       chunkSize: 1000,
       topK: 20,
       minScore: 0.0,
@@ -378,6 +380,7 @@ describe("WorldResourceSchema", () => {
       state: "active",
       storage: "invalid-storage",
       embeddingModel: "tfjs-universal-sentence-encoder",
+      embeddingStatus: "unconfigured",
       chunkSize: 1000,
       topK: 20,
       minScore: 0.0,

@@ -2,6 +2,9 @@ import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
 import type { WorldsSdkInterface } from "@worlds/sdk";
 import type { Env } from "../env";
 import { queryOne } from "./db";
+import { EMBEDDING_DIMENSIONS } from "./embeddings/catalog";
+import { resolveEmbeddingService } from "./embeddings/service";
+import { KEY_CACHE_TTL_MS } from "./embeddings/store";
 
 /**
  * Per-world database reference. With the single-D1 model, there's no separate
@@ -32,12 +35,17 @@ type WorldMetadataRow = {
  * max(limit, world.topK)), so worlds configured differently or queried with
  * different limits may hold several SDK instances.
  */
-const sdkCache = new Map<string, WorldsSdkInterface>();
+type CachedSdk = { sdk: WorldsSdkInterface; expires?: number };
+const sdkCache = new Map<string, CachedSdk>();
 
-function sdkCacheKey(worldId: string, candidateCount?: number): string {
-  return candidateCount === undefined
-    ? worldId
-    : `${worldId}:${candidateCount}`;
+function sdkCacheKey(
+  worldId: string,
+  candidateCount?: number,
+  forReindex?: boolean,
+): string {
+  const base =
+    candidateCount === undefined ? worldId : `${worldId}:${candidateCount}`;
+  return forReindex ? `${base}:reindex` : base;
 }
 
 /**
@@ -82,32 +90,64 @@ export async function getWorldSdk(
   env: Env,
   ref: WorldDatabaseRef,
   candidateCount?: number,
+  options: {
+    forReindex?: boolean;
+    /**
+     * Restricts the SDK to these subjects (windowed reindex). A windowed SDK
+     * is built per call and never cached.
+     */
+    includeSubjects?: string[];
+    /** Per-call embed guard override for a windowed reindex. */
+    maxUnits?: number;
+  } = {},
 ): Promise<WorldsSdkInterface> {
-  const key = sdkCacheKey(ref.worldId, candidateCount);
-  const cached = sdkCache.get(key);
-  if (cached) return cached;
-
-  // Phase C (worlds-api#1): thread the Vectorize binding so the engine can
-  // fuse keyword + vector rankings. Embeddings remain unconfigured until the
-  // BYOK embedding-key API lands — the engine degrades to keyword-only
-  // gracefully without an embeddingService. An explicitly configured provider
-  // that isn't implemented yet must fail loudly rather than silently regress
-  // to keyword-only.
-  if (env.EMBEDDING_PROVIDER) {
-    throw new Error(
-      "EMBEDDING_PROVIDER is set but no embedding provider is implemented yet " +
-        "(worlds-api#1 BYOK is charted, not built); remove the var to stay keyword-only",
-    );
+  const windowed = options.includeSubjects !== undefined;
+  const key = sdkCacheKey(ref.worldId, candidateCount, options.forReindex);
+  if (!windowed) {
+    const cached = sdkCache.get(key);
+    if (
+      cached &&
+      (cached.expires === undefined || cached.expires > Date.now())
+    ) {
+      return cached.sdk;
+    }
+    sdkCache.delete(key);
   }
+
+  // BYOK embeddings (worlds-api#1). resolveEmbeddingService fails closed and
+  // never throws: without the switch, a KEK, an active credential, an
+  // allowlisted model, and a ready (non-stale) world it returns undefined and
+  // the engine runs keyword-only. Searches with candidateCount are "query"
+  // operations for the spend guard; imports and reindex are "index".
+  const embeddingService = await resolveEmbeddingService(env, ref, {
+    operation: candidateCount !== undefined ? "query" : "index",
+    forReindex: options.forReindex,
+    maxUnits: options.maxUnits,
+  });
 
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
     worldId: ref.worldId,
+    ...(windowed && { include: { subjects: options.includeSubjects } }),
     ...(candidateCount !== undefined && { candidateCount }),
     ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),
+    ...(embeddingService && {
+      embeddingService,
+      vectorDimensions: EMBEDDING_DIMENSIONS,
+    }),
   });
 
-  sdkCache.set(key, sdk);
+  // Under BYOK an SDK reflects credential/state resolved at build time (an
+  // embedder, or its absence), so its cache lifetime is bounded to keep
+  // revocation, staleness, and newly-ready worlds effective across isolates
+  // (design 2.2: <= 60 s). Without BYOK entries live for the isolate.
+  if (windowed) return sdk;
+  sdkCache.set(key, {
+    sdk,
+    ...(env.EMBEDDING_PROVIDER === "byok" && {
+      expires: Date.now() + KEY_CACHE_TTL_MS,
+    }),
+  });
   return sdk;
 }
 

@@ -1,7 +1,12 @@
 # Design: hybrid search in production via customer BYOK embeddings
 
 Design for [wazootech/worlds-api#1](https://github.com/wazootech/worlds-api/issues/1).
-**Status: proposal, awaiting decisions in section 8. No code in this PR.**
+**Status: accepted (D1-D7, D9, D10); v1 implemented behind `EMBEDDING_PROVIDER=byok`
+(off by default). Deviations from this document are listed in the implementing
+PR: the credential routes use scope `embeddings:admin`; embedding state lives in
+the new `world_embedding_state` table and budgets in `embedding_usage` (no
+columns were added to `worlds`, so no ALTER or reset is needed); imports degrade
+to keyword-only on budget exhaustion rather than failing with 429.**
 
 Facts below were read from `main` at `9e82799` (worlds-api),
 `wazootech/worlds-cloudflare`, and `wazootech/wazoo-api` on 2026-10-12. Anything

@@ -4,6 +4,8 @@ import { sha256Hex } from "./crypto";
 
 export const SCOPE_DATA_READ = "data:read";
 export const SCOPE_DATA_WRITE = "data:write";
+/** Manage the namespace embedding credential. Never in the default grant. */
+export const SCOPE_EMBEDDINGS_ADMIN = "embeddings:admin";
 
 export type AuthResult = {
   admin: boolean;

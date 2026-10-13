@@ -27,6 +27,28 @@ const schema = {
     { name: "create_time", pk: 0 },
     { name: "revoked_at", pk: 0 },
   ],
+  embedding_credentials: [
+    { name: "credential_id", pk: 1 },
+    { name: "namespace", pk: 0 },
+    { name: "provider", pk: 0 },
+    { name: "ciphertext", pk: 0 },
+    { name: "iv", pk: 0 },
+    { name: "kek_version", pk: 0 },
+    { name: "fingerprint", pk: 0 },
+    { name: "last4", pk: 0 },
+    { name: "status", pk: 0 },
+    { name: "consecutive_auth_failures", pk: 0 },
+    { name: "create_time", pk: 0 },
+    { name: "rotate_time", pk: 0 },
+    { name: "revoke_time", pk: 0 },
+  ],
+  world_embedding_state: [
+    { name: "world_id", pk: 1 },
+    { name: "state", pk: 0 },
+    { name: "model", pk: 0 },
+    { name: "update_time", pk: 0 },
+    { name: "reindex_cursor", pk: 0 },
+  ],
 };
 
 function makeDb(

@@ -17,6 +17,7 @@ import { registerImportExportRoutes } from "./routes/import-export";
 import { registerSearchRoutes } from "./routes/search";
 import { registerSparqlRoutes } from "./routes/sparql";
 import { registerApiKeysRoutes } from "./routes/api-keys";
+import { registerEmbeddingRoutes } from "./routes/embeddings";
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
 
@@ -147,6 +148,7 @@ registerSearchRoutes(app);
 registerSparqlRoutes(app);
 registerApiKeysRoutes(app);
 registerReindexRoutes(app);
+registerEmbeddingRoutes(app);
 
 /**
  * openApiDocOptions is the OpenAPI document configuration. It is the single

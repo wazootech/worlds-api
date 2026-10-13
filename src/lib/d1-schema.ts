@@ -37,6 +37,48 @@ export const CONTROL_PLANE_DDL = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash) WHERE revoked_at IS NULL`,
   `CREATE INDEX IF NOT EXISTS idx_api_keys_namespace ON api_keys(namespace) WHERE revoked_at IS NULL`,
+  // BYOK embeddings (worlds-api#1). New tables only, so the existing
+  // CREATE TABLE IF NOT EXISTS mechanism applies them with no reset or ALTER.
+  // One credential per (namespace, provider). ciphertext/iv are NULL once
+  // revoked. kek_version selects which EMBEDDING_KEK_V<n> secret opens it.
+  `CREATE TABLE IF NOT EXISTS embedding_credentials (
+    credential_id TEXT NOT NULL PRIMARY KEY,
+    namespace TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    ciphertext TEXT,
+    iv TEXT,
+    kek_version INTEGER NOT NULL,
+    fingerprint TEXT NOT NULL,
+    last4 TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active',
+    consecutive_auth_failures INTEGER NOT NULL DEFAULT 0,
+    create_time TEXT NOT NULL,
+    rotate_time TEXT,
+    revoke_time TEXT
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_embedding_credentials_ns_provider ON embedding_credentials(namespace, provider)`,
+  // Per-world index state: which model the world's vectors were built with and
+  // whether they are usable. A missing row means "never indexed" (stale).
+  // reindex_cursor is the last subject a windowed reindex finished; NULL when
+  // no multi-call reindex pass is in progress.
+  `CREATE TABLE IF NOT EXISTS world_embedding_state (
+    world_id TEXT NOT NULL PRIMARY KEY,
+    state TEXT NOT NULL,
+    model TEXT NOT NULL,
+    update_time TEXT NOT NULL,
+    reindex_cursor TEXT
+  )`,
+  // Daily per-namespace spend counters (texts embedded), reserved atomically
+  // before the provider is called.
+  `CREATE TABLE IF NOT EXISTS embedding_usage (
+    namespace TEXT NOT NULL,
+    day TEXT NOT NULL,
+    units INTEGER NOT NULL DEFAULT 0,
+    index_units INTEGER NOT NULL DEFAULT 0,
+    query_units INTEGER NOT NULL DEFAULT 0,
+    update_time TEXT NOT NULL,
+    PRIMARY KEY (namespace, day)
+  )`,
 ] as const;
 
 const REQUIRED_COLUMNS = {
@@ -66,16 +108,42 @@ const REQUIRED_COLUMNS = {
     "create_time",
     "revoked_at",
   ],
+  embedding_credentials: [
+    "credential_id",
+    "namespace",
+    "provider",
+    "ciphertext",
+    "iv",
+    "kek_version",
+    "fingerprint",
+    "last4",
+    "status",
+    "consecutive_auth_failures",
+    "create_time",
+    "rotate_time",
+    "revoke_time",
+  ],
+  world_embedding_state: [
+    "world_id",
+    "state",
+    "model",
+    "update_time",
+    "reindex_cursor",
+  ],
 } as const;
 
 const REQUIRED_PRIMARY_KEYS = {
   worlds: "world_id",
   api_keys: "uid",
+  embedding_credentials: "credential_id",
+  world_embedding_state: "world_id",
 } as const;
 
 const FORBIDDEN_COLUMNS = {
   worlds: ["uid", "worlds_api_uid", "slug"],
   api_keys: ["world_uid"],
+  embedding_credentials: [],
+  world_embedding_state: [],
 } as const;
 
 /** Initializes the control-plane schema and fails visibly if D1 rejects DDL. */

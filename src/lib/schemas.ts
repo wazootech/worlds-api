@@ -1,4 +1,9 @@
 import { z } from "@hono/zod-openapi";
+import {
+  EMBEDDING_MODEL_IDS,
+  EMBEDDING_PROVIDER_IDS,
+  EMBEDDING_STATUSES,
+} from "./embeddings/catalog";
 
 /** `w_` + lowercase Crockford base32 ULID; the first char caps the 48-bit time. */
 export const WORLD_ID_PATTERN = /^w_[0-7][0-9a-hjkmnp-tv-z]{25}$/;
@@ -36,7 +41,11 @@ export const WorldResourceSchema = z
     }),
     embeddingModel: z.string().openapi({
       description:
-        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small.",
+        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only.",
+    }),
+    embeddingStatus: z.enum(EMBEDDING_STATUSES).openapi({
+      description:
+        "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current.",
     }),
     chunkSize: z.number().int().openapi({
       description:
@@ -72,9 +81,9 @@ export const CreateWorldRequestSchema = z
     displayName: z.string().optional().openapi({
       description: "User-facing display name for the new world.",
     }),
-    embeddingModel: z.string().optional().openapi({
+    embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "Embedding model to use for vector search. Defaults to the platform default.",
+        "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), and legacy openai/text-embedding-ada-002. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description:
@@ -96,9 +105,9 @@ export const UpdateWorldRequestSchema = z
     displayName: z.string().min(1).optional().openapi({
       description: "New display name for the world.",
     }),
-    embeddingModel: z.string().optional().openapi({
+    embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "New embedding model. Changing this triggers a reindex of existing data.",
+        "New embedding model, as provider/model. Requires an active embedding credential for the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description: "New chunk size for vector search indexing.",
@@ -308,11 +317,11 @@ export const ApiKeyCreateRequestSchema = z
         "Human-readable label for the key. Helps identify keys in the list.",
     }),
     scopes: z
-      .array(z.enum(["data:read", "data:write"]))
+      .array(z.enum(["data:read", "data:write", "embeddings:admin"]))
       .optional()
       .openapi({
         description:
-          'Optional scope grant. Defaults to ["data:read", "data:write"]. Use ["data:read"] for read-only keys.',
+          'Optional scope grant. Defaults to ["data:read", "data:write"]. Use ["data:read"] for read-only keys. embeddings:admin grants management of the namespace embedding credential and is never part of the default grant.',
       }),
   })
   .openapi("ApiKeyCreateRequest");
@@ -423,3 +432,40 @@ export const apiKeysListQuery = z.object({
 });
 
 export const worldsListQuery = z.object({});
+
+export const EmbeddingCredentialRequestSchema = z
+  .object({
+    provider: z.enum(EMBEDDING_PROVIDER_IDS).openapi({
+      description: "Embedding provider the key belongs to.",
+    }),
+    apiKey: z.string().max(512).openapi({
+      description:
+        "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed.",
+    }),
+  })
+  .openapi("EmbeddingCredentialRequest");
+
+export const EmbeddingCredentialSchema = z
+  .object({
+    provider: z.enum(EMBEDDING_PROVIDER_IDS).openapi({
+      description: "Embedding provider.",
+    }),
+    status: z.enum(["active", "invalid", "revoked"]).openapi({
+      description:
+        "active: usable. invalid: the provider rejected the key repeatedly; rotate it. revoked: deleted; worlds fall back to keyword-only search.",
+    }),
+    fingerprint: z.string().openapi({
+      description: "First 8 hex characters of the key's SHA-256, for support.",
+    }),
+    last4: z.string().openapi({
+      description: "Last four characters of the key.",
+    }),
+    createTime: z.string().openapi({ description: "ISO 8601 creation time." }),
+    rotateTime: z.string().optional().openapi({
+      description: "ISO 8601 time of the most recent rotation.",
+    }),
+    revokeTime: z.string().optional().openapi({
+      description: "ISO 8601 time the credential was revoked.",
+    }),
+  })
+  .openapi("EmbeddingCredential");
