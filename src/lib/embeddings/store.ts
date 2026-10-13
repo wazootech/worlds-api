@@ -14,6 +14,7 @@ import {
   sealKey,
 } from "./envelope";
 import { describeError } from "./errors";
+import { markNamespaceStale } from "./vectors";
 
 export type CredentialStatus = "active" | "invalid" | "revoked";
 
@@ -36,7 +37,15 @@ export type CredentialRow = {
 /** Consecutive provider 401/403 results before a credential is marked invalid. */
 export const AUTH_FAILURE_THRESHOLD = 3;
 
+/**
+ * Two independent daily pools per namespace (UTC day). The write pool pays for
+ * import and reindex; the query pool pays for search-time query embeds. They
+ * are separate so read traffic (any data:read world token can search) can
+ * never exhaust the pool that import and reindex depend on. Worst-case daily
+ * spend is the sum of both pools.
+ */
 export const DEFAULT_DAILY_BUDGET = 20_000;
+export const DEFAULT_DAILY_QUERY_BUDGET = 5_000;
 export const DEFAULT_REINDEX_MAX_CHUNKS = 5_000;
 
 function positiveInt(value: string | undefined, fallback: number): number {
@@ -44,8 +53,21 @@ function positiveInt(value: string | undefined, fallback: number): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+/** Write pool: texts embedded by import and reindex per namespace per day. */
 export function dailyBudget(env: Env): number {
   return positiveInt(env.EMBEDDING_DAILY_BUDGET, DEFAULT_DAILY_BUDGET);
+}
+
+/** Query pool: search-time query embeds per namespace per day. */
+export function dailyQueryBudget(env: Env): number {
+  return positiveInt(
+    env.EMBEDDING_DAILY_QUERY_BUDGET,
+    DEFAULT_DAILY_QUERY_BUDGET,
+  );
+}
+
+function poolLimit(env: Env, operation: EmbeddingOperation): number {
+  return operation === "query" ? dailyQueryBudget(env) : dailyBudget(env);
 }
 
 export function reindexMaxChunks(env: Env): number {
@@ -89,18 +111,21 @@ export async function setCredential(
   if (!kek) return { ok: false, reason: "kek_unavailable" };
 
   const db = getDb(env);
-  const existing = await getCredential(env, namespace, provider);
-  const credentialId = existing?.credential_id ?? uid();
-  const sealed = await sealKey(
-    kek,
-    apiKey,
-    credentialAad(namespace, credentialId, provider),
-  );
   const fingerprint = (await sha256Hex(apiKey)).slice(0, 8);
   const last4 = apiKey.slice(-4);
-  const ts = now();
 
-  if (existing) {
+  // The AAD binds the credential_id, so the sealed value must be produced for
+  // the id of the row that ends up holding it. Rotation (UPDATE) keeps the
+  // id; a first write (INSERT) mints one. Two concurrent first PUTs both see
+  // no row; the loser's INSERT hits the unique (namespace, provider) index and
+  // falls back to rotating the winner's row, so the result is deterministic
+  // (last writer wins) instead of a 500.
+  async function rotate(existing: CredentialRow): Promise<void> {
+    const sealed = await sealKey(
+      kek!,
+      apiKey,
+      credentialAad(namespace, existing.credential_id, provider),
+    );
     await execute(
       db,
       `UPDATE embedding_credentials
@@ -111,32 +136,49 @@ export async function setCredential(
       [
         sealed.ciphertext,
         sealed.iv,
-        kek.version,
+        kek!.version,
         fingerprint,
         last4,
-        ts,
-        credentialId,
+        now(),
+        existing.credential_id,
       ],
     );
+  }
+
+  const existing = await getCredential(env, namespace, provider);
+  if (existing) {
+    await rotate(existing);
   } else {
-    await execute(
-      db,
-      `INSERT INTO embedding_credentials
-         (credential_id, namespace, provider, ciphertext, iv, kek_version,
-          fingerprint, last4, status, consecutive_auth_failures, create_time)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?)`,
-      [
-        credentialId,
-        namespace,
-        provider,
-        sealed.ciphertext,
-        sealed.iv,
-        kek.version,
-        fingerprint,
-        last4,
-        ts,
-      ],
+    const credentialId = uid();
+    const sealed = await sealKey(
+      kek,
+      apiKey,
+      credentialAad(namespace, credentialId, provider),
     );
+    try {
+      await execute(
+        db,
+        `INSERT INTO embedding_credentials
+           (credential_id, namespace, provider, ciphertext, iv, kek_version,
+            fingerprint, last4, status, consecutive_auth_failures, create_time)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?)`,
+        [
+          credentialId,
+          namespace,
+          provider,
+          sealed.ciphertext,
+          sealed.iv,
+          kek.version,
+          fingerprint,
+          last4,
+          now(),
+        ],
+      );
+    } catch (error) {
+      const winner = await getCredential(env, namespace, provider);
+      if (!winner) throw error;
+      await rotate(winner);
+    }
   }
   invalidateKeyCache(namespace);
   const row = await getCredential(env, namespace, provider);
@@ -156,6 +198,11 @@ export async function revokeCredential(
      WHERE namespace = ? AND provider = ? AND status != 'revoked'`,
     [now(), namespace, provider],
   );
+  // Without a credential nothing keeps vectors in step with the data, so every
+  // world of the namespace goes stale: a later PUT of a key must not make
+  // vectors built before the revoke (and before any deletes made while there
+  // was no embedder) live again. Reindex repairs it.
+  await markNamespaceStale(env, namespace);
   invalidateKeyCache(namespace);
   return result.rowsAffected;
 }
@@ -172,6 +219,7 @@ export async function revokeNamespaceCredentials(
      WHERE namespace = ? AND status != 'revoked'`,
     [now(), namespace],
   );
+  await markNamespaceStale(env, namespace);
   invalidateKeyCache(namespace);
   return result.rowsAffected;
 }
@@ -283,12 +331,18 @@ async function rewrapIfStale(
     );
     await execute(
       getDb(env),
-      "UPDATE embedding_credentials SET ciphertext = ?, iv = ?, kek_version = ? WHERE credential_id = ? AND kek_version = ?",
+      // Compare-and-swap on the exact ciphertext that was read, and only while
+      // active: a concurrent rotation (new ciphertext, same kek_version) or
+      // revoke (ciphertext erased) must win over this background rewrap.
+      `UPDATE embedding_credentials SET ciphertext = ?, iv = ?, kek_version = ?
+        WHERE credential_id = ? AND ciphertext = ? AND iv = ? AND kek_version = ? AND status = 'active'`,
       [
         sealed.ciphertext,
         sealed.iv,
         kek.version,
         row.credential_id,
+        row.ciphertext,
+        row.iv,
         row.kek_version,
       ],
     );
@@ -308,9 +362,17 @@ function utcDay(date = new Date()): string {
 }
 
 /**
- * Atomically reserves `units` embeddings for a namespace today. Returns false
- * (and reserves nothing) when it would exceed the daily budget. Must be called
- * before the provider is contacted; spend is not refunded on provider failure.
+ * Atomically reserves `units` embeddings from the operation's pool for a
+ * namespace today. Returns false (and reserves nothing) when it would exceed
+ * that pool's daily limit. Must be called before the provider is contacted;
+ * spend is not refunded on provider failure, and every provider retry is a new
+ * reservation.
+ *
+ * One conditional upsert is the whole guard. Success is decided by RETURNING
+ * (a row comes back only when the insert or the DO UPDATE branch actually ran)
+ * rather than by `meta.changes`, so it does not depend on how D1 counts
+ * changes for a conditional upsert whose WHERE is false. Anything that is not
+ * a returned row fails closed.
  */
 export async function reserveBudget(
   env: Env,
@@ -319,11 +381,12 @@ export async function reserveBudget(
   operation: EmbeddingOperation,
 ): Promise<boolean> {
   if (units <= 0) return true;
-  const limit = dailyBudget(env);
+  const limit = poolLimit(env, operation);
   if (units > limit) return false;
   const indexUnits = operation === "index" ? units : 0;
   const queryUnits = operation === "query" ? units : 0;
-  const result = await execute(
+  const pool = operation === "query" ? "query_units" : "index_units";
+  const rows = await query<{ units: number }>(
     getDb(env),
     `INSERT INTO embedding_usage (namespace, day, units, index_units, query_units, update_time)
      VALUES (?, ?, ?, ?, ?, ?)
@@ -332,23 +395,26 @@ export async function reserveBudget(
        index_units = index_units + excluded.index_units,
        query_units = query_units + excluded.query_units,
        update_time = excluded.update_time
-     WHERE units + excluded.units <= ?`,
+     WHERE ${pool} + excluded.${pool} <= ?
+     RETURNING units`,
     [namespace, utcDay(), units, indexUnits, queryUnits, now(), limit],
   );
-  return result.rowsAffected > 0;
+  return Array.isArray(rows) && rows.length > 0;
 }
 
-/** Texts still available today (0 when exhausted). */
+/** Texts still available today in the write (index) pool; 0 when exhausted. */
 export async function remainingBudget(
   env: Env,
   namespace: string,
+  operation: EmbeddingOperation = "index",
 ): Promise<number> {
-  const row = await queryOne<{ units: number }>(
+  const column = operation === "query" ? "query_units" : "index_units";
+  const row = await queryOne<{ used: number }>(
     getDb(env),
-    "SELECT units FROM embedding_usage WHERE namespace = ? AND day = ?",
+    `SELECT ${column} AS used FROM embedding_usage WHERE namespace = ? AND day = ?`,
     [namespace, utcDay()],
   );
-  return Math.max(0, dailyBudget(env) - Number(row?.units ?? 0));
+  return Math.max(0, poolLimit(env, operation) - Number(row?.used ?? 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -360,30 +426,60 @@ export type WorldEmbeddingStateValue = "stale" | "partial" | "ready";
 export type EmbeddingStatus =
   "unconfigured" | "no_credential" | "invalid" | "stale" | "partial" | "ready";
 
+export type WorldState = {
+  state: WorldEmbeddingStateValue;
+  model: string;
+  /** Last subject a windowed reindex finished; null outside a multi-call pass. */
+  reindex_cursor: string | null;
+};
+
 export async function getWorldState(
   env: Env,
   worldId: string,
-): Promise<{ state: WorldEmbeddingStateValue; model: string } | null> {
-  return queryOne<{ state: WorldEmbeddingStateValue; model: string }>(
+): Promise<WorldState | null> {
+  return queryOne<WorldState>(
     getDb(env),
-    "SELECT state, model FROM world_embedding_state WHERE world_id = ?",
+    "SELECT state, model, reindex_cursor FROM world_embedding_state WHERE world_id = ?",
     [worldId],
   );
 }
 
+/**
+ * Upserts a world's state. `cursor` is the windowed-reindex resume point and is
+ * cleared (NULL) unless given, so any state change that is not a reindex
+ * window (model change, revoke, completion) ends an in-progress pass.
+ */
 export async function setWorldState(
   env: Env,
   worldId: string,
   state: WorldEmbeddingStateValue,
   model: string,
+  cursor: string | null = null,
 ): Promise<void> {
   await execute(
     getDb(env),
-    `INSERT INTO world_embedding_state (world_id, state, model, update_time)
-     VALUES (?, ?, ?, ?)
+    `INSERT INTO world_embedding_state (world_id, state, model, update_time, reindex_cursor)
+     VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(world_id) DO UPDATE SET
-       state = excluded.state, model = excluded.model, update_time = excluded.update_time`,
-    [worldId, state, model, now()],
+       state = excluded.state, model = excluded.model,
+       update_time = excluded.update_time, reindex_cursor = excluded.reindex_cursor`,
+    [worldId, state, model, now(), cursor],
+  );
+}
+
+/**
+ * A write path (import) could not embed some chunks: a world that claimed
+ * `ready` now has chunks without vectors, so it reports `partial` (keyword
+ * still covers them) until a reindex repairs it. Never touches other states.
+ */
+export async function markWorldPartial(
+  env: Env,
+  worldId: string,
+): Promise<void> {
+  await execute(
+    getDb(env),
+    "UPDATE world_embedding_state SET state = 'partial', update_time = ? WHERE world_id = ? AND state = 'ready'",
+    [now(), worldId],
   );
 }
 

@@ -52,6 +52,7 @@ const canonicalSchema = {
     { name: "state", pk: 0 },
     { name: "model", pk: 0 },
     { name: "update_time", pk: 0 },
+    { name: "reindex_cursor", pk: 0 },
   ],
 };
 

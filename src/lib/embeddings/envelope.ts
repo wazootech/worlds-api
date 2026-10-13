@@ -56,11 +56,21 @@ async function importKek(raw: string | undefined, version: number) {
   return { version, key } satisfies KekRef;
 }
 
-/** The newest usable KEK, used for new writes. Null when none is configured. */
+/**
+ * The newest KEK, used for new writes. Null when none is configured.
+ *
+ * Fails closed on a malformed newest KEK: if EMBEDDING_KEK_V2 is present but
+ * unusable, this returns null rather than silently sealing new keys under V1
+ * (which would make a botched rotation look healthy and keep V1 pinned). The
+ * deployment is then keyword-only and credential writes return 503 until the
+ * secret is fixed. Older versions are only ever consulted per stored record
+ * (kekForVersion), never as a write fallback.
+ */
 export async function currentKek(env: Env): Promise<KekRef | null> {
   for (const version of KEK_VERSIONS) {
-    const kek = await importKek(rawKek(env, version), version);
-    if (kek) return kek;
+    const raw = rawKek(env, version);
+    if (!raw) continue;
+    return importKek(raw, version);
   }
   return null;
 }

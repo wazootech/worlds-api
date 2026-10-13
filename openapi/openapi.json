@@ -181,6 +181,46 @@
           }
         }
       },
+      "VectorCleanupReport": {
+        "type": "object",
+        "properties": {
+          "worlds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Worlds of the namespace whose vectors were cleaned."
+          },
+          "attempted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "deleted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "incomplete": {
+            "type": "boolean",
+            "description": "True when vectors remain (a failure, or more than one request can remove). Calling the endpoint again is safe and continues; the purge sweep retries too."
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "worlds",
+          "attempted",
+          "deleted",
+          "failed",
+          "incomplete",
+          "errors"
+        ]
+      },
       "ImportResponse": {
         "type": "object",
         "properties": {
@@ -686,6 +726,7 @@
           },
           "apiKey": {
             "type": "string",
+            "maxLength": 512,
             "description": "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed."
           }
         },
@@ -908,6 +949,36 @@
           },
           "400": {
             "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "embeddingModel was given but the namespace has no active embedding credential (EMBEDDING_CREDENTIAL_REQUIRED).",
             "content": {
               "application/json": {
                 "schema": {
@@ -1489,6 +1560,9 @@
                     },
                     "revokedKeys": {
                       "type": "integer"
+                    },
+                    "vectorCleanup": {
+                      "$ref": "#/components/schemas/VectorCleanupReport"
                     }
                   },
                   "required": [
@@ -2333,7 +2407,7 @@
         ],
         "operationId": "reindexWorld",
         "summary": "Reindex world vector & FTS indexes",
-        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Required after changing the embedding model (the world is stale and search is keyword-only until it completes) and useful to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it. Embedding spend is checked against the namespace's daily budget first; an exhausted budget returns 429 EMBEDDING_BUDGET_EXCEEDED.",
+        "description": "Rebuild the vector and full-text search indexes for a world from its stored RDF quads. Required after changing the embedding model (the world is stale and search is keyword-only until it completes) and useful to repair search quality. The full-text index is always rebuilt from D1; if any vector could not be embedded, written or cleaned up, status is completed_with_vector_errors and vectorSync says what failed. Rerunning reindex repairs it. Embedding spend is checked against the namespace's daily write budget first; an exhausted budget returns 429 EMBEDDING_BUDGET_EXCEEDED. Worlds with more text than EMBEDDING_REINDEX_MAX_CHUNKS are reindexed in windows across several calls: each call embeds only the next window, so no chunk is embedded twice and the world becomes ready when the last window completes.",
         "x-mint": {
           "metadata": {
             "title": "Reindex world vector & FTS indexes"
@@ -2359,7 +2433,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Reindex ran. status is completed, or completed_with_vector_errors when the vector index could not be fully synced (see vectorSync).",
+            "description": "Reindex ran. status is completed, completed_with_vector_errors when the vector index could not be fully synced (see vectorSync; calling again retries the failed window), or in_progress when a large world is reindexed in windows: call again until completed (continuation.remainingChunksEstimate says how much is left).",
             "content": {
               "application/json": {
                 "schema": {
@@ -2375,7 +2449,8 @@
                       "type": "string",
                       "enum": [
                         "completed",
-                        "completed_with_vector_errors"
+                        "completed_with_vector_errors",
+                        "in_progress"
                       ]
                     },
                     "processedQuadCount": {
@@ -2388,6 +2463,18 @@
                     },
                     "vectorSync": {
                       "$ref": "#/components/schemas/VectorSyncReport"
+                    },
+                    "continuation": {
+                      "type": "object",
+                      "properties": {
+                        "remainingChunksEstimate": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "remainingChunksEstimate"
+                      ]
                     }
                   },
                   "required": [
@@ -2660,7 +2747,7 @@
         ],
         "operationId": "deleteEmbeddingCredential",
         "summary": "Revoke embedding credential",
-        "description": "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Existing vectors are kept. Requires the embeddings:admin scope.",
+        "description": "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Every world in the namespace is marked stale, so after a new key is set search stays keyword-only until each world is reindexed (vectors built before the revoke are never trusted again). Requires the embeddings:admin scope.",
         "x-mint": {
           "metadata": {
             "title": "Revoke embedding credential"

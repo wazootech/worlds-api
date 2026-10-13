@@ -26,11 +26,21 @@ export type Env = {
   EMBEDDING_KEK_V1?: string;
   EMBEDDING_KEK_V2?: string;
   /**
-   * Max texts embedded per namespace per UTC day across index and query
-   * operations (default 20000). Enforced in D1 before the provider is called.
+   * Write pool: max texts embedded per namespace per UTC day by import and
+   * reindex (default 20000). Enforced in D1 before the provider is called.
    */
   EMBEDDING_DAILY_BUDGET?: string;
-  /** Max texts one reindex call may embed (default 5000). */
+  /**
+   * Query pool: max search-time query embeds per namespace per UTC day
+   * (default 5000). Separate from the write pool so search traffic cannot
+   * starve import and reindex; exhaustion degrades search to keyword.
+   */
+  EMBEDDING_DAILY_QUERY_BUDGET?: string;
+  /**
+   * Max texts one reindex call may embed (default 5000). Larger worlds are
+   * reindexed in windows across several calls (each resumes where the last
+   * finished) instead of failing.
+   */
   EMBEDDING_REINDEX_MAX_CHUNKS?: string;
   /**
    * Platform→data-plane admin key. The name is canonical platform-wide: the
@@ -69,6 +79,9 @@ export function fromBindings(env: Record<string, unknown>): Env {
       : undefined,
     EMBEDDING_DAILY_BUDGET: env.EMBEDDING_DAILY_BUDGET
       ? String(env.EMBEDDING_DAILY_BUDGET)
+      : undefined,
+    EMBEDDING_DAILY_QUERY_BUDGET: env.EMBEDDING_DAILY_QUERY_BUDGET
+      ? String(env.EMBEDDING_DAILY_QUERY_BUDGET)
       : undefined,
     EMBEDDING_REINDEX_MAX_CHUNKS: env.EMBEDDING_REINDEX_MAX_CHUNKS
       ? String(env.EMBEDDING_REINDEX_MAX_CHUNKS)
@@ -113,6 +126,7 @@ export function fromProcessEnv(): Env {
     EMBEDDING_KEK_V1: process.env.EMBEDDING_KEK_V1,
     EMBEDDING_KEK_V2: process.env.EMBEDDING_KEK_V2,
     EMBEDDING_DAILY_BUDGET: process.env.EMBEDDING_DAILY_BUDGET,
+    EMBEDDING_DAILY_QUERY_BUDGET: process.env.EMBEDDING_DAILY_QUERY_BUDGET,
     EMBEDDING_REINDEX_MAX_CHUNKS: process.env.EMBEDDING_REINDEX_MAX_CHUNKS,
     WORLDS_API_ADMIN_KEY: process.env.WORLDS_API_ADMIN_KEY,
     WAZOO_ENV: process.env.WAZOO_ENV,

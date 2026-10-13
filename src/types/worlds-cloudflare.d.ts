@@ -16,6 +16,20 @@ declare module "@worlds/cloudflare" {
     maxLookupChunkSize?: number;
     maxWriteBatchSize?: number;
     worldId?: string;
+    /**
+     * Quad filters applied to commits and to reindex. worlds-api uses
+     * `include.subjects` to window a large reindex across several calls.
+     */
+    include?: {
+      subjects?: string[];
+      predicates?: string[];
+      graphs?: string[];
+    };
+    exclude?: {
+      subjects?: string[];
+      predicates?: string[];
+      graphs?: string[];
+    };
     textSplitter?: any;
     searchIndexOnImport?: "incremental" | "deferred" | "disabled";
     /**
@@ -66,6 +80,14 @@ declare module "@worlds/cloudflare" {
       embed(inputs: string[]): Promise<number[][]>;
     };
   }
+
+  /** Deterministic contract search-result id of a chunk. */
+  export function buildSearchResultId(options: {
+    subject: string;
+    predicate: string;
+    graph: string;
+    text: string;
+  }): Promise<string>;
 
   export function createCloudflareWorldsSdk(
     options: CloudflareWorldsSdkOptions,

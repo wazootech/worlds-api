@@ -438,7 +438,7 @@ export const EmbeddingCredentialRequestSchema = z
     provider: z.enum(EMBEDDING_PROVIDER_IDS).openapi({
       description: "Embedding provider the key belongs to.",
     }),
-    apiKey: z.string().openapi({
+    apiKey: z.string().max(512).openapi({
       description:
         "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed.",
     }),

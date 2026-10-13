@@ -22,7 +22,10 @@ export function createSqliteD1() {
   const db = new DatabaseSync(":memory:");
 
   function prepare(sql: string) {
-    const make = (args: unknown[]) => ({
+    const make = (args: unknown[]): any => ({
+      // Exposed so batch() can replay statements built by the real SDK.
+      __sql: sql,
+      __args: args,
       bind: (...values: unknown[]) => make(values),
       async all() {
         return {
@@ -51,8 +54,30 @@ export function createSqliteD1() {
     async exec(sql: string) {
       db.exec(sql);
     },
-    async batch() {
-      return [];
+    /**
+     * Runs the statements in one transaction (D1 batch semantics: all or
+     * nothing), so the real @worlds/cloudflare SDK can run against this shim.
+     */
+    async batch(statements: Array<{ __sql: string; __args: unknown[] }>) {
+      const results: unknown[] = [];
+      db.exec("BEGIN");
+      try {
+        for (const statement of statements) {
+          const result = db
+            .prepare(statement.__sql)
+            .run(...(statement.__args as never[]));
+          results.push({
+            success: true,
+            results: [],
+            meta: { changes: Number(result.changes) },
+          });
+        }
+        db.exec("COMMIT");
+      } catch (error) {
+        db.exec("ROLLBACK");
+        throw error;
+      }
+      return results;
     },
     /** Test-only raw access. */
     raw: db,

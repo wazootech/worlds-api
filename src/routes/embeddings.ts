@@ -127,7 +127,7 @@ const deleteRouteDef = createRoute({
   operationId: "deleteEmbeddingCredential",
   summary: "Revoke embedding credential",
   description:
-    "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Existing vectors are kept. Requires the embeddings:admin scope.",
+    "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Every world in the namespace is marked stale, so after a new key is set search stays keyword-only until each world is reindexed (vectors built before the revoke are never trusted again). Requires the embeddings:admin scope.",
   "x-mint": { metadata: { title: "Revoke embedding credential" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: namespaceParam },

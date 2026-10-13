@@ -22,6 +22,12 @@ import {
   setWorldState,
   type EmbeddingStatus,
 } from "../lib/embeddings/store";
+import {
+  cleanupOk,
+  cleanupWorldVectors,
+  emptyCleanupReport,
+  mergeCleanupReports,
+} from "../lib/embeddings/vectors";
 import { respond } from "../lib/respond";
 import {
   CreateWorldRequestSchema,
@@ -154,6 +160,17 @@ const createRouteDef = createRoute({
     },
     400: {
       description: "Bad request",
+      content: {
+        "application/json": {
+          schema: z.object({
+            error: z.object({ code: z.string(), message: z.string() }),
+          }),
+        },
+      },
+    },
+    409: {
+      description:
+        "embeddingModel was given but the namespace has no active embedding credential (EMBEDDING_CREDENTIAL_REQUIRED).",
       content: {
         "application/json": {
           schema: z.object({
@@ -374,6 +391,22 @@ const resumeRoute = createRoute({
   },
 });
 
+const VectorCleanupSchema = z
+  .object({
+    worlds: z.number().int().nonnegative().openapi({
+      description: "Worlds of the namespace whose vectors were cleaned.",
+    }),
+    attempted: z.number().int().nonnegative(),
+    deleted: z.number().int().nonnegative(),
+    failed: z.number().int().nonnegative(),
+    incomplete: z.boolean().openapi({
+      description:
+        "True when vectors remain (a failure, or more than one request can remove). Calling the endpoint again is safe and continues; the purge sweep retries too.",
+    }),
+    errors: z.array(z.string()),
+  })
+  .openapi("VectorCleanupReport");
+
 const namespaceDeleteRoute = createRoute({
   method: "post",
   path: "/admin/namespaces/{namespace}/delete",
@@ -399,6 +432,7 @@ const namespaceDeleteRoute = createRoute({
           schema: z.object({
             deletedWorlds: z.number().int(),
             revokedKeys: z.number().int(),
+            vectorCleanup: VectorCleanupSchema.optional(),
           }),
         },
       },
@@ -450,6 +484,45 @@ const purgeRoute = createRoute({
     },
   },
 });
+
+/** Cleans the vectors of every world in a namespace. Never throws. */
+async function cleanupNamespaceVectors(env: Env, namespace: string) {
+  if (!env.VECTORIZE_INDEX) return undefined;
+  let report = emptyCleanupReport(true);
+  let worlds = 0;
+  try {
+    const rows = await query<{ world_id: string }>(
+      getDb(env),
+      "SELECT world_id FROM worlds WHERE namespace = ?",
+      [namespace],
+    );
+    for (const row of rows ?? []) {
+      const one = await cleanupWorldVectors(env, row.world_id, "all");
+      report = mergeCleanupReports(report, one);
+      if (one.attempted > 0) worlds++;
+    }
+  } catch (error) {
+    report.failed += 1;
+    report.errors.push(
+      `enumerate: ${error instanceof Error ? error.name : "unknown"}`,
+    );
+  }
+  if (!cleanupOk(report)) {
+    console.warn("namespace vector cleanup incomplete", {
+      namespace,
+      failed: report.failed,
+      incomplete: report.incomplete,
+    });
+  }
+  return {
+    worlds,
+    attempted: report.attempted,
+    deleted: report.deleted,
+    failed: report.failed,
+    incomplete: report.incomplete || report.failed > 0,
+    errors: report.errors,
+  };
+}
 
 export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(listRoute, async (c) => {
@@ -503,6 +576,24 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       SCOPE_DATA_WRITE,
     );
     if (accessErr) return accessErr;
+
+    // Same rule as PATCH: choosing a model needs a usable credential.
+    if (body.embeddingModel !== undefined) {
+      const credential = await getCredential(env, namespace);
+      if (!credential || credential.status !== "active") {
+        return respond(
+          c,
+          {
+            error: {
+              code: "EMBEDDING_CREDENTIAL_REQUIRED",
+              message:
+                "Set an active embedding credential for the namespace before choosing an embedding model",
+            },
+          },
+          409,
+        );
+      }
+    }
 
     const worldId = newWorldId();
 
@@ -841,8 +932,16 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [ts, namespace],
     );
 
-    // The namespace's embedding credential dies with the namespace. Vector
-    // cleanup is not part of this endpoint (see design section 7, deletion).
+    // The namespace's vectors go with it (design section 7, deletion): their
+    // Vectorize metadata carries chunk text. Done before the credential is
+    // revoked and gated on the Vectorize binding, not on an embedder. The
+    // D1 chunk rows are what identify the ids, so a failed or partial run
+    // is reported (never silent), leaves those rows, and is retried by
+    // calling this endpoint again or by the purge sweep.
+    const vectorCleanup = await cleanupNamespaceVectors(env, namespace);
+
+    // The namespace's embedding credential dies with the namespace; its
+    // worlds are marked stale so a restore cannot make removed vectors live.
     await revokeNamespaceCredentials(env, namespace);
 
     // Invalidate all cached SDKs since multiple worlds may have been affected.
@@ -851,6 +950,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     return respond(c, {
       deletedWorlds: worldResult.rowsAffected,
       revokedKeys: keyResult.rowsAffected,
+      ...(vectorCleanup && { vectorCleanup }),
     });
   });
 

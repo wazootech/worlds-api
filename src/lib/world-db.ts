@@ -90,14 +90,29 @@ export async function getWorldSdk(
   env: Env,
   ref: WorldDatabaseRef,
   candidateCount?: number,
-  options: { forReindex?: boolean } = {},
+  options: {
+    forReindex?: boolean;
+    /**
+     * Restricts the SDK to these subjects (windowed reindex). A windowed SDK
+     * is built per call and never cached.
+     */
+    includeSubjects?: string[];
+    /** Per-call embed guard override for a windowed reindex. */
+    maxUnits?: number;
+  } = {},
 ): Promise<WorldsSdkInterface> {
+  const windowed = options.includeSubjects !== undefined;
   const key = sdkCacheKey(ref.worldId, candidateCount, options.forReindex);
-  const cached = sdkCache.get(key);
-  if (cached && (cached.expires === undefined || cached.expires > Date.now())) {
-    return cached.sdk;
+  if (!windowed) {
+    const cached = sdkCache.get(key);
+    if (
+      cached &&
+      (cached.expires === undefined || cached.expires > Date.now())
+    ) {
+      return cached.sdk;
+    }
+    sdkCache.delete(key);
   }
-  sdkCache.delete(key);
 
   // BYOK embeddings (worlds-api#1). resolveEmbeddingService fails closed and
   // never throws: without the switch, a KEK, an active credential, an
@@ -107,11 +122,13 @@ export async function getWorldSdk(
   const embeddingService = await resolveEmbeddingService(env, ref, {
     operation: candidateCount !== undefined ? "query" : "index",
     forReindex: options.forReindex,
+    maxUnits: options.maxUnits,
   });
 
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
     worldId: ref.worldId,
+    ...(windowed && { include: { subjects: options.includeSubjects } }),
     ...(candidateCount !== undefined && { candidateCount }),
     ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),
     ...(embeddingService && {
@@ -124,6 +141,7 @@ export async function getWorldSdk(
   // embedder, or its absence), so its cache lifetime is bounded to keep
   // revocation, staleness, and newly-ready worlds effective across isolates
   // (design 2.2: <= 60 s). Without BYOK entries live for the isolate.
+  if (windowed) return sdk;
   sdkCache.set(key, {
     sdk,
     ...(env.EMBEDDING_PROVIDER === "byok" && {

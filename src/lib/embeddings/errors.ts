@@ -11,6 +11,7 @@ export type EmbeddingErrorCode =
   | "no_credential"
   | "auth"
   | "rate_limited"
+  | "timeout"
   | "provider_error"
   | "bad_request"
   | "bad_response";
@@ -20,6 +21,7 @@ const MESSAGES: Record<EmbeddingErrorCode, string> = {
   no_credential: "embedding credential unavailable",
   auth: "embedding provider rejected the credential",
   rate_limited: "embedding provider rate limited",
+  timeout: "embedding provider timed out",
   provider_error: "embedding provider error",
   bad_request: "embedding provider rejected the request",
   bad_response: "embedding provider returned an unexpected response",

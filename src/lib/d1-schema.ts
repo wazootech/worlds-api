@@ -59,11 +59,14 @@ export const CONTROL_PLANE_DDL = [
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_embedding_credentials_ns_provider ON embedding_credentials(namespace, provider)`,
   // Per-world index state: which model the world's vectors were built with and
   // whether they are usable. A missing row means "never indexed" (stale).
+  // reindex_cursor is the last subject a windowed reindex finished; NULL when
+  // no multi-call reindex pass is in progress.
   `CREATE TABLE IF NOT EXISTS world_embedding_state (
     world_id TEXT NOT NULL PRIMARY KEY,
     state TEXT NOT NULL,
     model TEXT NOT NULL,
-    update_time TEXT NOT NULL
+    update_time TEXT NOT NULL,
+    reindex_cursor TEXT
   )`,
   // Daily per-namespace spend counters (texts embedded), reserved atomically
   // before the provider is called.
@@ -120,7 +123,13 @@ const REQUIRED_COLUMNS = {
     "rotate_time",
     "revoke_time",
   ],
-  world_embedding_state: ["world_id", "state", "model", "update_time"],
+  world_embedding_state: [
+    "world_id",
+    "state",
+    "model",
+    "update_time",
+    "reindex_cursor",
+  ],
 } as const;
 
 const REQUIRED_PRIMARY_KEYS = {

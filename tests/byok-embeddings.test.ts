@@ -22,9 +22,13 @@ import {
 import { EmbeddingError } from "../src/lib/embeddings/errors";
 import { getEmbeddingModel } from "../src/lib/embeddings/catalog";
 import {
+  INDEX_MAX_RETRIES,
+  INDEX_TIMEOUT_MS,
   OPENAI_EMBEDDINGS_URL,
+  QUERY_TIMEOUT_MS,
   createOpenAiEmbeddingService,
 } from "../src/lib/embeddings/openai";
+import { planReindexWindow } from "../src/lib/embeddings/reindex-window";
 import { resolveEmbeddingService } from "../src/lib/embeddings/service";
 import {
   AUTH_FAILURE_THRESHOLD,
@@ -125,6 +129,31 @@ async function addWorld(
     )
     .bind(worldId, namespace, model)
     .run();
+}
+
+/**
+ * Seeds literal quads with the real column names the window planner reads
+ * (`quads.world_id`, `quads.s`, `quads.o_type = 'Literal'`). The engine is
+ * mocked in this file, so the table is created here rather than by the SDK.
+ */
+function seedLiteralQuads(
+  subjects: string[],
+  perSubject = 1,
+  worldId = WORLD_A,
+): void {
+  db.raw.exec("DROP TABLE IF EXISTS quads");
+  db.raw.exec(
+    "CREATE TABLE quads (quad_id TEXT PRIMARY KEY, world_id TEXT NOT NULL, s TEXT NOT NULL, o_type TEXT NOT NULL)",
+  );
+  const insert = db.raw.prepare(
+    "INSERT INTO quads (quad_id, world_id, s, o_type) VALUES (?, ?, ?, 'Literal')",
+  );
+  let n = 0;
+  for (const subject of subjects) {
+    for (let i = 0; i < perSubject; i++) {
+      insert.run(`q${n++}`, worldId, subject);
+    }
+  }
 }
 
 function http(
@@ -300,19 +329,118 @@ describe("credential store", () => {
     });
     expect((await resolveApiKey(v2Only, "ns"))?.key).toBe(SECRET_KEY);
   });
+
+  it("loses the re-wrap race to a concurrent revoke instead of rewriting ciphertext", async () => {
+    const env = makeEnv();
+    await setCredential(env, "ns", "openai", SECRET_KEY);
+    invalidateKeyCache();
+
+    /**
+     * Runs `concurrent` in the window between the row read and the re-wrap
+     * UPDATE (on `bind`, immediately before the statement runs), so a revoke
+     * landing in that window is deterministic instead of a timing race.
+     */
+    function revokingMidRewrap(concurrent: () => void): Env {
+      const binding = env.DB as unknown as {
+        prepare: (sql: string) => { bind: (...args: unknown[]) => unknown };
+      };
+      return {
+        ...env,
+        EMBEDDING_KEK_V2: kek2,
+        DB: {
+          ...binding,
+          prepare: (sql: string) => {
+            const statement = binding.prepare(sql);
+            if (!/UPDATE embedding_credentials\s+SET ciphertext/.test(sql)) {
+              return statement;
+            }
+            return new Proxy(statement, {
+              get: (target, prop, receiver) => {
+                if (prop !== "bind") return Reflect.get(target, prop, receiver);
+                return (...args: unknown[]) => {
+                  concurrent();
+                  return target.bind(...args);
+                };
+              },
+            });
+          },
+        },
+      } as Env;
+    }
+
+    const rotated = revokingMidRewrap(() => {
+      db.raw.exec(
+        "UPDATE embedding_credentials SET status = 'revoked', ciphertext = NULL, iv = NULL WHERE namespace = 'ns'",
+      );
+    });
+
+    // The key still opens: the row was active when it was read.
+    expect((await resolveApiKey(rotated, "ns"))?.key).toBe(SECRET_KEY);
+    // The background re-wrap must not resurrect revoked ciphertext.
+    const row = await getCredential(rotated, "ns");
+    expect(row?.status).toBe("revoked");
+    expect(row?.ciphertext).toBeNull();
+    expect(row?.kek_version).toBe(1);
+  });
 });
 
 describe("budget guard", () => {
-  it("reserves atomically and refuses once the daily budget is exhausted", async () => {
-    const env = makeEnv({ EMBEDDING_DAILY_BUDGET: "10" });
+  it("reserves atomically per pool and refuses once a pool is exhausted", async () => {
+    const env = makeEnv({
+      EMBEDDING_DAILY_BUDGET: "10",
+      EMBEDDING_DAILY_QUERY_BUDGET: "4",
+    });
     expect(await reserveBudget(env, "ns", 6, "index")).toBe(true);
-    expect(await reserveBudget(env, "ns", 4, "query")).toBe(true);
+    expect(await reserveBudget(env, "ns", 4, "index")).toBe(true);
     expect(await remainingBudget(env, "ns")).toBe(0);
-    expect(await reserveBudget(env, "ns", 1, "query")).toBe(false);
+    expect(await reserveBudget(env, "ns", 1, "index")).toBe(false);
     // Rejected reservations spend nothing; other namespaces are independent.
     expect(await remainingBudget(env, "ns")).toBe(0);
     expect(await reserveBudget(env, "other", 10, "index")).toBe(true);
     expect(await reserveBudget(env, "big", 11, "index")).toBe(false);
+  });
+
+  it("keeps search traffic from exhausting the pool import and reindex use", async () => {
+    const env = makeEnv({
+      EMBEDDING_DAILY_BUDGET: "10",
+      EMBEDDING_DAILY_QUERY_BUDGET: "3",
+    });
+    for (let i = 0; i < 3; i++) {
+      expect(await reserveBudget(env, "ns", 1, "query")).toBe(true);
+    }
+    // The query pool is spent; further searches degrade...
+    expect(await reserveBudget(env, "ns", 1, "query")).toBe(false);
+    expect(await remainingBudget(env, "ns", "query")).toBe(0);
+    // ...but the write pool is untouched.
+    expect(await remainingBudget(env, "ns", "index")).toBe(10);
+    expect(await reserveBudget(env, "ns", 10, "index")).toBe(true);
+    // And the reverse: an exhausted write pool leaves searches working.
+    expect(await reserveBudget(env, "ns2", 10, "index")).toBe(true);
+    expect(await reserveBudget(env, "ns2", 1, "index")).toBe(false);
+    expect(await reserveBudget(env, "ns2", 1, "query")).toBe(true);
+  });
+
+  it("documents the defaults: 20000 write, 5000 query", async () => {
+    const env = makeEnv();
+    expect(await remainingBudget(env, "fresh", "index")).toBe(20_000);
+    expect(await remainingBudget(env, "fresh", "query")).toBe(5_000);
+  });
+
+  it("counts a whole-pool request over the limit as refused without spending", async () => {
+    const env = makeEnv({ EMBEDDING_DAILY_QUERY_BUDGET: "2" });
+    expect(await reserveBudget(env, "ns", 3, "query")).toBe(false);
+    expect(await remainingBudget(env, "ns", "query")).toBe(2);
+  });
+
+  it("fails closed when the database errors", async () => {
+    const env = makeEnv({
+      DB: {
+        prepare: () => {
+          throw new Error("d1 down");
+        },
+      } as unknown as Env["DB"],
+    });
+    await expect(reserveBudget(env, "ns", 1, "index")).rejects.toThrow();
   });
 });
 
@@ -407,6 +535,29 @@ describe("OpenAI provider", () => {
       .catch((e) => e as EmbeddingError);
     expect(err.code).toBe("rate_limited");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("aborts a hung provider at the deadline and reports a timeout", async () => {
+    const fetchImpl = vi.fn(
+      async (_url: string, init: RequestInit) =>
+        await new Promise<Response>((_resolve, reject) => {
+          // A provider that never answers: the request only ends when the
+          // deadline signal fires. No signal means the test hangs and fails.
+          init.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "TimeoutError")),
+          );
+        }),
+    );
+    const started = Date.now();
+    const err = await service(fetchImpl as unknown as typeof fetch, {
+      timeoutMs: 25,
+    })
+      .embed(["a"])
+      .catch((e) => e as EmbeddingError);
+    expect(err.code).toBe("timeout");
+    expect(err.message).toBe("embedding provider timed out");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(Date.now() - started).toBeLessThan(2_000);
   });
 
   it("rejects wrong-width vectors and redirects", async () => {
@@ -525,6 +676,40 @@ describe("resolveEmbeddingService fails closed", () => {
     await expect(
       resolveEmbeddingService(env, ref, { operation: "query" }),
     ).resolves.toBeUndefined();
+  });
+
+  it("gives search a short deadline and no retries, and writes a longer one with retries", async () => {
+    const env = makeEnv();
+    await ready(env);
+    const fetchImpl = vi.fn(
+      async () => new Response("slow down", { status: 429 }),
+    );
+    const sleep = vi.fn(async () => {});
+
+    const query = await resolveEmbeddingService(env, ref, {
+      operation: "query",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      sleep,
+    });
+    await expect(query!.embed(["a"])).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    // A search never retries and never sleeps inside the user's request.
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(QUERY_TIMEOUT_MS).toBeLessThan(INDEX_TIMEOUT_MS);
+
+    const index = await resolveEmbeddingService(env, ref, {
+      operation: "index",
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      sleep,
+    });
+    await expect(index!.embed(["b"])).rejects.toMatchObject({
+      code: "rate_limited",
+    });
+    // Writes keep the bounded retry: one attempt plus INDEX_MAX_RETRIES.
+    expect(fetchImpl).toHaveBeenCalledTimes(1 + 1 + INDEX_MAX_RETRIES);
+    expect(sleep).toHaveBeenCalledTimes(INDEX_MAX_RETRIES);
   });
 });
 
@@ -941,5 +1126,104 @@ describe("reindex end to end with a fake provider", () => {
     expect((await getCredential(env, "ns-1"))?.consecutive_auth_failures).toBe(
       1,
     );
+  });
+
+  it("reindexes a world larger than the cap in windows, resuming where it stopped", async () => {
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "2" });
+    await setCredential(env, "ns-1", "openai", SECRET_KEY);
+    // Three subjects, two literal quads each, cap of two: three windows.
+    seedLiteralQuads(["s1", "s2", "s3"], 2);
+
+    const windows: string[][] = [];
+    createSdkMock.mockImplementation((async (options: any) => ({
+      reindex: async () => {
+        const subjects: string[] = options.include?.subjects ?? [];
+        windows.push(subjects);
+        const count = subjects.length * 2;
+        return {
+          processedQuadCount: count,
+          chunkRowCount: count,
+          vectorSync: {
+            enabled: Boolean(options.embeddingService),
+            attempted: count,
+            upserted: count,
+            failedUpserts: 0,
+            embeddingFailures: 0,
+            staleDeleteFailures: 0,
+            errors: [],
+          },
+        };
+      },
+    })) as never);
+
+    const first = (await (await reindex(env)).json()) as any;
+    expect(first.status).toBe("in_progress");
+    expect(first.continuation.remainingChunksEstimate).toBe(4);
+    expect(windows).toEqual([["s1"]]);
+    expect((await getWorldState(env, WORLD_A))?.reindex_cursor).toBe("s1");
+
+    const second = (await (await reindex(env)).json()) as any;
+    expect(second.status).toBe("in_progress");
+    expect((await getWorldState(env, WORLD_A))?.reindex_cursor).toBe("s2");
+
+    const third = (await (await reindex(env)).json()) as any;
+    expect(third.status).toBe("completed");
+    // No subject is embedded twice across the whole pass.
+    expect(windows).toEqual([["s1"], ["s2"], ["s3"]]);
+    const state = await getWorldState(env, WORLD_A);
+    expect(state?.state).toBe("ready");
+    expect(state?.reindex_cursor).toBeNull();
+  });
+});
+
+describe("reindex window planning", () => {
+  it("leaves a world that fits in one call unwindowed", async () => {
+    seedLiteralQuads(["s1", "s2", "s3"]);
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "5" });
+    expect(await planReindexWindow(env, WORLD_A, null)).toEqual({
+      windowed: false,
+    });
+  });
+
+  it("splits whole subjects into a window and reports what is left", async () => {
+    seedLiteralQuads(["s1", "s2", "s3"], 2);
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "2" });
+    expect(await planReindexWindow(env, WORLD_A, null)).toEqual({
+      windowed: true,
+      subjects: ["s1"],
+      lastSubject: "s1",
+      done: false,
+      remaining: 4,
+    });
+  });
+
+  it("takes a single subject larger than the cap alone rather than stalling", async () => {
+    seedLiteralQuads(["big", "s2"], 3);
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "2" });
+    expect(await planReindexWindow(env, WORLD_A, null)).toMatchObject({
+      windowed: true,
+      subjects: ["big"],
+      done: false,
+    });
+  });
+
+  it("finishes a resumed pass with nothing left after the cursor", async () => {
+    seedLiteralQuads(["s1"], 2);
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "2" });
+    expect(await planReindexWindow(env, WORLD_A, "s1")).toEqual({
+      windowed: true,
+      subjects: [],
+      lastSubject: "s1",
+      done: true,
+      remaining: 0,
+    });
+  });
+
+  it("stays unwindowed before the world has any quads table", async () => {
+    db.raw.exec("DROP TABLE IF EXISTS quads");
+    const env = makeEnv({ EMBEDDING_REINDEX_MAX_CHUNKS: "2" });
+    expect(await planReindexWindow(env, WORLD_A, null)).toEqual({
+      windowed: false,
+    });
   });
 });

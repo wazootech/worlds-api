@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { execute, getDb, now, query } from "./db";
+import { cleanupOk, cleanupWorldVectors } from "./embeddings/vectors";
 
 /**
  * Sweeps soft-deleted worlds whose 30-day grace period has elapsed and marks
@@ -24,6 +25,17 @@ export async function runPurgeSweep(
   let failed = 0;
   for (const row of rows) {
     try {
+      // Remove the world's vectors (their metadata holds chunk text) before
+      // marking it purged. A failed or incomplete cleanup leaves the world
+      // pending so the next sweep retries it, and counts as failed.
+      const cleanup = await cleanupWorldVectors(env, row.world_id, "all");
+      if (!cleanupOk(cleanup)) {
+        failed++;
+        console.error(
+          `purge deferred for ${row.world_id}: vector cleanup incomplete (${cleanup.errors.join("; ") || "more vectors remain"})`,
+        );
+        continue;
+      }
       await execute(
         db,
         "UPDATE worlds SET purge_status = 'purged', purged_at = ? WHERE world_id = ?",

@@ -13,7 +13,18 @@ export const OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings";
 
 const MAX_BATCH = 64;
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
-const MAX_RETRIES = 2;
+
+/**
+ * Per-request deadlines and retry policy by operation.
+ *
+ * A search must degrade to keyword quickly when the provider is slow or
+ * hanging, so a query embed gets a short deadline and NO retries (429/5xx
+ * fail straight to keyword search). Import and reindex move batches of up to
+ * 64 texts and may take longer and retry transient failures with backoff.
+ */
+export const QUERY_TIMEOUT_MS = 4_000;
+export const INDEX_TIMEOUT_MS = 20_000;
+export const INDEX_MAX_RETRIES = 2;
 
 export type OpenAiEmbeddingOptions = {
   model: EmbeddingModelSpec;
@@ -29,6 +40,10 @@ export type OpenAiEmbeddingOptions = {
   onSuccess?: () => Promise<void> | void;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  /** Deadline for one provider request, including reading the body. */
+  timeoutMs?: number;
+  /** Retries on 429/5xx; each retry is a fresh budget reservation. */
+  maxRetries?: number;
 };
 
 type OpenAiResponse = {
@@ -39,6 +54,8 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
   const fetchImpl = options.fetchImpl ?? fetch;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
+  const timeoutMs = options.timeoutMs ?? INDEX_TIMEOUT_MS;
+  const maxRetries = options.maxRetries ?? INDEX_MAX_RETRIES;
   // After a 401/403 the rest of this instance's work stops immediately rather
   // than burning the whole batch on a dead key (design 4.2).
   let authFailed = false;
@@ -58,11 +75,16 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
     });
 
     for (let attempt = 0; ; attempt++) {
+      // A retry is another provider call and costs the customer again, so it
+      // is another reservation (it can fail closed with budget_exceeded).
+      if (attempt > 0) await options.reserve(texts.length);
+      const signal = AbortSignal.timeout(timeoutMs);
       let response: Response;
       try {
         response = await fetchImpl(OPENAI_EMBEDDINGS_URL, {
           method: "POST",
           redirect: "manual",
+          signal,
           headers: {
             "content-type": "application/json",
             authorization: `Bearer ${apiKey}`,
@@ -71,7 +93,7 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
         });
       } catch {
         // Network errors can embed request details; collapse to a class.
-        throw new EmbeddingError("provider_error");
+        throw new EmbeddingError(signal.aborted ? "timeout" : "provider_error");
       }
 
       if (response.status === 401 || response.status === 403) {
@@ -80,7 +102,7 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
         throw new EmbeddingError("auth");
       }
       if (response.status === 429 || response.status >= 500) {
-        if (attempt < MAX_RETRIES) {
+        if (attempt < maxRetries) {
           await sleep(250 * 2 ** attempt);
           continue;
         }
@@ -105,8 +127,9 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
           throw new EmbeddingError("bad_response");
         }
         parsed = JSON.parse(text) as OpenAiResponse;
-      } catch {
-        throw new EmbeddingError("bad_response");
+      } catch (error) {
+        if (error instanceof EmbeddingError) throw error;
+        throw new EmbeddingError(signal.aborted ? "timeout" : "bad_response");
       }
 
       const rows = parsed.data;
