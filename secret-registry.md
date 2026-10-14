@@ -74,7 +74,7 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 | QA Worker         | Infisical Secret Sync (project `wazoo`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
 | Prod Worker       | Infisical Secret Sync (project `wazoo`, source `/worlds-api`, env `Production`) → script `worlds-api`. Deletion protection **on**. |
 | CI (`health-qa`, `smoke-qa`) | `Infisical/secrets-action@v1.0.17` with `method: oidc`, env `qa`, `secret-name: WORLDS_API_ADMIN_KEY`, per-repo machine identity subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`. Reads project `wazoo` via `INFISICAL_PROJECT_SLUG=wazoo-n-jx-j`. Needs `permissions: id-token: write` and the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables**. |
-| CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-qa` and `deploy-prod` use `Infisical/secrets-action@v1.0.17` with `method: oidc` and `secret-name: CLOUDFLARE_API_TOKEN`, env `qa` and `prod` respectively (project root, same identity and variables as above). `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
+| CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-qa` and `deploy-prod` use `Infisical/secrets-action@v1.0.17` with `method: oidc` and `secret-name: CLOUDFLARE_API_TOKEN` and `secret-path: /ci`, env `qa` and `prod` respectively (same identity and variables as above). The deploy credential lives at vault folder `/ci`, deliberately outside any sync's scope, so no sync binds it onto a Worker. `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
 
 ## Operational notes
 
@@ -97,7 +97,7 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 - **No long-lived copies remain.** The `WORLDS_ADMIN_KEY` and
   `WORLDS_API_ADMIN_KEY` GitHub secrets are retired: CI fetches the value via
   OIDC and the Workers get it via the sync. No workflow reads a GitHub secret:
-  both deploy jobs fetch `CLOUDFLARE_API_TOKEN` from Infisical (`qa` / `prod`)
+  both deploy jobs fetch `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (`qa` / `prod`)
   and read the account ID from a repository variable. The legacy
   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets were
   deleted on 2026-10-10, after a prod deploy succeeded on the vault token

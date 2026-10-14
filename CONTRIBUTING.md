@@ -112,7 +112,7 @@ minimum project and environment it needs, then either:
 - authenticate with Universal Auth, storing the client ID and client secret in
   the platform's own secret store.
 
-Keep `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` in GitHub secrets. See the
+The Cloudflare deploy token is not kept in GitHub secrets: `deploy-qa` and `deploy-prod` fetch `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (outside any Worker sync), and `CLOUDFLARE_ACCOUNT_ID` is a repository **variable**. See the
 [Infisical machine identities](https://infisical.com/docs/documentation/platform/identities/machine-identities)
 and [Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth)
 docs.
