@@ -3,11 +3,11 @@
 ## Canonical source: Infisical
 
 The canonical source for every runtime secret is the
-[Infisical](https://infisical.com) project described in the workspace-level
-migration runbook (`infisical-secrets-migration.md` at the root of the
-wazootech workspace repo). That runbook owns the full inventory, the
-dev/qa/prod separation, and the cutover sequence; this file records only how
-worlds-api consumes it.
+[Infisical](https://infisical.com) project `wazoo-n-jx-j`. That project's
+topology — its environments, folder layout, live inventory, the Cloudflare
+Worker syncs, and the rule for where a new secret goes — is recorded in the
+private ops home, `wazootech/memory` (`wiki/Infisical_(vault).md`); this file
+records only how worlds-api consumes it.
 
 - Local secret files (`.env`, `.dev.vars`) are **retired**. There is no
   committed copy in this repo's history and nothing needs rotating on account
@@ -59,10 +59,12 @@ BYOK embedding configuration (worlds-api#1), all unset by default:
 - `EMBEDDING_REINDEX_MAX_CHUNKS` (default `5000`): texts one reindex call may
   embed.
 
-Customer provider keys are never Worker secrets; they live envelope-encrypted
-(AES-256-GCM, AAD `namespace|credential_id|provider`) in D1 under the KEK
-above. They live in `wrangler.toml` `[vars]` / `[env.qa.vars]` or in the local
-shell, and are deliberately **not** in the vault.
+Customer provider keys are never Worker secrets and are deliberately **not** in
+the vault: they live envelope-encrypted (AES-256-GCM, AAD
+`namespace|credential_id|provider`) in D1 under the KEK above. The platform's
+own evaluation key is a different kind of secret and does live in the vault, at
+`/byok-qa` (env `qa`) — a folder no Cloudflare Worker Secret Sync reads. See the
+vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 
 ## Runtime delivery
 
@@ -148,4 +150,4 @@ The production reset followed the procedure in `docs/prod-d1-reset-runbook.md`.
 This closes the schema gate only: later `main` pipeline runs can still fail on
 unrelated deploy steps, so check the latest `ci` run before assuming a deploy.
 
-Last audited: 2026-10-05
+Last audited: 2026-10-13
