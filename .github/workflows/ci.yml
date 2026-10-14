@@ -82,6 +82,7 @@ jobs:
           project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
           env-slug: "qa"
           secret-name: CLOUDFLARE_API_TOKEN
+          secret-path: /ci
       - run: pnpm run deploy --env qa
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -134,6 +135,7 @@ jobs:
           project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
           env-slug: "prod"
           secret-name: CLOUDFLARE_API_TOKEN
+          secret-path: /ci
       - run: pnpm run deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
