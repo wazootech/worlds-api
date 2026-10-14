@@ -137,3 +137,16 @@ jobs:
       - run: pnpm run deploy
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+  # Credential-free: read-only GETs against production. Fetches no secrets and
+  # needs no install. Runs only after a manually dispatched prod deploy.
+  canary-prod:
+    if: github.event_name == 'workflow_dispatch'
+    needs: deploy-prod
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: node scripts/prod-canary.mjs
