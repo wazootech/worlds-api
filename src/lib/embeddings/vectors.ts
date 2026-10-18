@@ -12,8 +12,8 @@ import { describeError } from "./errors";
  * subject/predicate/graph/value, world-scoped by VectorizeVectorSearchIndex).
  * Cleanup therefore always runs BEFORE the chunk rows it enumerates are
  * dropped, and it is gated on the Vectorize binding being bound, never on an
- * embedder existing: a revoked credential, a cleared KEK or an unset
- * EMBEDDING_PROVIDER must not stop removed text from leaving the index.
+ * embedder existing: a revoked credential or a cleared KEK must not stop
+ * removed text from leaving the index.
  *
  * Cleanup is best effort at the Vectorize API but never silent: every call
  * returns a report, callers surface it, and a failed or incomplete run leaves

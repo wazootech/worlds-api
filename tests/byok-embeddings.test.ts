@@ -75,7 +75,6 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     DB: db as unknown as Env["DB"],
     WORLDS_API_ADMIN_KEY: "admin-key",
     RATE_LIMIT_RPM: "0",
-    EMBEDDING_PROVIDER: "byok",
     EMBEDDING_KEK_V1: kek1,
     VECTORIZE_INDEX: { query: vi.fn() } as unknown as Env["VECTORIZE_INDEX"],
     ...overrides,
@@ -610,8 +609,6 @@ describe("resolveEmbeddingService fails closed", () => {
   });
 
   it.each([
-    ["provider unset", { EMBEDDING_PROVIDER: undefined }],
-    ["provider not byok", { EMBEDDING_PROVIDER: "workers-ai" }],
     ["no vectorize binding", { VECTORIZE_INDEX: undefined }],
     ["no KEK", { EMBEDDING_KEK_V1: undefined }],
   ])("keyword-only when %s", async (_name, patch) => {

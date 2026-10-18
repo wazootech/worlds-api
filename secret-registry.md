@@ -29,7 +29,7 @@ records only how worlds-api consumes it.
 | Secret                 | Infisical env | Prod Worker | QA Worker | Local dev   | Notes                                                                     |
 | ---------------------- | ------------- | ----------- | --------- | ----------- | ------------------------------------------------------------------------- |
 | `WORLDS_API_ADMIN_KEY` | qa, prod      | via sync    | via sync  | own value   | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
-| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | own value (optional) | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Optional binding: when absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
+| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | own value | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Required for embeddings: BYOK is the only embedding source and there is no mode switch, so this key is what turns it on. When absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
 | `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | Optional next KEK. Writes use the highest configured version. |
 
 Only `WORLDS_API_ADMIN_KEY` and the optional `EMBEDDING_KEK_V<n>` secrets are
@@ -41,16 +41,16 @@ which looks identical to a failed credential re-seed.
 
 ### Non-secret configuration
 
-`WAZOO_ENV`, `PORT`, `CORS_ORIGINS`, `EMBEDDING_PROVIDER`, and the abuse
+`WAZOO_ENV`, `PORT`, `CORS_ORIGINS`, and the abuse
 knobs (`SPARQL_*`, `MAX_IMPORT_*`, `RATE_LIMIT_*`) are configuration, not
 secrets.
 
-BYOK embedding configuration (worlds-api#1), all unset by default:
+BYOK embedding configuration (worlds-api#1). BYOK is the only embedding
+source: there is no mode switch. A deployment embeds only when
+`EMBEDDING_KEK_V<n>` is a usable secret and the namespace has an active
+credential; without a KEK the credential store fails closed (credential
+routes 503, search keyword-only). Knobs, all unset by default:
 
-- `EMBEDDING_PROVIDER=byok` turns customer-key embeddings on. Unset (or any
-  other value) is the kill switch: every world is keyword-only and no data
-  changes. Nothing in `wrangler.toml` sets it; enable per environment only
-  after the KEK secret and a QA provider key exist.
 - `EMBEDDING_DAILY_BUDGET` (default `20000`): texts one namespace may embed per
   UTC day across index and query operations, enforced in D1 before the provider
   is called.
