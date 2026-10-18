@@ -16,9 +16,11 @@ This repository contains the Worlds API service.
   require `WORLDS_API_ADMIN_KEY`.
 - Document environment variables and remote-service assumptions before
   finishing.
-- Secrets are injected from Infisical at runtime (`pnpm run dev`, or
-  `infisical run --env=<env> -- <command>`); never write them to disk, and do
-  not add code that reads `.env*` or `.dev.vars`.
+- Local development brings its own resources: values come from a gitignored
+  `.dev.vars` (copy `.dev.vars.example`) or your shell, and are your own, not
+  the platform's. The org vault holds only `qa` and `prod`; run QA commands
+  through `infisical run --env=qa -- <command>`. Never write vault secrets to
+  disk.
 
 ## Cross-repo impact
 

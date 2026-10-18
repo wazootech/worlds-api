@@ -44,8 +44,9 @@ export type Env = {
   EMBEDDING_REINDEX_MAX_CHUNKS?: string;
   /**
    * Platform→data-plane admin key. The name is canonical platform-wide: the
-   * value lives in Infisical as `WORLDS_API_ADMIN_KEY`, is injected locally by
-   * `infisical run`, and is delivered to the deployed Worker by the Cloudflare
+   * value lives in Infisical as `WORLDS_API_ADMIN_KEY` for `qa` and `prod`, is
+   * chosen by each developer for local runs, and is delivered to the deployed
+   * Worker by the Cloudflare
    * Workers Secret Sync. `src/lib/auth.ts` accepts it as `{ admin: true }`,
    * bypassing `api_keys`.
    */

@@ -5,7 +5,7 @@
   "packageManager": "pnpm@12.11.2",
   "private": true,
   "scripts": {
-    "dev": "infisical run --env=dev -- node scripts/dev.mjs",
+    "dev": "node scripts/dev.mjs",
     "build": "tsc",
     "start": "node dist/server.js",
     "deploy": "wrangler deploy",
@@ -14,7 +14,6 @@
     "openapi:check": "vitest run tests/openapi-doc.test.ts",
     "health:local": "node scripts/local-health.mjs",
     "canary:prod": "node scripts/prod-canary.mjs",
-    "secrets:check": "infisical run --env=dev -- node scripts/secrets-check.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --write",
