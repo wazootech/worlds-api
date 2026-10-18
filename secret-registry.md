@@ -29,8 +29,6 @@ records only how worlds-api consumes it.
 | Secret                 | Infisical env | Prod Worker | QA Worker | Local dev   | Notes                                                                     |
 | ---------------------- | ------------- | ----------- | --------- | ----------- | ------------------------------------------------------------------------- |
 | `WORLDS_API_ADMIN_KEY` | qa, prod      | via sync    | via sync  | own value   | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
-| `GOOGLE_SERVICE_ACCOUNT_KEY` | qa, prod | not consumed | not consumed | n/a | Present in the vault for sibling services; worlds-api does not read it.   |
-
 | `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | own value (optional) | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Optional binding: when absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
 | `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | Optional next KEK. Writes use the highest configured version. |
 
@@ -71,9 +69,9 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 | Target            | Path                                                                |
 | ----------------- | ------------------------------------------------------------------- |
 | Local dev         | `npm run dev` → `scripts/dev.mjs` → `wrangler dev`, reading your own gitignored `.dev.vars` (or shell variables, since `CLOUDFLARE_INCLUDE_PROCESS_ENV=true` makes Wrangler pass them into the Worker). No vault involvement. |
-| QA Worker         | Infisical Secret Sync (project `wazoo`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
-| Prod Worker       | Infisical Secret Sync (project `wazoo`, source `/worlds-api`, env `Production`) → script `worlds-api`. Deletion protection **on**. |
-| CI (`health-qa`, `smoke-qa`) | `Infisical/secrets-action@v1.0.17` with `method: oidc`, env `qa`, `secret-name: WORLDS_API_ADMIN_KEY`, per-repo machine identity subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`. Reads project `wazoo` via `INFISICAL_PROJECT_SLUG=wazoo-n-jx-j`. Needs `permissions: id-token: write` and the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables**. |
+| QA Worker         | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
+| Prod Worker       | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `prod`) → script `worlds-api`. Deletion protection **on**. |
+| CI (`health-qa`, `smoke-qa`) | `Infisical/secrets-action@v1.0.17` with `method: oidc`, env `qa`, `secret-name: WORLDS_API_ADMIN_KEY`, per-repo machine identity subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`. Reads project `wazoo-n-jx-j` via `INFISICAL_PROJECT_SLUG`. Needs `permissions: id-token: write` and the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables**. |
 | CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-qa` and `deploy-prod` use `Infisical/secrets-action@v1.0.17` with `method: oidc` and `secret-name: CLOUDFLARE_API_TOKEN` and `secret-path: /ci`, env `qa` and `prod` respectively (same identity and variables as above). The deploy credential lives at vault folder `/ci`, deliberately outside any sync's scope, so no sync binds it onto a Worker. `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
 
 ## Operational notes
@@ -106,11 +104,11 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 
 ## Single source of truth for `WORLDS_API_ADMIN_KEY`
 
-The value lives in **one** place: the shared `wazoo` project, environment `qa`
-and `prod`, at the project root. The `/worlds-api` folder in that project holds a
-*reference* (`${qa.WORLDS_API_ADMIN_KEY}` / `${prod.WORLDS_API_ADMIN_KEY}`), not a
-second copy, and the two Worker syncs source from that folder. The QA and prod
-values differ by design.
+The canonical value lives at the root of the shared `wazoo-n-jx-j` project,
+environment `qa` and `prod`. The `/worlds-api` folder holds a **literal copy**
+(checked 2026-10-18; it is not an Infisical reference), and the two Worker syncs
+source from that folder. Rotating the key means editing root, `/worlds-api` and
+`/wazoo-api` in the same environment. The QA and prod values differ by design.
 
 An earlier arrangement kept a second literal copy in an isolated `worlds-api`
 Infisical project that CI read directly. That project is retired as a source:
@@ -150,4 +148,4 @@ The production reset followed the procedure in `docs/prod-d1-reset-runbook.md`.
 This closes the schema gate only: later `main` pipeline runs can still fail on
 unrelated deploy steps, so check the latest `ci` run before assuming a deploy.
 
-Last audited: 2026-10-13
+Last audited: 2026-10-18
