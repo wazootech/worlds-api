@@ -10,34 +10,25 @@
    pnpm install
    ```
 
-2. Install and authenticate the Infisical CLI (once per machine). See the
-   [Infisical CLI docs](https://infisical.com/docs/cli/overview) for install
-   options; on macOS:
+2. Create your own local environment file. Local development brings its own
+   resources, so nothing here needs org credentials. Copy the template and set
+   `WORLDS_API_ADMIN_KEY` to any random string you choose; only your local
+   instance sees it:
 
    ```sh
-   brew install infisical/get-cli/infisical
-   infisical login
+   cp .dev.vars.example .dev.vars
    ```
 
-   In WSL 2, Codespaces, or a remote SSH session with no browser, use
-   `infisical login -i` instead.
+   `.dev.vars` is gitignored. Wrangler simulates the D1 binding locally, so you
+   need no Cloudflare account to run the service.
 
-3. Link this checkout to the Worlds API project. This writes `.infisical.json`,
-   which holds local project settings only — no secret values — and is safe to
-   commit:
-
-   ```sh
-   infisical init
-   ```
-
-4. Start the local dev server. Secrets are pulled from the Development
-   environment at process start, so no local secret file is needed:
+3. Start the local dev server:
 
    ```sh
    pnpm run dev
    ```
 
-5. Run checks:
+4. Run checks:
    ```sh
    pnpm run typecheck
    pnpm run test
@@ -49,57 +40,36 @@
 - Local: `pnpm run health:local`
 - QA: `pnpm run health:local https://data-qa.wazoo.dev`
 
-The script checks `/health` for liveness and `/ready` for the control-plane schema. Its authenticated checks require `WORLDS_API_ADMIN_KEY`, supplied by Infisical — run it through the CLI so the value is injected:
+The script checks `/health` for liveness and `/ready` for the control-plane schema. Its authenticated checks require `WORLDS_API_ADMIN_KEY`.
+
+Against your local instance, export the same key you put in `.dev.vars`:
 
 ```sh
-infisical run --env=dev -- pnpm run health:local
+WORLDS_API_ADMIN_KEY=<your local key> pnpm run health:local
+```
+
+Against QA, org members with vault access inject the `qa` value:
+
+```sh
 infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 ```
 
-## Verifying the wiring
-
-Once the CLI is linked, prove that secrets come from Infisical rather than disk:
-
-```sh
-pnpm run secrets:check
-```
-
-The script reports only key names, whether each resolved, and its length — never
-a secret value — and exits non-zero if a required secret is missing. Then rename
-the legacy `.dev.vars` to `.dev.vars.backup` (already covered by `.gitignore`),
-restart `pnpm run dev`, and confirm the service still starts.
-
 ## Environment files
 
-Secrets live in Infisical, keyed by environment (`dev`, `qa`, `prod`). Nothing
-secret is written to disk:
+The org vault (Infisical) holds only the `qa` and `prod` environments. There is
+no shared `dev` environment: local development brings its own resources.
 
-- `.infisical.json` — CLI project link (committed; contains no secrets).
-- `infisical run --env=<env> -- <command>` — injects secrets into any command,
-  for example `infisical run --env=dev -- pnpm run health:local`.
-- `.dev.vars`, `.env.qa`, `.env.production` — legacy local secret files. They
-  stay gitignored and are superseded by Infisical; rename `.dev.vars` to
-  `.dev.vars.backup` once the CLI is linked so local runs cannot silently fall
-  back to disk.
+- `.dev.vars` — your own local values (gitignored). Copy it from
+  `.dev.vars.example`.
 - `.dev.vars.example`, `.env.qa.example`, `.env.production.example` — committed
-  templates kept for reference.
+  templates.
+- `.infisical.json` — CLI project link (committed; contains no secrets). Its
+  default environment is `qa`. Org members use it with
+  `infisical run --env=<qa|prod> -- <command>`.
+
+Never copy a vault value into a local file.
 
 Cloudflare provides the D1 binding; no Turso or libSQL credentials are used.
-
-## Verifying the Infisical wiring
-
-Run the check through the CLI. It reports each key name, whether it resolved, and
-the length of its value — never the value itself:
-
-```sh
-pnpm run secrets:check
-```
-
-It exits non-zero when a required secret is unresolved, which makes it a usable
-CI gate. To prove secrets come from Infisical and not from disk, rename the old
-`.dev.vars` (or `.env`) to `.dev.vars.backup`, then run `pnpm run secrets:check`
-and `pnpm run dev` again — both should still work. The check also warns when a
-leftover secret file is present, so a pass can't be a false green.
 
 ## CI/CD
 

@@ -1,11 +1,12 @@
-// Cross-platform launcher for `wrangler dev` under Infisical.
+// Cross-platform launcher for `wrangler dev`.
 //
-// `infisical run` injects secrets as process environment variables. Wrangler
-// only maps process environment variables into the Worker's local bindings when
-// CLOUDFLARE_INCLUDE_PROCESS_ENV is set and no .dev.vars file is present
-// (Cloudflare's documented behavior for local development without a vars file),
-// so set it here for every platform instead of relying on shell syntax that
-// differs between POSIX shells and cmd.exe.
+// Local development brings its own resources: put your own values in a
+// gitignored .dev.vars (copy .dev.vars.example), or export them in your shell.
+// Wrangler only maps process environment variables into the Worker's local
+// bindings when CLOUDFLARE_INCLUDE_PROCESS_ENV is set and no .dev.vars file is
+// present (Cloudflare's documented behavior for local development without a
+// vars file), so set it here for every platform instead of relying on shell
+// syntax that differs between POSIX shells and cmd.exe.
 //
 // Wrangler's bin entry is launched through `process.execPath` rather than a
 // shell: on Windows the `wrangler` shim is a .cmd file, and Node cannot spawn a

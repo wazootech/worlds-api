@@ -101,11 +101,12 @@ admin-only and exist for the platform facade and account-deletion flows.
 - `WORLDS_API_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management. This is the only secret worlds-api reads.
 
-Secrets are stored centrally in Infisical and injected at process start; they
-are never written to a local file. See [CONTRIBUTING.md](CONTRIBUTING.md) for CLI
-setup and the wrapped commands (`.infisical.json`, the committed project link,
-holds no secret values), and [secret-registry.md](secret-registry.md) for how
-local dev, the Workers Secret Sync, and CI each receive it.
+Deployed secrets live in Infisical (`qa` and `prod`) and reach the Workers
+through the Cloudflare Workers Secret Sync. Local development brings its own
+resources and uses your own `.dev.vars`; it needs no org credentials. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for local setup and
+[secret-registry.md](secret-registry.md) for how the Workers Secret Sync and CI
+each receive the deployed values.
 
 Worlds API's control-plane DDL is defined in `src/lib/d1-schema.ts`. The
 `@worlds/cloudflare` package owns data-plane tables, indexes, and schema
@@ -119,11 +120,11 @@ database reset remains a separately approved rollout action.
 
 `/health` checks liveness and database connectivity. `/ready` checks that the
 control-plane schema matches this service. The health script probes both and
-requires `WORLDS_API_ADMIN_KEY` for its authenticated checks, so run it through the
-CLI to inject that value:
+requires `WORLDS_API_ADMIN_KEY` for its authenticated checks. Export your local
+key for a local run, or inject the `qa` value (org members) for QA:
 
 ```sh
-infisical run --env=dev -- pnpm run health:local
+WORLDS_API_ADMIN_KEY=<your local key> pnpm run health:local
 infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 ```
 
@@ -131,15 +132,11 @@ infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 
 ```sh
 pnpm install
-infisical login   # once per machine
-infisical init    # once per checkout
-pnpm run dev       # secrets injected from Infisical at runtime
+cp .dev.vars.example .dev.vars   # then set your own WORLDS_API_ADMIN_KEY
+pnpm run dev
 pnpm run typecheck
 pnpm run build
 ```
-
-`.dev.vars` is no longer required. If you still have one, rename it to
-`.dev.vars.backup` so local runs are proven to use Infisical rather than disk.
 
 ## Deployment
 
