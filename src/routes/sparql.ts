@@ -2,7 +2,8 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../env";
 import { authorize, requireAccess, unauthorized } from "../lib/auth";
-import { SCOPE_DATA_READ } from "../lib/auth";
+import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
+import { SparqlParser } from "@wazoo/sparql-engine/parser";
 import {
   sparqlMaxQueryLength,
   sparqlMaxResults,
@@ -54,6 +55,14 @@ async function materializeBindings(
     return rows;
   }
   return bindings;
+}
+
+/**
+ * Parses the query with the same parser configuration the engine uses and
+ * reports whether it is a query or an update. Throws on a syntax error.
+ */
+function classifySparql(query: string): "query" | "update" {
+  return new SparqlParser().parse(query).type;
 }
 
 export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
@@ -158,13 +167,10 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      const accessErr = requireAccess(
-        auth,
-        ref.namespace,
-        worldId,
-        SCOPE_DATA_READ,
-      );
-      if (accessErr) return accessErr;
+      // Namespace and world first, so a foreign key learns nothing about the
+      // query; the scope check waits until the query is classified below.
+      const ownerErr = requireAccess(auth, ref.namespace, worldId);
+      if (ownerErr) return ownerErr;
 
       if (!body.query) {
         return respond(
@@ -189,6 +195,34 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           400,
         );
       }
+
+      // Classify before authorizing: an update mutates the world, so it needs
+      // data:write like import. Deciding from the result kind would be too
+      // late, since the update has already run by then.
+      let isUpdate: boolean;
+      try {
+        isUpdate = classifySparql(body.query) === "update";
+      } catch (error) {
+        return respond(
+          c,
+          {
+            error: {
+              code: "INVALID_ARGUMENT",
+              message:
+                error instanceof Error ? error.message : "Invalid SPARQL query",
+            },
+          },
+          400,
+        );
+      }
+
+      const accessErr = requireAccess(
+        auth,
+        ref.namespace,
+        worldId,
+        isUpdate ? SCOPE_DATA_WRITE : SCOPE_DATA_READ,
+      );
+      if (accessErr) return accessErr;
 
       const client = await getWorldSdk(env, ref);
 

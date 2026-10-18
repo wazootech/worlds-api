@@ -264,6 +264,70 @@ describe("scope enforcement", () => {
     );
     expect(res.status).toBe(200);
   });
+
+  const sparqlPath = "/worlds/w_00000000000000000000000001/sparql";
+  const sparqlAs = (token: string, query: string) =>
+    request(token, sparqlPath, {
+      method: "POST",
+      body: JSON.stringify({ query }),
+    });
+
+  // Every SPARQL UPDATE form; each must stay under SPARQL_MAX_QUERY_LENGTH.
+  const updates = [
+    "INSERT DATA { <urn:s> <urn:p> <urn:o> }",
+    "DELETE DATA { <urn:s> <urn:p> <urn:o> }",
+    "DELETE WHERE { ?s ?p ?o }",
+    "INSERT { ?s <urn:p> 1 } WHERE { ?s ?p ?o }",
+    "DELETE { ?s ?p ?o } INSERT { ?s ?p 1 } WHERE { ?s ?p ?o }",
+    "CLEAR DEFAULT",
+    "DROP ALL",
+  ];
+
+  it.each(updates)(
+    "rejects SPARQL UPDATE from a data:read key before it runs: %s",
+    async (query) => {
+      const res = await sparqlAs(READ_ONLY_TOKEN, query);
+      expect(res.status).toBe(403);
+      const body = (await res.json()) as {
+        error?: { code?: string; message?: string };
+      };
+      expect(body.error?.code).toBe("FORBIDDEN");
+      expect(body.error?.message).toContain("data:write");
+      expect(getWorldSdkMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("allows ASK from a data:read key", async () => {
+    const res = await sparqlAs(READ_ONLY_TOKEN, "ASK { ?s ?p ?o }");
+    expect(res.status).toBe(200);
+  });
+
+  it.each(updates)(
+    "allows SPARQL UPDATE from a data:write key: %s",
+    async (query) => {
+      const sparql = vi.fn().mockResolvedValue({ kind: "void" });
+      getWorldSdkMock.mockResolvedValue({ sparql } as never);
+      const res = await sparqlAs(FULL_TOKEN, query);
+      expect(res.status).toBe(200);
+      expect(sparql).toHaveBeenCalledOnce();
+    },
+  );
+
+  it("allows SPARQL UPDATE from the admin key", async () => {
+    getWorldSdkMock.mockResolvedValue({
+      sparql: vi.fn().mockResolvedValue({ kind: "void" }),
+    } as never);
+    const res = await sparqlAs("test-admin-key", "DELETE WHERE { ?s ?p ?o }");
+    expect(res.status).toBe(200);
+  });
+
+  it("rejects an unparseable query as INVALID_ARGUMENT without running it", async () => {
+    const res = await sparqlAs(READ_ONLY_TOKEN, "DELETE THE WORLD");
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error?: { code?: string } };
+    expect(body.error?.code).toBe("INVALID_ARGUMENT");
+    expect(getWorldSdkMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("serialized RDF import (worlds-api#25)", () => {
