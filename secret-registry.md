@@ -63,7 +63,7 @@ Customer provider keys are never Worker secrets and are deliberately **not** in
 the vault: they live envelope-encrypted (AES-256-GCM, AAD
 `namespace|credential_id|provider`) in D1 under the KEK above. The platform's
 own evaluation key is a different kind of secret and does live in the vault, at
-`/byok-qa` (env `qa`) — a folder no Cloudflare Worker Secret Sync reads. See the
+`/ci` (env `qa`) — a folder no Cloudflare Worker Secret Sync reads. See the
 vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 
 ## Runtime delivery
