@@ -2045,7 +2045,7 @@
         ],
         "operationId": "sparqlWorld",
         "summary": "Execute SPARQL query",
-        "description": "Execute a SPARQL 1.1 query (SELECT, ASK, or UPDATE) against a world's RDF graph. SELECT results are limited by the server-configured maximum. Queries time out after the configured limit.",
+        "description": "Execute a SPARQL 1.1 query (SELECT, ASK, or UPDATE) against a world's RDF graph. SELECT and ASK require the data:read scope; SPARQL UPDATE (INSERT, DELETE, CLEAR, DROP, and the other update forms) requires data:write, and a key without it receives 403 before the update runs. An unparseable query returns 400 INVALID_ARGUMENT. SELECT results are limited by the server-configured maximum. Queries time out after the configured limit.",
         "x-mint": {
           "metadata": {
             "title": "Execute SPARQL query"
