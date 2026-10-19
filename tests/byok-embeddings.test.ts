@@ -296,18 +296,18 @@ describe("credential store", () => {
       ok: false,
       reason: "kek_unavailable",
     });
-    expect(await getCredential(env, "ns")).toBeNull();
+    expect(await getCredential(env, "ns", "openai")).toBeNull();
   });
 
   it("stores ciphertext only, exposes fingerprint/last4, and resolves the key", async () => {
     const env = makeEnv();
     const res = await setCredential(env, "ns", "openai", SECRET_KEY);
     expect(res.ok).toBe(true);
-    const row = await getCredential(env, "ns");
+    const row = await getCredential(env, "ns", "openai");
     expect(JSON.stringify(row)).not.toContain(SECRET_KEY);
     expect(row?.last4).toBe(SECRET_KEY.slice(-4));
     expect(row?.fingerprint).toBe((await sha256Hex(SECRET_KEY)).slice(0, 8));
-    expect((await resolveApiKey(env, "ns"))?.key).toBe(SECRET_KEY);
+    expect((await resolveApiKey(env, "ns", "openai"))?.key).toBe(SECRET_KEY);
   });
 
   it("returns null (never throws) for tampered rows and rows moved across namespaces", async () => {
@@ -315,7 +315,7 @@ describe("credential store", () => {
     await setCredential(env, "ns-a", "openai", SECRET_KEY);
     await setCredential(env, "ns-b", "openai", "sk-other-key-0123456789abcdef");
     invalidateKeyCache();
-    const a = (await getCredential(env, "ns-a"))!;
+    const a = (await getCredential(env, "ns-a", "openai"))!;
     // Replay ns-a's sealed key under ns-b.
     db.raw
       .prepare(
@@ -323,24 +323,24 @@ describe("credential store", () => {
       )
       .run(a.ciphertext, a.iv);
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(await resolveApiKey(env, "ns-b")).toBeNull();
+    expect(await resolveApiKey(env, "ns-b", "openai")).toBeNull();
 
     db.raw.exec(
       "UPDATE embedding_credentials SET ciphertext = 'AAAA' WHERE namespace = 'ns-a'",
     );
     invalidateKeyCache();
-    expect(await resolveApiKey(env, "ns-a")).toBeNull();
+    expect(await resolveApiKey(env, "ns-a", "openai")).toBeNull();
   });
 
   it("revoke erases ciphertext and the key stops resolving immediately", async () => {
     const env = makeEnv();
     await setCredential(env, "ns", "openai", SECRET_KEY);
-    expect(await resolveApiKey(env, "ns")).not.toBeNull();
-    expect(await revokeCredential(env, "ns")).toBe(1);
-    const row = await getCredential(env, "ns");
+    expect(await resolveApiKey(env, "ns", "openai")).not.toBeNull();
+    expect(await revokeCredential(env, "ns", "openai")).toBe(1);
+    const row = await getCredential(env, "ns", "openai");
     expect(row?.status).toBe("revoked");
     expect(row?.ciphertext).toBeNull();
-    expect(await resolveApiKey(env, "ns")).toBeNull();
+    expect(await resolveApiKey(env, "ns", "openai")).toBeNull();
   });
 
   it("marks the credential invalid after consecutive auth failures", async () => {
@@ -349,26 +349,28 @@ describe("credential store", () => {
       row: { credential_id: string };
     };
     for (let i = 0; i < AUTH_FAILURE_THRESHOLD; i++) {
-      expect((await getCredential(env, "ns"))?.status).toBe("active");
+      expect((await getCredential(env, "ns", "openai"))?.status).toBe("active");
       await recordAuthFailure(env, row.credential_id);
     }
-    expect((await getCredential(env, "ns"))?.status).toBe("invalid");
-    expect(await resolveApiKey(env, "ns")).toBeNull();
+    expect((await getCredential(env, "ns", "openai"))?.status).toBe("invalid");
+    expect(await resolveApiKey(env, "ns", "openai")).toBeNull();
   });
 
   it("lazily re-wraps under a newer KEK on use", async () => {
     await setCredential(makeEnv(), "ns", "openai", SECRET_KEY);
     invalidateKeyCache();
     const rotated = makeEnv({ EMBEDDING_KEK_V2: kek2 });
-    expect((await resolveApiKey(rotated, "ns"))?.key).toBe(SECRET_KEY);
-    expect((await getCredential(rotated, "ns"))?.kek_version).toBe(2);
+    expect((await resolveApiKey(rotated, "ns", "openai"))?.key).toBe(
+      SECRET_KEY,
+    );
+    expect((await getCredential(rotated, "ns", "openai"))?.kek_version).toBe(2);
     // V1 can be retired once swept.
     invalidateKeyCache();
     const v2Only = makeEnv({
       EMBEDDING_KEK_V1: undefined,
       EMBEDDING_KEK_V2: kek2,
     });
-    expect((await resolveApiKey(v2Only, "ns"))?.key).toBe(SECRET_KEY);
+    expect((await resolveApiKey(v2Only, "ns", "openai"))?.key).toBe(SECRET_KEY);
   });
 
   it("loses the re-wrap race to a concurrent revoke instead of rewriting ciphertext", async () => {
@@ -416,9 +418,11 @@ describe("credential store", () => {
     });
 
     // The key still opens: the row was active when it was read.
-    expect((await resolveApiKey(rotated, "ns"))?.key).toBe(SECRET_KEY);
+    expect((await resolveApiKey(rotated, "ns", "openai"))?.key).toBe(
+      SECRET_KEY,
+    );
     // The background re-wrap must not resurrect revoked ciphertext.
-    const row = await getCredential(rotated, "ns");
+    const row = await getCredential(rotated, "ns", "openai");
     expect(row?.status).toBe("revoked");
     expect(row?.ciphertext).toBeNull();
     expect(row?.kek_version).toBe(1);
@@ -690,7 +694,7 @@ describe("resolveEmbeddingService fails closed", () => {
       await resolveEmbeddingService(env, ref, { operation: "query" }),
     ).toBeUndefined();
     await ready(env);
-    await revokeCredential(env, "ns");
+    await revokeCredential(env, "ns", "openai");
     expect(
       await resolveEmbeddingService(env, ref, { operation: "query" }),
     ).toBeUndefined();
@@ -930,7 +934,7 @@ describe("credential routes", () => {
     expect((await put(env, "ns-world-token")).status).toBe(403);
     expect((await put(env, null)).status).toBe(401);
     expect((await put(env, "other-ns-token")).status).toBe(403);
-    expect(await getCredential(env, "ns-1")).toBeNull();
+    expect(await getCredential(env, "ns-1", "openai")).toBeNull();
     expect((await put(env, "admin-key")).status).toBe(200);
   });
 
@@ -941,7 +945,7 @@ describe("credential routes", () => {
     expect(((await res.json()) as any).error.code).toBe(
       "EMBEDDINGS_NOT_CONFIGURED",
     );
-    expect(await getCredential(env, "ns-1")).toBeNull();
+    expect(await getCredential(env, "ns-1", "openai")).toBeNull();
   });
 
   it("revokes via DELETE and 404s when there is nothing to revoke", async () => {
@@ -969,7 +973,7 @@ describe("credential routes", () => {
     expect(
       (await http(env, "ns-admin-token", path, { method: "DELETE" })).status,
     ).toBe(400);
-    expect((await getCredential(env, "ns-1"))?.status).toBe("active");
+    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe("active");
 
     const got = await http(
       env,
@@ -1008,7 +1012,9 @@ describe("credential routes", () => {
       method: "POST",
     });
     expect(res.status).toBe(200);
-    expect((await getCredential(env, "ns-1"))?.status).toBe("revoked");
+    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe(
+      "revoked",
+    );
   });
 });
 
@@ -1248,9 +1254,9 @@ describe("reindex end to end with a fake provider", () => {
     expect(JSON.parse(text).vectorSync.errors).toEqual([
       "embed: embedding provider rejected the credential",
     ]);
-    expect((await getCredential(env, "ns-1"))?.consecutive_auth_failures).toBe(
-      1,
-    );
+    expect(
+      (await getCredential(env, "ns-1", "openai"))?.consecutive_auth_failures,
+    ).toBe(1);
   });
 
   it("reindexes a world larger than the cap in windows, resuming where it stopped", async () => {

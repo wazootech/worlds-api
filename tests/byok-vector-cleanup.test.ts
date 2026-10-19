@@ -438,7 +438,9 @@ describe("namespace delete and purge remove vectors", () => {
     expect(vectorize.store.size).toBe(0);
     expect((await getWorldState(env, WORLD_A))?.state).toBe("stale");
     expect((await getWorldState(env, WORLD_B))?.state).toBe("stale");
-    expect((await getCredential(env, "ns-1"))?.status).toBe("revoked");
+    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe(
+      "revoked",
+    );
     // D1 no longer claims vectors that are gone.
     expect(chunkRows(WORLD_A).every((r) => r.has_vec === 0)).toBe(true);
   });

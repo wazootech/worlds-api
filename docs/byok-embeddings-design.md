@@ -122,8 +122,9 @@ Allowlist (static map in code, not customer-defined strings):
 OpenRouter is a vetted second provider (OpenAI-compatible endpoint at a fixed
 host, no customer-supplied URL). Its allowlist ids are `openrouter/<vendor>/<model>`;
 a namespace holds one credential per provider, and a world's model decides which
-one is used. Only the OpenAI models are listed for now because they are the ones
-whose `dimensions` parameter is confirmed to pass through.
+one is used. Only the OpenAI models are listed for now because OpenRouter
+forwards `dimensions` for them; **(unverified)** until the QA round-trip runs
+against OpenRouter.
 
 Anything else (Cohere, Voyage, Gemini, local models) is a later row, admitted
 only if it can emit exactly 1536 and we pin the parameter. **(unverified)**

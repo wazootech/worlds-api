@@ -290,22 +290,24 @@ export async function markWorldStale(env: Env, worldId: string): Promise<void> {
 
 /**
  * Marks worlds of a namespace stale (credential revoke, namespace delete).
- * With `provider`, only worlds whose embedding model belongs to that provider
- * (model ids start `<provider>/`) are marked; revoking one provider's key
- * leaves worlds on another provider's key alone.
+ * With `modelIds`, only worlds on those models are marked; revoking one
+ * provider's key leaves worlds on another provider's key alone.
  */
 export async function markNamespaceStale(
   env: Env,
   namespace: string,
-  provider?: string,
+  modelIds?: readonly string[],
 ): Promise<number> {
+  if (modelIds && modelIds.length === 0) return 0;
   const result = await execute(
     getDb(env),
     `UPDATE world_embedding_state SET state = 'stale', reindex_cursor = NULL, update_time = ?
       WHERE world_id IN (SELECT world_id FROM worlds WHERE namespace = ?${
-        provider ? " AND embedding_model LIKE ?" : ""
+        modelIds
+          ? ` AND embedding_model IN (${modelIds.map(() => "?").join(",")})`
+          : ""
       })`,
-    provider ? [now(), namespace, `${provider}/%`] : [now(), namespace],
+    [now(), namespace, ...(modelIds ?? [])],
   );
   return result.rowsAffected;
 }

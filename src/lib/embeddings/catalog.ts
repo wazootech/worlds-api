@@ -87,6 +87,11 @@ export const EMBEDDING_MODEL_IDS = [
 
 export const EMBEDDING_PROVIDER_IDS = ["openai", "openrouter"] as const;
 
+/** Every allowlisted model id that belongs to a provider. */
+export function modelIdsForProvider(provider: EmbeddingProviderId): string[] {
+  return MODELS.filter((m) => m.provider === provider).map((m) => m.id);
+}
+
 /** Returns the allowlist entry for a model id, or undefined if not allowlisted. */
 export function getEmbeddingModel(id: string): EmbeddingModelSpec | undefined {
   return MODELS.find((model) => model.id === id);

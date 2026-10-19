@@ -4,6 +4,7 @@ import { sha256Hex } from "../crypto";
 import {
   getEmbeddingModel,
   isAllowlistedEmbeddingModel,
+  modelIdsForProvider,
   type EmbeddingProviderId,
 } from "./catalog";
 export { EMBEDDING_STATUSES } from "./catalog";
@@ -85,7 +86,7 @@ export function reindexMaxChunks(env: Env): number {
 export async function getCredential(
   env: Env,
   namespace: string,
-  provider: EmbeddingProviderId = "openai",
+  provider: EmbeddingProviderId,
 ): Promise<CredentialRow | null> {
   return queryOne<CredentialRow>(
     getDb(env),
@@ -106,6 +107,19 @@ export async function listCredentials(
       [namespace],
     )) ?? []
   );
+}
+
+/**
+ * The namespace's credential for the provider that serves `modelId`, or null
+ * when the model is not allowlisted or the namespace has no credential for it.
+ */
+export async function getCredentialForModel(
+  env: Env,
+  namespace: string,
+  modelId: string,
+): Promise<CredentialRow | null> {
+  const provider = getEmbeddingModel(modelId)?.provider;
+  return provider ? getCredential(env, namespace, provider) : null;
 }
 
 export type SetCredentialResult =
@@ -204,7 +218,7 @@ export async function setCredential(
 export async function revokeCredential(
   env: Env,
   namespace: string,
-  provider: EmbeddingProviderId = "openai",
+  provider: EmbeddingProviderId,
 ): Promise<number> {
   const result = await execute(
     getDb(env),
@@ -217,7 +231,7 @@ export async function revokeCredential(
   // world of the namespace goes stale: a later PUT of a key must not make
   // vectors built before the revoke (and before any deletes made while there
   // was no embedder) live again. Reindex repairs it.
-  await markNamespaceStale(env, namespace, provider);
+  await markNamespaceStale(env, namespace, modelIdsForProvider(provider));
   invalidateKeyCache(namespace);
   return result.rowsAffected;
 }
@@ -273,9 +287,10 @@ export const KEY_CACHE_TTL_MS = 60_000;
 type CachedKey = { key: string; credentialId: string; expires: number };
 const keyCache = new Map<string, CachedKey>();
 
-/** A namespace can hold one key per provider, so the cache is keyed by both. */
-const cacheKey = (namespace: string, provider: string) =>
+/** A namespace holds one credential per provider; this is the lookup key for both. */
+export const credentialSlot = (namespace: string, provider: string) =>
   `${namespace}|${provider}`;
+const cacheKey = credentialSlot;
 
 /** Drops one namespace's cached keys (every provider), or all of them. */
 export function invalidateKeyCache(namespace?: string): void {
@@ -298,7 +313,7 @@ export type ResolvedKey = { key: string; credentialId: string };
 export async function resolveApiKey(
   env: Env,
   namespace: string,
-  provider: EmbeddingProviderId = "openai",
+  provider: EmbeddingProviderId,
 ): Promise<ResolvedKey | null> {
   const slot = cacheKey(namespace, provider);
   const cached = keyCache.get(slot);
@@ -585,7 +600,10 @@ export async function loadEmbeddingStatuses(
             batch,
           )) ?? [];
         for (const row of rows) {
-          credentials.set(`${row.namespace}|${row.provider}`, row.status);
+          credentials.set(
+            credentialSlot(row.namespace, row.provider),
+            row.status,
+          );
         }
       }
       for (const batch of chunks(
@@ -608,14 +626,15 @@ export async function loadEmbeddingStatuses(
       }
     }
     for (const world of worlds) {
+      const modelProvider = getEmbeddingModel(world.embedding_model)?.provider;
       out.set(
         world.world_id,
         computeEmbeddingStatus({
           enabled,
           model: world.embedding_model,
-          credentialStatus: credentials.get(
-            `${world.namespace}|${getEmbeddingModel(world.embedding_model)?.provider}`,
-          ),
+          credentialStatus: modelProvider
+            ? credentials.get(credentialSlot(world.namespace, modelProvider))
+            : undefined,
           state: states.get(world.world_id),
         }),
       );
