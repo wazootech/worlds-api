@@ -41,11 +41,11 @@ export const WorldResourceSchema = z
     }),
     embeddingModel: z.string().openapi({
       description:
-        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only.",
+        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small or openrouter/openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only.",
     }),
     embeddingStatus: z.enum(EMBEDDING_STATUSES).openapi({
       description:
-        "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current.",
+        "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential for the provider of this world's model. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current.",
     }),
     chunkSize: z.number().int().openapi({
       description:
@@ -83,7 +83,7 @@ export const CreateWorldRequestSchema = z
     }),
     embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), and legacy openai/text-embedding-ada-002. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen.",
+        "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), legacy openai/text-embedding-ada-002, and the same OpenAI models through OpenRouter as openrouter/openai/text-embedding-3-small and openrouter/openai/text-embedding-3-large. The model's provider decides which namespace credential is used. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description:
@@ -107,7 +107,7 @@ export const UpdateWorldRequestSchema = z
     }),
     embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "New embedding model, as provider/model. Requires an active embedding credential for the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget.",
+        "New embedding model, as provider/model. Requires an active embedding credential, for the new model's provider, in the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description: "New chunk size for vector search indexing.",
@@ -435,9 +435,6 @@ export const worldsListQuery = z.object({});
 
 export const EmbeddingCredentialRequestSchema = z
   .object({
-    provider: z.enum(EMBEDDING_PROVIDER_IDS).openapi({
-      description: "Embedding provider the key belongs to.",
-    }),
     apiKey: z.string().max(512).openapi({
       description:
         "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed.",
@@ -469,3 +466,12 @@ export const EmbeddingCredentialSchema = z
     }),
   })
   .openapi("EmbeddingCredential");
+
+export const EmbeddingProviderListSchema = z
+  .object({
+    providers: z.array(EmbeddingCredentialSchema).openapi({
+      description:
+        "One entry per provider the namespace has stored a credential for, newest first, revoked ones included.",
+    }),
+  })
+  .openapi("EmbeddingProviderList");

@@ -12,7 +12,7 @@ import {
 import { respond } from "../lib/respond";
 import { getEmbeddingModel } from "../lib/embeddings/catalog";
 import {
-  getCredential,
+  getCredentialForModel,
   getWorldState,
   reindexMaxChunks,
   remainingBudget,
@@ -202,7 +202,8 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       try {
         budgetExhausted =
           Boolean(getEmbeddingModel(ref.embeddingModel)) &&
-          (await getCredential(env, ref.namespace))?.status === "active" &&
+          (await getCredentialForModel(env, ref.namespace, ref.embeddingModel))
+            ?.status === "active" &&
           (await remainingBudget(env, ref.namespace)) <= 0;
       } catch {
         budgetExhausted = false;

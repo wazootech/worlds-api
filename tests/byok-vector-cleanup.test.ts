@@ -317,7 +317,7 @@ describe("vectors do not outlive deleted triples", () => {
     const revoke = await http(
       env,
       "ns-admin",
-      "/namespaces/ns-1/embedding-credential",
+      "/namespaces/ns-1/embedding-providers/openai",
       { method: "DELETE" },
     );
     expect(revoke.status).toBe(204);
@@ -335,10 +335,10 @@ describe("vectors do not outlive deleted triples", () => {
     const put = await http(
       env,
       "ns-admin",
-      "/namespaces/ns-1/embedding-credential",
+      "/namespaces/ns-1/embedding-providers/openai",
       {
         method: "PUT",
-        body: JSON.stringify({ provider: "openai", apiKey: SECRET_KEY }),
+        body: JSON.stringify({ apiKey: SECRET_KEY }),
       },
     );
     expect(put.status).toBe(200);
@@ -438,7 +438,9 @@ describe("namespace delete and purge remove vectors", () => {
     expect(vectorize.store.size).toBe(0);
     expect((await getWorldState(env, WORLD_A))?.state).toBe("stale");
     expect((await getWorldState(env, WORLD_B))?.state).toBe("stale");
-    expect((await getCredential(env, "ns-1"))?.status).toBe("revoked");
+    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe(
+      "revoked",
+    );
     // D1 no longer claims vectors that are gone.
     expect(chunkRows(WORLD_A).every((r) => r.has_vec === 0)).toBe(true);
   });

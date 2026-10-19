@@ -3,14 +3,27 @@
  *
  * The Vectorize index width is immutable and fixed at 1536 dimensions, so only
  * models that can emit exactly 1536 are admissible, and the dimension
- * parameter is pinned in code, never customer-supplied. Provider base URLs are
- * code constants (no customer-supplied host: no SSRF surface, D10).
+ * parameter is pinned in code, never customer-supplied. Provider endpoints are
+ * code constants (no customer-supplied host: no SSRF surface, D10). A provider
+ * is vetted by listing it in EMBEDDING_PROVIDERS and allowlisting its models.
  */
 
 /** Width of the shared Vectorize index and the D1 vector column. */
 export const EMBEDDING_DIMENSIONS = 1536;
 
-export type EmbeddingProviderId = "openai";
+export type EmbeddingProviderId = "openai" | "openrouter";
+
+/**
+ * Vetted providers. Both speak the OpenAI embeddings wire format
+ * (`POST {model, input, encoding_format, dimensions}` returning `data[]`).
+ */
+export const EMBEDDING_PROVIDERS: Record<
+  EmbeddingProviderId,
+  { embeddingsUrl: string }
+> = {
+  openai: { embeddingsUrl: "https://api.openai.com/v1/embeddings" },
+  openrouter: { embeddingsUrl: "https://openrouter.ai/api/v1/embeddings" },
+};
 
 export type EmbeddingModelSpec = {
   id: string;
@@ -45,6 +58,22 @@ const MODELS: readonly EmbeddingModelSpec[] = [
     sendDimensions: false,
     legacy: true,
   },
+  // OpenRouter routes to OpenAI's models and forwards `dimensions`; its ids
+  // are `<vendor>/<model>`, so the allowlist id is `openrouter/<vendor>/<model>`.
+  {
+    id: "openrouter/openai/text-embedding-3-small",
+    provider: "openrouter",
+    providerModel: "openai/text-embedding-3-small",
+    sendDimensions: true,
+    legacy: false,
+  },
+  {
+    id: "openrouter/openai/text-embedding-3-large",
+    provider: "openrouter",
+    providerModel: "openai/text-embedding-3-large",
+    sendDimensions: true,
+    legacy: false,
+  },
 ];
 
 /** Every accepted `provider/model` id, in a tuple usable by z.enum. */
@@ -52,9 +81,16 @@ export const EMBEDDING_MODEL_IDS = [
   "openai/text-embedding-3-small",
   "openai/text-embedding-3-large",
   "openai/text-embedding-ada-002",
+  "openrouter/openai/text-embedding-3-small",
+  "openrouter/openai/text-embedding-3-large",
 ] as const;
 
-export const EMBEDDING_PROVIDER_IDS = ["openai"] as const;
+export const EMBEDDING_PROVIDER_IDS = ["openai", "openrouter"] as const;
+
+/** Every allowlisted model id that belongs to a provider. */
+export function modelIdsForProvider(provider: EmbeddingProviderId): string[] {
+  return MODELS.filter((m) => m.provider === provider).map((m) => m.id);
+}
 
 /** Returns the allowlist entry for a model id, or undefined if not allowlisted. */
 export function getEmbeddingModel(id: string): EmbeddingModelSpec | undefined {

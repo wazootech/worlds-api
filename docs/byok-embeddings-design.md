@@ -116,6 +116,15 @@ Allowlist (static map in code, not customer-defined strings):
 | openai   | `text-embedding-3-small` | 1536        | yes, default                               |
 | openai   | `text-embedding-3-large` | 3072        | yes, request `dimensions: 1536` (pinned)   |
 | openai   | `text-embedding-ada-002` | 1536        | yes, legacy; allow but do not advertise    |
+| openrouter | `openai/text-embedding-3-small` | 1536 | yes, request `dimensions: 1536` (pinned) |
+| openrouter | `openai/text-embedding-3-large` | 3072 | yes, request `dimensions: 1536` (pinned) |
+
+OpenRouter is a vetted second provider (OpenAI-compatible endpoint at a fixed
+host, no customer-supplied URL). Its allowlist ids are `openrouter/<vendor>/<model>`;
+a namespace holds one credential per provider, and a world's model decides which
+one is used. Only the OpenAI models are listed for now because OpenRouter
+forwards `dimensions` for them; **(unverified)** until the QA round-trip runs
+against OpenRouter.
 
 Anything else (Cohere, Voyage, Gemini, local models) is a later row, admitted
 only if it can emit exactly 1536 and we pin the parameter. **(unverified)**
@@ -188,7 +197,7 @@ worlds-api (OpenAPI regenerated via `pnpm run sync:openapi`, never hand-edited):
 
 | Change                                                                                        | Kind          |
 | --------------------------------------------------------------------------------------------- | ------------- |
-| `PUT/GET/DELETE /namespaces/{ns}/embedding-credential` (GET returns metadata only)           | additive      |
+| `PUT/GET/DELETE /namespaces/{ns}/embedding-providers/{provider}` and `GET /namespaces/{ns}/embedding-providers` (metadata only)           | additive      |
 | `WorldResource`: `embeddingStatus` (`unconfigured`/`no_credential`/`stale`/`ready`/`partial`/`invalid`) | additive      |
 | `embeddingModel` validated as enum `provider/model` on create and PATCH                      | **breaking-ish**: free strings now 400 |
 | Reindex response: unchanged shape; `vectorSync` already present                              | none          |

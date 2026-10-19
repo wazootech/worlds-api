@@ -51,7 +51,7 @@
           },
           "embeddingModel": {
             "type": "string",
-            "description": "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only."
+            "description": "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small or openrouter/openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only."
           },
           "embeddingStatus": {
             "type": "string",
@@ -63,7 +63,7 @@
               "partial",
               "ready"
             ],
-            "description": "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current."
+            "description": "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential for the provider of this world's model. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current."
           },
           "chunkSize": {
             "type": "integer",
@@ -120,9 +120,11 @@
             "enum": [
               "openai/text-embedding-3-small",
               "openai/text-embedding-3-large",
-              "openai/text-embedding-ada-002"
+              "openai/text-embedding-ada-002",
+              "openrouter/openai/text-embedding-3-small",
+              "openrouter/openai/text-embedding-3-large"
             ],
-            "description": "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), and legacy openai/text-embedding-ada-002. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen."
+            "description": "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), legacy openai/text-embedding-ada-002, and the same OpenAI models through OpenRouter as openrouter/openai/text-embedding-3-small and openrouter/openai/text-embedding-3-large. The model's provider decides which namespace credential is used. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen."
           },
           "chunkSize": {
             "type": "integer",
@@ -157,9 +159,11 @@
             "enum": [
               "openai/text-embedding-3-small",
               "openai/text-embedding-3-large",
-              "openai/text-embedding-ada-002"
+              "openai/text-embedding-ada-002",
+              "openrouter/openai/text-embedding-3-small",
+              "openrouter/openai/text-embedding-3-large"
             ],
-            "description": "New embedding model, as provider/model. Requires an active embedding credential for the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget."
+            "description": "New embedding model, as provider/model. Requires an active embedding credential, for the new model's provider, in the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget."
           },
           "chunkSize": {
             "type": "integer",
@@ -641,13 +645,29 @@
           "errors"
         ]
       },
+      "EmbeddingProviderList": {
+        "type": "object",
+        "properties": {
+          "providers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmbeddingCredential"
+            },
+            "description": "One entry per provider the namespace has stored a credential for, newest first, revoked ones included."
+          }
+        },
+        "required": [
+          "providers"
+        ]
+      },
       "EmbeddingCredential": {
         "type": "object",
         "properties": {
           "provider": {
             "type": "string",
             "enum": [
-              "openai"
+              "openai",
+              "openrouter"
             ],
             "description": "Embedding provider."
           },
@@ -717,13 +737,6 @@
       "EmbeddingCredentialRequest": {
         "type": "object",
         "properties": {
-          "provider": {
-            "type": "string",
-            "enum": [
-              "openai"
-            ],
-            "description": "Embedding provider the key belongs to."
-          },
           "apiKey": {
             "type": "string",
             "maxLength": 512,
@@ -731,7 +744,6 @@
           }
         },
         "required": [
-          "provider",
           "apiKey"
         ]
       }
@@ -2580,17 +2592,17 @@
         }
       }
     },
-    "/namespaces/{namespace}/embedding-credential": {
-      "put": {
+    "/namespaces/{namespace}/embedding-providers": {
+      "get": {
         "tags": [
           "Embeddings"
         ],
-        "operationId": "setEmbeddingCredential",
-        "summary": "Set embedding credential",
-        "description": "Store or rotate the namespace's embedding provider API key (bring your own key). The key is encrypted at rest with a key held only as a Worker secret and is write-only: it is never returned or logged. Requires the embeddings:admin scope (or an admin key); world-scoped tokens are refused. Returns 503 EMBEDDINGS_NOT_CONFIGURED when the deployment has no key-encryption key.",
+        "operationId": "listEmbeddingProviders",
+        "summary": "List embedding providers",
+        "description": "Lists the namespace's embedding provider credentials, newest first, revoked ones included so their status stays readable. Metadata only: no key is ever returned. Requires the embeddings:admin scope.",
         "x-mint": {
           "metadata": {
-            "title": "Set embedding credential"
+            "title": "List embedding providers"
           }
         },
         "security": [
@@ -2605,6 +2617,82 @@
             },
             "required": true,
             "name": "namespace",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credential metadata, one entry per provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingProviderList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/namespaces/{namespace}/embedding-providers/{provider}": {
+      "put": {
+        "tags": [
+          "Embeddings"
+        ],
+        "operationId": "setEmbeddingProviderCredential",
+        "summary": "Set embedding provider credential",
+        "description": "Store or rotate the namespace's API key for one embedding provider (bring your own key). The key is encrypted at rest with a key held only as a Worker secret and is write-only: it is never returned or logged. Requires the embeddings:admin scope (or an admin key); world-scoped tokens are refused. Returns 503 EMBEDDINGS_NOT_CONFIGURED when the deployment has no key-encryption key.",
+        "x-mint": {
+          "metadata": {
+            "title": "Set embedding provider credential"
+          }
+        },
+        "security": [
+          {
+            "bearerWorldsToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "namespace",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "openai",
+                "openrouter"
+              ],
+              "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider."
+            },
+            "required": true,
+            "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider.",
+            "name": "provider",
             "in": "path"
           }
         ],
@@ -2675,12 +2763,12 @@
         "tags": [
           "Embeddings"
         ],
-        "operationId": "getEmbeddingCredential",
-        "summary": "Get embedding credential status",
-        "description": "Returns the namespace embedding credential's metadata (provider, status, fingerprint, last four characters, timestamps). The key itself is never returned. Requires the embeddings:admin scope.",
+        "operationId": "getEmbeddingProviderCredential",
+        "summary": "Get embedding provider credential status",
+        "description": "Returns the metadata of the namespace's credential for one provider (status, fingerprint, last four characters, timestamps). The key itself is never returned. Requires the embeddings:admin scope.",
         "x-mint": {
           "metadata": {
-            "title": "Get embedding credential status"
+            "title": "Get embedding provider credential status"
           }
         },
         "security": [
@@ -2696,6 +2784,20 @@
             "required": true,
             "name": "namespace",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "openai",
+                "openrouter"
+              ],
+              "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider."
+            },
+            "required": true,
+            "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider.",
+            "name": "provider",
+            "in": "path"
           }
         ],
         "responses": {
@@ -2705,6 +2807,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EmbeddingCredential"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2745,12 +2857,12 @@
         "tags": [
           "Embeddings"
         ],
-        "operationId": "deleteEmbeddingCredential",
-        "summary": "Revoke embedding credential",
-        "description": "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Every world in the namespace is marked stale, so after a new key is set search stays keyword-only until each world is reindexed (vectors built before the revoke are never trusted again). Requires the embeddings:admin scope.",
+        "operationId": "deleteEmbeddingProviderCredential",
+        "summary": "Revoke embedding provider credential",
+        "description": "Revokes the namespace's credential for one provider: the ciphertext is erased and worlds on that provider's models fall back to keyword-only search (embeddingStatus no_credential). Every world on that provider's models is marked stale (worlds on another provider's models are untouched), so after a new key is set search stays keyword-only until each world is reindexed (vectors built before the revoke are never trusted again). Requires the embeddings:admin scope.",
         "x-mint": {
           "metadata": {
-            "title": "Revoke embedding credential"
+            "title": "Revoke embedding provider credential"
           }
         },
         "security": [
@@ -2766,11 +2878,35 @@
             "required": true,
             "name": "namespace",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "openai",
+                "openrouter"
+              ],
+              "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider."
+            },
+            "required": true,
+            "description": "Embedding provider whose credential this addresses. A namespace holds at most one credential per provider.",
+            "name": "provider",
+            "in": "path"
           }
         ],
         "responses": {
           "204": {
             "description": "Revoked"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "401": {
             "description": "Unauthorized",
