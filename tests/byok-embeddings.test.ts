@@ -20,14 +20,16 @@ import {
   sealKey,
 } from "../src/lib/embeddings/envelope";
 import { EmbeddingError } from "../src/lib/embeddings/errors";
-import { getEmbeddingModel } from "../src/lib/embeddings/catalog";
+import {
+  EMBEDDING_PROVIDERS,
+  getEmbeddingModel,
+} from "../src/lib/embeddings/catalog";
 import {
   INDEX_MAX_RETRIES,
   INDEX_TIMEOUT_MS,
-  OPENAI_EMBEDDINGS_URL,
   QUERY_TIMEOUT_MS,
-  createOpenAiEmbeddingService,
-} from "../src/lib/embeddings/openai";
+  createEmbeddingService,
+} from "../src/lib/embeddings/provider";
 import { planReindexWindow } from "../src/lib/embeddings/reindex-window";
 import { resolveEmbeddingService } from "../src/lib/embeddings/service";
 import {
@@ -247,6 +249,46 @@ describe("envelope encryption", () => {
   });
 });
 
+describe("credential store: one key per provider", () => {
+  const OR_KEY = "or-key-0123456789abcdefghij";
+
+  it("keeps a separate key, cache slot and revoke per provider", async () => {
+    const env = makeEnv();
+    await setCredential(env, "ns", "openai", SECRET_KEY);
+    await setCredential(env, "ns", "openrouter", OR_KEY);
+    expect((await resolveApiKey(env, "ns", "openai"))?.key).toBe(SECRET_KEY);
+    expect((await resolveApiKey(env, "ns", "openrouter"))?.key).toBe(OR_KEY);
+    // Cached reads must not cross providers either.
+    expect((await resolveApiKey(env, "ns", "openai"))?.key).toBe(SECRET_KEY);
+
+    await revokeCredential(env, "ns", "openrouter");
+    expect(await resolveApiKey(env, "ns", "openrouter")).toBeNull();
+    expect((await resolveApiKey(env, "ns", "openai"))?.key).toBe(SECRET_KEY);
+    expect((await getCredential(env, "ns", "openai"))?.status).toBe("active");
+  });
+
+  it("revoking one provider only stales worlds on that provider's models", async () => {
+    const env = makeEnv();
+    await setCredential(env, "ns-1", "openai", SECRET_KEY);
+    await setCredential(env, "ns-1", "openrouter", OR_KEY);
+    await addWorld(WORLD_A, "ns-1");
+    await db
+      .prepare("UPDATE worlds SET embedding_model = ? WHERE world_id = ?")
+      .bind("openrouter/openai/text-embedding-3-small", WORLD_A)
+      .run();
+    await setWorldState(
+      env,
+      WORLD_A,
+      "ready",
+      "openrouter/openai/text-embedding-3-small",
+    );
+    await revokeCredential(env, "ns-1", "openai");
+    expect((await getWorldState(env, WORLD_A))?.state).toBe("ready");
+    await revokeCredential(env, "ns-1", "openrouter");
+    expect((await getWorldState(env, WORLD_A))?.state).toBe("stale");
+  });
+});
+
 describe("credential store", () => {
   it("fails closed with no KEK and writes nothing", async () => {
     const env = makeEnv({ EMBEDDING_KEK_V1: undefined });
@@ -447,7 +489,7 @@ describe("OpenAI provider", () => {
   const spec = getEmbeddingModel("openai/text-embedding-3-large")!;
 
   function service(fetchImpl: typeof fetch, overrides = {}) {
-    return createOpenAiEmbeddingService({
+    return createEmbeddingService({
       model: spec,
       getApiKey: async () => SECRET_KEY,
       reserve: async () => {},
@@ -468,7 +510,7 @@ describe("OpenAI provider", () => {
       string,
       RequestInit,
     ];
-    expect(url).toBe(OPENAI_EMBEDDINGS_URL);
+    expect(url).toBe(EMBEDDING_PROVIDERS.openai.embeddingsUrl);
     expect(init.redirect).toBe("manual");
     const body = JSON.parse(init.body as string);
     expect(body).toMatchObject({
@@ -480,7 +522,7 @@ describe("OpenAI provider", () => {
 
   it("does not send dimensions for ada-002", async () => {
     const fetchImpl = vi.fn(async () => openAiOk(1));
-    await createOpenAiEmbeddingService({
+    await createEmbeddingService({
       model: getEmbeddingModel("openai/text-embedding-ada-002")!,
       getApiKey: async () => SECRET_KEY,
       reserve: async () => {},
@@ -488,6 +530,27 @@ describe("OpenAI provider", () => {
     }).embed(["a"]);
     const init = fetchImpl.mock.calls[0][1] as RequestInit;
     expect(JSON.parse(init.body as string).dimensions).toBeUndefined();
+  });
+
+  it("sends OpenRouter calls to the OpenRouter endpoint with the vendor-prefixed model", async () => {
+    const fetchImpl = vi.fn(async () => openAiOk(1));
+    await createEmbeddingService({
+      model: getEmbeddingModel("openrouter/openai/text-embedding-3-small")!,
+      getApiKey: async () => SECRET_KEY,
+      reserve: async () => {},
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    }).embed(["a"]);
+    const [url, init] = fetchImpl.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toBe("https://openrouter.ai/api/v1/embeddings");
+    expect(url).toBe(EMBEDDING_PROVIDERS.openrouter.embeddingsUrl);
+    expect(init.redirect).toBe("manual");
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      model: "openai/text-embedding-3-small",
+      dimensions: 1536,
+    });
   });
 
   it("gates on the budget BEFORE contacting the provider", async () => {
@@ -894,6 +957,50 @@ describe("credential routes", () => {
     expect(((await got.json()) as any).status).toBe("revoked");
   });
 
+  it("holds one credential per provider; GET and DELETE need ?provider= once there are two", async () => {
+    const env = makeEnv();
+    await put(env, "ns-admin-token");
+    await put(env, "ns-admin-token", {
+      provider: "openrouter",
+      apiKey: "or-key-0123456789abcdefghij",
+    });
+
+    expect((await http(env, "ns-admin-token", path)).status).toBe(400);
+    expect(
+      (await http(env, "ns-admin-token", path, { method: "DELETE" })).status,
+    ).toBe(400);
+    expect((await getCredential(env, "ns-1"))?.status).toBe("active");
+
+    const got = await http(
+      env,
+      "ns-admin-token",
+      `${path}?provider=openrouter`,
+    );
+    expect(((await got.json()) as any).provider).toBe("openrouter");
+    expect(
+      (
+        await http(env, "ns-admin-token", `${path}?provider=openrouter`, {
+          method: "DELETE",
+        })
+      ).status,
+    ).toBe(204);
+
+    // One live credential left: the provider can be omitted again.
+    const rest = await http(env, "ns-admin-token", path);
+    expect((await rest.json()) as any).toMatchObject({
+      provider: "openai",
+      status: "active",
+    });
+  });
+
+  it("rejects a provider outside the vetted list", async () => {
+    const res = await put(makeEnv(), "ns-admin-token", {
+      provider: "cohere",
+      apiKey: SECRET_KEY,
+    });
+    expect(res.status).toBe(400);
+  });
+
   it("namespace deletion revokes the credential", async () => {
     const env = makeEnv();
     await put(env, "ns-admin-token");
@@ -943,6 +1050,27 @@ describe("worlds: validation, stale-on-model-change, status", () => {
     expect(((await res.json()) as any).error.code).toBe(
       "EMBEDDING_CREDENTIAL_REQUIRED",
     );
+  });
+
+  it("needs a credential for the chosen model's provider, not just any credential", async () => {
+    const env = makeEnv();
+    await setCredential(env, "ns-1", "openai", SECRET_KEY);
+    const openrouterModel = "openrouter/openai/text-embedding-3-small";
+    const refused = await patch(env, { embeddingModel: openrouterModel });
+    expect(refused.status).toBe(409);
+    expect(((await refused.json()) as any).error.code).toBe(
+      "EMBEDDING_CREDENTIAL_REQUIRED",
+    );
+
+    await setCredential(
+      env,
+      "ns-1",
+      "openrouter",
+      "or-key-0123456789abcdefghij",
+    );
+    const ok = await patch(env, { embeddingModel: openrouterModel });
+    expect(ok.status).toBe(200);
+    expect(((await ok.json()) as any).embeddingStatus).toBe("stale");
   });
 
   it("marks the world stale on model change and stays keyword-only until reindex", async () => {

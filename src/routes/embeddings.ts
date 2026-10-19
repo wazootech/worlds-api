@@ -15,7 +15,12 @@ import {
   ErrorResponseSchema,
 } from "../lib/schemas";
 import {
+  EMBEDDING_PROVIDER_IDS,
+  type EmbeddingProviderId,
+} from "../lib/embeddings/catalog";
+import {
   getCredential,
+  listCredentials,
   revokeCredential,
   setCredential,
   type CredentialRow,
@@ -28,12 +33,48 @@ const namespaceParam = z.object({
   }),
 });
 
+const providerQuery = z.object({
+  provider: z
+    .enum(EMBEDDING_PROVIDER_IDS)
+    .optional()
+    .openapi({
+      param: { name: "provider", in: "query", required: false },
+      description:
+        "Which provider's credential. Optional while the namespace holds a single live credential; required when it holds more than one.",
+    }),
+});
+
+/**
+ * Picks the credential a GET/DELETE refers to. With no `provider`, a single
+ * live (non-revoked) credential is the answer; several are ambiguous; with
+ * none live, the newest row (revoked) is returned so the status stays readable.
+ */
+async function pickCredential(
+  env: Env,
+  namespace: string,
+  provider: EmbeddingProviderId | undefined,
+): Promise<{ row: CredentialRow | null } | { ambiguous: true }> {
+  if (provider) return { row: await getCredential(env, namespace, provider) };
+  const rows = await listCredentials(env, namespace);
+  const live = rows.filter((r) => r.status !== "revoked");
+  if (live.length > 1) return { ambiguous: true };
+  return { row: live[0] ?? rows[0] ?? null };
+}
+
+const ambiguousProvider = {
+  error: {
+    code: "INVALID_ARGUMENT",
+    message:
+      "The namespace holds more than one embedding credential; pass ?provider=",
+  },
+};
+
 /** Printable ASCII, no whitespace: also rules out header injection. */
 const API_KEY_PATTERN = /^[\x21-\x7e]{16,512}$/;
 
 function credentialResource(row: CredentialRow) {
   return {
-    provider: row.provider as "openai",
+    provider: row.provider as EmbeddingProviderId,
     status: row.status,
     fingerprint: row.fingerprint,
     last4: row.last4,
@@ -108,12 +149,13 @@ const getRouteDef = createRoute({
     "Returns the namespace embedding credential's metadata (provider, status, fingerprint, last four characters, timestamps). The key itself is never returned. Requires the embeddings:admin scope.",
   "x-mint": { metadata: { title: "Get embedding credential status" } },
   security: [{ bearerWorldsToken: [] }],
-  request: { params: namespaceParam },
+  request: { params: namespaceParam, query: providerQuery },
   responses: {
     200: {
       description: "Credential metadata",
       content: { "application/json": { schema: EmbeddingCredentialSchema } },
     },
+    400: { description: "Bad request", content: errorContent },
     401: { description: "Unauthorized", content: errorContent },
     403: { description: "Forbidden", content: errorContent },
     404: { description: "No credential", content: errorContent },
@@ -130,9 +172,10 @@ const deleteRouteDef = createRoute({
     "Revokes the namespace's embedding credential: the ciphertext is erased and worlds in the namespace fall back to keyword-only search (embeddingStatus no_credential). Every world in the namespace is marked stale, so after a new key is set search stays keyword-only until each world is reindexed (vectors built before the revoke are never trusted again). Requires the embeddings:admin scope.",
   "x-mint": { metadata: { title: "Revoke embedding credential" } },
   security: [{ bearerWorldsToken: [] }],
-  request: { params: namespaceParam },
+  request: { params: namespaceParam, query: providerQuery },
   responses: {
     204: { description: "Revoked" },
+    400: { description: "Bad request", content: errorContent },
     401: { description: "Unauthorized", content: errorContent },
     403: { description: "Forbidden", content: errorContent },
     404: { description: "No credential", content: errorContent },
@@ -192,9 +235,14 @@ export function registerEmbeddingRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const denied = guard(auth, namespace);
     if (denied) return denied;
 
-    const row = await getCredential(env, namespace);
-    if (!row) return respond(c, notFound, 404);
-    return respond(c, credentialResource(row));
+    const picked = await pickCredential(
+      env,
+      namespace,
+      c.req.valid("query").provider,
+    );
+    if ("ambiguous" in picked) return respond(c, ambiguousProvider, 400);
+    if (!picked.row) return respond(c, notFound, 404);
+    return respond(c, credentialResource(picked.row));
   });
 
   app.openapi(deleteRouteDef, async (c) => {
@@ -204,9 +252,18 @@ export function registerEmbeddingRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const denied = guard(auth, namespace);
     if (denied) return denied;
 
-    const row = await getCredential(env, namespace);
-    if (!row) return respond(c, notFound, 404);
-    await revokeCredential(env, namespace);
+    const picked = await pickCredential(
+      env,
+      namespace,
+      c.req.valid("query").provider,
+    );
+    if ("ambiguous" in picked) return respond(c, ambiguousProvider, 400);
+    if (!picked.row) return respond(c, notFound, 404);
+    await revokeCredential(
+      env,
+      namespace,
+      picked.row.provider as EmbeddingProviderId,
+    );
     clearSdkCache();
     return c.body(null, 204) as any;
   });

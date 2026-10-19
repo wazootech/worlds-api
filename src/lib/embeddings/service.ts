@@ -2,11 +2,11 @@ import type { Env } from "../../env";
 import { getEmbeddingModel } from "./catalog";
 import { EmbeddingError, describeError } from "./errors";
 import {
-  createOpenAiEmbeddingService,
+  createEmbeddingService,
   INDEX_MAX_RETRIES,
   INDEX_TIMEOUT_MS,
   QUERY_TIMEOUT_MS,
-} from "./openai";
+} from "./provider";
 import {
   byokEnabled,
   getCredential,
@@ -111,7 +111,7 @@ export async function resolveEmbeddingService(
     let spent = 0;
     const credentialId = credential.credential_id;
 
-    const inner = createOpenAiEmbeddingService({
+    const inner = createEmbeddingService({
       model,
       fetchImpl: options.fetchImpl,
       sleep: options.sleep,

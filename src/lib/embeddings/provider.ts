@@ -1,16 +1,19 @@
-import { EMBEDDING_DIMENSIONS, type EmbeddingModelSpec } from "./catalog";
+import {
+  EMBEDDING_DIMENSIONS,
+  EMBEDDING_PROVIDERS,
+  type EmbeddingModelSpec,
+} from "./catalog";
 import { EmbeddingError } from "./errors";
 
 /**
- * OpenAI embedding provider implementing the engine's embeddingService seam
- * (`embed(texts) => vectors`).
+ * Embedding client for the vetted providers (see EMBEDDING_PROVIDERS),
+ * implementing the engine's embeddingService seam (`embed(texts) => vectors`).
+ * Every vetted provider speaks the OpenAI embeddings wire format.
  *
- * SSRF: the URL is a constant; there is no customer-supplied host, path, or
- * redirect following. Responses are size-capped. Provider response bodies and
- * headers are never copied into errors (see errors.ts).
+ * SSRF: the URL is a per-provider constant; there is no customer-supplied
+ * host, path, or redirect following. Responses are size-capped. Provider
+ * response bodies and headers are never copied into errors (see errors.ts).
  */
-export const OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings";
-
 const MAX_BATCH = 64;
 const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
 
@@ -26,7 +29,7 @@ export const QUERY_TIMEOUT_MS = 4_000;
 export const INDEX_TIMEOUT_MS = 20_000;
 export const INDEX_MAX_RETRIES = 2;
 
-export type OpenAiEmbeddingOptions = {
+export type EmbeddingClientOptions = {
   model: EmbeddingModelSpec;
   /** Resolves the decrypted key per call (cached upstream, TTL <= 60 s). */
   getApiKey: () => Promise<string | null>;
@@ -46,11 +49,12 @@ export type OpenAiEmbeddingOptions = {
   maxRetries?: number;
 };
 
-type OpenAiResponse = {
+type EmbeddingsResponse = {
   data?: Array<{ index?: number; embedding?: unknown }>;
 };
 
-export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
+export function createEmbeddingService(options: EmbeddingClientOptions) {
+  const url = EMBEDDING_PROVIDERS[options.model.provider].embeddingsUrl;
   const fetchImpl = options.fetchImpl ?? fetch;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)));
@@ -81,7 +85,7 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
       const signal = AbortSignal.timeout(timeoutMs);
       let response: Response;
       try {
-        response = await fetchImpl(OPENAI_EMBEDDINGS_URL, {
+        response = await fetchImpl(url, {
           method: "POST",
           redirect: "manual",
           signal,
@@ -120,13 +124,13 @@ export function createOpenAiEmbeddingService(options: OpenAiEmbeddingOptions) {
       if (declared > MAX_RESPONSE_BYTES) {
         throw new EmbeddingError("bad_response");
       }
-      let parsed: OpenAiResponse;
+      let parsed: EmbeddingsResponse;
       try {
         const text = await response.text();
         if (text.length > MAX_RESPONSE_BYTES) {
           throw new EmbeddingError("bad_response");
         }
-        parsed = JSON.parse(text) as OpenAiResponse;
+        parsed = JSON.parse(text) as EmbeddingsResponse;
       } catch (error) {
         if (error instanceof EmbeddingError) throw error;
         throw new EmbeddingError(signal.aborted ? "timeout" : "bad_response");

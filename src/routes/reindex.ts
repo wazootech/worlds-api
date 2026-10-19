@@ -202,7 +202,13 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       try {
         budgetExhausted =
           Boolean(getEmbeddingModel(ref.embeddingModel)) &&
-          (await getCredential(env, ref.namespace))?.status === "active" &&
+          (
+            await getCredential(
+              env,
+              ref.namespace,
+              getEmbeddingModel(ref.embeddingModel)!.provider,
+            )
+          )?.status === "active" &&
           (await remainingBudget(env, ref.namespace)) <= 0;
       } catch {
         budgetExhausted = false;

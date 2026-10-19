@@ -41,7 +41,7 @@ export const WorldResourceSchema = z
     }),
     embeddingModel: z.string().openapi({
       description:
-        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only.",
+        "Embedding model identifier used for vector search indexing, e.g. openai/text-embedding-3-small or openrouter/openai/text-embedding-3-small. Values outside the allowlist (including the legacy tfjs-universal-sentence-encoder default) are reported as embeddingStatus unconfigured and search stays keyword-only.",
     }),
     embeddingStatus: z.enum(EMBEDDING_STATUSES).openapi({
       description:
@@ -83,7 +83,7 @@ export const CreateWorldRequestSchema = z
     }),
     embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), and legacy openai/text-embedding-ada-002. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen.",
+        "Embedding model to use for vector search, as provider/model. Allowlist: openai/text-embedding-3-small (recommended), openai/text-embedding-3-large (pinned to 1536 dimensions), legacy openai/text-embedding-ada-002, and the same OpenAI models through OpenRouter as openrouter/openai/text-embedding-3-small and openrouter/openai/text-embedding-3-large. The model's provider decides which namespace credential is used. Defaults to the platform default, which reports embeddingStatus unconfigured until a model is chosen.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description:
@@ -107,7 +107,7 @@ export const UpdateWorldRequestSchema = z
     }),
     embeddingModel: z.enum(EMBEDDING_MODEL_IDS).optional().openapi({
       description:
-        "New embedding model, as provider/model. Requires an active embedding credential for the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget.",
+        "New embedding model, as provider/model. Requires an active embedding credential, for the new model's provider, in the namespace. Changing the model marks the world stale (embeddingStatus stale): search is keyword-only until POST /worlds/{worldId}/reindex is called. It does not reindex automatically because reindexing spends the customer's provider budget.",
     }),
     chunkSize: z.number().int().positive().optional().openapi({
       description: "New chunk size for vector search indexing.",

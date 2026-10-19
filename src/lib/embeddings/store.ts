@@ -2,6 +2,7 @@ import type { Env } from "../../env";
 import { execute, getDb, now, query, queryOne, uid } from "../db";
 import { sha256Hex } from "../crypto";
 import {
+  getEmbeddingModel,
   isAllowlistedEmbeddingModel,
   type EmbeddingProviderId,
 } from "./catalog";
@@ -90,6 +91,20 @@ export async function getCredential(
     getDb(env),
     "SELECT * FROM embedding_credentials WHERE namespace = ? AND provider = ?",
     [namespace, provider],
+  );
+}
+
+/** Every credential row the namespace holds, newest first (revoked included). */
+export async function listCredentials(
+  env: Env,
+  namespace: string,
+): Promise<CredentialRow[]> {
+  return (
+    (await query<CredentialRow>(
+      getDb(env),
+      "SELECT * FROM embedding_credentials WHERE namespace = ? ORDER BY create_time DESC",
+      [namespace],
+    )) ?? []
   );
 }
 
@@ -202,7 +217,7 @@ export async function revokeCredential(
   // world of the namespace goes stale: a later PUT of a key must not make
   // vectors built before the revoke (and before any deletes made while there
   // was no embedder) live again. Reindex repairs it.
-  await markNamespaceStale(env, namespace);
+  await markNamespaceStale(env, namespace, provider);
   invalidateKeyCache(namespace);
   return result.rowsAffected;
 }
@@ -258,9 +273,19 @@ export const KEY_CACHE_TTL_MS = 60_000;
 type CachedKey = { key: string; credentialId: string; expires: number };
 const keyCache = new Map<string, CachedKey>();
 
+/** A namespace can hold one key per provider, so the cache is keyed by both. */
+const cacheKey = (namespace: string, provider: string) =>
+  `${namespace}|${provider}`;
+
+/** Drops one namespace's cached keys (every provider), or all of them. */
 export function invalidateKeyCache(namespace?: string): void {
-  if (namespace === undefined) keyCache.clear();
-  else keyCache.delete(namespace);
+  if (namespace === undefined) {
+    keyCache.clear();
+    return;
+  }
+  for (const key of keyCache.keys()) {
+    if (key.startsWith(`${namespace}|`)) keyCache.delete(key);
+  }
 }
 
 export type ResolvedKey = { key: string; credentialId: string };
@@ -275,11 +300,12 @@ export async function resolveApiKey(
   namespace: string,
   provider: EmbeddingProviderId = "openai",
 ): Promise<ResolvedKey | null> {
-  const cached = keyCache.get(namespace);
+  const slot = cacheKey(namespace, provider);
+  const cached = keyCache.get(slot);
   if (cached && cached.expires > Date.now()) {
     return { key: cached.key, credentialId: cached.credentialId };
   }
-  keyCache.delete(namespace);
+  keyCache.delete(slot);
 
   try {
     const row = await getCredential(env, namespace, provider);
@@ -300,7 +326,7 @@ export async function resolveApiKey(
       });
       return null;
     }
-    keyCache.set(namespace, {
+    keyCache.set(slot, {
       key,
       credentialId: row.credential_id,
       expires: Date.now() + KEY_CACHE_TTL_MS,
@@ -549,12 +575,18 @@ export async function loadEmbeddingStatuses(
       const namespaces = [...new Set(worlds.map((w) => w.namespace))];
       for (const batch of chunks(namespaces, IN_CHUNK)) {
         const rows =
-          (await query<{ namespace: string; status: CredentialStatus }>(
+          (await query<{
+            namespace: string;
+            provider: string;
+            status: CredentialStatus;
+          }>(
             db,
-            `SELECT namespace, status FROM embedding_credentials WHERE provider = 'openai' AND namespace IN (${placeholders(batch.length)})`,
+            `SELECT namespace, provider, status FROM embedding_credentials WHERE namespace IN (${placeholders(batch.length)})`,
             batch,
           )) ?? [];
-        for (const row of rows) credentials.set(row.namespace, row.status);
+        for (const row of rows) {
+          credentials.set(`${row.namespace}|${row.provider}`, row.status);
+        }
       }
       for (const batch of chunks(
         worlds.map((w) => w.world_id),
@@ -581,7 +613,9 @@ export async function loadEmbeddingStatuses(
         computeEmbeddingStatus({
           enabled,
           model: world.embedding_model,
-          credentialStatus: credentials.get(world.namespace),
+          credentialStatus: credentials.get(
+            `${world.namespace}|${getEmbeddingModel(world.embedding_model)?.provider}`,
+          ),
           state: states.get(world.world_id),
         }),
       );

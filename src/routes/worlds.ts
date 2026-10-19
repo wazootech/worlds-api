@@ -15,6 +15,7 @@ import {
 import { provisionWorld } from "../lib/d1-provision";
 import { clearSdkCache, clearSdkCacheForWorld } from "../lib/world-db";
 import { runPurgeSweep } from "../lib/purge";
+import { getEmbeddingModel } from "../lib/embeddings/catalog";
 import {
   getCredential,
   loadEmbeddingStatuses,
@@ -579,7 +580,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     // Same rule as PATCH: choosing a model needs a usable credential.
     if (body.embeddingModel !== undefined) {
-      const credential = await getCredential(env, namespace);
+      const provider = getEmbeddingModel(body.embeddingModel)?.provider;
+      const credential = provider
+        ? await getCredential(env, namespace, provider)
+        : null;
       if (!credential || credential.status !== "active") {
         return respond(
           c,
@@ -671,7 +675,10 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     if (modelChanged) {
       // A model change is a state transition, not just a column write: it
       // needs a usable credential and leaves the world stale (design 4.1).
-      const credential = await getCredential(env, row.namespace);
+      const provider = getEmbeddingModel(body.embeddingModel!)?.provider;
+      const credential = provider
+        ? await getCredential(env, row.namespace, provider)
+        : null;
       if (!credential || credential.status !== "active") {
         return respond(
           c,
