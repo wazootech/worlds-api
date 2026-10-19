@@ -45,7 +45,7 @@ export const WorldResourceSchema = z
     }),
     embeddingStatus: z.enum(EMBEDDING_STATUSES).openapi({
       description:
-        "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current.",
+        "Whether vector search is usable for this world. unconfigured: embeddings are not enabled or the model is not allowlisted. no_credential: the namespace has no active embedding credential for the provider of this world's model. invalid: the provider rejected the namespace credential. stale: vectors are not built for the current model; search is keyword-only until POST /worlds/{worldId}/reindex. partial: some vectors failed to sync; hybrid search covers what exists. ready: vectors are current.",
     }),
     chunkSize: z.number().int().openapi({
       description:
@@ -435,9 +435,6 @@ export const worldsListQuery = z.object({});
 
 export const EmbeddingCredentialRequestSchema = z
   .object({
-    provider: z.enum(EMBEDDING_PROVIDER_IDS).openapi({
-      description: "Embedding provider the key belongs to.",
-    }),
     apiKey: z.string().max(512).openapi({
       description:
         "The provider API key. Write-only: it is encrypted at rest and never returned or logged; only a fingerprint and last four characters are exposed.",
@@ -469,3 +466,12 @@ export const EmbeddingCredentialSchema = z
     }),
   })
   .openapi("EmbeddingCredential");
+
+export const EmbeddingProviderListSchema = z
+  .object({
+    providers: z.array(EmbeddingCredentialSchema).openapi({
+      description:
+        "One entry per provider the namespace has stored a credential for, newest first, revoked ones included.",
+    }),
+  })
+  .openapi("EmbeddingProviderList");

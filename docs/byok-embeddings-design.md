@@ -197,7 +197,7 @@ worlds-api (OpenAPI regenerated via `pnpm run sync:openapi`, never hand-edited):
 
 | Change                                                                                        | Kind          |
 | --------------------------------------------------------------------------------------------- | ------------- |
-| `PUT/GET/DELETE /namespaces/{ns}/embedding-credential` (GET returns metadata only)           | additive      |
+| `PUT/GET/DELETE /namespaces/{ns}/embedding-providers/{provider}` and `GET /namespaces/{ns}/embedding-providers` (metadata only)           | additive      |
 | `WorldResource`: `embeddingStatus` (`unconfigured`/`no_credential`/`stale`/`ready`/`partial`/`invalid`) | additive      |
 | `embeddingModel` validated as enum `provider/model` on create and PATCH                      | **breaking-ish**: free strings now 400 |
 | Reindex response: unchanged shape; `vectorSync` already present                              | none          |

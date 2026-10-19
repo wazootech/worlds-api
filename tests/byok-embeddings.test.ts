@@ -871,12 +871,18 @@ describe("computeEmbeddingStatus", () => {
 });
 
 describe("credential routes", () => {
-  const path = "/namespaces/ns-1/embedding-credential";
+  const base = "/namespaces/ns-1/embedding-providers";
+  const path = `${base}/openai`;
   const put = (
     env: Env,
     token: string | null,
-    body: unknown = { provider: "openai", apiKey: SECRET_KEY },
-  ) => http(env, token, path, { method: "PUT", body: JSON.stringify(body) });
+    body: unknown = { apiKey: SECRET_KEY },
+    provider = "openai",
+  ) =>
+    http(env, token, `${base}/${provider}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
 
   beforeEach(async () => {
     await addApiKey("ns-admin-token", "ns-1", ["embeddings:admin"]);
@@ -915,7 +921,6 @@ describe("credential routes", () => {
 
     // Bad key format: rejected without echoing the input.
     const bad = await put(env, "ns-admin-token", {
-      provider: "openai",
       apiKey: "has space  inside-it-which-is-bad",
     });
     expect(bad.status).toBe(400);
@@ -961,48 +966,61 @@ describe("credential routes", () => {
     expect(((await got.json()) as any).status).toBe("revoked");
   });
 
-  it("holds one credential per provider; GET and DELETE need ?provider= once there are two", async () => {
+  it("addresses each provider's credential by path and lists them", async () => {
     const env = makeEnv();
     await put(env, "ns-admin-token");
-    await put(env, "ns-admin-token", {
-      provider: "openrouter",
-      apiKey: "or-key-0123456789abcdefghij",
-    });
-
-    expect((await http(env, "ns-admin-token", path)).status).toBe(400);
-    expect(
-      (await http(env, "ns-admin-token", path, { method: "DELETE" })).status,
-    ).toBe(400);
-    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe("active");
-
-    const got = await http(
+    await put(
       env,
       "ns-admin-token",
-      `${path}?provider=openrouter`,
+      { apiKey: "or-key-0123456789abcdefghij" },
+      "openrouter",
     );
+
+    const got = await http(env, "ns-admin-token", `${base}/openrouter`);
     expect(((await got.json()) as any).provider).toBe("openrouter");
+    const openai = await http(env, "ns-admin-token", path);
+    expect(((await openai.json()) as any).provider).toBe("openai");
+
+    const list = await http(env, "ns-admin-token", base);
+    expect(list.status).toBe(200);
+    const listed = (await list.json()) as any;
+    expect(listed.providers.map((p: any) => p.provider).sort()).toEqual([
+      "openai",
+      "openrouter",
+    ]);
+    expect(JSON.stringify(listed)).not.toContain(SECRET_KEY);
+
+    // Revoking one provider leaves the other active.
     expect(
       (
-        await http(env, "ns-admin-token", `${path}?provider=openrouter`, {
+        await http(env, "ns-admin-token", `${base}/openrouter`, {
           method: "DELETE",
         })
       ).status,
     ).toBe(204);
+    expect((await getCredential(env, "ns-1", "openai"))?.status).toBe("active");
+    expect((await getCredential(env, "ns-1", "openrouter"))?.status).toBe(
+      "revoked",
+    );
+  });
 
-    // One live credential left: the provider can be omitted again.
-    const rest = await http(env, "ns-admin-token", path);
-    expect((await rest.json()) as any).toMatchObject({
-      provider: "openai",
-      status: "active",
-    });
+  it("lists nothing for a namespace with no credentials and requires the scope", async () => {
+    const env = makeEnv();
+    const empty = await http(env, "ns-admin-token", base);
+    expect(((await empty.json()) as any).providers).toEqual([]);
+    expect((await http(env, "ns-default-token", base)).status).toBe(403);
+    expect((await http(env, null, base)).status).toBe(401);
   });
 
   it("rejects a provider outside the vetted list", async () => {
-    const res = await put(makeEnv(), "ns-admin-token", {
-      provider: "cohere",
-      apiKey: SECRET_KEY,
-    });
-    expect(res.status).toBe(400);
+    const env = makeEnv();
+    expect(
+      (await put(env, "ns-admin-token", { apiKey: SECRET_KEY }, "cohere"))
+        .status,
+    ).toBe(400);
+    expect((await http(env, "ns-admin-token", `${base}/cohere`)).status).toBe(
+      400,
+    );
   });
 
   it("namespace deletion revokes the credential", async () => {

@@ -317,7 +317,7 @@ describe("vectors do not outlive deleted triples", () => {
     const revoke = await http(
       env,
       "ns-admin",
-      "/namespaces/ns-1/embedding-credential",
+      "/namespaces/ns-1/embedding-providers/openai",
       { method: "DELETE" },
     );
     expect(revoke.status).toBe(204);
@@ -335,10 +335,10 @@ describe("vectors do not outlive deleted triples", () => {
     const put = await http(
       env,
       "ns-admin",
-      "/namespaces/ns-1/embedding-credential",
+      "/namespaces/ns-1/embedding-providers/openai",
       {
         method: "PUT",
-        body: JSON.stringify({ provider: "openai", apiKey: SECRET_KEY }),
+        body: JSON.stringify({ apiKey: SECRET_KEY }),
       },
     );
     expect(put.status).toBe(200);
