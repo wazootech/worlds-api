@@ -5,17 +5,11 @@ export type Env = {
    * Vectorize binding for the outside-D1 vector index (Phase C, worlds-api#1).
    * When set, worlds-api threads it into the search SDK; hybrid/semantic search
    * activates only once an embedding source is also configured
-   * (EMBEDDING_PROVIDER — BYOK per-world keys are a pending #1 acceptance
-   * criterion). Without it, search stays keyword-only (graceful per engine
-   * design).
+   * (BYOK per-world keys; a world needs an active credential and a ready
+   * embedding state). Without it, search stays keyword-only (graceful per
+   * engine design).
    */
   VECTORIZE_INDEX?: import("@cloudflare/workers-types").VectorizeIndex;
-  /**
-   * Embedding mode switch (worlds-api#1). `byok` enables customer-key
-   * embeddings; unset (or any other value) keeps every world keyword-only,
-   * which is also the kill switch. Never throws on read paths.
-   */
-  EMBEDDING_PROVIDER?: string;
   /**
    * Key-encryption keys for customer embedding credentials: base64 of 32
    * random bytes, delivered as Worker secrets by the Infisical sync (see
@@ -69,9 +63,6 @@ export function fromBindings(env: Record<string, unknown>): Env {
     DB: env.DB as import("@cloudflare/workers-types").D1Database,
     VECTORIZE_INDEX: env.VECTORIZE_INDEX as
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
-    EMBEDDING_PROVIDER: env.EMBEDDING_PROVIDER
-      ? String(env.EMBEDDING_PROVIDER)
-      : undefined,
     EMBEDDING_KEK_V1: env.EMBEDDING_KEK_V1
       ? String(env.EMBEDDING_KEK_V1)
       : undefined,
@@ -123,7 +114,6 @@ export function fromProcessEnv(): Env {
       .__D1_DATABASE__ as import("@cloudflare/workers-types").D1Database,
     VECTORIZE_INDEX: (globalThis as any)?.__VECTORIZE_INDEX__ as
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
-    EMBEDDING_PROVIDER: process.env.EMBEDDING_PROVIDER,
     EMBEDDING_KEK_V1: process.env.EMBEDDING_KEK_V1,
     EMBEDDING_KEK_V2: process.env.EMBEDDING_KEK_V2,
     EMBEDDING_DAILY_BUDGET: process.env.EMBEDDING_DAILY_BUDGET,

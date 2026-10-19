@@ -1,8 +1,9 @@
 # Design: hybrid search in production via customer BYOK embeddings
 
 Design for [wazootech/worlds-api#1](https://github.com/wazootech/worlds-api/issues/1).
-**Status: accepted (D1-D7, D9, D10); v1 implemented behind `EMBEDDING_PROVIDER=byok`
-(off by default). Deviations from this document are listed in the implementing
+**Status: accepted (D1-D7, D9, D10); v1 implemented; BYOK is the only embedding
+source and has no mode switch (it needs a KEK and a per-namespace credential).
+Deviations from this document are listed in the implementing
 PR: the credential routes use scope `embeddings:admin`; embedding state lives in
 the new `world_embedding_state` table and budgets in `embedding_usage` (no
 columns were added to `worlds`, so no ALTER or reset is needed); imports degrade
@@ -21,7 +22,7 @@ not observed is marked **(unverified)**.
   `createCloudflareWorldsSdk` refuses to build without a `worldId`.
 - `getWorldSdk` (`src/lib/world-db.ts`) threads `vectorize` but never an
   `embeddingService`, so the engine runs keyword-only. Setting
-  `EMBEDDING_PROVIDER` throws on purpose.
+  the old embedding-provider env var threw on purpose (since removed).
 - `worlds.embedding_model` exists (default `tfjs-universal-sentence-encoder`,
   `d1-schema.ts`) and is settable on create and PATCH, but nothing reads it.
   The PATCH description says "changing the embedding model triggers a reindex";
@@ -211,14 +212,14 @@ semantic ranking when `mode` is `keyword` or `fallback`.
 
 ## 6. Rollout and acceptance
 
-1. **Dark**: land schema, credential API, KEK provisioning. Search path
-   unchanged (`EMBEDDING_PROVIDER` unset still means keyword-only; the throw is
-   replaced by a documented `BYOK` value).
-2. **QA**: enable on `data-qa.wazoo.dev` behind `EMBEDDING_PROVIDER=byok`.
-   Needs a QA-only provider key (human-provisioned; see decision D8).
-3. **Canary world** in QA, then a staff-owned namespace in prod with the var
-   set in the prod `[vars]` only after QA is green for a full smoke cycle.
-4. **Prod general**: flip default; announce.
+1. **Dark**: land schema, credential API, KEK provisioning. Without a KEK the
+   credential store fails closed and search stays keyword-only.
+2. **QA**: provision `EMBEDDING_KEK_V1` on `data-qa.wazoo.dev`. Needs a QA-only
+   provider key (human-provisioned; see decision D8).
+3. **Canary world** in QA, then a staff-owned namespace in prod once the prod
+   KEK exists and QA is green for a full smoke cycle.
+4. **Prod general**: announce. There is no switch to flip; a namespace opts in
+   by storing a credential.
 
 Kill switch: unsetting the var returns every world to keyword-only without a
 data change (vectors stay; reindex repairs drift).

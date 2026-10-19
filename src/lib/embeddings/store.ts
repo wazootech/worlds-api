@@ -504,9 +504,9 @@ export function computeEmbeddingStatus(input: {
   return state.state;
 }
 
-/** True when this deployment can run BYOK embeddings at all. */
+/** True when this deployment can run BYOK embeddings at all: a usable KEK is configured. */
 export async function byokEnabled(env: Env): Promise<boolean> {
-  return env.EMBEDDING_PROVIDER === "byok" && (await currentKek(env)) !== null;
+  return (await currentKek(env)) !== null;
 }
 
 const IN_CHUNK = 50;

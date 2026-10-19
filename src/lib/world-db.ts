@@ -137,16 +137,14 @@ export async function getWorldSdk(
     }),
   });
 
-  // Under BYOK an SDK reflects credential/state resolved at build time (an
-  // embedder, or its absence), so its cache lifetime is bounded to keep
-  // revocation, staleness, and newly-ready worlds effective across isolates
-  // (design 2.2: <= 60 s). Without BYOK entries live for the isolate.
+  // An SDK reflects credential/state resolved at build time (an embedder, or
+  // its absence), so its cache lifetime is bounded to keep revocation,
+  // staleness, and newly-ready worlds effective across isolates (design 2.2:
+  // <= 60 s).
   if (windowed) return sdk;
   sdkCache.set(key, {
     sdk,
-    ...(env.EMBEDDING_PROVIDER === "byok" && {
-      expires: Date.now() + KEY_CACHE_TTL_MS,
-    }),
+    expires: Date.now() + KEY_CACHE_TTL_MS,
   });
   return sdk;
 }

@@ -69,14 +69,11 @@ describe("getWorldSdk", () => {
     });
   });
 
-  it("stays keyword-only (no throw) for an unsupported EMBEDDING_PROVIDER value", async () => {
-    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const configuredEnv = { ...env, EMBEDDING_PROVIDER: "workers-ai" };
-    await expect(getWorldSdk(configuredEnv, worldRef)).resolves.toBeDefined();
+  it("stays keyword-only (no throw) without a KEK or credential", async () => {
+    await expect(getWorldSdk(env, worldRef)).resolves.toBeDefined();
     expect(createSdkMock).toHaveBeenCalledWith(
       expect.not.objectContaining({ embeddingService: expect.anything() }),
     );
-    warn.mockRestore();
   });
 
   it("clearSdkCacheForWorld evicts only that world's SDK instances", async () => {

@@ -38,27 +38,14 @@ export type ResolveEmbeddingOptions = {
   sleep?: (ms: number) => Promise<void>;
 };
 
-let warnedProvider: string | undefined;
-
 type WorldRef = { worldId: string; namespace: string; embeddingModel: string };
 
 /**
  * Preconditions every embedding path shares, minus the per-world state check:
- * BYOK on, Vectorize bound, a usable KEK, an allowlisted model, and an active
+ * Vectorize bound, a usable KEK, an allowlisted model, and an active
  * credential. Never throws.
  */
 async function embeddingPrerequisites(env: Env, ref: WorldRef) {
-  const provider = env.EMBEDDING_PROVIDER;
-  if (!provider) return undefined;
-  if (provider !== "byok") {
-    if (warnedProvider !== provider) {
-      warnedProvider = provider;
-      console.warn(
-        "EMBEDDING_PROVIDER is set to an unsupported value; staying keyword-only (supported: byok)",
-      );
-    }
-    return undefined;
-  }
   if (!env.VECTORIZE_INDEX) return undefined;
   if (!(await byokEnabled(env))) return undefined;
 

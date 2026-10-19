@@ -131,7 +131,6 @@ function makeEnv(overrides: Partial<Env> = {}): Env {
     DB: db as unknown as Env["DB"],
     WORLDS_API_ADMIN_KEY: "admin-key",
     RATE_LIMIT_RPM: "0",
-    EMBEDDING_PROVIDER: "byok",
     EMBEDDING_KEK_V1: kek,
     VECTORIZE_INDEX: vectorize as unknown as Env["VECTORIZE_INDEX"],
     ...overrides,
@@ -351,14 +350,11 @@ describe("vectors do not outlive deleted triples", () => {
     expect(JSON.stringify(found)).not.toContain("quokka");
   });
 
-  it("is gated on the vector binding, not on an embedder: unset provider and no KEK still clean", async () => {
+  it("is gated on the vector binding, not on an embedder: no KEK still clean", async () => {
     const env = makeEnv();
     await seedReadyWorld(env);
 
-    const noEmbedder = makeEnv({
-      EMBEDDING_PROVIDER: undefined,
-      EMBEDDING_KEK_V1: undefined,
-    });
+    const noEmbedder = makeEnv({ EMBEDDING_KEK_V1: undefined });
     clearSdkCache();
     const res = await deleteQuokka(noEmbedder, WORLD_A);
     expect(res.status).toBe(200);
@@ -408,7 +404,7 @@ describe("vectors do not outlive deleted triples", () => {
   });
 
   it("worlds that never had embedding state are left alone (inert)", async () => {
-    const env = makeEnv({ EMBEDDING_PROVIDER: undefined });
+    const env = makeEnv();
     const res = await importTurtle(env, WORLD_A, REMOVED, KEPT);
     expect(res.status).toBe(200);
     expect(vectorize.store.size).toBe(0);

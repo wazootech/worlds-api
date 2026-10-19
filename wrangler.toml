@@ -27,7 +27,7 @@ database_id = "a30635e0-c584-4447-8966-69d9b1f8a4eb"
 # The binding is live because both indexes exist (verified 2026-10-12, 1536
 # dimensions, cosine, world_id filterable). wrangler deploy fails on a binding
 # whose index is missing, so never bind an index before provisioning it.
-# Without an embedding provider (worlds-api#1) search stays keyword-only.
+# Without a customer credential and a KEK (worlds-api#1) search stays keyword-only.
 # Tracking: wazootech/worlds-cloudflare#38.
 [[vectorize]]
 binding = "VECTORIZE_INDEX"
@@ -57,13 +57,6 @@ index_name = "worlds-api-qa-v1-metadata"
 
 [env.qa.vars]
 WAZOO_ENV = "qa"
-# worlds-api#1 hybrid-search enable gate (QA only). Merge only after
-# EMBEDDING_KEK_V1 exists as a QA Worker secret (Infisical sync) and a capped
-# QA provider key is available for the canary namespace. Absent a KEK this is
-# inert: credential routes return 503 and every world stays keyword-only.
-# Unsetting this line is the kill switch — no data changes. See
-# docs/byok-embeddings-design.md §6 and secret-registry.md.
-EMBEDDING_PROVIDER = "byok"
 
 [observability]
 enabled = true
