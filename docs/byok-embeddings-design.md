@@ -154,6 +154,10 @@ write:
 3. `POST /worlds/{id}/reindex` embeds with the new model, deletes stale ids
    (the engine already tracks `staleDeleteFailures`) and sets `embedding_state
    = "ready"` only when `vectorSync` has zero failures.
+   Indexing is eventually consistent: `ready` means the vectors were written,
+   not that Vectorize already serves them. Hybrid search can take a minute or
+   more to appear after a reindex (measured 55-77 s on QA, worlds-api#144), and
+   keyword results cover the gap. No latency bound is promised.
 4. PATCH does **not** auto-reindex: reindex spends the customer's money and,
    being synchronous (#26), can exceed Worker limits on large worlds. The PATCH
    response returns `embeddingState: "stale"` so clients can prompt. This also
@@ -237,7 +241,7 @@ Acceptance (extends `wazoo-api/scripts/qa-roundtrip.mjs`, `roundtrip:qa`, which
 today only asserts a keyword hit and prints `mode`):
 
 - Search result for the marker has `mode === "hybrid"` and `scoreType` not
-  `unranked`.
+  `unranked`, once the index catches up (poll; see the note under reindex).
 - Reindex returns `status: "completed"` and `vectorSync.enabled === true`,
   `failedUpserts === 0`, `embeddingFailures === 0`.
 - A paraphrase query containing none of the marker's tokens returns the
