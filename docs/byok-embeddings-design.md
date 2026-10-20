@@ -50,11 +50,11 @@ not observed is marked **(unverified)**.
 Workers secrets are per-Worker, not per-tenant, so per-customer keys cannot be
 secrets. Options:
 
-| Option                                                                      | Pros                                                                             | Cons                                                                                    |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| A. Envelope-encrypted in worlds-api D1, KEK as a Worker secret              | Data plane is self-sufficient; search needs no control-plane hop; fits namespace | We hold customer secrets at rest; KEK rotation is our job                               |
+| Option                                                                        | Pros                                                                             | Cons                                                                                                                             |
+| ----------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| A. Envelope-encrypted in worlds-api D1, KEK as a Worker secret                | Data plane is self-sufficient; search needs no control-plane hop; fits namespace | We hold customer secrets at rest; KEK rotation is our job                                                                        |
 | B. Pass-through: control plane stores it, sends `X-Embedding-Key` per request | No key at rest in worlds-api                                                     | Every search/import caller must carry it; world tokens used directly can't; key in flight on every call, higher log-leak surface |
-| C. Platform-managed embeddings only (Workers AI), no BYOK                   | No customer secrets                                                              | Not what #1 asks for; cost lands on us                                                  |
+| C. Platform-managed embeddings only (Workers AI), no BYOK                     | No customer secrets                                                              | Not what #1 asks for; cost lands on us                                                                                           |
 
 **Recommendation: A.** Search and import are called by customers with world
 tokens, not through wazoo-api, so B cannot work for the main path.
@@ -103,21 +103,21 @@ Related: #20 (real scopes at issuance).
 The index width is immutable and fixed at 1536 in all three places (Vectorize
 index, `vectorDimensions`, D1 builders). Options:
 
-| Option                                    | Verdict                                                                                                     |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Option                                                             | Verdict                                                                                                   |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | One shared index, fix at 1536, allowlist models that can emit 1536 | **Recommended for v1.** Zero infra change; the indexes exist and are bound                                |
-| One index per dimension (e.g. 768, 1536)  | Needs new bindings (a deploy), per-dimension routing, and D1 builders keyed per world; defer until demand  |
-| One index per world                       | Unbounded bindings, impossible with static `wrangler.toml` bindings; rejected                              |
+| One index per dimension (e.g. 768, 1536)                           | Needs new bindings (a deploy), per-dimension routing, and D1 builders keyed per world; defer until demand |
+| One index per world                                                | Unbounded bindings, impossible with static `wrangler.toml` bindings; rejected                             |
 
 Allowlist (static map in code, not customer-defined strings):
 
-| Provider | Model                    | Native dims | Admissible at 1536                         |
-| -------- | ------------------------ | ----------- | ------------------------------------------ |
-| openai   | `text-embedding-3-small` | 1536        | yes, default                               |
-| openai   | `text-embedding-3-large` | 3072        | yes, request `dimensions: 1536` (pinned)   |
-| openai   | `text-embedding-ada-002` | 1536        | yes, legacy; allow but do not advertise    |
-| openrouter | `openai/text-embedding-3-small` | 1536 | yes, request `dimensions: 1536` (pinned) |
-| openrouter | `openai/text-embedding-3-large` | 3072 | yes, request `dimensions: 1536` (pinned) |
+| Provider   | Model                           | Native dims | Admissible at 1536                       |
+| ---------- | ------------------------------- | ----------- | ---------------------------------------- |
+| openai     | `text-embedding-3-small`        | 1536        | yes, default                             |
+| openai     | `text-embedding-3-large`        | 3072        | yes, request `dimensions: 1536` (pinned) |
+| openai     | `text-embedding-ada-002`        | 1536        | yes, legacy; allow but do not advertise  |
+| openrouter | `openai/text-embedding-3-small` | 1536        | yes, request `dimensions: 1536` (pinned) |
+| openrouter | `openai/text-embedding-3-large` | 3072        | yes, request `dimensions: 1536` (pinned) |
 
 OpenRouter is a vetted second provider (OpenAI-compatible endpoint at a fixed
 host, no customer-supplied URL). Its allowlist ids are `openrouter/<vendor>/<model>`;
@@ -129,7 +129,7 @@ against OpenRouter.
 Anything else (Cohere, Voyage, Gemini, local models) is a later row, admitted
 only if it can emit exactly 1536 and we pin the parameter. **(unverified)**
 Per-provider dimension parameters should be re-checked against provider docs
-when each row is added. Two different models that both emit 1536 are *not*
+when each row is added. Two different models that both emit 1536 are _not_
 vector-compatible; see section 4.
 
 `embedding_model` becomes a validated enum of `provider/model` ids. The
@@ -153,7 +153,7 @@ write:
    rather than mixing old vectors with new-model query vectors.
 3. `POST /worlds/{id}/reindex` embeds with the new model, deletes stale ids
    (the engine already tracks `staleDeleteFailures`) and sets `embedding_state
-   = "ready"` only when `vectorSync` has zero failures.
+= "ready"` only when `vectorSync` has zero failures.
    Indexing is eventually consistent: `ready` means the vectors were written,
    not that Vectorize already serves them. Hybrid search can take a minute or
    more to appear after a reindex (measured 55-77 s on QA, worlds-api#144), and
@@ -185,7 +185,7 @@ total spend nor survives isolate churn. Needed before prod:
 
 - **Embedding budget per namespace** in D1 (daily counters of embedded chunks
   and query embeds), enforced before the provider call, returning `429
-  EMBEDDING_BUDGET_EXCEEDED` for writes/reindex and degrading to keyword for
+EMBEDDING_BUDGET_EXCEEDED` for writes/reindex and degrading to keyword for
   search. Builds on #17 (usage counters) and #39 (per-namespace aggregation).
 - **Cap per reindex call** (max chunks) until #26 makes reindex asynchronous;
   excess returns a resumable cursor or a clear 4xx.
@@ -199,13 +199,13 @@ total spend nor survives isolate churn. Needed before prod:
 
 worlds-api (OpenAPI regenerated via `pnpm run sync:openapi`, never hand-edited):
 
-| Change                                                                                        | Kind          |
-| --------------------------------------------------------------------------------------------- | ------------- |
-| `PUT/GET/DELETE /namespaces/{ns}/embedding-providers/{provider}` and `GET /namespaces/{ns}/embedding-providers` (metadata only)           | additive      |
-| `WorldResource`: `embeddingStatus` (`unconfigured`/`no_credential`/`stale`/`ready`/`partial`/`invalid`) | additive      |
-| `embeddingModel` validated as enum `provider/model` on create and PATCH                      | **breaking-ish**: free strings now 400 |
-| Reindex response: unchanged shape; `vectorSync` already present                              | none          |
-| New error codes: `EMBEDDING_BUDGET_EXCEEDED`, `EMBEDDING_CREDENTIAL_INVALID`                | additive      |
+| Change                                                                                                                          | Kind                                   |
+| ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| `PUT/GET/DELETE /namespaces/{ns}/embedding-providers/{provider}` and `GET /namespaces/{ns}/embedding-providers` (metadata only) | additive                               |
+| `WorldResource`: `embeddingStatus` (`unconfigured`/`no_credential`/`stale`/`ready`/`partial`/`invalid`)                         | additive                               |
+| `embeddingModel` validated as enum `provider/model` on create and PATCH                                                         | **breaking-ish**: free strings now 400 |
+| Reindex response: unchanged shape; `vectorSync` already present                                                                 | none                                   |
+| New error codes: `EMBEDDING_BUDGET_EXCEEDED`, `EMBEDDING_CREDENTIAL_INVALID`                                                    | additive                               |
 
 Merge order (a green `verify` is not evidence of live behavior; `deploy-qa`
 only runs after merge, so say so in each PR):
@@ -284,18 +284,18 @@ Infisical `qa`; until then CI uses a fake provider and the live acceptance test
 (`roundtrip:qa` expecting `hybrid` and `vectorSync.enabled: true`) is not run.
 The table keeps the options considered; the bold entry is the decision.
 
-| #  | Decision                       | Options                                                                          | Recommendation                                              |
-| -- | ------------------------------ | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| D1 | Where the key lives            | A envelope in D1 + KEK secret; B pass-through; C platform-managed only           | **A**                                                       |
-| D2 | Credential granularity         | per namespace; per world                                                         | **per namespace**; per-world later if asked                 |
-| D3 | Dimension strategy             | fixed 1536 shared index; per-dimension indexes; per-world                        | **fixed 1536** for v1                                       |
-| D4 | v1 model allowlist             | OpenAI small only; OpenAI small + large(pinned 1536) + ada; add other providers  | **small + large(pinned) ; ada accepted, not advertised**    |
-| D5 | Model change behavior          | auto-reindex; mark stale + keyword until explicit reindex                        | **stale + explicit reindex**, estimate shown first          |
-| D6 | Spend guard before prod        | none (rely on provider caps); per-namespace budget in D1; block on #26/#39       | **per-namespace budget in D1** is a prod gate; #26 not a gate if reindex is chunk-capped |
-| D7 | `embeddingModel` validation    | keep free string; enum now (breaking for odd values)                             | **enum**; existing non-allowlisted values read as `unconfigured` |
-| D8 | QA provider key for acceptance | Ethan provisions a QA-only capped OpenAI key into Infisical `qa`; use a fake provider in CI only | **QA-only capped key** (I cannot create it; secrets are a human boundary) |
-| D9 | Platform fallback for customers without a key | none; Workers AI with a platform key (our cost, different dims, needs a second index) | **none** for v1                                             |
-| D10 | Customer-supplied provider base URL (Azure/OpenAI-compatible) | no; yes behind allowlisted hosts | **no** for v1 (SSRF surface)                              |
+| #   | Decision                                                      | Options                                                                                          | Recommendation                                                                           |
+| --- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| D1  | Where the key lives                                           | A envelope in D1 + KEK secret; B pass-through; C platform-managed only                           | **A**                                                                                    |
+| D2  | Credential granularity                                        | per namespace; per world                                                                         | **per namespace**; per-world later if asked                                              |
+| D3  | Dimension strategy                                            | fixed 1536 shared index; per-dimension indexes; per-world                                        | **fixed 1536** for v1                                                                    |
+| D4  | v1 model allowlist                                            | OpenAI small only; OpenAI small + large(pinned 1536) + ada; add other providers                  | **small + large(pinned) ; ada accepted, not advertised**                                 |
+| D5  | Model change behavior                                         | auto-reindex; mark stale + keyword until explicit reindex                                        | **stale + explicit reindex**, estimate shown first                                       |
+| D6  | Spend guard before prod                                       | none (rely on provider caps); per-namespace budget in D1; block on #26/#39                       | **per-namespace budget in D1** is a prod gate; #26 not a gate if reindex is chunk-capped |
+| D7  | `embeddingModel` validation                                   | keep free string; enum now (breaking for odd values)                                             | **enum**; existing non-allowlisted values read as `unconfigured`                         |
+| D8  | QA provider key for acceptance                                | Ethan provisions a QA-only capped OpenAI key into Infisical `qa`; use a fake provider in CI only | **QA-only capped key** (I cannot create it; secrets are a human boundary)                |
+| D9  | Platform fallback for customers without a key                 | none; Workers AI with a platform key (our cost, different dims, needs a second index)            | **none** for v1                                                                          |
+| D10 | Customer-supplied provider base URL (Azure/OpenAI-compatible) | no; yes behind allowlisted hosts                                                                 | **no** for v1 (SSRF surface)                                                             |
 
 Out of scope here: async reindex (#26), per-namespace rate limiting (#39),
 usage read surface (#17), and search-quality measurement (#2). Each is
