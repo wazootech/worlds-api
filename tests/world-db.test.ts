@@ -49,6 +49,26 @@ describe("getWorldSdk", () => {
     });
   });
 
+  it("passes inference only for a world that opted in", async () => {
+    await getWorldSdk(env, worldRef);
+    expect(createSdkMock.mock.calls[0]![0]).not.toHaveProperty("inference");
+
+    clearSdkCache();
+    createSdkMock.mockClear();
+    await getWorldSdk(env, { ...worldRef, inference: { enabled: false } });
+    expect(createSdkMock.mock.calls[0]![0]).not.toHaveProperty("inference");
+
+    clearSdkCache();
+    createSdkMock.mockClear();
+    const inference = {
+      enabled: true,
+      graphs: "union" as const,
+      maxAssertedQuads: 50,
+    };
+    await getWorldSdk(env, { ...worldRef, inference });
+    expect(createSdkMock.mock.calls[0]![0]).toMatchObject({ inference });
+  });
+
   it("does not pass vectorize when the binding is absent", async () => {
     const noVectorEnv = { ...env, VECTORIZE_INDEX: undefined };
     await getWorldSdk(noVectorEnv, worldRef);
@@ -111,8 +131,39 @@ describe("resolveWorldDatabase", () => {
     expect(result).toBeNull();
     expect(queryOneMock).toHaveBeenCalledWith(
       db,
-      expect.stringContaining("WHERE world_id = ? AND state = 'active'"),
+      expect.stringContaining("WHERE w.world_id = ? AND w.state = 'active'"),
       ["w_00000000000000000000000003"],
     );
+  });
+
+  it("maps the joined inference columns onto the ref", async () => {
+    const row = {
+      world_id: "w_00000000000000000000000003",
+      namespace: "ns",
+      embedding_model: "m",
+      chunk_size: 1,
+      top_k: 2,
+      min_score: 0,
+    };
+    const spy = vi.spyOn(await import("../src/lib/db"), "queryOne");
+    spy.mockResolvedValueOnce({
+      ...row,
+      inference_enabled: 1,
+      inference_graphs: "per-graph",
+      inference_max_asserted_quads: 9,
+    });
+    expect(
+      (await resolveWorldDatabase({ DB: {} } as any, row.world_id))?.inference,
+    ).toEqual({ enabled: true, graphs: "per-graph", maxAssertedQuads: 9 });
+
+    spy.mockResolvedValueOnce({
+      ...row,
+      inference_enabled: null,
+      inference_graphs: null,
+      inference_max_asserted_quads: null,
+    });
+    expect(
+      (await resolveWorldDatabase({ DB: {} } as any, row.world_id))?.inference,
+    ).toBeUndefined();
   });
 });

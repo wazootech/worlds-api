@@ -2,6 +2,7 @@ import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
 import type { WorldsSdkInterface } from "@worlds/sdk";
 import type { Env } from "../env";
 import { queryOne } from "./db";
+import type { InferenceSetting } from "./inference";
 import { EMBEDDING_DIMENSIONS } from "./embeddings/catalog";
 import { resolveEmbeddingService } from "./embeddings/service";
 import { KEY_CACHE_TTL_MS } from "./embeddings/store";
@@ -18,6 +19,8 @@ export type WorldDatabaseRef = {
   chunkSize: number;
   topK: number;
   minScore: number;
+  /** Per-world OWL 2 RL inference setting; absent means off. */
+  inference?: InferenceSetting;
 };
 
 type WorldMetadataRow = {
@@ -27,6 +30,9 @@ type WorldMetadataRow = {
   chunk_size: number;
   top_k: number;
   min_score: number;
+  inference_enabled: number | null;
+  inference_graphs: string | null;
+  inference_max_asserted_quads: number | null;
 };
 
 /**
@@ -59,7 +65,11 @@ export async function resolveWorldDatabase(
 ): Promise<WorldDatabaseRef | null> {
   const row = await queryOne<WorldMetadataRow>(
     env.DB,
-    "SELECT world_id, namespace, embedding_model, chunk_size, top_k, min_score FROM worlds WHERE world_id = ? AND state = 'active'",
+    `SELECT w.world_id, w.namespace, w.embedding_model, w.chunk_size, w.top_k, w.min_score,
+            i.enabled AS inference_enabled, i.graphs AS inference_graphs,
+            i.max_asserted_quads AS inference_max_asserted_quads
+     FROM worlds w LEFT JOIN world_inference i ON i.world_id = w.world_id
+     WHERE w.world_id = ? AND w.state = 'active'`,
     [worldId],
   );
   if (!row) return null;
@@ -70,6 +80,17 @@ export async function resolveWorldDatabase(
     chunkSize: row.chunk_size,
     topK: row.top_k,
     minScore: row.min_score,
+    ...(row.inference_enabled != null && {
+      inference: {
+        enabled: Number(row.inference_enabled) === 1,
+        ...(row.inference_graphs && {
+          graphs: row.inference_graphs as "per-graph" | "union",
+        }),
+        ...(row.inference_max_asserted_quads != null && {
+          maxAssertedQuads: Number(row.inference_max_asserted_quads),
+        }),
+      },
+    }),
   };
 }
 
@@ -128,6 +149,9 @@ export async function getWorldSdk(
   const sdk = await createCloudflareWorldsSdk({
     database: env.DB,
     worldId: ref.worldId,
+    // Off unless the world opted in. The data plane additionally needs the
+    // quads.derived column (a commit fails without it).
+    ...(ref.inference?.enabled && { inference: ref.inference }),
     ...(windowed && { include: { subjects: options.includeSubjects } }),
     ...(candidateCount !== undefined && { candidateCount }),
     ...(env.VECTORIZE_INDEX && { vectorize: env.VECTORIZE_INDEX }),

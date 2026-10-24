@@ -30,6 +30,16 @@ declare module "@worlds/cloudflare" {
       predicates?: string[];
       graphs?: string[];
     };
+    /**
+     * Opt-in OWL 2 RL materialization on write (@worlds/cloudflare, after
+     * 0.10.1). Needs the `quads.derived` column. Older published versions
+     * ignore this option.
+     */
+    inference?: {
+      enabled: boolean;
+      graphs?: "per-graph" | "union";
+      maxAssertedQuads?: number;
+    };
     textSplitter?: any;
     searchIndexOnImport?: "incremental" | "deferred" | "disabled";
     /**
