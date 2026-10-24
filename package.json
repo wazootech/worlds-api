@@ -26,7 +26,7 @@
     "@rdfjs/types": "^2.0.1",
     "@std/ulid": "npm:@jsr/std__ulid@^1.0.0",
     "@wazoo/sparql-engine": "npm:@jsr/wazoo__sparql-engine@^0.4.4",
-    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.10.0",
+    "@worlds/cloudflare": "npm:@jsr/worlds__cloudflare@^0.11.0",
     "@worlds/sdk": "npm:@jsr/worlds__sdk@^0.9.0",
     "@worlds/sqlite": "npm:@jsr/worlds__sqlite@^0.6.0",
     "hono": "^4.10.3",
