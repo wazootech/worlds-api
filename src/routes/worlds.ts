@@ -16,6 +16,12 @@ import { provisionWorld } from "../lib/d1-provision";
 import { clearSdkCache, clearSdkCacheForWorld } from "../lib/world-db";
 import { runPurgeSweep } from "../lib/purge";
 import {
+  getInferenceSetting,
+  loadInferenceSettings,
+  setInferenceSetting,
+  type InferenceSetting,
+} from "../lib/inference";
+import {
   getCredentialForModel,
   loadEmbeddingStatuses,
   revokeNamespaceCredentials,
@@ -56,7 +62,11 @@ interface WorldRow {
   update_time: string;
 }
 
-function worldResource(row: WorldRow, embeddingStatus: EmbeddingStatus) {
+function worldResource(
+  row: WorldRow,
+  embeddingStatus: EmbeddingStatus,
+  inference?: InferenceSetting | null,
+) {
   return {
     id: row.world_id,
     displayName: row.display_name,
@@ -68,6 +78,7 @@ function worldResource(row: WorldRow, embeddingStatus: EmbeddingStatus) {
     topK: row.top_k,
     minScore: row.min_score,
     createTime: row.create_time,
+    ...(inference && { inference }),
     updateTime: row.update_time,
     deleteTime: row.delete_time ?? undefined,
     expireTime: row.expire_time ?? undefined,
@@ -543,9 +554,17 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       auth.admin ? [] : [auth.namespace!],
     );
     const statuses = await loadEmbeddingStatuses(env, rows ?? []);
+    const inference = await loadInferenceSettings(
+      env,
+      auth.admin ? undefined : auth.namespace!,
+    );
     return respond(c, {
       worlds: (rows ?? []).map((row) =>
-        worldResource(row, statuses.get(row.world_id) ?? "unconfigured"),
+        worldResource(
+          row,
+          statuses.get(row.world_id) ?? "unconfigured",
+          inference.get(row.world_id),
+        ),
       ),
     });
   });
@@ -608,12 +627,16 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       topK: body.topK,
       minScore: body.minScore,
     });
+    if (body.inference) {
+      await setInferenceSetting(env, worldId, body.inference);
+    }
 
     return respond(
       c,
       worldResource(
         metadata as WorldRow,
         await statusFor(env, metadata as WorldRow),
+        body.inference,
       ),
       201,
     );
@@ -636,7 +659,14 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     const worldAccess = requireWorldAccess(auth, row, worldId, SCOPE_DATA_READ);
     if (worldAccess) return worldAccess;
 
-    return respond(c, worldResource(row, await statusFor(env, row)));
+    return respond(
+      c,
+      worldResource(
+        row,
+        await statusFor(env, row),
+        await getInferenceSetting(env, worldId),
+      ),
+    );
   });
 
   app.openapi(updateRoute, async (c) => {
@@ -709,7 +739,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       setArgs.push(body.minScore);
     }
 
-    if (setClauses.length === 0) {
+    if (setClauses.length === 0 && body.inference === undefined) {
       return respond(
         c,
         {
@@ -730,6 +760,9 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       `UPDATE worlds SET ${setClauses.join(", ")} WHERE world_id = ?`,
       setArgs,
     );
+    if (body.inference !== undefined) {
+      await setInferenceSetting(env, worldId, body.inference);
+    }
 
     if (modelChanged) {
       // Search stays keyword-only until an explicit reindex rebuilds vectors
@@ -743,7 +776,14 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(updated!, await statusFor(env, updated!)));
+    return respond(
+      c,
+      worldResource(
+        updated!,
+        await statusFor(env, updated!),
+        await getInferenceSetting(env, worldId),
+      ),
+    );
   });
 
   app.openapi(deleteRoute, async (c) => {
@@ -829,7 +869,11 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     clearSdkCacheForWorld(worldId);
     return respond(
       c,
-      worldResource(restored!, await statusFor(env, restored!)),
+      worldResource(
+        restored!,
+        await statusFor(env, restored!),
+        await getInferenceSetting(env, worldId),
+      ),
     );
   });
 
@@ -868,7 +912,11 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     clearSdkCacheForWorld(worldId);
     return respond(
       c,
-      worldResource(suspended!, await statusFor(env, suspended!)),
+      worldResource(
+        suspended!,
+        await statusFor(env, suspended!),
+        await getInferenceSetting(env, worldId),
+      ),
     );
   });
 
@@ -905,7 +953,14 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return respond(c, worldResource(resumed!, await statusFor(env, resumed!)));
+    return respond(
+      c,
+      worldResource(
+        resumed!,
+        await statusFor(env, resumed!),
+        await getInferenceSetting(env, worldId),
+      ),
+    );
   });
 
   app.openapi(namespaceDeleteRoute, async (c) => {

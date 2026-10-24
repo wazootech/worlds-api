@@ -79,6 +79,18 @@ export const CONTROL_PLANE_DDL = [
     update_time TEXT NOT NULL,
     PRIMARY KEY (namespace, day)
   )`,
+  // Per-world OWL 2 RL inference setting. A new table (not a worlds column)
+  // so the existing CREATE TABLE IF NOT EXISTS mechanism applies it with no
+  // ALTER. A missing row means inference is off. This is the control-plane
+  // flag only; the data plane additionally needs quads.derived (see
+  // @worlds/cloudflare migrations/0001-quads-derived-column.sql).
+  `CREATE TABLE IF NOT EXISTS world_inference (
+    world_id TEXT NOT NULL PRIMARY KEY,
+    enabled INTEGER NOT NULL DEFAULT 0,
+    graphs TEXT,
+    max_asserted_quads INTEGER,
+    update_time TEXT NOT NULL
+  )`,
 ] as const;
 
 const REQUIRED_COLUMNS = {
@@ -130,6 +142,13 @@ const REQUIRED_COLUMNS = {
     "update_time",
     "reindex_cursor",
   ],
+  world_inference: [
+    "world_id",
+    "enabled",
+    "graphs",
+    "max_asserted_quads",
+    "update_time",
+  ],
 } as const;
 
 const REQUIRED_PRIMARY_KEYS = {
@@ -137,6 +156,7 @@ const REQUIRED_PRIMARY_KEYS = {
   api_keys: "uid",
   embedding_credentials: "credential_id",
   world_embedding_state: "world_id",
+  world_inference: "world_id",
 } as const;
 
 const FORBIDDEN_COLUMNS = {
@@ -144,6 +164,7 @@ const FORBIDDEN_COLUMNS = {
   api_keys: ["world_uid"],
   embedding_credentials: [],
   world_embedding_state: [],
+  world_inference: [],
 } as const;
 
 /** Initializes the control-plane schema and fails visibly if D1 rejects DDL. */
