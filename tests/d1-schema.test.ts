@@ -54,6 +54,13 @@ const canonicalSchema = {
     { name: "update_time", pk: 0 },
     { name: "reindex_cursor", pk: 0 },
   ],
+  world_inference: [
+    { name: "world_id", pk: 1 },
+    { name: "enabled", pk: 0 },
+    { name: "graphs", pk: 0 },
+    { name: "max_asserted_quads", pk: 0 },
+    { name: "update_time", pk: 0 },
+  ],
 };
 
 function makeDb(

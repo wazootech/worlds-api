@@ -77,6 +77,9 @@
             "type": "number",
             "description": "Default minimum relevance score (0–1) for search results. Results below this threshold are omitted."
           },
+          "inference": {
+            "$ref": "#/components/schemas/InferenceSetting"
+          },
           "createTime": {
             "type": "string",
             "description": "ISO 8601 timestamp when the world was created."
@@ -107,6 +110,33 @@
           "createTime",
           "updateTime"
         ]
+      },
+      "InferenceSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Opt the world in to OWL 2 RL materialization on write. false is the same as never setting it."
+          },
+          "graphs": {
+            "type": "string",
+            "enum": [
+              "per-graph",
+              "union"
+            ],
+            "description": "Named-graph mode. per-graph (default) lists each entailed quad in the graph(s) that entail it alone; union merges all graphs and lists everything in the default graph."
+          },
+          "maxAssertedQuads": {
+            "type": "integer",
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "description": "Size guard (default 100000). A commit that would exceed this many asserted quads fails before writing instead of exhausting the isolate."
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "description": "OWL 2 RL inference setting. Omitted when never configured, which means inference is off."
       },
       "CreateWorldRequest": {
         "type": "object",
@@ -143,6 +173,16 @@
             "minimum": 0,
             "maximum": 1,
             "description": "Default minimum relevance score (0–1) for search results in this world."
+          },
+          "inference": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InferenceSetting"
+              },
+              {
+                "description": "Opt the world in to OWL 2 RL inference. Off when omitted. The data plane additionally needs the quads.derived column before enabling."
+              }
+            ]
           }
         }
       },
@@ -182,6 +222,16 @@
             "minimum": 0,
             "maximum": 1,
             "description": "New default minimum score threshold for search results."
+          },
+          "inference": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InferenceSetting"
+              },
+              {
+                "description": "Replaces the world's inference setting. Enabling does not back-fill existing data: inferred quads appear only for later changes."
+              }
+            ]
           }
         }
       },

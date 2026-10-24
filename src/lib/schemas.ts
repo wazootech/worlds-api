@@ -22,6 +22,23 @@ export const ErrorResponseSchema = z
   })
   .openapi("ErrorResponse");
 
+export const InferenceSettingSchema = z
+  .object({
+    enabled: z.boolean().openapi({
+      description:
+        "Opt the world in to OWL 2 RL materialization on write. false is the same as never setting it.",
+    }),
+    graphs: z.enum(["per-graph", "union"]).optional().openapi({
+      description:
+        "Named-graph mode. per-graph (default) lists each entailed quad in the graph(s) that entail it alone; union merges all graphs and lists everything in the default graph.",
+    }),
+    maxAssertedQuads: z.number().int().positive().optional().openapi({
+      description:
+        "Size guard (default 100000). A commit that would exceed this many asserted quads fails before writing instead of exhausting the isolate.",
+    }),
+  })
+  .openapi("InferenceSetting");
+
 export const WorldResourceSchema = z
   .object({
     id: z.string().regex(WORLD_ID_PATTERN).openapi({
@@ -58,6 +75,10 @@ export const WorldResourceSchema = z
     minScore: z.number().openapi({
       description:
         "Default minimum relevance score (0–1) for search results. Results below this threshold are omitted.",
+    }),
+    inference: InferenceSettingSchema.optional().openapi({
+      description:
+        "OWL 2 RL inference setting. Omitted when never configured, which means inference is off.",
     }),
     createTime: z.string().openapi({
       description: "ISO 8601 timestamp when the world was created.",
@@ -97,6 +118,10 @@ export const CreateWorldRequestSchema = z
       description:
         "Default minimum relevance score (0–1) for search results in this world.",
     }),
+    inference: InferenceSettingSchema.optional().openapi({
+      description:
+        "Opt the world in to OWL 2 RL inference. Off when omitted. The data plane additionally needs the quads.derived column before enabling.",
+    }),
   })
   .openapi("CreateWorldRequest");
 
@@ -117,6 +142,10 @@ export const UpdateWorldRequestSchema = z
     }),
     minScore: z.number().min(0).max(1).optional().openapi({
       description: "New default minimum score threshold for search results.",
+    }),
+    inference: InferenceSettingSchema.optional().openapi({
+      description:
+        "Replaces the world's inference setting. Enabling does not back-fill existing data: inferred quads appear only for later changes.",
     }),
   })
   .openapi("UpdateWorldRequest");
