@@ -185,8 +185,8 @@ importers:
         specifier: npm:@jsr/wazoo__sparql-engine@^0.4.4
         version: '@jsr/wazoo__sparql-engine@0.4.4'
       '@worlds/cloudflare':
-        specifier: npm:@jsr/worlds__cloudflare@^0.11.0
-        version: '@jsr/worlds__cloudflare@0.11.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
+        specifier: npm:@jsr/worlds__cloudflare@^0.11.1
+        version: '@jsr/worlds__cloudflare@0.11.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       '@worlds/sdk':
         specifier: npm:@jsr/worlds__sdk@^0.9.0
         version: '@jsr/worlds__sdk@0.9.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
@@ -666,8 +666,8 @@ packages:
   '@jsr/worlds__client@0.1.0':
     resolution: {integrity: sha512-Z5iL51C6EXn4Iu1S+zTM+CGRdYRwFUZrEHOVOP2mQslCID0qNaWO7GuNNvGRZMpokjPXSBnL7pHmz72R8Yw3bA==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__client/0.1.0.tgz}
 
-  '@jsr/worlds__cloudflare@0.11.0':
-    resolution: {integrity: sha512-dgDyTHiMCBJUh05pLqjupUeLkIYfSimY76qNsGT2BK8PppQMeQSKN9EOWPGDIZR8nX675/7sUCag+N1v72RUvQ==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.11.0.tgz}
+  '@jsr/worlds__cloudflare@0.11.1':
+    resolution: {integrity: sha512-HV7EoR0QfGn3p2ZPi2sWIGpHGOAz1jBx8s7omvk+umH7goqGFveT09ZtAU4aUuhYVnWNovDrzKfXoSNy8FK18g==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.11.1.tgz}
 
   '@jsr/worlds__sdk@0.6.1':
     resolution: {integrity: sha512-vT3XyTUFkUkLBSU5tsyBbf6Noot+pQ0JNzPhSXg5kTuVWXqeHYwMvOu62ZuFai/c89SjruOfOWCQ2VCnQkcalA==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sdk/0.6.1.tgz}
@@ -1885,7 +1885,7 @@ snapshots:
 
   '@jsr/worlds__client@0.1.0': {}
 
-  '@jsr/worlds__cloudflare@0.11.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
+  '@jsr/worlds__cloudflare@0.11.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
       '@jsr/wazoo__reasoner': 0.4.0
       '@jsr/wazoo__sparql-engine': 0.4.4
