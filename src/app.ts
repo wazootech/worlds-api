@@ -108,6 +108,7 @@ app.notFound((c) => {
 });
 
 import { registerReindexRoutes } from "./routes/reindex";
+import { registerInferRoutes } from "./routes/infer";
 import { ensureControlPlaneSchema } from "./lib/d1-schema";
 
 // Initialize control-plane DDL once per Worker isolate before application routes.
@@ -148,6 +149,7 @@ registerSearchRoutes(app);
 registerSparqlRoutes(app);
 registerApiKeysRoutes(app);
 registerReindexRoutes(app);
+registerInferRoutes(app);
 registerEmbeddingRoutes(app);
 
 /**
