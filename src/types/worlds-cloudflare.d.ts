@@ -99,6 +99,24 @@ declare module "@worlds/cloudflare" {
     text: string;
   }): Promise<string>;
 
+  export interface BackfillInferenceOptions {
+    database: unknown;
+    worldId?: string;
+    inference?: { graphs?: "per-graph" | "union"; maxAssertedQuads?: number };
+    vectorDimensions?: number;
+  }
+
+  export interface BackfillInferenceReport {
+    assertedQuads: number;
+    derivedWritten: number;
+    derivedRemoved: number;
+    inconsistencies: unknown[];
+  }
+
+  export function backfillInference(
+    options: BackfillInferenceOptions,
+  ): Promise<BackfillInferenceReport>;
+
   export function createCloudflareWorldsSdk(
     options: CloudflareWorldsSdkOptions,
   ): Promise<WorldsSdkInterface>;
