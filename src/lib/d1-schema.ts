@@ -91,6 +91,15 @@ export const CONTROL_PLANE_DDL = [
     max_asserted_quads INTEGER,
     update_time TEXT NOT NULL
   )`,
+  // Daily per-namespace D1 rows written by the data plane (index writes
+  // included), for the opt-in NAMESPACE_DAILY_ROW_WRITE_BUDGET guard.
+  `CREATE TABLE IF NOT EXISTS namespace_write_usage (
+    namespace TEXT NOT NULL,
+    day TEXT NOT NULL,
+    rows_written INTEGER NOT NULL DEFAULT 0,
+    update_time TEXT NOT NULL,
+    PRIMARY KEY (namespace, day)
+  )`,
 ] as const;
 
 const REQUIRED_COLUMNS = {

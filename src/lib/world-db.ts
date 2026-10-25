@@ -1,4 +1,5 @@
 import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
+import { meterDatabase, rowWriteBudget } from "./write-budget";
 import type { WorldsSdkInterface } from "@worlds/sdk";
 import type { Env } from "../env";
 import { queryOne } from "./db";
@@ -147,7 +148,9 @@ export async function getWorldSdk(
   });
 
   const sdk = await createCloudflareWorldsSdk({
-    database: env.DB,
+    database: rowWriteBudget(env)
+      ? meterDatabase(env.DB, ref.namespace)
+      : env.DB,
     worldId: ref.worldId,
     // Off unless the world opted in. The data plane additionally needs the
     // quads.derived column (a commit fails without it).

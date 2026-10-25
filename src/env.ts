@@ -25,6 +25,13 @@ export type Env = {
    */
   EMBEDDING_DAILY_BUDGET?: string;
   /**
+   * Max D1 rows one namespace's data plane may write per UTC day, index
+   * entries included. Opt-in: unset disables it. Soft limit: a write is
+   * refused with 429 WRITE_BUDGET_EXCEEDED once the budget is already used.
+   * Protects the shared database (and the account's D1 quota) from one tenant.
+   */
+  NAMESPACE_DAILY_ROW_WRITE_BUDGET?: string;
+  /**
    * Query pool: max search-time query embeds per namespace per UTC day
    * (default 5000). Separate from the write pool so search traffic cannot
    * starve import and reindex; exhaustion degrades search to keyword.

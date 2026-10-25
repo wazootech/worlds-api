@@ -110,6 +110,7 @@ app.notFound((c) => {
 import { registerReindexRoutes } from "./routes/reindex";
 import { registerInferRoutes } from "./routes/infer";
 import { ensureControlPlaneSchema } from "./lib/d1-schema";
+import { flushWriteUsage } from "./lib/write-budget";
 
 // Initialize control-plane DDL once per Worker isolate before application routes.
 // /health remains a liveness probe; /ready also verifies the initialized schema.
@@ -140,6 +141,13 @@ app.use("*", async (c, next) => {
     }
   }
   return next();
+});
+
+// Store the rows the data plane wrote during the request. A no-op when the
+// write budget is off, since nothing is counted then.
+app.use("*", async (c, next) => {
+  await next();
+  await flushWriteUsage(c.env as unknown as Env);
 });
 
 registerHealthRoutes(app);

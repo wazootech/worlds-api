@@ -11,7 +11,12 @@ import {
 } from "../lib/abuse";
 import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
-import { SparqlRequestSchema, worldIdParam } from "../lib/schemas";
+import {
+  ErrorResponseSchema,
+  SparqlRequestSchema,
+  worldIdParam,
+} from "../lib/schemas";
+import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
 import {
   cleanupOk,
   cleanupWorldVectors,
@@ -143,6 +148,13 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
             },
           },
         },
+        429: {
+          description:
+            "The namespace has used its daily database write budget (WRITE_BUDGET_EXCEEDED). Nothing was written; it resets at 00:00 UTC. Reads are unaffected.",
+          content: {
+            "application/json": { schema: ErrorResponseSchema },
+          },
+        },
       },
     }),
     async (c) => {
@@ -223,6 +235,10 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         isUpdate ? SCOPE_DATA_WRITE : SCOPE_DATA_READ,
       );
       if (accessErr) return accessErr;
+
+      if (isUpdate && (await writeBudgetExceeded(env, ref.namespace))) {
+        return respond(c, writeBudgetError(env), 429);
+      }
 
       const client = await getWorldSdk(env, ref);
 

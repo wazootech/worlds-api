@@ -6,6 +6,7 @@ import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
 import { resolveWorldDatabase } from "../lib/world-db";
 import { respond } from "../lib/respond";
+import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
 import { ErrorResponseSchema, worldIdParam } from "../lib/schemas";
 
 export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
@@ -62,6 +63,11 @@ export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
             "The world has more asserted quads than its maxAssertedQuads limit (INFERENCE_SIZE_GUARD). Nothing was written.",
           content: { "application/json": { schema: ErrorResponseSchema } },
         },
+        429: {
+          description:
+            "The namespace has used its daily database write budget (WRITE_BUDGET_EXCEEDED). Nothing was written; it resets at 00:00 UTC.",
+          content: { "application/json": { schema: ErrorResponseSchema } },
+        },
         500: {
           description: "The back-fill failed",
           content: { "application/json": { schema: ErrorResponseSchema } },
@@ -102,6 +108,10 @@ export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
           },
           409,
         );
+      }
+
+      if (await writeBudgetExceeded(env, ref.namespace)) {
+        return respond(c, writeBudgetError(env), 429);
       }
 
       try {

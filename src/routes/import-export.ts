@@ -6,7 +6,9 @@ import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
 import { maxImportBytes, maxImportQuads } from "../lib/abuse";
 import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
+import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
 import {
+  ErrorResponseSchema,
   ExportQuadsResponseSchema,
   exportQuery,
   ImportRequestSchema,
@@ -103,6 +105,13 @@ export function registerImportExportRoutes(
             },
           },
         },
+        429: {
+          description:
+            "The namespace has used its daily database write budget (WRITE_BUDGET_EXCEEDED). Nothing was written; it resets at 00:00 UTC. Reads are unaffected.",
+          content: {
+            "application/json": { schema: ErrorResponseSchema },
+          },
+        },
       },
     }),
     async (c) => {
@@ -162,6 +171,10 @@ export function registerImportExportRoutes(
           },
           400,
         );
+      }
+
+      if (await writeBudgetExceeded(env, ref.namespace)) {
+        return respond(c, writeBudgetError(env), 429);
       }
 
       const client = await getWorldSdk(env, ref);
