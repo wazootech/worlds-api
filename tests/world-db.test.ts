@@ -22,6 +22,12 @@ const env = {
   } as any,
 } as any;
 
+/** The SDK is always handed the metering wrapper around the D1 binding. */
+const meteredDb = expect.objectContaining({
+  prepare: expect.any(Function),
+  batch: expect.any(Function),
+});
+
 const worldRef = {
   worldId: "w_00000000000000000000000001",
   namespace: "ns",
@@ -42,11 +48,20 @@ describe("getWorldSdk", () => {
     await getWorldSdk(env, worldRef, 40);
 
     expect(createSdkMock).toHaveBeenCalledWith({
-      database: env.DB,
+      database: meteredDb,
       worldId: "w_00000000000000000000000001",
       candidateCount: 40,
       vectorize: env.VECTORIZE_INDEX,
     });
+  });
+
+  it("hands the SDK a database that delegates to the D1 binding", async () => {
+    const prepared = {};
+    const db = { prepare: vi.fn().mockReturnValue(prepared) } as any;
+    await getWorldSdk({ DB: db } as any, worldRef);
+    const { database } = createSdkMock.mock.calls[0]![0] as any;
+    database.prepare("SELECT 1");
+    expect(db.prepare).toHaveBeenCalledWith("SELECT 1");
   });
 
   it("passes inference only for a world that opted in", async () => {
@@ -74,7 +89,7 @@ describe("getWorldSdk", () => {
     await getWorldSdk(noVectorEnv, worldRef);
 
     expect(createSdkMock).toHaveBeenCalledWith({
-      database: noVectorEnv.DB,
+      database: meteredDb,
       worldId: "w_00000000000000000000000001",
     });
   });
@@ -83,7 +98,7 @@ describe("getWorldSdk", () => {
     await getWorldSdk(env, worldRef);
 
     expect(createSdkMock).toHaveBeenCalledWith({
-      database: env.DB,
+      database: meteredDb,
       worldId: "w_00000000000000000000000001",
       vectorize: env.VECTORIZE_INDEX,
     });

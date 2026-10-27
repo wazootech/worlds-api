@@ -6,7 +6,7 @@ import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
 import { resolveWorldDatabase } from "../lib/world-db";
 import { respond } from "../lib/respond";
-import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
+import { writeBudgetRefusal } from "../lib/write-budget";
 import { ErrorResponseSchema, worldIdParam } from "../lib/schemas";
 
 export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
@@ -110,8 +110,9 @@ export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      if (await writeBudgetExceeded(env, ref.namespace)) {
-        return respond(c, writeBudgetError(env), 429);
+      const refusal = await writeBudgetRefusal(env, ref.namespace);
+      if (refusal) {
+        return respond(c, refusal, 429);
       }
 
       try {

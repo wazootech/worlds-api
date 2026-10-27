@@ -6,7 +6,7 @@ import { SCOPE_DATA_READ, SCOPE_DATA_WRITE } from "../lib/auth";
 import { maxImportBytes, maxImportQuads } from "../lib/abuse";
 import { resolveWorldDatabase, getWorldSdk } from "../lib/world-db";
 import { respond } from "../lib/respond";
-import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
+import { writeBudgetRefusal } from "../lib/write-budget";
 import {
   ErrorResponseSchema,
   ExportQuadsResponseSchema,
@@ -173,8 +173,9 @@ export function registerImportExportRoutes(
         );
       }
 
-      if (await writeBudgetExceeded(env, ref.namespace)) {
-        return respond(c, writeBudgetError(env), 429);
+      const refusal = await writeBudgetRefusal(env, ref.namespace);
+      if (refusal) {
+        return respond(c, refusal, 429);
       }
 
       const client = await getWorldSdk(env, ref);
