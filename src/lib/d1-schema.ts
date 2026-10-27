@@ -100,6 +100,13 @@ export const CONTROL_PLANE_DDL = [
     update_time TEXT NOT NULL,
     PRIMARY KEY (namespace, day)
   )`,
+  // Per-namespace override of the daily row budget, set by the platform from
+  // the customer's plan. Absent means the NAMESPACE_DAILY_ROW_WRITE_BUDGET default.
+  `CREATE TABLE IF NOT EXISTS namespace_write_budget (
+    namespace TEXT PRIMARY KEY,
+    daily_rows INTEGER NOT NULL,
+    update_time TEXT NOT NULL
+  )`,
 ] as const;
 
 const REQUIRED_COLUMNS = {

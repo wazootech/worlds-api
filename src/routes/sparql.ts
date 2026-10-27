@@ -16,7 +16,7 @@ import {
   SparqlRequestSchema,
   worldIdParam,
 } from "../lib/schemas";
-import { writeBudgetError, writeBudgetExceeded } from "../lib/write-budget";
+import { writeBudgetRefusal } from "../lib/write-budget";
 import {
   cleanupOk,
   cleanupWorldVectors,
@@ -236,8 +236,11 @@ export function registerSparqlRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       );
       if (accessErr) return accessErr;
 
-      if (isUpdate && (await writeBudgetExceeded(env, ref.namespace))) {
-        return respond(c, writeBudgetError(env), 429);
+      const refusal = isUpdate
+        ? await writeBudgetRefusal(env, ref.namespace)
+        : null;
+      if (refusal) {
+        return respond(c, refusal, 429);
       }
 
       const client = await getWorldSdk(env, ref);

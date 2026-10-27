@@ -109,6 +109,7 @@ app.notFound((c) => {
 
 import { registerReindexRoutes } from "./routes/reindex";
 import { registerInferRoutes } from "./routes/infer";
+import { registerNamespaceBudgetRoutes } from "./routes/namespace-budget";
 import { ensureControlPlaneSchema } from "./lib/d1-schema";
 import { flushWriteUsage } from "./lib/write-budget";
 
@@ -158,6 +159,7 @@ registerSparqlRoutes(app);
 registerApiKeysRoutes(app);
 registerReindexRoutes(app);
 registerInferRoutes(app);
+registerNamespaceBudgetRoutes(app);
 registerEmbeddingRoutes(app);
 
 /**
