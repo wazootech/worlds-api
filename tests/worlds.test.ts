@@ -4,6 +4,7 @@ import type { Env } from "../src/env";
 import { provisionWorld } from "../src/lib/d1-provision";
 import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
+import { readJson, type ErrorBody } from "./helpers/json";
 
 vi.mock("../src/lib/d1-provision", () => ({
   provisionWorld: vi.fn(),
@@ -52,6 +53,14 @@ const ADMIN_KEY = "test-admin-key";
 const USER_TOKEN = "test-user-token";
 const WORLD_SCOPED_TOKEN = "world-scoped-token";
 const OTHER_NAMESPACE_TOKEN = "other-namespace-token";
+
+interface WorldBody {
+  id: string;
+  uid?: string;
+  name?: string;
+  displayName: string;
+  storage: string;
+}
 
 function request(token: string | null, path: string, init: RequestInit = {}) {
   return app.request(
@@ -172,7 +181,7 @@ describe("world lifecycle", () => {
       body: JSON.stringify({ displayName: "X" }),
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("INVALID_ARGUMENT");
   });
 
@@ -199,7 +208,7 @@ describe("world lifecycle", () => {
       body: JSON.stringify({ displayName: "My World" }),
     });
     expect(res.status).toBe(201);
-    const body = await res.json();
+    const body = await readJson<WorldBody>(res);
     expect(body.id).toBe(WORLD_ID);
     expect(body.uid).toBeUndefined();
     expect(body.name).toBeUndefined();
@@ -233,7 +242,7 @@ describe("world lifecycle", () => {
     });
     const res = await adminRequest("/worlds/w_00000000000000000000000001");
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<WorldBody>(res);
     expect(body.id).toBe(WORLD_ID);
     expect(body.uid).toBeUndefined();
     expect(body.name).toBeUndefined();
@@ -304,7 +313,7 @@ describe("world lifecycle", () => {
     ]);
     const res = await userRequest("/worlds");
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<{ worlds: WorldBody[] }>(res);
     expect(body.worlds[0].id).toBe(WORLD_ID);
     expect(body.worlds[0].uid).toBeUndefined();
     expect(body.worlds[0].name).toBeUndefined();
@@ -327,7 +336,7 @@ describe("world lifecycle", () => {
     queryMock.mockResolvedValue([]);
     const res = await adminRequest("/admin/purge", { method: "POST" });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<{ purged: number; failed: number }>(res);
     expect(body.purged).toBe(0);
     expect(body.failed).toBe(0);
   });
