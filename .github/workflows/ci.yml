@@ -65,6 +65,7 @@ jobs:
       - run: pnpm run format:check
       - run: pnpm run lint
       - run: pnpm run typecheck
+      - run: pnpm run typecheck:tests
       - run: pnpm exec vitest run --coverage
 
   publish-image:

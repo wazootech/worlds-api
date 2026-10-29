@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
+import type { Env } from "../src/env";
+import { readJson, type ErrorBody } from "./helpers/json";
 import { resolveWorldDatabase, getWorldSdk } from "../src/lib/world-db";
 
 vi.mock("../src/lib/world-db", () => ({
@@ -9,6 +11,10 @@ vi.mock("../src/lib/world-db", () => ({
 
 const getWorldSdkMock = vi.mocked(getWorldSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
+
+interface SelectBody {
+  results: { bindings: { s: { value: string } }[] };
+}
 
 const env = {
   DB: {} as any,
@@ -82,7 +88,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
     resolveWorldDatabaseMock.mockResolvedValue(null as never);
     const res = await request({ query: "SELECT * WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(404);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("NOT_FOUND");
   });
 
@@ -97,7 +103,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
     });
     expect(res.status).toBe(400);
     expect(res.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("INVALID_ARGUMENT");
     expect(body.error.message).toContain("unbound variable");
   });
@@ -119,7 +125,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
     const res = await request({ query: "SELECT ?s WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(400);
     expect(res.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("INVALID_ARGUMENT");
     expect(body.error.message).toContain("unhandled term comparator");
   });
@@ -138,7 +144,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
 
     const res = await request({ query: "SELECT ?s WHERE { ?s ?p ?o }" });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<SelectBody>(res);
     expect(body.results.bindings).toHaveLength(1);
     expect(body.results.bindings[0].s.value).toBe("urn:hello");
   });
@@ -239,7 +245,7 @@ describe("POST /worlds/:worldId/sparql endpoint", () => {
       query: "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o }",
     });
     expect(res.status).toBe(400);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("UNSUPPORTED_QUERY_KIND");
     expect(body.error.message).toContain("SPARQL UPDATE");
   });

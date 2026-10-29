@@ -40,10 +40,10 @@ describe("CreateWorldRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.id).toBeUndefined();
-      expect(result.data.worldId).toBeUndefined();
-      expect(result.data.slug).toBeUndefined();
-      expect(result.data.databaseUrl).toBeUndefined();
+      expect(result.data).not.toHaveProperty("id");
+      expect(result.data).not.toHaveProperty("worldId");
+      expect(result.data).not.toHaveProperty("slug");
+      expect(result.data).not.toHaveProperty("databaseUrl");
     }
   });
 
@@ -53,7 +53,7 @@ describe("CreateWorldRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.namespace).toBeUndefined();
+      expect(result.data).not.toHaveProperty("namespace");
     }
   });
 });
@@ -85,7 +85,7 @@ describe("UpdateWorldRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.namespace).toBeUndefined();
+      expect(result.data).not.toHaveProperty("namespace");
     }
   });
 });
@@ -106,7 +106,7 @@ describe("SearchRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.namespace).toBeUndefined();
+      expect(result.data).not.toHaveProperty("namespace");
     }
   });
 
@@ -157,7 +157,7 @@ describe("SearchRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.topK).toBeUndefined();
+      expect(result.data).not.toHaveProperty("topK");
     }
   });
 
@@ -214,7 +214,7 @@ describe("SparqlRequestSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.namespace).toBeUndefined();
+      expect(result.data).not.toHaveProperty("namespace");
     }
   });
 });

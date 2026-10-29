@@ -89,7 +89,7 @@ afterEach(() => {
 
 describe("Worlds API control-plane schema", () => {
   it("runs every DDL statement", async () => {
-    const run = vi.fn(async () => ({ success: true }));
+    const run = vi.fn(async (_sql: string) => ({ success: true }));
     await ensureControlPlaneSchema(makeDb({}, run));
     expect(run).toHaveBeenCalledTimes(CONTROL_PLANE_DDL.length);
     expect(run.mock.calls.map(([sql]) => sql)).toEqual([...CONTROL_PLANE_DDL]);
