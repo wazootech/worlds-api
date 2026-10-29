@@ -432,9 +432,7 @@ export function registerImportExportRoutes(
       const all = exported.kind === "quads" ? exported.quads : [];
       const source =
         fmt === "text/plain"
-          ? all.filter(
-              (q: any) => q.predicate.value === "http://schema.org/text",
-            )
+          ? all.filter((q) => q.predicate.value === "http://schema.org/text")
           : all;
       const page = source.slice(offset, offset + limit);
       const nextOffset =
@@ -447,7 +445,7 @@ export function registerImportExportRoutes(
           c.header("X-Next-Offset", String(nextOffset));
         }
         return respond(c, {
-          quads: page.map((q: any) => ({
+          quads: page.map((q) => ({
             subject: q.subject.value,
             predicate: q.predicate.value,
             object: q.object.value,
@@ -459,9 +457,7 @@ export function registerImportExportRoutes(
       }
       const body =
         fmt === "text/plain"
-          ? page
-              .map((q: any) => `${q.subject.value}\t${q.object.value}`)
-              .join("\n")
+          ? page.map((q) => `${q.subject.value}\t${q.object.value}`).join("\n")
           : fmt === "application/trig"
             ? serializeQuadsToTrig(page)
             : fmt === "application/ld+json"

@@ -46,3 +46,14 @@ This repo uses a lightweight skills/config scaffold under docs/agents/. The
 canonical triage state labels are defined in docs/agents/triage-labels.md. For
 how to file, label, and decide issues, follow docs/agents/issue-tracker.md.
 Domain expectations live in docs/agents/domain.md.
+
+## Code health
+
+Family-wide rules live in the [wazootech workspace constitution](https://github.com/wazootech/workspace/blob/main/AGENTS.md#code-health-standards); this repo's specifics:
+
+- Before pushing, run what CI runs: `pnpm run format:check`, `pnpm run lint` (`--max-warnings 0`), `pnpm run typecheck`, and `pnpm exec vitest run --coverage`.
+- Coverage floors live in `vitest.config.ts` and only rise: lines 83, functions 86, branches 73, statements 81. Never lower one to land a change.
+- The `openapi-breaking` job (oasdiff, `fail-on: ERR`) blocks breaking changes to `openapi/openapi.json`. Never hand-edit the snapshot or a generated client; regenerate. Downstream chain: `worlds-api` / `wazoo-api` -> `worlds-client-ts` / `wazoo-client-ts` -> `wazoo-console` / `wazoo-cli`. List dependents and merge order in the PR.
+- `@typescript-eslint/no-explicit-any` is `error` in `src/` and `scripts/`, and currently **off** in `tests/` until the stacked `typecheck-tests` work (#161) lands and the remaining test `any`s are typed. Fix with real types or `unknown`; the one justified `any` is `respond()`, under an `eslint-disable` with its reason.
+- `.gitleaksignore` holds exact fingerprints for verified fixture strings only. Never add regex allowlists or disable a rule. `secret-scan.yml` runs gitleaks on every PR and push to `main`.
+- Third-party actions are pinned to full SHAs; CI Node comes from `.node-version` (deploy jobs keep an explicit `node-version`). `code-health.yml` (file length, TODO/FIXME without an issue) is warn-only. `.github/CODEOWNERS` assigns review.

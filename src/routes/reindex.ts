@@ -14,7 +14,6 @@ import { getEmbeddingModel } from "../lib/embeddings/catalog";
 import {
   getCredentialForModel,
   getWorldState,
-  reindexMaxChunks,
   remainingBudget,
   setWorldState,
   type WorldEmbeddingStateValue,
@@ -198,7 +197,7 @@ export function registerReindexRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       // namespace has no budget left and an embedder would actually run. The
       // embedder re-checks atomically per batch, so a lookup failure here only
       // skips the early refusal.
-      let budgetExhausted = false;
+      let budgetExhausted: boolean;
       try {
         budgetExhausted =
           Boolean(getEmbeddingModel(ref.embeddingModel)) &&

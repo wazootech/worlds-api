@@ -113,13 +113,19 @@ export function fromBindings(env: Record<string, unknown>): Env {
   };
 }
 
+/** Bindings miniflare injects on globalThis for local development. */
+interface LocalBindingGlobals {
+  __D1_DATABASE__?: unknown;
+  __VECTORIZE_INDEX__?: unknown;
+}
+
 export function fromProcessEnv(): Env {
   // D1 bindings aren't available via process.env — this path is only used
   // for local development with miniflare, where DB is injected at runtime.
   return {
-    DB: (globalThis as any)
+    DB: (globalThis as LocalBindingGlobals)
       .__D1_DATABASE__ as import("@cloudflare/workers-types").D1Database,
-    VECTORIZE_INDEX: (globalThis as any)?.__VECTORIZE_INDEX__ as
+    VECTORIZE_INDEX: (globalThis as LocalBindingGlobals).__VECTORIZE_INDEX__ as
       import("@cloudflare/workers-types").VectorizeIndex | undefined,
     EMBEDDING_KEK_V1: process.env.EMBEDDING_KEK_V1,
     EMBEDDING_KEK_V2: process.env.EMBEDDING_KEK_V2,
