@@ -56,7 +56,6 @@ const createSdkMock = vi.mocked(createCloudflareWorldsSdk);
 
 const SECRET_KEY = "sk-test-SECRET-0123456789abcdefghij";
 const WORLD_A = "w_00000000000000000000000001";
-const WORLD_B = "w_00000000000000000000000002";
 const MODEL = "openai/text-embedding-3-small";
 const executionCtx = {
   waitUntil: () => {},

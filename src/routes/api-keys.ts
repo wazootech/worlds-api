@@ -288,7 +288,7 @@ export function registerApiKeysRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
         );
       }
 
-      return c.body(null, 204) as any;
+      return c.body(null, 204);
     },
   );
 }
