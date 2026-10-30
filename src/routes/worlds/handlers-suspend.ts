@@ -5,7 +5,7 @@ import { authorize, SCOPE_DATA_WRITE } from "../../lib/auth";
 import { clearSdkCacheForWorld } from "../../lib/world-db";
 import { getInferenceSetting } from "../../lib/inference";
 import { respond } from "../../lib/respond";
-import { resumeRoute, suspendRoute } from "./routes-lifecycle";
+import { resumeRoute, suspendRoute } from "./routes-suspend";
 import {
   requireWorldAccess,
   resolveWorldRow,
