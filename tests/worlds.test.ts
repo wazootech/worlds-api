@@ -4,6 +4,7 @@ import type { Env } from "../src/env";
 import { provisionWorld } from "../src/lib/d1-provision";
 import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
 import { sha256Hex } from "../src/lib/crypto";
+import { createApiKeyDb } from "./helpers/api-key-db";
 import { readJson, type ErrorBody } from "./helpers/json";
 
 vi.mock("../src/lib/d1-provision", () => ({
@@ -101,31 +102,7 @@ beforeEach(() => {
 
   // Create a mock D1 that intercepts prepare().bind().all() for auth queries
   const apiKeyRows: Record<string, any> = {};
-  const mockDb = {
-    prepare: (sql: string) => ({
-      bind: (...args: unknown[]) => ({
-        all: async () => {
-          if (sql.includes("api_keys") && args[0]) {
-            const row = apiKeyRows[args[0] as string];
-            return { results: row ? [row] : [] };
-          }
-          return { results: [] };
-        },
-        first: async () => {
-          if (sql.includes("api_keys") && args[0]) {
-            return apiKeyRows[args[0] as string] ?? null;
-          }
-          return null;
-        },
-        run: async () => ({ results: [], meta: { changes: 1 } }),
-      }),
-      all: async () => ({ results: [] }),
-      first: async () => null,
-      run: async () => ({ results: [], meta: { changes: 1 } }),
-    }),
-    batch: async () => [],
-    exec: async () => {},
-  } as any;
+  const mockDb = createApiKeyDb(apiKeyRows);
   getDbMock.mockReturnValue(mockDb);
 
   // Register API key for USER_TOKEN
