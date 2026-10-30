@@ -106,7 +106,7 @@ describe("serializeQuadsToTrig", () => {
     const { parseTurtleQuads } = await import("@wazoo/sparql-engine");
     const quads = sampleQuads();
     const trig = serializeQuadsToTrig(quads);
-    const parsed = Array.from(await parseTurtleQuads(trig, { format: "trig" }));
+    const parsed = Array.from(await parseTurtleQuads(trig));
 
     // Should have same number of quads
     expect(parsed.length).toBe(quads.length);

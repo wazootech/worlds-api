@@ -1,4 +1,5 @@
 import {
+  assert,
   afterEach,
   beforeAll,
   beforeEach,
@@ -524,7 +525,9 @@ describe("OpenAI provider", () => {
   });
 
   it("does not send dimensions for ada-002", async () => {
-    const fetchImpl = vi.fn(async () => openAiOk(1));
+    const fetchImpl = vi.fn(async (_url: string, _init?: RequestInit) =>
+      openAiOk(1),
+    );
     await createEmbeddingService({
       model: getEmbeddingModel("openai/text-embedding-ada-002")!,
       getApiKey: async () => SECRET_KEY,
@@ -581,8 +584,8 @@ describe("OpenAI provider", () => {
     const svc = service(fetchImpl as unknown as typeof fetch, {
       onAuthFailure,
     });
-    const err = await svc.embed(["a"]).catch((e) => e as Error);
-    expect(err).toBeInstanceOf(EmbeddingError);
+    const err = await svc.embed(["a"]).catch((e: unknown) => e);
+    assert.instanceOf(err, EmbeddingError);
     expect(err.message).toBe("embedding provider rejected the credential");
     expect(JSON.stringify(err)).not.toContain(SECRET_KEY);
     expect(onAuthFailure).toHaveBeenCalledTimes(1);
@@ -597,7 +600,8 @@ describe("OpenAI provider", () => {
     );
     const err = await service(fetchImpl as unknown as typeof fetch)
       .embed(["a"])
-      .catch((e) => e as EmbeddingError);
+      .catch((e: unknown) => e);
+    assert.instanceOf(err, EmbeddingError);
     expect(err.code).toBe("rate_limited");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
   });
@@ -618,7 +622,8 @@ describe("OpenAI provider", () => {
       timeoutMs: 25,
     })
       .embed(["a"])
-      .catch((e) => e as EmbeddingError);
+      .catch((e: unknown) => e);
+    assert.instanceOf(err, EmbeddingError);
     expect(err.code).toBe("timeout");
     expect(err.message).toBe("embedding provider timed out");
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -653,7 +658,8 @@ describe("OpenAI provider", () => {
     });
     const err = await service(fetchImpl as unknown as typeof fetch)
       .embed(["a"])
-      .catch((e) => e as Error);
+      .catch((e: unknown) => e);
+    assert.instanceOf(err, Error);
     expect(err.message).not.toContain(SECRET_KEY);
   });
 });
@@ -791,7 +797,7 @@ describe("getWorldSdk wiring", () => {
     await setCredential(env, "ns", "openai", SECRET_KEY);
     await setWorldState(env, WORLD_A, "ready", MODEL);
     await getWorldSdk(env, ref, 10);
-    const options = createSdkMock.mock.calls[0][0] as Record<string, unknown>;
+    const options = createSdkMock.mock.calls[0][0];
     expect(options.embeddingService).toBeDefined();
     expect(options.vectorDimensions).toBe(1536);
   });

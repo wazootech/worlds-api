@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import app from "../src/app";
+import type { Env } from "../src/env";
+import { readJson, type ErrorBody } from "./helpers/json";
 import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
 
 vi.mock("../src/lib/world-db", () => ({
@@ -9,6 +11,20 @@ vi.mock("../src/lib/world-db", () => ({
 
 const getWorldSdkMock = vi.mocked(getWorldSdk);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
+
+interface SearchHit {
+  id: string;
+  subject: string;
+  graph: string;
+  content: string;
+  object?: unknown;
+  score: number | null;
+  scoreType: string;
+}
+interface SearchBody {
+  mode: string;
+  results: SearchHit[];
+}
 
 const env = {
   DB: {} as any,
@@ -102,7 +118,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
     resolveWorldDatabaseMock.mockResolvedValue(null as never);
     const res = await request({ query: "find me" });
     expect(res.status).toBe(404);
-    const body = await res.json();
+    const body = await readJson<ErrorBody>(res);
     expect(body.error.code).toBe("NOT_FOUND");
   });
 
@@ -190,7 +206,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
 
     const res = await request({ query: "find me", limit: 2 });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<SearchBody>(res);
     expect(body.mode).toBe("keyword");
     expect(body.results).toHaveLength(2);
     expect(body.results[0]).toEqual({
@@ -233,7 +249,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
     });
 
     const res = await request({ query: "find me" });
-    const body = await res.json();
+    const body = await readJson<SearchBody>(res);
     expect(body.mode).toBe("hybrid");
     // The engine's cosine signal must not be erased at the API boundary.
     expect(body.results[0].scoreType).toBe("cosine");
@@ -259,7 +275,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
     });
 
     const res = await request({ query: "###" });
-    const body = await res.json();
+    const body = await readJson<SearchBody>(res);
     expect(body.mode).toBe("semantic");
     expect(body.results[0].scoreType).toBe("cosine");
   });
@@ -281,7 +297,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
     });
 
     const res = await request({ query: "find me" });
-    const body = await res.json();
+    const body = await readJson<SearchBody>(res);
     expect(body.results[0].score).toBe(1.0);
     expect(body.results[0].scoreType).toBe("rrf");
   });
@@ -297,7 +313,7 @@ describe("POST /worlds/:worldId/search endpoint", () => {
 
     const res = await request({ query: "result", limit: 1 }, { db });
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson<SearchBody>(res);
     expect(body.mode).toBe("fallback");
     expect(body.results).toHaveLength(1);
 

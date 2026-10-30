@@ -19,7 +19,8 @@
     "format": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --write",
     "format:check": "prettier \"src/**/*.ts\" \"tests/**/*.ts\" --check",
     "lint": "eslint . --max-warnings 0",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "typecheck:tests": "tsc -p tsconfig.tests.json"
   },
   "dependencies": {
     "@hono/node-server": "^1.17.1",
