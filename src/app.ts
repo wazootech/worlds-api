@@ -1,16 +1,14 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { cors } from "hono/cors";
-import type { Context } from "hono";
 import type { Env } from "./env";
-import { checkRateLimit, isOriginAllowed } from "./lib/abuse";
-import { sha256Hex } from "./lib/crypto";
-
-function allowedOrigin(c: Context<{ Bindings: Env }>): string | null {
-  const origin = c.req.header("Origin");
-  return origin && isOriginAllowed(origin, c.env as unknown as Env)
-    ? origin
-    : null;
-}
+import { isOriginAllowed } from "./lib/abuse";
+import {
+  flushUsageMiddleware,
+  onAppError,
+  onNotFound,
+  rateLimitMiddleware,
+  schemaInitMiddleware,
+} from "./lib/app-middleware";
 import { registerHealthRoutes } from "./routes/health";
 import { registerWorldsRoutes } from "./routes/worlds";
 import { registerImportExportRoutes } from "./routes/import-export";
@@ -18,6 +16,9 @@ import { registerSearchRoutes } from "./routes/search";
 import { registerSparqlRoutes } from "./routes/sparql";
 import { registerApiKeysRoutes } from "./routes/api-keys";
 import { registerEmbeddingRoutes } from "./routes/embeddings";
+import { registerReindexRoutes } from "./routes/reindex";
+import { registerInferRoutes } from "./routes/infer";
+import { registerNamespaceBudgetRoutes } from "./routes/namespace-budget";
 
 const app = new OpenAPIHono<{ Bindings: Env }>();
 
@@ -31,34 +32,7 @@ app.use(
   }),
 );
 
-// Per-key token-bucket rate limiting (in-memory). Exempts health, readiness,
-// and OpenAPI endpoints so probes and spec fetches are never throttled.
-app.use("*", async (c, next) => {
-  const path = new URL(c.req.url).pathname;
-  if (path === "/health" || path === "/ready" || path === "/openapi.json") {
-    return next();
-  }
-
-  const header = c.req.header("Authorization");
-  const token = header?.startsWith("Bearer ")
-    ? header.slice("Bearer ".length).trim()
-    : "";
-  const key = token ? await sha256Hex(token) : "anonymous";
-  const decision = checkRateLimit(`key:${key}`, c.env as unknown as Env);
-  if (!decision.allowed) {
-    c.header("Retry-After", String(decision.retryAfterSeconds));
-    return c.json(
-      {
-        error: {
-          code: "RATE_LIMITED",
-          message: `Too many requests. Retry after ${decision.retryAfterSeconds} second(s).`,
-        },
-      },
-      429,
-    );
-  }
-  return next();
-});
+app.use("*", rateLimitMiddleware);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "bearerWorldsToken", {
   type: "http",
@@ -67,89 +41,13 @@ app.openAPIRegistry.registerComponent("securitySchemes", "bearerWorldsToken", {
   description: "Worlds API data-plane token.",
 });
 
-app.onError((err, c) => {
-  console.error(err);
-  const origin = allowedOrigin(c);
-  if (origin) c.header("Access-Control-Allow-Origin", origin);
-  c.header("Access-Control-Allow-Headers", "*");
-  c.header("Access-Control-Allow-Methods", "*");
-  const message = err instanceof Error ? err.message : String(err);
-  if (
-    err instanceof SyntaxError ||
-    (typeof message === "string" &&
-      (message.includes("Unexpected end of JSON") ||
-        message.includes("Malformed JSON in request body")))
-  ) {
-    return c.json(
-      {
-        error: {
-          code: "INVALID_ARGUMENT",
-          message: "Invalid JSON body",
-        },
-      },
-      400,
-    );
-  }
-  return c.json(
-    {
-      error: {
-        code: "INTERNAL",
-        message: err instanceof Error ? err.message : "Internal server error",
-      },
-    },
-    500,
-  );
-});
+app.onError(onAppError);
 
-app.notFound((c) => {
-  const origin = allowedOrigin(c);
-  if (origin) c.header("Access-Control-Allow-Origin", origin);
-  return c.json({ error: { code: "NOT_FOUND", message: "Not found" } }, 404);
-});
+app.notFound(onNotFound);
 
-import { registerReindexRoutes } from "./routes/reindex";
-import { registerInferRoutes } from "./routes/infer";
-import { registerNamespaceBudgetRoutes } from "./routes/namespace-budget";
-import { ensureControlPlaneSchema } from "./lib/d1-schema";
-import { flushWriteUsage } from "./lib/write-budget";
+app.use("*", schemaInitMiddleware);
 
-// Initialize control-plane DDL once per Worker isolate before application routes.
-// /health remains a liveness probe; /ready also verifies the initialized schema.
-let schemaInitialized = false;
-
-app.use("*", async (c, next) => {
-  const path = new URL(c.req.url).pathname;
-  if (path === "/health" || path === "/openapi.json") return next();
-
-  if (!schemaInitialized) {
-    const db = (c.env as unknown as Env).DB;
-    if (db && typeof db.exec === "function") {
-      try {
-        await ensureControlPlaneSchema(db);
-        schemaInitialized = true;
-      } catch (error) {
-        if (path === "/ready") {
-          return c.json(
-            {
-              status: "not_ready",
-              error: error instanceof Error ? error.message : String(error),
-            },
-            503,
-          );
-        }
-        throw error;
-      }
-    }
-  }
-  return next();
-});
-
-// Store the rows the data plane wrote during the request. A no-op when the
-// write budget is off, since nothing is counted then.
-app.use("*", async (c, next) => {
-  await next();
-  await flushWriteUsage(c.env as unknown as Env);
-});
+app.use("*", flushUsageMiddleware);
 
 registerHealthRoutes(app);
 registerWorldsRoutes(app);
