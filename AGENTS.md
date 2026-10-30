@@ -46,3 +46,14 @@ This repo uses a lightweight skills/config scaffold under docs/agents/. The
 canonical triage state labels are defined in docs/agents/triage-labels.md. For
 how to file, label, and decide issues, follow docs/agents/issue-tracker.md.
 Domain expectations live in docs/agents/domain.md.
+
+## Code health
+
+The `code-health` workflow enforces the family file-size standard on every pull
+request: at most 120 lines of code per source file and 300 per test file,
+counting neither blank, comment, nor import and re-export lines (including
+multi-line ones). A file over its limit fails the check; split it along a real
+seam instead of raising the limit. Generated, vendored, schema, snapshot and
+fixture paths are exempt. The in-workflow allowlist is empty and may only
+shrink. Split modules keep their original path as a re-export barrel, so
+imports and the published OpenAPI document do not change.
