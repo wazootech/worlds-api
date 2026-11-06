@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: File length (warn-only; 120 src / 300 test, blank/comment/import lines excluded)
+      - name: File length (enforced; 120 src / 300 test, blank/comment/import lines excluded)
         run: |
           # Counts lines of code. Skips blank and comment lines and every import /
           # re-export statement, including ones a formatter wrapped over several
@@ -28,13 +28,31 @@ jobs:
           { n++ }
           END { print n + 0 }
           AWK
+          # Files allowed over their limit, one path per line. This list may only
+          # shrink: never add a file here, split it instead. Empty today.
+          cat > "$RUNNER_TEMP/allowlist.txt" <<'ALLOW'
+          ALLOW
+          : > "$RUNNER_TEMP/over.txt"
           git ls-files '*.ts' '*.tsx' '*.js' '*.mjs' \
             | grep -vE '(^|/)(node_modules|dist|generated|fixtures|\.next)/|\.d\.ts$|\.gen\.|openapi|snapshot|schema' \
             | while read -r f; do
                 n=$(awk -f "$RUNNER_TEMP/count.awk" "$f")
                 case "$f" in *.test.*|*.spec.*|*/tests/*|tests/*) max=300;; *) max=120;; esac
-                if [ "$n" -gt "$max" ]; then echo "::warning file=$f::$n lines of code (limit $max)"; echo "- \`$f\`: $n (limit $max)" >> "$GITHUB_STEP_SUMMARY"; fi
+                if [ "$n" -gt "$max" ]; then
+                  if grep -qxF "$f" "$RUNNER_TEMP/allowlist.txt"; then
+                    echo "::warning file=$f::$n lines of code (limit $max), allowlisted"
+                  else
+                    echo "::error file=$f::$n lines of code (limit $max)"
+                    echo "- \`$f\`: $n (limit $max)" >> "$GITHUB_STEP_SUMMARY"
+                    echo "$f" >> "$RUNNER_TEMP/over.txt"
+                  fi
+                fi
               done
+          if [ -s "$RUNNER_TEMP/over.txt" ]; then
+            echo "Files over the line limit; split them instead of raising the limit:"
+            cat "$RUNNER_TEMP/over.txt"
+            exit 1
+          fi
       - name: TODO/FIXME without an issue link (warn-only)
         run: |
           git grep -nE '\b(TODO|FIXME)\b' -- '*.ts' '*.tsx' '*.js' '*.mjs' ':!*generated*' \
