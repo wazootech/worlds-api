@@ -1,0 +1,13 @@
+title = "worlds-api gitleaks config"
+
+[extend]
+useDefault = true
+
+# The BYOK test harnesses hold fake API keys as constants. .gitleaksignore pins
+# them by commit and line, so every file split or squash merge moves them out
+# from under it. Exempt only the generic-api-key rule, and only for the BYOK
+# test files, so the rest of the tree is still scanned.
+[[allowlists]]
+description = "Fake BYOK API keys in test harnesses"
+targetRules = ["generic-api-key"]
+paths = ['''^tests/(helpers/)?byok-[\w.\-]+\.ts$''']
