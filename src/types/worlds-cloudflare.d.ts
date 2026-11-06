@@ -40,7 +40,12 @@ declare module "@worlds/cloudflare" {
       graphs?: "per-graph" | "union";
       maxAssertedQuads?: number;
     };
-    textSplitter?: any;
+    textSplitter?: {
+      createDocuments(
+        texts: string[],
+        metadatas?: Record<string, unknown>[],
+      ): Promise<unknown[]>;
+    };
     searchIndexOnImport?: "incremental" | "deferred" | "disabled";
     /**
      * candidateCount sizes the search-index candidate pool at the SQL level
@@ -123,6 +128,18 @@ declare module "@worlds/cloudflare" {
 }
 
 declare module "@worlds/sdk" {
+  import type * as rdfjs from "@rdfjs/types";
+  import type { SparqlResponse } from "@wazoo/sparql-engine";
+
+  export type ImportSource =
+    | { kind: "quads"; quads: Iterable<rdfjs.Quad> }
+    | { kind: "dataset"; dataset: rdfjs.DatasetCore }
+    | { kind: "serialized"; data: string; contentType?: string };
+
+  export type ExportResponse =
+    | { kind: "quads"; quads: rdfjs.Quad[] }
+    | { kind: "serialized"; data: string; contentType: string };
+
   export interface QuadFilterValue {
     subjects?: string[];
     predicates?: string[];
@@ -151,15 +168,20 @@ declare module "@worlds/sdk" {
       query: string;
       signal?: AbortSignal;
       timeoutMs?: number;
-    }): Promise<any>;
+    }): Promise<SparqlResponse>;
     search(
       options: {
         query: string;
         minScore?: number;
       } & QuadFilter,
     ): Promise<{ results?: SearchResult[]; mode?: SearchMode }>;
-    import(options: { source: any }): Promise<void>;
-    export(options: { format: any }): Promise<any>;
+    import(options: {
+      mode?: "merge" | "replace";
+      source: ImportSource;
+    }): Promise<void>;
+    export(options: {
+      format: { kind: "quads" } | { kind: "serialized"; contentType?: string };
+    }): Promise<ExportResponse>;
     reindex?(): Promise<void>;
   }
 }

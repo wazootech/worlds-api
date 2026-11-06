@@ -817,7 +817,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
       [ts, expireTs, ts, worldId],
     );
     clearSdkCacheForWorld(worldId);
-    return c.body(null, 204) as any;
+    return c.body(null, 204);
   });
 
   app.openapi(undeleteRoute, async (c) => {

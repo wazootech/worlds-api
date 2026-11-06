@@ -20,6 +20,7 @@ try {
 } catch (err) {
   throw new Error(
     `Invalid base URL: must be http://localhost, http://127.0.0.1, or https://data-qa.wazoo.dev`,
+    { cause: err },
   );
 }
 const ADMIN_KEY = required("WORLDS_API_ADMIN_KEY");
@@ -70,10 +71,6 @@ async function assertBadRequest(res) {
 
 async function assertUnauthorized(res) {
   await assertStatus(res, 401);
-}
-
-async function assertForbidden(res) {
-  await assertStatus(res, 403);
 }
 
 async function assertNotFound(res) {
@@ -219,10 +216,9 @@ await test("POST /worlds with admin key (no namespace) returns 400", async () =>
 });
 
 await test("GET /worlds/:id for nonexistent world returns 404", async () => {
-  const res = await fetch(
-    `${BASE_URL}/worlds/w_00000000000000000000000000`,
-    { headers: authHeaders() },
-  );
+  const res = await fetch(`${BASE_URL}/worlds/w_00000000000000000000000000`, {
+    headers: authHeaders(),
+  });
   await assertNotFound(res);
 });
 

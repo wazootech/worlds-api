@@ -13,5 +13,19 @@ export default defineConfig({
   },
   test: {
     include: ["tests/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**/*.ts"],
+      exclude: ["src/**/*.d.ts"],
+      reporter: ["text-summary", "text"],
+      // Floors are the measured coverage (2026-10-28) rounded down. Raise
+      // them as coverage grows; never lower them to land a change.
+      thresholds: {
+        lines: 83,
+        functions: 86,
+        branches: 73,
+        statements: 81,
+      },
+    },
   },
 });

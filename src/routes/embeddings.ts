@@ -251,6 +251,6 @@ export function registerEmbeddingRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
     if (!row) return respond(c, notFound, 404);
     await revokeCredential(env, namespace, provider);
     clearSdkCache();
-    return c.body(null, 204) as any;
+    return c.body(null, 204);
   });
 }

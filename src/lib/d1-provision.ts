@@ -1,5 +1,5 @@
 import type { Env } from "../env";
-import { getDb, queryOne, execute, now } from "./db";
+import { getDb, queryOne, now } from "./db";
 
 /**
  * D1-based world provisioning.

@@ -123,7 +123,7 @@ app.use("*", async (c, next) => {
 
   if (!schemaInitialized) {
     const db = (c.env as unknown as Env).DB;
-    if (db && typeof (db as any).exec === "function") {
+    if (db && typeof db.exec === "function") {
       try {
         await ensureControlPlaneSchema(db);
         schemaInitialized = true;
