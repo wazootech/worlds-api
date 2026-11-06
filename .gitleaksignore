@@ -4,3 +4,6 @@
 56ccb27d568189ffb7e926bb90bc79442204e669:tests/byok-embeddings.test.ts:generic-api-key:975
 e2d01151cefc6427f14f2a838fe7238c3d062f6a:tests/byok-embeddings.test.ts:generic-api-key:55
 e2d01151cefc6427f14f2a838fe7238c3d062f6a:tests/byok-vector-cleanup.test.ts:generic-api-key:45
+2c11e41db48e02487d01569b707eb77f8b4a6d0f:tests/helpers/byok-cleanup-harness.ts:generic-api-key:22
+d7a69f20b9f859cf9c66492714461eec7faf676f:tests/helpers/byok-embeddings-harness.ts:generic-api-key:18
+d7a69f20b9f859cf9c66492714461eec7faf676f:tests/byok-embeddings-routes.test.ts:generic-api-key:134
