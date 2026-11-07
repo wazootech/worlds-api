@@ -36,6 +36,7 @@ export {
   computeEmbeddingStatus,
   getWorldState,
   markWorldPartial,
+  restartWindowedPass,
   setWorldState,
 } from "./store/world-state";
 export type {

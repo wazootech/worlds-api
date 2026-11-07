@@ -7,6 +7,7 @@ import {
   unauthorized,
 } from "../../lib/auth";
 import { maxImportQuads, maxImportBytes } from "../../lib/abuse";
+import { restartWindowedPass } from "../../lib/embeddings/store";
 import { getWorldSdk, resolveWorldDatabase } from "../../lib/world-db";
 import { respond } from "../../lib/respond";
 import { writeBudgetRefusal } from "../../lib/write-budget";
@@ -80,6 +81,9 @@ export function registerImport(app: OpenAPIHono<{ Bindings: Env }>) {
       return respond(c, refusal, 429);
     }
 
+    // Chunks this import cannot embed must not be hidden by a running
+    // windowed reindex that would later record `ready` (worlds-api#127).
+    await restartWindowedPass(env, worldId).catch(() => {});
     const client = await getWorldSdk(env, ref);
 
     const quadsCap = maxImportQuads(env);

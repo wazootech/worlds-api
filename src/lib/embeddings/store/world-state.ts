@@ -66,6 +66,26 @@ export async function markWorldPartial(
   );
 }
 
+/**
+ * A write path (import, SPARQL update) landed while a windowed reindex pass is
+ * in progress on a world that cannot embed it (state `stale`, cursor set).
+ * Its new chunks have no vectors and may sit behind the cursor, where the
+ * pass would never revisit them before recording `ready`. Dropping the cursor
+ * restarts the pass from the first subject on the next reindex call, so
+ * `ready` still means every chunk has a vector. Live (`ready`/`partial`)
+ * worlds embed the write themselves and keep their cursor.
+ */
+export async function restartWindowedPass(
+  env: Env,
+  worldId: string,
+): Promise<void> {
+  await execute(
+    getDb(env),
+    "UPDATE world_embedding_state SET reindex_cursor = NULL, update_time = ? WHERE world_id = ? AND state = 'stale' AND reindex_cursor IS NOT NULL",
+    [now(), worldId],
+  );
+}
+
 /** Pure status derivation; see design section 5 for the vocabulary. */
 export function computeEmbeddingStatus(input: {
   enabled: boolean;
