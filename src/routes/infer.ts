@@ -5,7 +5,7 @@ import { authorize, requireAccess, unauthorized } from "../lib/auth";
 import { SCOPE_DATA_WRITE } from "../lib/auth";
 import { resolveWorldDatabase } from "../lib/world-db";
 import { respond } from "../lib/respond";
-import { writeBudgetRefusal } from "../lib/write-budget";
+import { meterDatabase, writeBudgetRefusal } from "../lib/write-budget";
 import { inferRoute } from "./infer/route";
 
 export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
@@ -52,7 +52,8 @@ export function registerInferRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
 
     try {
       const report = await backfillInference({
-        database: env.DB,
+        // Metered so back-fill rows count toward the namespace write budget.
+        database: meterDatabase(env.DB, ref.namespace),
         worldId,
         inference: ref.inference,
       });
