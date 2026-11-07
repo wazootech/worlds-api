@@ -3,6 +3,7 @@ import type { Env } from "../../env";
 import { getDb, query } from "../../lib/db";
 import {
   authorize,
+  forbidden,
   forbiddenScope,
   hasScope,
   SCOPE_DATA_READ,
@@ -30,6 +31,8 @@ export function registerListWorlds(app: OpenAPIHono<{ Bindings: Env }>) {
     const db = getDb(env);
 
     if (!auth.admin && !auth.namespace) return unauthorized();
+    // Namespace-level route: a world-scoped key is limited to one world.
+    if (!auth.admin && auth.worldId) return forbidden();
     if (!hasScope(auth, SCOPE_DATA_READ)) {
       return forbiddenScope(SCOPE_DATA_READ);
     }
