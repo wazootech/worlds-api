@@ -1,6 +1,7 @@
 import type { Context } from "hono";
 import type { Env } from "../../env";
 import { sparqlMaxResults, sparqlTimeoutMs } from "../../lib/abuse";
+import { restartWindowedPass } from "../../lib/embeddings/store";
 import type { getWorldSdk } from "../../lib/world-db";
 import { respond } from "../../lib/respond";
 import { materializeBindings, SPARQL_TIMEOUT_MESSAGE } from "./helpers";
@@ -40,6 +41,7 @@ export async function executeSparql(
       // them the vectors whose Vectorize metadata carries the removed
       // text. Remove those vectors (and the orphaned chunk rows) now;
       // failures are reported and fail safe by marking the world stale.
+      await restartWindowedPass(env, worldId).catch(() => {});
       const vectorCleanup = await reconcileAfterUpdate(env, worldId);
       return respond(c, {
         ok: true,
