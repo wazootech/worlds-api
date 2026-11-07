@@ -3,6 +3,7 @@ import type { Env } from "../../env";
 import { newWorldId } from "../../lib/db";
 import {
   authorize,
+  forbidden,
   requireAccess,
   SCOPE_DATA_WRITE,
   unauthorized,
@@ -34,6 +35,8 @@ export function registerCreateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
         400,
       );
     }
+    // Namespace-level route: a world-scoped key is limited to one world.
+    if (!auth.admin && auth.worldId) return forbidden();
     const accessErr = requireAccess(
       auth,
       namespace,
