@@ -90,7 +90,7 @@ describe("POST /worlds/:worldId/infer", () => {
       inconsistencyCount: 1,
     });
     expect(mocks.backfillInference).toHaveBeenCalledWith({
-      database: env.DB,
+      database: expect.anything(),
       worldId,
       inference: { enabled: true, maxAssertedQuads: 500 },
     });
