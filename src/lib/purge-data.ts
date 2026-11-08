@@ -2,8 +2,13 @@ import type { D1Database } from "@cloudflare/workers-types";
 
 /** Rows removed per DELETE statement; keeps each D1 statement small. */
 export const PURGE_ROW_BATCH = 500;
-/** Delete rounds one sweep may spend across all worlds (bounds subrequests). */
-export const PURGE_BATCHES_PER_SWEEP = 100;
+/**
+ * Delete rounds one sweep may spend across all worlds (bounds subrequests).
+ * Kept small on purpose: quads and chunks have no world_id index, so each
+ * round may scan the shared table and counts as D1 rows read. Raise it once
+ * those tables are indexed by world_id.
+ */
+export const PURGE_BATCHES_PER_SWEEP = 10;
 
 export type PurgeBudget = { batches: number };
 
