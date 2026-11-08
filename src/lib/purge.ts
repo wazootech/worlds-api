@@ -1,5 +1,6 @@
 import type { Env } from "../env";
 import { execute, getDb, now, query } from "./db";
+import { deleteWorldData, PURGE_BATCHES_PER_SWEEP } from "./purge-data";
 import { cleanupOk, cleanupWorldVectors } from "./embeddings/vectors";
 
 /**
@@ -7,8 +8,10 @@ import { cleanupOk, cleanupWorldVectors } from "./embeddings/vectors";
  * them purged. With the single-D1 model, there's no external database to
  * destroy — purging is just marking the metadata row.
  *
- * The quads/chunks for purged worlds are cleaned up by a separate garbage
- * collection pass (or can be left for D1's built-in cleanup).
+ * Before marking a world purged the sweep deletes its vectors, then its quads,
+ * chunks (with FTS entries), inference setting and embedding state, in bounded
+ * batches. A world with rows left, or any failure, stays pending and is
+ * retried by the next sweep.
  */
 export async function runPurgeSweep(
   env: Env,
@@ -23,7 +26,9 @@ export async function runPurgeSweep(
 
   let purged = 0;
   let failed = 0;
+  const budget = { batches: PURGE_BATCHES_PER_SWEEP };
   for (const row of rows) {
+    if (budget.batches <= 0) break; // the rest wait for the next sweep
     try {
       // Remove the world's vectors (their metadata holds chunk text) before
       // marking it purged. A failed or incomplete cleanup leaves the world
@@ -34,6 +39,10 @@ export async function runPurgeSweep(
         console.error(
           `purge deferred for ${row.world_id}: vector cleanup incomplete (${cleanup.errors.join("; ") || "more vectors remain"})`,
         );
+        continue;
+      }
+      if (!(await deleteWorldData(db, row.world_id, budget))) {
+        console.warn(`purge continues next sweep for ${row.world_id}`);
         continue;
       }
       await execute(
