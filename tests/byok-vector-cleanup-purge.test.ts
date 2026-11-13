@@ -64,6 +64,34 @@ describe("namespace delete and purge remove vectors", () => {
     expect(chunkRows(WORLD_A).every((r) => r.has_vec === 0)).toBe(true);
   });
 
+  it("namespace delete removes the namespace's write-budget rows", async () => {
+    // Account deletion used to leave the budget override and the per-day
+    // usage counters behind (worlds-api#154, 2026-10-27 note).
+    const env = makeEnv();
+    await env.DB.prepare(
+      "INSERT INTO namespace_write_budget (namespace, daily_rows, update_time) VALUES ('ns-1', 500000, '2026-11-13T00:00:00.000Z')",
+    ).run();
+    await env.DB.prepare(
+      "INSERT INTO namespace_write_usage (namespace, day, rows_written, update_time) VALUES ('ns-1', '2026-11-13', 27, '2026-11-13T00:00:00.000Z')",
+    ).run();
+
+    const res = await http(env, "admin-key", "/admin/namespaces/ns-1/delete", {
+      method: "POST",
+    });
+    expect(res.status).toBe(200);
+
+    expect(
+      await env.DB.prepare(
+        "SELECT COUNT(*) AS n FROM namespace_write_budget WHERE namespace = 'ns-1'",
+      ).first<{ n: number }>(),
+    ).toMatchObject({ n: 0 });
+    expect(
+      await env.DB.prepare(
+        "SELECT COUNT(*) AS n FROM namespace_write_usage WHERE namespace = 'ns-1'",
+      ).first<{ n: number }>(),
+    ).toMatchObject({ n: 0 });
+  });
+
   it("namespace delete reports a Vectorize failure and is safe to re-run", async () => {
     const env = makeEnv();
     await seedReadyWorld(env);
