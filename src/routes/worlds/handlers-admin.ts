@@ -55,6 +55,18 @@ export function registerNamespaceDelete(app: OpenAPIHono<{ Bindings: Env }>) {
     // worlds are marked stale so a restore cannot make removed vectors live.
     await revokeNamespaceCredentials(env, namespace);
 
+    // The write-budget rows die with the namespace too (worlds-api#154 note,
+    // 2026-10-27): the override row and the per-day usage counters would
+    // otherwise outlive the account as orphaned rows.
+    await execute(
+      db,
+      "DELETE FROM namespace_write_budget WHERE namespace = ?",
+      [namespace],
+    );
+    await execute(db, "DELETE FROM namespace_write_usage WHERE namespace = ?", [
+      namespace,
+    ]);
+
     // Invalidate all cached SDKs since multiple worlds may have been affected.
     clearSdkCache();
 
