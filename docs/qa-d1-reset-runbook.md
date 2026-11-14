@@ -239,11 +239,18 @@ pnpm exec wrangler d1 execute wazoo-api-qa --remote --env qa --file migrations/2
 
 `/ready` **does not assert indexes** — it checks columns, primary keys, foreign keys
 and NOT NULL only. So `/ready` will go green without this step and the omission will
-not be caught. But `src/routes/worlds.ts:75` detects duplicate-ID conflicts by
-matching `/UNIQUE constraint failed: (?:worlds\.world_id|...)/ `, so without the
-index a cross-user duplicate world ID returns the wrong error instead of 409. This
-is the same class of bug as `billing.ts:219`
-([wazoo-api#73](https://github.com/wazootech/wazoo-api/issues/73)).
+not be caught. But `src/routes/worlds/insert.ts` (in the wazoo-api repo) detects
+duplicate-ID conflicts by matching
+`/UNIQUE constraint failed: (?:worlds\.world_id|worlds\.user_uid, worlds\.world_id)/i`
+and maps it to a 409 ("World ID already exists"), so without the index a cross-user
+duplicate world ID would return the wrong error instead of 409. This is the same
+class of bug as the one reported in
+[wazoo-api#73](https://github.com/wazootech/wazoo-api/issues/73) (now closed).
+
+> Note: the route split moved this logic out of `src/routes/worlds.ts` (now a
+> registration barrel) into `src/routes/worlds/insert.ts`; the old
+> `billing.ts:219` citation is also stale — the billing routes no longer carry
+> UNIQUE-constraint handling at all.
 
 > **Trap — do not run the whole `migrations/` directory.** Only the 2026-09-29 file
 > is safe here. `2026-09-25-world-id-canonical.sql` is historical (its own README
