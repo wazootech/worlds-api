@@ -184,7 +184,9 @@
               }
             ]
           }
-        }
+        },
+        "additionalProperties": false,
+        "description": "Flat create body, e.g. {\"displayName\":\"hello\"}. Unknown top-level keys, including the control-plane \"world\" wrapper, are rejected. An empty object is valid; omitted displayName defaults to the generated world ID."
       },
       "UpdateWorldRequest": {
         "type": "object",
