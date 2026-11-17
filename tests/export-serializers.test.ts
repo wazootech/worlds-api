@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type * as rdfjs from "@rdfjs/types";
 import {
   serializeQuadsToJsonLd,
-  serializeQuadsToTrig,
+  serializeQuadsToTurtle,
 } from "@/lib/export-serializers";
 
 // Simple DataFactory for tests
@@ -91,9 +91,9 @@ function sampleQuads(): rdfjs.Quad[] {
   ];
 }
 
-describe("serializeQuadsToTrig", () => {
+describe("serializeQuadsToTurtle", () => {
   it("emits default-graph quads as triples and named-graph quads in named blocks", () => {
-    const trig = serializeQuadsToTrig(sampleQuads());
+    const trig = serializeQuadsToTurtle(sampleQuads());
     expect(trig).toContain("<urn:subject:alice>");
     expect(trig).toContain("<urn:predicate:name>");
     expect(trig).toContain('"Alice"');
@@ -105,7 +105,7 @@ describe("serializeQuadsToTrig", () => {
   it("round-trips through the sparql-engine parser", async () => {
     const { parseTurtleQuads } = await import("@wazoo/sparql-engine");
     const quads = sampleQuads();
-    const trig = serializeQuadsToTrig(quads);
+    const trig = serializeQuadsToTurtle(quads);
     const parsed = Array.from(await parseTurtleQuads(trig));
 
     // Should have same number of quads
