@@ -1,62 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type * as rdfjs from "@rdfjs/types";
+import type { Quad } from "@rdfjs/types";
+import { DataFactory } from "@wazoo/sparql-engine/data-model";
 import {
   serializeQuadsToJsonLd,
   serializeQuadsToTurtle,
 } from "@/lib/export-serializers";
 
-// Simple DataFactory for tests
-function namedNode(value: string): rdfjs.NamedNode {
-  return { termType: "NamedNode", value } as rdfjs.NamedNode;
-}
+const { namedNode, literal, quad, defaultGraph } = DataFactory;
 
-function literal(
-  value: string,
-  languageOrDatatype?: string | rdfjs.NamedNode,
-): rdfjs.Literal {
-  if (typeof languageOrDatatype === "string") {
-    return {
-      termType: "Literal",
-      value,
-      language: languageOrDatatype,
-      datatype: namedNode(
-        "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
-      ),
-      direction: undefined,
-    } as rdfjs.Literal;
-  }
-  return {
-    termType: "Literal",
-    value,
-    language: "",
-    datatype:
-      languageOrDatatype ??
-      namedNode("http://www.w3.org/2001/XMLSchema#string"),
-    direction: undefined,
-  } as rdfjs.Literal;
-}
-
-function quad(
-  subject: rdfjs.Term,
-  predicate: rdfjs.Term,
-  object: rdfjs.Term,
-  graph?: rdfjs.Term,
-): rdfjs.Quad {
-  return {
-    termType: "Quad",
-    value: "",
-    subject,
-    predicate,
-    object,
-    graph: graph ?? defaultGraph(),
-  } as rdfjs.Quad;
-}
-
-function defaultGraph(): rdfjs.DefaultGraph {
-  return { termType: "DefaultGraph", value: "" } as rdfjs.DefaultGraph;
-}
-
-function sampleQuads(): rdfjs.Quad[] {
+function sampleQuads(): Quad[] {
   return [
     quad(
       namedNode("urn:subject:alice"),
@@ -108,19 +60,11 @@ describe("serializeQuadsToTurtle", () => {
     const trig = serializeQuadsToTurtle(quads);
     const parsed = Array.from(await parseTurtleQuads(trig));
 
-    // Should have same number of quads
-    expect(parsed.length).toBe(quads.length);
-
-    // Check that all original quads are present
+    expect(parsed).toHaveLength(quads.length);
     for (const original of quads) {
-      const found = parsed.some(
-        (p) =>
-          p.subject.value === original.subject.value &&
-          p.predicate.value === original.predicate.value &&
-          p.object.value === original.object.value &&
-          p.graph.value === original.graph.value,
+      expect(parsed.some((parsedQuad) => original.equals(parsedQuad))).toBe(
+        true,
       );
-      expect(found).toBe(true);
     }
   });
 });
