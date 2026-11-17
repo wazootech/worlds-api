@@ -98,7 +98,7 @@ export const WorldResourceSchema = z
   .openapi("WorldResource");
 
 export const CreateWorldRequestSchema = z
-  .object({
+  .strictObject({
     displayName: z.string().optional().openapi({
       description: "User-facing display name for the new world.",
     }),
@@ -123,7 +123,10 @@ export const CreateWorldRequestSchema = z
         "Opt the world in to OWL 2 RL inference. Off when omitted. The data plane additionally needs the quads.derived column before enabling.",
     }),
   })
-  .openapi("CreateWorldRequest");
+  .openapi("CreateWorldRequest", {
+    description:
+      'Flat create body, e.g. {"displayName":"hello"}. Unknown top-level keys, including the control-plane "world" wrapper, are rejected. An empty object is valid; omitted displayName defaults to the generated world ID.',
+  });
 
 export const UpdateWorldRequestSchema = z
   .object({

@@ -31,30 +31,21 @@ describe("CreateWorldRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
-  it("strips a client-supplied worldId and databaseUrl (server provisions storage)", () => {
+  it("rejects client-supplied IDs and storage (server provisions storage)", () => {
     const result = CreateWorldRequestSchema.safeParse({
       id: "w_00000000000000000000000001",
       worldId: "my-world",
       slug: "my-world",
       databaseUrl: "d1://example.com",
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).not.toHaveProperty("id");
-      expect(result.data).not.toHaveProperty("worldId");
-      expect(result.data).not.toHaveProperty("slug");
-      expect(result.data).not.toHaveProperty("databaseUrl");
-    }
+    expect(result.success).toBe(false);
   });
 
-  it("strips a client-supplied namespace", () => {
+  it("rejects a client-supplied namespace", () => {
     const result = CreateWorldRequestSchema.safeParse({
       namespace: "my-namespace",
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data).not.toHaveProperty("namespace");
-    }
+    expect(result.success).toBe(false);
   });
 });
 
