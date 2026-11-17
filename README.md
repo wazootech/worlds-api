@@ -18,28 +18,27 @@ beta, `wazoo-api` passes `namespace = user.uid`.
 ## Architecture and boundaries
 
 The Wazoo Worlds surface is split into two planes, each with its own auth
-surface and its own client package:
+surface and client package(s):
 
 | Plane                 | Service                         | Auth                     | Owns                                                                                                                           | Client                                                                                 |
 | --------------------- | ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
-| Platform (management) | `wazoo-api` (`api.wazoo.dev`)   | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the _policy facade_ over worlds                                           | `@wazoo/client` (generated from the platform OpenAPI)                                  |
-| Data plane            | `worlds-api` (`data.wazoo.dev`) | world keys (`wzw_`)      | world data in shared Cloudflare D1, metadata, keys, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | the generated `@worlds/client` data-plane HTTP client and the embeddable `@worlds/sdk` |
+| Platform (management) | `wazoo-api` (`api.wazoo.dev`)   | platform tokens (`wzp_`) | accounts, platform tokens, usage/limits/billing, and the _policy facade_ over worlds                                           | `@wazoo/client`                                   |
+| Data plane            | `worlds-api` (`data.wazoo.dev`) | world keys (`wzw_`)      | world data in shared Cloudflare D1, metadata, keys, quad/chunk storage, search/SPARQL/import/export/reindex, lifecycle + purge | `@worlds/client`, `@worlds/sdk` |
 
-### The cut (intentional)
+There are key differences between the **data plane** and the **platform plane**.
 
-- **The data plane is the single writer of world lifecycle and world keys.**
-  `POST /worlds` inserts world metadata into the shared D1 `worlds` table;
+ The **data plane** is the single writer of world lifecycle and world keys.
+  For example, `POST /worlds` inserts world metadata into the `worlds` table while
   `/api-keys` mints data-plane keys. A self-hosted
-  `worlds-api` is therefore fully functional standalone — worlds, keys, and data
-  operations — with zero management-plane dependency. That is the original
-  design goal: people can self-host the data plane without running the platform.
-- **The platform plane is a policy facade over the data plane.** `wazoo-api`
+  data plane is therefore fully functional standalone with zero management-plane dependency. This means self-hosters can host their own version of `worlds-api` without running `wazoo-api`.
+
+**The platform plane is a policy facade over the data plane.** `wazoo-api`
   `/v1/worlds` CRUD and world-token endpoints call `worlds-api` admin endpoints
   (`/api-keys`, world lifecycle) with `WORLDS_API_ADMIN_KEY`, then layer
   platform policy on top: quotas, usage/limits, billing gates, and
   `MAX_WORLDS_EXCEEDED`. The two `/worlds` surfaces are not peers — one is
   storage ownership, the other is policy.
-- `namespace` is the tenancy boundary between the planes: an opaque grouping
+`namespace` is the tenancy boundary between the planes: an opaque grouping
   string (in the hosted beta, `wazoo-api` passes `namespace = user.uid`).
   Data-plane keys resolve namespace from the key; admin calls pass it
   explicitly.
@@ -103,7 +102,7 @@ admin-only and exist for the platform facade and account-deletion flows.
 
 Deployed secrets live in Infisical (`qa` and `prod`) and reach the Workers
 through the Cloudflare Workers Secret Sync. Local development brings its own
-resources and uses your own `.dev.vars`; it needs no org credentials. See
+resources and uses your own `.dev.vars`. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and
 [secret-registry.md](secret-registry.md) for how the Workers Secret Sync and CI
 each receive the deployed values.
@@ -115,11 +114,14 @@ database reset remains a separately approved rollout action.
 
 ## Health checks
 
-- Local: `pnpm run health:local`
-- QA: `pnpm run health:local https://data-qa.wazoo.dev`
+Local: `pnpm run health:local`
 
-`/health` checks liveness and database connectivity. `/ready` checks that the
-control-plane schema matches this service. The health script probes both and
+QA: `pnpm run health:local https://data-qa.wazoo.dev`
+
+- `/health` checks liveness and database connectivity. 
+- `/ready` checks that the control-plane schema matches this service.
+
+ The health script probes both and
 requires `WORLDS_API_ADMIN_KEY` for its authenticated checks. Export your local
 key for a local run, or inject the `qa` value (org members) for QA:
 
