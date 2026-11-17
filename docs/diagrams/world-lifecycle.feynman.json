@@ -1,0 +1,215 @@
+{
+  "title": "A world's lifecycle",
+  "lines": {
+    "owner": {
+      "stroke": "dashed",
+      "color": "orange",
+      "legend": "the world's owner decides",
+      "len": 90
+    },
+    "platform": {
+      "stroke": "solid",
+      "color": "teal",
+      "legend": "wazoo-api applies policy",
+      "len": 90
+    },
+    "data": {
+      "stroke": "solid",
+      "color": "ink",
+      "legend": "worlds-api runs",
+      "len": 80
+    },
+    "wait": {
+      "stroke": "dotted",
+      "color": "gray",
+      "legend": "waiting, nothing runs",
+      "len": 110
+    }
+  },
+  "vertices": {
+    "gate": {
+      "shape": "square",
+      "fill": "hollow",
+      "color": "teal",
+      "legend": "policy check",
+      "labelColor": true
+    },
+    "change": {
+      "shape": "diamond",
+      "legend": "changes state, reversible"
+    },
+    "permanent": {
+      "shape": "diamond",
+      "color": "red",
+      "legend": "permanent",
+      "labelColor": true,
+      "bold": true
+    }
+  },
+  "tracks": [
+    {
+      "id": "main",
+      "lane": 0,
+      "line": "owner",
+      "start": {
+        "label": "owner",
+        "note": "wzp_ token"
+      },
+      "steps": [
+        {
+          "line": "owner",
+          "len": 110
+        },
+        {
+          "vertex": "gate",
+          "id": "quota",
+          "by": "platform",
+          "label": "quota check",
+          "labelPos": "above"
+        },
+        {
+          "line": "platform",
+          "label": "allowed",
+          "note": "admin key",
+          "len": 230
+        },
+        {
+          "vertex": "change",
+          "label": "create",
+          "note": ["w_<ULID>", "active"]
+        },
+        {
+          "line": "data",
+          "len": 130
+        },
+        {
+          "vertex": "permanent",
+          "label": "mint key",
+          "note": "wzw_ shown once"
+        },
+        {
+          "line": "owner",
+          "label": "in use",
+          "note": "reads · writes",
+          "len": 150
+        },
+        {
+          "vertex": "branch",
+          "id": "act",
+          "by": "owner"
+        },
+        {
+          "line": "data",
+          "label": "delete",
+          "len": 170
+        },
+        {
+          "vertex": "change",
+          "label": "soft-delete",
+          "note": "restorable"
+        },
+        {
+          "line": "wait",
+          "len": 70
+        },
+        {
+          "vertex": "branch",
+          "id": "grace",
+          "by": "owner"
+        },
+        {
+          "line": "wait",
+          "label": "30 days pass",
+          "len": 190
+        },
+        {
+          "line": "data",
+          "label": "sweep",
+          "note": "daily cron",
+          "len": 80
+        },
+        {
+          "vertex": "permanent",
+          "label": "purge",
+          "note": ["vectors,", "then quads"]
+        },
+        {
+          "line": "data",
+          "len": 40
+        },
+        {
+          "vertex": "stop",
+          "note": "gone for good"
+        }
+      ]
+    },
+    {
+      "id": "over",
+      "lane": 1.1,
+      "from": "quota",
+      "label": "over quota",
+      "line": "platform",
+      "steps": [
+        {
+          "line": "platform",
+          "len": 60
+        },
+        {
+          "vertex": "stop",
+          "note": "MAX_WORLDS_EXCEEDED"
+        }
+      ]
+    },
+    {
+      "id": "suspend",
+      "lane": 1.2,
+      "from": "act",
+      "label": "suspend",
+      "line": "data",
+      "steps": [
+        {
+          "line": "data",
+          "len": 50
+        },
+        {
+          "vertex": "change",
+          "label": "suspend",
+          "note": "no access"
+        },
+        {
+          "line": "wait",
+          "len": 80
+        },
+        {
+          "vertex": "change",
+          "label": "resume"
+        },
+        {
+          "vertex": "stop",
+          "note": "back in use"
+        }
+      ]
+    },
+    {
+      "id": "undelete",
+      "lane": -1.2,
+      "from": "grace",
+      "label": "undelete",
+      "line": "data",
+      "steps": [
+        {
+          "line": "data",
+          "len": 50
+        },
+        {
+          "vertex": "change",
+          "label": "restore",
+          "note": "active again"
+        },
+        {
+          "vertex": "stop"
+        }
+      ]
+    }
+  ]
+}
