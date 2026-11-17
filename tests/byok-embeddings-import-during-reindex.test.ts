@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getWorldState, setWorldState } from "../src/lib/embeddings/store";
+import { getWorldState, setWorldState } from "@/lib/embeddings/store";
 import {
   addApiKey,
   addWorld,
@@ -12,7 +12,7 @@ import {
   useEmbeddingsHarness,
   WORLD_A,
 } from "./helpers/byok-embeddings-harness";
-import { setCredential } from "../src/lib/embeddings/store";
+import { setCredential } from "@/lib/embeddings/store";
 
 vi.mock("@worlds/cloudflare", () => ({
   createCloudflareWorldsSdk: vi.fn(),

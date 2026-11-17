@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorldsSdkInterface } from "@worlds/sdk";
-import app from "../src/app";
-import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
+import app from "@/app";
+import { getWorldSdk, resolveWorldDatabase } from "@/lib/world-db";
 import { DataFactory } from "@wazoo/sparql-engine/data-model";
 
 const { namedNode, literal, quad, defaultGraph } = DataFactory;
 
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   clearSdkCacheForWorld: vi.fn(),
   getWorldSdk: vi.fn(),
   resolveWorldDatabase: vi.fn(),

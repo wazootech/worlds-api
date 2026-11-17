@@ -1,22 +1,22 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../src/app";
-import type { Env } from "../src/env";
-import { provisionWorld } from "../src/lib/d1-provision";
-import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
-import { sha256Hex } from "../src/lib/crypto";
+import app from "@/app";
+import type { Env } from "@/env";
+import { provisionWorld } from "@/lib/d1-provision";
+import { getWorldSdk, resolveWorldDatabase } from "@/lib/world-db";
+import { sha256Hex } from "@/lib/crypto";
 import { createApiKeyDb } from "./helpers/api-key-db";
 import { readJson, type ErrorBody } from "./helpers/json";
 
-vi.mock("../src/lib/d1-provision", () => ({
+vi.mock("@/lib/d1-provision", () => ({
   provisionWorld: vi.fn(),
 }));
 
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   resolveWorldDatabase: vi.fn(),
   getWorldSdk: vi.fn(),
 }));
 
-vi.mock("../src/lib/db", () => ({
+vi.mock("@/lib/db", () => ({
   getDb: vi.fn(),
   query: vi.fn(),
   queryOne: vi.fn(),
@@ -32,7 +32,7 @@ const provisionMock = vi.mocked(provisionWorld);
 const resolveWorldDatabaseMock = vi.mocked(resolveWorldDatabase);
 const getWorldSdkMock = vi.mocked(getWorldSdk);
 
-import { getDb, query, queryOne, execute } from "../src/lib/db";
+import { getDb, query, queryOne, execute } from "@/lib/db";
 const getDbMock = vi.mocked(getDb);
 const queryMock = vi.mocked(query);
 const queryOneMock = vi.mocked(queryOne);

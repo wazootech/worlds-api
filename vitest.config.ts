@@ -9,6 +9,7 @@ export default defineConfig({
       // that Node can't resolve). Point at a lightweight stub instead.
       "@worlds/cloudflare": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
       "@worlds/sdk": resolve(__dirname, "src/types/worlds-cloudflare.d.ts"),
+      "@": resolve(__dirname, "src"),
     },
   },
   test: {

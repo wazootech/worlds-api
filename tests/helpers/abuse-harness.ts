@@ -1,9 +1,9 @@
 import { beforeAll, beforeEach, vi } from "vitest";
-import app from "../../src/app";
-import type { Env } from "../../src/env";
-import { getDb } from "../../src/lib/db";
-import { resolveWorldDatabase, getWorldSdk } from "../../src/lib/world-db";
-import { sha256Hex } from "../../src/lib/crypto";
+import app from "@/app";
+import type { Env } from "@/env";
+import { getDb } from "@/lib/db";
+import { resolveWorldDatabase, getWorldSdk } from "@/lib/world-db";
+import { sha256Hex } from "@/lib/crypto";
 import { createApiKeyDb } from "./api-key-db";
 
 // The calling test file declares vi.mock for "src/lib/world-db" and "src/lib/db".

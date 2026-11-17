@@ -5,7 +5,7 @@ import {
   clearSdkCacheForWorld,
   getWorldSdk,
   resolveWorldDatabase,
-} from "../src/lib/world-db";
+} from "@/lib/world-db";
 
 vi.mock("@worlds/cloudflare", () => ({
   createCloudflareWorldsSdk: vi.fn(),
@@ -136,7 +136,7 @@ describe("resolveWorldDatabase", () => {
     const queryOneMock = vi.fn().mockResolvedValue(null);
     const db = { prepare: vi.fn() } as any;
     const envWithDb = { DB: db } as any;
-    vi.spyOn(await import("../src/lib/db"), "queryOne").mockImplementation(
+    vi.spyOn(await import("@/lib/db"), "queryOne").mockImplementation(
       queryOneMock,
     );
     const result = await resolveWorldDatabase(
@@ -160,7 +160,7 @@ describe("resolveWorldDatabase", () => {
       top_k: 2,
       min_score: 0,
     };
-    const spy = vi.spyOn(await import("../src/lib/db"), "queryOne");
+    const spy = vi.spyOn(await import("@/lib/db"), "queryOne");
     spy.mockResolvedValueOnce({
       ...row,
       inference_enabled: 1,

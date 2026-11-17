@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../src/app";
-import { resolveWorldDatabase, getWorldSdk } from "../src/lib/world-db";
-import { flushWriteUsage, meterDatabase } from "../src/lib/write-budget";
+import app from "@/app";
+import { resolveWorldDatabase, getWorldSdk } from "@/lib/world-db";
+import { flushWriteUsage, meterDatabase } from "@/lib/write-budget";
 import {
   envWith,
   fakeDatabase,
@@ -9,8 +9,8 @@ import {
   useBudgetDb,
 } from "./helpers/write-budget-harness";
 
-vi.mock("../src/lib/world-db", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../src/lib/world-db")>()),
+vi.mock("@/lib/world-db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/world-db")>()),
   resolveWorldDatabase: vi.fn(),
   getWorldSdk: vi.fn(),
 }));

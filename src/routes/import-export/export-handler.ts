@@ -11,7 +11,7 @@ import { getWorldSdk, resolveWorldDatabase } from "../../lib/world-db";
 import { respond } from "../../lib/respond";
 import {
   serializeQuadsToJsonLd,
-  serializeQuadsToTrig,
+  serializeQuadsToTurtle,
 } from "../../lib/export-serializers";
 import {
   DEFAULT_EXPORT_LIMIT,
@@ -139,7 +139,7 @@ export function registerExport(app: OpenAPIHono<{ Bindings: Env }>) {
       fmt === "text/plain"
         ? page.map((q) => `${q.subject.value}\t${q.object.value}`).join("\n")
         : fmt === "application/trig"
-          ? serializeQuadsToTrig(page)
+          ? serializeQuadsToTurtle(page)
           : fmt === "application/ld+json"
             ? serializeQuadsToJsonLd(page)
             : serializeTurtle(page, {

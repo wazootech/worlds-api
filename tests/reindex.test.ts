@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorldsSdkInterface } from "@worlds/sdk";
-import app from "../src/app";
+import app from "@/app";
 import {
   clearSdkCacheForWorld,
   getWorldSdk,
   resolveWorldDatabase,
-} from "../src/lib/world-db";
+} from "@/lib/world-db";
 
 const mocks = vi.hoisted(() => ({
   clearSdkCacheForWorld: vi.fn(),
@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   reindex: vi.fn(),
 }));
 
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   clearSdkCacheForWorld: mocks.clearSdkCacheForWorld,
   getWorldSdk: mocks.getWorldSdk,
   resolveWorldDatabase: mocks.resolveWorldDatabase,

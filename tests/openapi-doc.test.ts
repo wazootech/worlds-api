@@ -2,7 +2,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import app, { openApiDocOptions } from "../src/app";
+import app, { openApiDocOptions } from "@/app";
 
 const snapshotPath = resolve(
   dirname(fileURLToPath(import.meta.url)),

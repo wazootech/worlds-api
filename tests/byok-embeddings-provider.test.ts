@@ -1,24 +1,24 @@
 import { assert, describe, expect, it, vi } from "vitest";
-import type { Env } from "../src/env";
-import {} from "../src/lib/embeddings/envelope";
-import { EmbeddingError } from "../src/lib/embeddings/errors";
+import type { Env } from "@/env";
+import {} from "@/lib/embeddings/envelope";
+import { EmbeddingError } from "@/lib/embeddings/errors";
 import {
   EMBEDDING_PROVIDERS,
   getEmbeddingModel,
-} from "../src/lib/embeddings/catalog";
+} from "@/lib/embeddings/catalog";
 import {
   INDEX_MAX_RETRIES,
   INDEX_TIMEOUT_MS,
   QUERY_TIMEOUT_MS,
   createEmbeddingService,
-} from "../src/lib/embeddings/provider";
-import { resolveEmbeddingService } from "../src/lib/embeddings/service";
+} from "@/lib/embeddings/provider";
+import { resolveEmbeddingService } from "@/lib/embeddings/service";
 import {
   revokeCredential,
   setCredential,
   setWorldState,
-} from "../src/lib/embeddings/store";
-import { getWorldSdk } from "../src/lib/world-db";
+} from "@/lib/embeddings/store";
+import { getWorldSdk } from "@/lib/world-db";
 import {
   createSdkMock,
   makeEnv,

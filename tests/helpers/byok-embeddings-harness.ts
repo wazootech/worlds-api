@@ -1,11 +1,11 @@
 import { afterEach, beforeAll, beforeEach, vi } from "vitest";
 import { createCloudflareWorldsSdk } from "@worlds/cloudflare";
-import app from "../../src/app";
-import type { Env } from "../../src/env";
-import { sha256Hex } from "../../src/lib/crypto";
-import { CONTROL_PLANE_DDL } from "../../src/lib/d1-schema";
-import { invalidateKeyCache } from "../../src/lib/embeddings/store";
-import { clearSdkCache } from "../../src/lib/world-db";
+import app from "@/app";
+import type { Env } from "@/env";
+import { sha256Hex } from "@/lib/crypto";
+import { CONTROL_PLANE_DDL } from "@/lib/d1-schema";
+import { invalidateKeyCache } from "@/lib/embeddings/store";
+import { clearSdkCache } from "@/lib/world-db";
 import { createSqliteD1, type SqliteD1 } from "./sqlite-d1";
 
 /**

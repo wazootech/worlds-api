@@ -2,13 +2,14 @@ import { serializeTurtle } from "@wazoo/sparql-engine";
 import type * as rdfjs from "@rdfjs/types";
 
 /**
- * Serializes quads to TriG via @wazoo/sparql-engine.
+ * Serializes quads to Turtle/TriG via @wazoo/sparql-engine.
+ * The serializer auto-upgrades Turtle to TriG when named graphs are present.
  *
  * TriG preserves named graphs: each graph becomes a named graph block, and
  * default-graph quads are emitted as top-level triples. Because the API has no
  * prefix mapping, output uses fully-qualified IRIs.
  */
-export function serializeQuadsToTrig(quads: rdfjs.Quad[]): string {
+export function serializeQuadsToTurtle(quads: rdfjs.Quad[]): string {
   return serializeTurtle(quads, { format: "turtle" });
 }
 

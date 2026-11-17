@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { CONTROL_PLANE_DDL } from "../src/lib/d1-schema";
+import { CONTROL_PLANE_DDL } from "@/lib/d1-schema";
 import {
   getInferenceSetting,
   loadInferenceSettings,
   setInferenceSetting,
-} from "../src/lib/inference";
+} from "@/lib/inference";
 import {
   CreateWorldRequestSchema,
   InferenceSettingSchema,
   UpdateWorldRequestSchema,
-} from "../src/lib/schemas";
+} from "@/lib/schemas";
 import { createSqliteD1, type SqliteD1 } from "./helpers/sqlite-d1";
 
 const A = "w_00000000000000000000000001";

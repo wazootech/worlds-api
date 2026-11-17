@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../src/app";
-import { resolveWorldDatabase } from "../src/lib/world-db";
-import { flushWriteUsage } from "../src/lib/write-budget";
+import app from "@/app";
+import { resolveWorldDatabase } from "@/lib/world-db";
+import { flushWriteUsage } from "@/lib/write-budget";
 import {
   envWith,
   fakeDatabase,
@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({ backfillInference: vi.fn() }));
 vi.mock("@worlds/cloudflare", () => ({
   backfillInference: mocks.backfillInference,
 }));
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   clearSdkCacheForWorld: vi.fn(),
   getWorldSdk: vi.fn(),
   resolveWorldDatabase: vi.fn(),

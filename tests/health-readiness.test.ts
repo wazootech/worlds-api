@@ -82,7 +82,7 @@ function makeDb(
 
 async function requestReady(db: D1Database) {
   vi.resetModules();
-  const app = (await import("../src/app")).default;
+  const app = (await import("@/app")).default;
   const executionCtx = {
     waitUntil: () => {},
     passThroughOnException: () => {},
@@ -92,7 +92,7 @@ async function requestReady(db: D1Database) {
 
 async function requestHealth(db: D1Database) {
   vi.resetModules();
-  const app = (await import("../src/app")).default;
+  const app = (await import("@/app")).default;
   const executionCtx = {
     waitUntil: () => {},
     passThroughOnException: () => {},

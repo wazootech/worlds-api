@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteWorldData } from "../src/lib/purge-data";
-import { runPurgeSweep } from "../src/lib/purge";
+import { deleteWorldData } from "@/lib/purge-data";
+import { runPurgeSweep } from "@/lib/purge";
 import {
   addWorld,
   db,
