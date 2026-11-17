@@ -1,15 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Env } from "../src/env";
-import { sha256Hex } from "../src/lib/crypto";
+import type { Env } from "@/env";
+import { sha256Hex } from "@/lib/crypto";
 import {
   credentialAad,
   currentKek,
   kekForVersion,
   openKey,
   sealKey,
-} from "../src/lib/embeddings/envelope";
-import {} from "../src/lib/embeddings/catalog";
-import {} from "../src/lib/embeddings/provider";
+} from "@/lib/embeddings/envelope";
+import {} from "@/lib/embeddings/catalog";
+import {} from "@/lib/embeddings/provider";
 import {
   AUTH_FAILURE_THRESHOLD,
   getCredential,
@@ -22,7 +22,7 @@ import {
   revokeCredential,
   setCredential,
   setWorldState,
-} from "../src/lib/embeddings/store";
+} from "@/lib/embeddings/store";
 import {
   addWorld,
   db,

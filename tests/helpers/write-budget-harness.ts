@@ -1,6 +1,6 @@
 import { beforeEach, vi } from "vitest";
-import { CONTROL_PLANE_DDL } from "../../src/lib/d1-schema";
-import { resetPendingWriteUsage } from "../../src/lib/write-budget";
+import { CONTROL_PLANE_DDL } from "@/lib/d1-schema";
+import { resetPendingWriteUsage } from "@/lib/write-budget";
 import { createSqliteD1, type SqliteD1 } from "./sqlite-d1";
 
 export const NS = "ns1";

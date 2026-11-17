@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Env } from "../src/env";
-import {} from "../src/lib/embeddings/envelope";
-import {} from "../src/lib/embeddings/catalog";
-import {} from "../src/lib/embeddings/provider";
-import { planReindexWindow } from "../src/lib/embeddings/reindex-window";
+import type { Env } from "@/env";
+import {} from "@/lib/embeddings/envelope";
+import {} from "@/lib/embeddings/catalog";
+import {} from "@/lib/embeddings/provider";
+import { planReindexWindow } from "@/lib/embeddings/reindex-window";
 import {
   computeEmbeddingStatus,
   getCredential,
@@ -11,7 +11,7 @@ import {
   remainingBudget,
   reserveBudget,
   setCredential,
-} from "../src/lib/embeddings/store";
+} from "@/lib/embeddings/store";
 import {
   addApiKey,
   addWorld,

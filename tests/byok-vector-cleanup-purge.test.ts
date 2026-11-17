@@ -3,9 +3,9 @@ import {
   getCredential,
   getWorldState,
   setWorldState,
-} from "../src/lib/embeddings/store";
-import { cleanupWorldVectors } from "../src/lib/embeddings/vectors";
-import { runPurgeSweep } from "../src/lib/purge";
+} from "@/lib/embeddings/store";
+import { cleanupWorldVectors } from "@/lib/embeddings/vectors";
+import { runPurgeSweep } from "@/lib/purge";
 import {
   addWorld,
   chunkRows,

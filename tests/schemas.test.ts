@@ -9,8 +9,8 @@ import {
   WorldResourceSchema,
   WORLD_ID_PATTERN,
   worldIdParam,
-} from "../src/lib/schemas";
-import { newWorldId } from "../src/lib/db";
+} from "@/lib/schemas";
+import { newWorldId } from "@/lib/db";
 
 const WORLD_ID = "w_00000000000000000000000001";
 

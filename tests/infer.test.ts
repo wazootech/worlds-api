@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../src/app";
-import { resolveWorldDatabase } from "../src/lib/world-db";
+import app from "@/app";
+import { resolveWorldDatabase } from "@/lib/world-db";
 
 const mocks = vi.hoisted(() => ({
   backfillInference: vi.fn(),
@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@worlds/cloudflare", () => ({
   backfillInference: mocks.backfillInference,
 }));
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   clearSdkCacheForWorld: vi.fn(),
   getWorldSdk: vi.fn(),
   resolveWorldDatabase: mocks.resolveWorldDatabase,

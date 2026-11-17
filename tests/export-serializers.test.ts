@@ -3,7 +3,7 @@ import type * as rdfjs from "@rdfjs/types";
 import {
   serializeQuadsToJsonLd,
   serializeQuadsToTrig,
-} from "../src/lib/export-serializers";
+} from "@/lib/export-serializers";
 
 // Simple DataFactory for tests
 function namedNode(value: string): rdfjs.NamedNode {

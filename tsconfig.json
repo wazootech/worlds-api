@@ -13,6 +13,7 @@
     "declaration": true,
     "types": ["node", "@cloudflare/workers-types"],
     "paths": {
+      "@/*": ["./src/*"],
       "@worlds/cloudflare": ["./src/types/worlds-cloudflare.d.ts"],
       "@worlds/sdk": ["./src/types/worlds-cloudflare.d.ts"]
     }

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import app from "../src/app";
-import type { Env } from "../src/env";
+import app from "@/app";
+import type { Env } from "@/env";
 import { readJson, type ErrorBody } from "./helpers/json";
-import { getWorldSdk, resolveWorldDatabase } from "../src/lib/world-db";
+import { getWorldSdk, resolveWorldDatabase } from "@/lib/world-db";
 
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   resolveWorldDatabase: vi.fn(),
   getWorldSdk: vi.fn(),
 }));

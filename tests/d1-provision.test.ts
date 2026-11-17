@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 // Mock the db module
-vi.mock("../src/lib/db", () => ({
+vi.mock("@/lib/db", () => ({
   getDb: vi.fn(),
   queryOne: vi.fn(),
   execute: vi.fn(),
@@ -9,8 +9,8 @@ vi.mock("../src/lib/db", () => ({
   now: vi.fn(() => "2026-01-01T00:00:00.000Z"),
 }));
 
-import { provisionWorld, resolveWorld } from "../src/lib/d1-provision";
-import { execute, queryOne } from "../src/lib/db";
+import { provisionWorld, resolveWorld } from "@/lib/d1-provision";
+import { execute, queryOne } from "@/lib/db";
 
 const env = { DB: {} as any } as any;
 

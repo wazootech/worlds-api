@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { getWorldState, setWorldState } from "../src/lib/embeddings/store";
-import { physicalVectorId } from "../src/lib/embeddings/vectors";
-import { clearSdkCache } from "../src/lib/world-db";
+import { getWorldState, setWorldState } from "@/lib/embeddings/store";
+import { physicalVectorId } from "@/lib/embeddings/vectors";
+import { clearSdkCache } from "@/lib/world-db";
 import {
   addWorld,
   chunkRows,

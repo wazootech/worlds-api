@@ -7,12 +7,12 @@ import {
   useAbuseMocks,
 } from "./helpers/abuse-harness";
 
-vi.mock("../src/lib/world-db", () => ({
+vi.mock("@/lib/world-db", () => ({
   resolveWorldDatabase: vi.fn(),
   getWorldSdk: vi.fn(),
 }));
 
-vi.mock("../src/lib/db", () => ({
+vi.mock("@/lib/db", () => ({
   getDb: vi.fn(),
   query: vi.fn(),
   queryOne: vi.fn(),

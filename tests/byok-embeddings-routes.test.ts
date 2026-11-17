@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Env } from "../src/env";
-import {} from "../src/lib/embeddings/envelope";
-import {} from "../src/lib/embeddings/catalog";
-import {} from "../src/lib/embeddings/provider";
+import type { Env } from "@/env";
+import {} from "@/lib/embeddings/envelope";
+import {} from "@/lib/embeddings/catalog";
+import {} from "@/lib/embeddings/provider";
 import {
   getCredential,
   getWorldState,
   setCredential,
   setWorldState,
-} from "../src/lib/embeddings/store";
-import { clearSdkCache, getWorldSdk } from "../src/lib/world-db";
+} from "@/lib/embeddings/store";
+import { clearSdkCache, getWorldSdk } from "@/lib/world-db";
 import {
   addApiKey,
   addWorld,

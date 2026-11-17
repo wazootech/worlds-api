@@ -3,7 +3,7 @@ import {
   assertControlPlaneSchema,
   CONTROL_PLANE_DDL,
   ensureControlPlaneSchema,
-} from "../src/lib/d1-schema";
+} from "@/lib/d1-schema";
 
 const canonicalSchema = {
   worlds: [
