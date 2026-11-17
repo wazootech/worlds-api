@@ -1,12 +1,6 @@
 import type { Env } from "../../env";
 import { getDb, queryOne } from "../../lib/db";
-import {
-  authorize,
-  forbidden,
-  forbiddenScope,
-  hasScope,
-  unauthorized,
-} from "../../lib/auth";
+import { authorize, requireAccess } from "../../lib/auth";
 import type { InferenceSetting } from "../../lib/inference";
 import {
   loadEmbeddingStatuses,
@@ -83,13 +77,5 @@ export function requireWorldAccess(
   worldId: string,
   requiredScope?: string,
 ): Response | null {
-  if (auth.admin) return null;
-  if (!auth.namespace || auth.namespace !== row.namespace) {
-    return unauthorized();
-  }
-  if (auth.worldId && auth.worldId !== worldId) return forbidden();
-  if (requiredScope && !hasScope(auth, requiredScope)) {
-    return forbiddenScope(requiredScope);
-  }
-  return null;
+  return requireAccess(auth, row.namespace, worldId, requiredScope);
 }

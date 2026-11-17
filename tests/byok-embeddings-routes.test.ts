@@ -95,7 +95,15 @@ describe("credential routes", () => {
     expect(
       (await http(env, "ns-default-token", path, { method: "DELETE" })).status,
     ).toBe(403);
-    expect((await put(env, "ns-world-token")).status).toBe(403);
+    const worldKeyResponse = await put(env, "ns-world-token");
+    expect(worldKeyResponse.status).toBe(403);
+    expect(await worldKeyResponse.json()).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message:
+          "A namespace-scoped API key is required to manage embedding credentials",
+      },
+    });
     expect((await put(env, null)).status).toBe(401);
     expect((await put(env, "other-ns-token")).status).toBe(403);
     expect(await getCredential(env, "ns-1", "openai")).toBeNull();

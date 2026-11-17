@@ -36,7 +36,11 @@ export function registerCreateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
       );
     }
     // Namespace-level route: a world-scoped key is limited to one world.
-    if (!auth.admin && auth.worldId) return forbidden();
+    if (!auth.admin && auth.worldId) {
+      return forbidden(
+        "A namespace-scoped API key is required to create a world",
+      );
+    }
     const accessErr = requireAccess(
       auth,
       namespace,

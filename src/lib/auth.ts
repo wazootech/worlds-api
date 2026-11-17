@@ -23,23 +23,18 @@ export function unauthorized(): Response {
   );
 }
 
-export function forbidden(): Response {
+export function forbidden(message: string): Response {
   return Response.json(
-    { error: { code: "FORBIDDEN", message: "Insufficient access" } },
+    { error: { code: "FORBIDDEN", message } },
     { status: 403 },
   );
 }
 
+// John: I'm keeping this function around to keep changes to a minimal when resolving this issue:
+// https://github.com/wazootech/worlds-api/issues/178
+// If we somehow we want to minimize functions to maintain, delete this and use forbidden() instead
 export function forbiddenScope(scope: string): Response {
-  return Response.json(
-    {
-      error: {
-        code: "FORBIDDEN",
-        message: `This API key does not have the '${scope}' scope`,
-      },
-    },
-    { status: 403 },
-  );
+  return forbidden(`This API key does not have the '${scope}' scope`);
 }
 
 export function hasScope(auth: AuthResult, scope: string): boolean {
@@ -117,16 +112,18 @@ export function requireAccess(
 ): Response | null {
   if (auth.admin) return null;
 
+  if (worldId === "") return unauthorized();
+
   if (!auth.namespace) {
     return unauthorized();
   }
 
   if (auth.namespace !== namespace) {
-    return forbidden();
+    return forbidden("This API key belongs to a different namespace");
   }
 
   if (worldId && auth.worldId && auth.worldId !== worldId) {
-    return forbidden();
+    return forbidden("This API key is scoped to a different world");
   }
 
   if (requiredScope && !auth.scopes?.includes(requiredScope)) {

@@ -55,7 +55,11 @@ export function guard(
   namespace: string,
 ): Response | null {
   if (!auth.admin && !auth.namespace) return unauthorized();
-  if (!auth.admin && auth.worldId) return forbidden();
+  if (!auth.admin && auth.worldId) {
+    return forbidden(
+      "A namespace-scoped API key is required to manage embedding credentials",
+    );
+  }
   return requireAccess(auth, namespace, undefined, SCOPE_EMBEDDINGS_ADMIN);
 }
 

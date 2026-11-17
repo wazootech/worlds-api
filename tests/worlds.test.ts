@@ -266,7 +266,13 @@ describe("world lifecycle", () => {
       update_time: "2026-01-01T00:00:00.000Z",
     });
     const res = await request(OTHER_NAMESPACE_TOKEN, `/worlds/${WORLD_ID}`);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: {
+        code: "FORBIDDEN",
+        message: "This API key belongs to a different namespace",
+      },
+    });
   });
 
   it("accepts list for a world", async () => {
