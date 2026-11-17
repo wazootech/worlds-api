@@ -96,6 +96,22 @@ Normal data-plane keys resolve namespace from the key. Admin calls pass
 The `/admin/namespaces/{namespace}/delete` and `/admin/purge` endpoints are
 admin-only and exist for the platform facade and account-deletion flows.
 
+## World lifecycle
+
+![A world's lifecycle. The owner asks to create a world; wazoo-api checks quota and either refuses with MAX_WORLDS_EXCEEDED or calls worlds-api with the admin key, which creates the world and mints a world key shown once. While in use the owner can suspend and resume it. Deleting soft-deletes the world; for 30 days the owner can undelete it, after which a daily sweep purges its vectors and quads permanently.](docs/diagrams/world-lifecycle.svg)
+
+Time runs left to right; the stroke shows who is acting and the red diamonds are
+the steps that cannot be undone. Deleting a world is a soft delete: the world
+enters a 30-day grace period during which `POST /worlds/{worldId}/undelete`
+restores it. After that, the daily purge sweep (the `0 0 * * *` cron, or
+`/admin/purge` to force it) deletes the world's vectors, then its quads, and
+marks it purged. Purged worlds cannot be restored.
+
+The diagram is generated from
+[`docs/diagrams/world-lifecycle.feynman.json`](docs/diagrams/world-lifecycle.feynman.json)
+with the [`feynman-diagram`](https://github.com/EthanThatOneKid/feynman-diagram)
+skill.
+
 ## Configuration
 
 - `WORLDS_API_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key

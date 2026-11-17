@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1355.3 624" width="1355.3" height="624" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, Menlo, 'DejaVu Sans Mono', 'MS Gothic', ui-monospace, monospace">
+<title>A world's lifecycle</title>
+<style>
+.bg{fill:#fafafa}
+.card{fill:#ffffff;stroke:#ececec}
+.f-card{fill:#ffffff}
+.k-card{stroke:#ffffff}
+.f-ink{fill:#1f1f1f}
+.k-ink{stroke:#1f1f1f}
+.f-gray{fill:#8a8a8a}
+.k-gray{stroke:#8a8a8a}
+.f-blue{fill:#4a7bf7}
+.k-blue{stroke:#4a7bf7}
+.f-orange{fill:#f0a030}
+.k-orange{stroke:#f0a030}
+.f-red{fill:#e5484d}
+.k-red{stroke:#e5484d}
+.f-green{fill:#2f9e5b}
+.k-green{stroke:#2f9e5b}
+.f-purple{fill:#8b5cf6}
+.k-purple{stroke:#8b5cf6}
+.f-teal{fill:#0f9fa8}
+.k-teal{stroke:#0f9fa8}
+.f-pink{fill:#e04f9b}
+.k-pink{stroke:#e04f9b}
+@media (prefers-color-scheme: dark) {
+.bg{fill:#141414}
+.card{fill:#1b1b1b;stroke:#2a2a2a}
+.f-card{fill:#1b1b1b}
+.k-card{stroke:#1b1b1b}
+.f-ink{fill:#e8e8e8}
+.k-ink{stroke:#e8e8e8}
+.f-gray{fill:#8f8f8f}
+.k-gray{stroke:#8f8f8f}
+.f-blue{fill:#7aa2ff}
+.k-blue{stroke:#7aa2ff}
+.f-orange{fill:#f5b04a}
+.k-orange{stroke:#f5b04a}
+.f-red{fill:#ff6b6f}
+.k-red{stroke:#ff6b6f}
+.f-green{fill:#4cc47e}
+.k-green{stroke:#4cc47e}
+.f-purple{fill:#a98bff}
+.k-purple{stroke:#a98bff}
+.f-teal{fill:#3cc4cc}
+.k-teal{stroke:#3cc4cc}
+.f-pink{fill:#f27ab8}
+.k-pink{stroke:#f27ab8}
+}</style>
+<rect class="bg" width="100%" height="100%"/>
+<text x="24" y="32" font-size="20" font-weight="650" class="f-ink">A world's lifecycle</text>
+<rect class="card" x="8" y="52" width="1339.3" height="90" rx="10"/>
+<path d="M24 78L94 78" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-dasharray="9 7" class="k-orange"/>
+<text x="106" y="83" font-size="15" text-anchor="start" class="f-ink">the world's owner decides</text>
+<path d="M322.3 78L392.3 78" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-teal"/>
+<text x="404.3" y="83" font-size="15" text-anchor="start" class="f-ink">wazoo-api applies policy</text>
+<path d="M613.1 78L683.1 78" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<text x="695.1" y="83" font-size="15" text-anchor="start" class="f-ink">worlds-api runs</text>
+<path d="M836.9 78L906.9 78" fill="none" stroke-linejoin="round" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 7" class="k-gray"/>
+<text x="918.9" y="83" font-size="15" text-anchor="start" class="f-ink">waiting, nothing runs</text>
+<path d="M1107.3 69.9L1123.5 69.9L1123.5 86.1L1107.3 86.1Z" class="f-card k-teal" stroke-width="2.5" stroke-linejoin="round"/>
+<text x="1135.4" y="83" font-size="15" text-anchor="start" class="f-ink">policy check</text>
+<path d="M34 106L44 116L34 126L24 116Z" class="f-ink"/>
+<text x="54" y="121" font-size="15" text-anchor="start" class="f-ink">changes state, reversible</text>
+<path d="M280.3 106L290.3 116L280.3 126L270.3 116Z" class="f-red"/>
+<text x="300.3" y="121" font-size="15" text-anchor="start" class="f-ink">permanent</text>
+<rect x="405.36800000000005" y="101" width="4" height="30" rx="1" class="f-ink"/>
+<text x="427.4" y="121" font-size="15" text-anchor="start" class="f-ink">stops</text>
+<rect class="card" x="8" y="160" width="1339.3" height="456" rx="12"/>
+<g transform="translate(4 363)">
+<path d="M40 0L150 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-dasharray="9 7" class="k-orange"/>
+<path d="M150 0L380 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-teal"/>
+<path d="M380 0L510 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M510 0L660 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-dasharray="9 7" class="k-orange"/>
+<path d="M660 0L830 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M830 0L900 0" fill="none" stroke-linejoin="round" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 7" class="k-gray"/>
+<path d="M900 0L1090 0" fill="none" stroke-linejoin="round" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 7" class="k-gray"/>
+<path d="M1090 0L1170 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M1170 0L1210 0" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M150 0L153 0.2L155.9 0.6L158.7 1.4L161.4 2.5L164 3.8L166.5 5.4L168.8 7.3L171.1 9.4L173.3 11.7L175.4 14.2L177.5 16.9L179.4 19.8L181.3 22.8L183.2 26L185 29.3L186.7 32.8L188.4 36.4L190.1 40L191.7 43.8L193.3 47.6L194.9 51.5L196.5 55.4L198 59.3L199.6 63.3L201.1 67.2L202.7 71.1L204.2 75L205.8 78.9L207.4 82.7L209.1 86.5L210.7 90.1L212.4 93.7L214.2 97.2L216 100.5L217.8 103.7L219.7 106.7L221.7 109.6L223.7 112.3L225.8 114.8L228 117.1L230.3 119.2L232.7 121.1L235.1 122.7L237.7 124L240.4 125.1L243.2 125.9L246.1 126.3L249.1 126.5" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-teal"/>
+<path d="M249.1 126.5L309.1 126.5" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-teal"/>
+<path d="M660 0L663.2 0.2L666.2 0.7L669.2 1.5L672 2.7L674.7 4.2L677.3 5.9L679.7 7.9L682.1 10.2L684.4 12.7L686.7 15.5L688.8 18.4L690.9 21.6L692.9 24.9L694.8 28.4L696.7 32L698.5 35.8L700.3 39.7L702 43.7L703.7 47.7L705.4 51.9L707.1 56.1L708.7 60.4L710.4 64.7L712 69L713.6 73.3L715.2 77.6L716.9 81.9L718.5 86.1L720.2 90.3L721.9 94.3L723.7 98.3L725.5 102.2L727.3 106L729.2 109.6L731.1 113.1L733.1 116.4L735.2 119.6L737.3 122.5L739.5 125.3L741.8 127.8L744.2 130.1L746.7 132.1L749.3 133.8L752 135.3L754.8 136.5L757.7 137.3L760.8 137.8L764 138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M764 138L814 138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M814 138L894 138" fill="none" stroke-linejoin="round" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="0.1 7" class="k-gray"/>
+<path d="M894 138L950 138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M900 0L903.2 -0.2L906.2 -0.7L909.2 -1.5L912 -2.7L914.7 -4.2L917.3 -5.9L919.7 -7.9L922.1 -10.2L924.4 -12.7L926.7 -15.5L928.8 -18.4L930.9 -21.6L932.9 -24.9L934.8 -28.4L936.7 -32L938.5 -35.8L940.3 -39.7L942 -43.7L943.7 -47.7L945.4 -51.9L947.1 -56.1L948.7 -60.4L950.4 -64.7L952 -69L953.6 -73.3L955.2 -77.6L956.9 -81.9L958.5 -86.1L960.2 -90.3L961.9 -94.3L963.7 -98.3L965.5 -102.2L967.3 -106L969.2 -109.6L971.1 -113.1L973.1 -116.4L975.2 -119.6L977.3 -122.5L979.5 -125.3L981.8 -127.8L984.2 -130.1L986.7 -132.1L989.3 -133.8L992 -135.3L994.8 -136.5L997.7 -137.3L1000.8 -137.8L1004 -138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M1004 -138L1054 -138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M1054 -138L1110 -138" fill="none" stroke-linejoin="round" stroke-width="2.2" stroke-linecap="round" class="k-ink"/>
+<path d="M141.9 -8.1L158.1 -8.1L158.1 8.1L141.9 8.1Z" class="f-card k-teal" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M380 -10L390 0L380 10L370 0Z" class="f-ink"/>
+<path d="M510 -10L520 0L510 10L500 0Z" class="f-red"/>
+<path d="M660 -8.5L668.5 0L660 8.5L651.5 0Z" class="f-orange"/>
+<path d="M830 -10L840 0L830 10L820 0Z" class="f-ink"/>
+<path d="M900 -8.5L908.5 0L900 8.5L891.5 0Z" class="f-orange"/>
+<path d="M1170 -10L1180 0L1170 10L1160 0Z" class="f-red"/>
+<rect x="1208" y="-15" width="4" height="30" rx="1" class="f-ink"/>
+<rect x="307.13" y="111.50000000000001" width="4" height="30" rx="1" class="f-ink"/>
+<path d="M814 128L824 138L814 148L804 138Z" class="f-ink"/>
+<path d="M894 128L904 138L894 148L884 138Z" class="f-ink"/>
+<rect x="947.96" y="123" width="4" height="30" rx="1" class="f-ink"/>
+<path d="M1054 -148L1064 -138L1054 -128L1044 -138Z" class="f-ink"/>
+<rect x="1107.96" y="-153" width="4" height="30" rx="1" class="f-ink"/>
+<text x="36" y="-14" font-size="15" text-anchor="start" class="f-orange" font-weight="600">owner</text>
+<text x="36" y="26" font-size="13" text-anchor="start" class="f-gray">wzp_ token</text>
+<text x="150" y="-22" font-size="15" text-anchor="middle" class="f-teal">quota check</text>
+<text x="265" y="-16" font-size="15" text-anchor="middle" class="f-teal" font-weight="600">allowed</text>
+<text x="247" y="30" font-size="13" text-anchor="middle" class="f-gray">admin key</text>
+<text x="380" y="32" font-size="15" text-anchor="middle" class="f-ink">create</text>
+<text x="380" y="49" font-size="13" text-anchor="middle" class="f-gray">w_&lt;ULID&gt;</text>
+<text x="380" y="66" font-size="13" text-anchor="middle" class="f-gray">active</text>
+<text x="510" y="32" font-size="15" text-anchor="middle" class="f-red" font-weight="600">mint key</text>
+<text x="510" y="49" font-size="13" text-anchor="middle" class="f-gray">wzw_ shown once</text>
+<text x="585" y="-16" font-size="15" text-anchor="middle" class="f-orange" font-weight="600">in use</text>
+<text x="615.3" y="30" font-size="13" text-anchor="middle" class="f-gray">reads · writes</text>
+<text x="745" y="-16" font-size="15" text-anchor="middle" class="f-orange" font-weight="600">delete</text>
+<text x="830" y="32" font-size="15" text-anchor="middle" class="f-ink">soft-delete</text>
+<text x="830" y="49" font-size="13" text-anchor="middle" class="f-gray">restorable</text>
+<text x="995" y="-16" font-size="15" text-anchor="middle" class="f-orange" font-weight="600">30 days pass</text>
+<text x="1130" y="-16" font-size="15" text-anchor="middle" class="f-ink">sweep</text>
+<text x="1108.5" y="30" font-size="13" text-anchor="middle" class="f-gray">daily cron</text>
+<text x="1170" y="32" font-size="15" text-anchor="middle" class="f-red" font-weight="600">purge</text>
+<text x="1170" y="49" font-size="13" text-anchor="middle" class="f-gray">vectors,</text>
+<text x="1170" y="66" font-size="13" text-anchor="middle" class="f-gray">then quads</text>
+<text x="1224" y="5" font-size="13" text-anchor="start" class="f-gray">gone for good</text>
+<text x="279.1" y="112.5" font-size="15" text-anchor="middle" class="f-teal" font-weight="600">over quota</text>
+<text x="323.1" y="131.5" font-size="13" text-anchor="start" class="f-gray">MAX_WORLDS_EXCEEDED</text>
+<text x="789" y="124" font-size="15" text-anchor="middle" class="f-orange" font-weight="600">suspend</text>
+<text x="814" y="170" font-size="15" text-anchor="middle" class="f-ink">suspend</text>
+<text x="814" y="187" font-size="13" text-anchor="middle" class="f-gray">no access</text>
+<text x="894" y="170" font-size="15" text-anchor="middle" class="f-ink">resume</text>
+<text x="964" y="143" font-size="13" text-anchor="start" class="f-gray">back in use</text>
+<text x="1029" y="-152" font-size="15" text-anchor="middle" class="f-orange" font-weight="600">undelete</text>
+<text x="1054" y="-106" font-size="15" text-anchor="middle" class="f-ink">restore</text>
+<text x="1054" y="-89" font-size="13" text-anchor="middle" class="f-gray">active again</text>
+</g>
+<text x="30" y="600" font-size="13" text-anchor="start" class="f-gray">time <tspan font-family="Menlo, 'DejaVu Sans Mono', 'MS Gothic', ui-monospace, monospace">→</tspan></text>
+</svg>
