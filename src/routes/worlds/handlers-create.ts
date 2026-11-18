@@ -41,7 +41,7 @@ export function registerCreateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
         "A namespace-scoped API key is required to create a world",
       );
     }
-    const accessErr = requireAccess(
+    const accessError = requireAccess(
       auth,
       namespace,
       undefined,
