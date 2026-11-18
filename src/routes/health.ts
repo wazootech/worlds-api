@@ -5,6 +5,10 @@ import { assertControlPlaneSchema } from "../lib/d1-schema";
 import { getDb } from "../lib/db";
 import { respond } from "../lib/respond";
 
+declare const BUILD_GIT_SHA: string;
+
+const gitShaSchema = z.string().nullable();
+
 const route = createRoute({
   method: "get",
   path: "/health",
@@ -20,7 +24,7 @@ const route = createRoute({
       description: "Service is healthy",
       content: {
         "application/json": {
-          schema: z.object({ status: z.literal("ok") }),
+          schema: z.object({ status: z.literal("ok"), gitSha: gitShaSchema }),
         },
       },
     },
@@ -30,6 +34,7 @@ const route = createRoute({
         "application/json": {
           schema: z.object({
             status: z.literal("degraded"),
+            gitSha: gitShaSchema,
             error: z.string(),
           }),
         },
@@ -73,16 +78,19 @@ const readinessRoute = createRoute({
 
 export function registerHealthRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(route, async (c) => {
+    // gitSha will be null when running in dev mode. don't worry, that's expected!
+    const gitSha = typeof BUILD_GIT_SHA === "undefined" ? null : BUILD_GIT_SHA;
     const env = c.env as unknown as Env;
     try {
       const db = getDb(env);
       await db.prepare("SELECT 1").first();
-      return respond(c, { status: "ok" });
+      return respond(c, { status: "ok", gitSha });
     } catch (err) {
       return respond(
         c,
         {
           status: "degraded",
+          gitSha,
           error: err instanceof Error ? err.message : "Unknown error",
         },
         503,

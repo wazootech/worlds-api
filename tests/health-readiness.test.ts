@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 const schema = {
   worlds: [
@@ -100,8 +100,15 @@ async function requestHealth(db: D1Database) {
   return app.request("/health", {}, { DB: db } as never, executionCtx);
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+const gitSha = "0123456789abcdef0123456789abcdef01234567";
+
 describe("GET /ready", () => {
   it("keeps liveness separate from schema readiness", async () => {
+    vi.stubGlobal("BUILD_GIT_SHA", gitSha);
     const legacy = {
       ...schema,
       worlds: schema.worlds.map((column) =>
@@ -111,7 +118,23 @@ describe("GET /ready", () => {
     const res = await requestHealth(makeDb(legacy));
 
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ status: "ok" });
+    await expect(res.json()).resolves.toEqual({ status: "ok", gitSha });
+  });
+
+  it("reports the deployed Git SHA when liveness is degraded", async () => {
+    vi.stubGlobal("BUILD_GIT_SHA", gitSha);
+    const db = makeDb(schema);
+    vi.spyOn(db, "prepare").mockImplementation(() => {
+      throw new Error("D1 unavailable");
+    });
+    const res = await requestHealth(db);
+
+    expect(res.status).toBe(503);
+    await expect(res.json()).resolves.toEqual({
+      status: "degraded",
+      gitSha,
+      error: "D1 unavailable",
+    });
   });
 
   it("returns ready only when the control-plane schema matches", async () => {
