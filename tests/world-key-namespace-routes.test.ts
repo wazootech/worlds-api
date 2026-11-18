@@ -82,14 +82,20 @@ describe("world-scoped keys on namespace-level routes", () => {
       body: JSON.stringify({ displayName: "X" }),
     });
     expect(res.status).toBe(403);
-    expect((await readJson<ErrorBody>(res)).error.code).toBe("FORBIDDEN");
+    expect((await readJson<ErrorBody>(res)).error).toEqual({
+      code: "FORBIDDEN",
+      message: "A namespace-scoped API key is required to create a world",
+    });
     expect(provisionWorld).not.toHaveBeenCalled();
   });
 
   it("rejects GET /worlds without listing sibling worlds", async () => {
     const res = await request(WORLD_TOKEN, "/worlds");
     expect(res.status).toBe(403);
-    expect((await readJson<ErrorBody>(res)).error.code).toBe("FORBIDDEN");
+    expect((await readJson<ErrorBody>(res)).error).toEqual({
+      code: "FORBIDDEN",
+      message: "A namespace-scoped API key is required to list worlds",
+    });
     expect(query).not.toHaveBeenCalled();
   });
 

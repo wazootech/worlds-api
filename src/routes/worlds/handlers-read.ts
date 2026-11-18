@@ -32,7 +32,9 @@ export function registerListWorlds(app: OpenAPIHono<{ Bindings: Env }>) {
 
     if (!auth.admin && !auth.namespace) return unauthorized();
     // Namespace-level route: a world-scoped key is limited to one world.
-    if (!auth.admin && auth.worldId) return forbidden();
+    if (!auth.admin && auth.worldId) {
+      return forbidden("A namespace-scoped API key is required to list worlds");
+    }
     if (!hasScope(auth, SCOPE_DATA_READ)) {
       return forbiddenScope(SCOPE_DATA_READ);
     }

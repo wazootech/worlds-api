@@ -36,14 +36,18 @@ export function registerCreateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
       );
     }
     // Namespace-level route: a world-scoped key is limited to one world.
-    if (!auth.admin && auth.worldId) return forbidden();
-    const accessErr = requireAccess(
+    if (!auth.admin && auth.worldId) {
+      return forbidden(
+        "A namespace-scoped API key is required to create a world",
+      );
+    }
+    const accessError = requireAccess(
       auth,
       namespace,
       undefined,
       SCOPE_DATA_WRITE,
     );
-    if (accessErr) return accessErr;
+    if (accessError) return accessError;
 
     // Same rule as PATCH: choosing a model needs a usable credential.
     if (body.embeddingModel !== undefined) {
