@@ -47,7 +47,7 @@ export function registerCreateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
       undefined,
       SCOPE_DATA_WRITE,
     );
-    if (accessErr) return accessErr;
+    if (accessError) return accessError;
 
     // Same rule as PATCH: choosing a model needs a usable credential.
     if (body.embeddingModel !== undefined) {
