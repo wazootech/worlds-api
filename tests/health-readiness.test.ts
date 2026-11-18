@@ -123,12 +123,11 @@ describe("GET /ready", () => {
 
   it("reports the deployed Git SHA when liveness is degraded", async () => {
     vi.stubGlobal("BUILD_GIT_SHA", gitSha);
-    const res = await requestHealth({
-      ...makeDb(schema),
-      prepare: () => {
-        throw new Error("D1 unavailable");
-      },
+    const db = makeDb(schema);
+    vi.spyOn(db, "prepare").mockImplementation(() => {
+      throw new Error("D1 unavailable");
     });
+    const res = await requestHealth(db);
 
     expect(res.status).toBe(503);
     await expect(res.json()).resolves.toEqual({
