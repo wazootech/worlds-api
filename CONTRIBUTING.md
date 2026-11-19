@@ -82,17 +82,17 @@ minimum project and environment it needs, then either:
 - authenticate with Universal Auth, storing the client ID and client secret in
   the platform's own secret store.
 
-The Cloudflare deploy token is not kept in GitHub secrets: `deploy-qa` and `deploy-prod` fetch `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (outside any Worker sync), and `CLOUDFLARE_ACCOUNT_ID` is a repository **variable**. See the
+The Cloudflare deploy token is not kept in GitHub secrets: `deploy-prod` fetches `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (outside any Worker sync), and `CLOUDFLARE_ACCOUNT_ID` is a repository **variable**. See the
 [Infisical machine identities](https://infisical.com/docs/documentation/platform/identities/machine-identities)
 and [Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth)
 docs.
 
 ### Current wiring
 
-`health-qa` fetches the `qa` environment with `Infisical/secrets-action@v1.0.17`
-and `method: oidc`, so `WORLDS_API_ADMIN_KEY` arrives as a job environment
-variable. The workflow therefore needs `permissions: id-token: write` and no
-long-lived Infisical credential.
+`deploy-prod` fetches `CLOUDFLARE_API_TOKEN` with `Infisical/secrets-action@v1.0.17`
+and `method: oidc`, so it arrives as a job environment variable. The workflow
+therefore needs `permissions: id-token: write` and no long-lived Infisical
+credential.
 
 This wiring is **live**. The tracking issues are all closed:
 [#97](https://github.com/wazootech/worlds-api/issues/97) (identity + variables),
@@ -119,44 +119,31 @@ immutable `repo:owner@ID/repo@ID:ref:refs/heads/main` subject for repositories
 created after 2026-07-15, and a plain-format subject against an immutable-format
 token fails with a 403.
 
-The `deploy-qa` and `deploy-prod` jobs do **not** fetch secrets. `wrangler
+The `deploy-prod` job fetches only the deploy token, no Worker secrets. `wrangler
 deploy` uploads code and sets no secrets; the deployed Worker's copy is owned
 continuously by the Infisical Cloudflare Workers Secret Sync. Injecting prod
 secrets into a job that cannot use them would only widen exposure.
 
-### The QA canary
+### Verification after a deploy
 
-Two jobs exercise the QA data plane, and they run the **same** script
-(`scripts/local-health.mjs` via `pnpm run health:local`):
-
-| Job         | Workflow       | When                              | Purpose                            |
-| ----------- | -------------- | --------------------------------- | ---------------------------------- |
-| `health-qa` | `ci.yml`       | push to `main`, after `deploy-qa` | merge-path gate                    |
-| `canary`    | `smoke-qa.yml` | daily 06:00 UTC + manual dispatch | drift detection off the merge path |
-
-The canary exists because a merge is a bad place to discover a stale credential.
-On 2026-09-25 `health-qa` went red purely because a merge exercised it, while a
-branch sitting unmerged — or a secret rotating with no deploy — was invisible
-until then. There is deliberately no second health script: two copies of the
-check list is how the gate and the canary would come to disagree about what
-"healthy" means.
+There is no QA environment. Every push to `main` runs `deploy-prod` and then
+`canary-prod`, which makes credential-free read-only GETs against production
+(`scripts/prod-canary.mjs`). The old QA gates (`health-qa` and the daily
+`smoke-qa` canary) were removed with QA. A secret that rotates with no deploy is
+no longer caught on a timer, so confirm a rotation by hand as below.
 
 **Rotation procedure** — name every consumer, because a rotation that half-lands
 is the failure this repo already hit:
 
-1. Edit the value in Infisical (`qa`, then `prod` separately — the values must
-   differ).
-2. Wait for the Cloudflare Workers Secret Sync to report `Synced`, or dispatch
-   `smoke-qa.yml` to confirm the Worker picked it up.
-3. Confirm `pnpm exec wrangler secret list --env qa` shows the name
+1. Edit the value in Infisical (`prod`).
+2. Wait for the Cloudflare Workers Secret Sync to report `Synced`.
+3. Confirm `pnpm exec wrangler secret list` shows the name
    `WORLDS_API_ADMIN_KEY`.
-4. Watch the next `smoke-qa` run, or dispatch it.
+4. Check `https://data.wazoo.dev/health` and a platform request that uses the
+   key.
 
-Consumers of the QA value, all of which must agree or the platform breaks:
-this repo's `health-qa` and `smoke-qa` canary; `wazoo-api`'s `smoke-qa` gate
-(same `qa` value, different repo); and the `data-qa` Worker's own secret. The
-canary needs the OIDC fetch from above, which is now in place (see
-[#97](https://github.com/wazootech/worlds-api/issues/97)).
+Consumers of the value, all of which must agree or the platform breaks: this
+Worker's own secret and `wazoo-api`'s copy of the admin key.
 
 ## Pull request workflow
 

@@ -24,11 +24,10 @@ This repository contains the Worlds API service.
 
 ## Cross-repo impact
 
-- `deploy-qa` and `health-qa` run **only** on push to `main`, so a green
-  `verify` here is not evidence that the change works in a live environment.
-  Say so explicitly in the PR body when you could not observe it. The daily QA
-  assertion now lives in `smoke-qa.yml` (`canary`, 06:00 UTC), which reuses
-  `health:local`; neither runs on a pull request.
+- There is no QA environment. `deploy-prod` runs on push to `main` (after
+  `verify`), followed by `canary-prod`, so a green `verify` on a pull request is
+  not evidence that the change works live and merging **is** deploying. Say so
+  explicitly in the PR body when you could not observe it.
 - Changing an OpenAPI schema or the World contract requires follow-ups in
   `worlds-client-ts`, then `wazoo-console` / `wazoo-cli`. Name the required
   merge order in the PR.
