@@ -35,7 +35,7 @@ export const getRoute = createRoute({
   operationId: "getWorld",
   summary: "Get world",
   description:
-    "Retrieve a single world by its unique identifier. Returns the full WorldResource including state, storage backend, and search configuration.",
+    "Retrieve a single world by its unique identifier. Returns the full WorldResource including state, storage backend (deprecated), and search configuration.",
   "x-mint": { metadata: { title: "Get world" } },
   security: [{ bearerWorldsToken: [] }],
   request: { params: worldIdParam },

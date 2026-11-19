@@ -53,6 +53,7 @@ export const WorldResourceSchema = z
         "Lifecycle state: active, deleted, or suspended. Deleted worlds enter a 30-day grace period before permanent purge.",
     }),
     storage: z.literal("d1").openapi({
+      deprecated: true,
       description:
         "Storage backend for the world. All worlds share a single Cloudflare D1 database, separated by world_id.",
     }),
