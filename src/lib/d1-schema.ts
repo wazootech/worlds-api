@@ -25,6 +25,15 @@ export const CONTROL_PLANE_DDL = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_namespace ON worlds(namespace, state)`,
   `CREATE INDEX IF NOT EXISTS idx_worlds_purge ON worlds(state, purge_status, expire_time)`,
+  // Time-limited pause state (wazoo-api#22). New table, so the existing
+  // CREATE TABLE IF NOT EXISTS mechanism applies it with no reset or ALTER.
+  // The worlds.state value stays 'paused' until this deadline passes and the
+  // scheduled sweep (or an explicit resume) flips it back to 'active'.
+  `CREATE TABLE IF NOT EXISTS world_pause_state (
+    world_id TEXT NOT NULL PRIMARY KEY,
+    pause_until TEXT NOT NULL,
+    create_time TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
   `CREATE TABLE IF NOT EXISTS api_keys (
     uid TEXT PRIMARY KEY,
     key_hash TEXT NOT NULL,

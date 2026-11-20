@@ -40,7 +40,7 @@
           },
           "state": {
             "type": "string",
-            "description": "Lifecycle state: active, deleted, or suspended. Deleted worlds enter a 30-day grace period before permanent purge."
+            "description": "Lifecycle state: active, paused, suspended, or deleted. Paused worlds auto-resume when their time limit ends; suspended worlds are a control-plane enforcement action. Deleted worlds enter a 30-day grace period before permanent purge."
           },
           "storage": {
             "type": "string",
@@ -95,6 +95,10 @@
           "expireTime": {
             "type": "string",
             "description": "ISO 8601 timestamp when the world will be permanently purged after the grace period. Null if not scheduled for purge."
+          },
+          "pauseUntil": {
+            "type": "string",
+            "description": "ISO 8601 timestamp when the current pause ends and the world auto-resumes. Present only while the world is paused."
           }
         },
         "required": [
@@ -232,8 +236,30 @@
                 "description": "Replaces the world's inference setting. Enabling does not back-fill existing data: inferred quads appear only for later changes."
               }
             ]
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "active",
+              "suspended"
+            ],
+            "description": "Admin-only lifecycle transition. 'suspended' is the control-plane enforcement action with no time limit; 'active' resumes a paused or suspended world. Rejected with 403 for non-admin keys; time-limited pauses go through POST /worlds/{worldId}/pause instead."
           }
         }
+      },
+      "PauseWorldRequest": {
+        "type": "object",
+        "properties": {
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 2592000,
+            "description": "How long the pause lasts, in seconds. Mandatory: a pause always has a time limit, between 60 seconds and 30 days. The world auto-resumes when it ends."
+          }
+        },
+        "required": [
+          "durationSeconds"
+        ]
       },
       "VectorCleanupReport": {
         "type": "object",
@@ -1604,6 +1630,121 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WorldResource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/worlds/{worldId}/pause": {
+      "post": {
+        "tags": [
+          "Worlds"
+        ],
+        "operationId": "pauseWorld",
+        "summary": "Pause world",
+        "description": "Pause a world with a mandatory time limit, blocking all read and write operations. The world auto-resumes when the time limit ends. This is the self-service action; indefinite suspension is control-plane only (POST /worlds/{worldId}/suspend).",
+        "x-mint": {
+          "metadata": {
+            "title": "Pause world"
+          }
+        },
+        "security": [
+          {
+            "bearerWorldsToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^w_[0-7][0-9a-hjkmnp-tv-z]{25}$",
+              "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID."
+            },
+            "required": true,
+            "description": "The world-api-minted world ID, a w_ prefix and a lowercase ULID.",
+            "name": "worldId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PauseWorldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Paused World",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorldResource"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pause duration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "message"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ]
                 }
               }
             }
