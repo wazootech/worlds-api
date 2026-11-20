@@ -30,6 +30,7 @@ export function worldResource(
   row: WorldRow,
   embeddingStatus: EmbeddingStatus,
   inference?: InferenceSetting | null,
+  pauseUntil?: string | null,
 ) {
   return {
     id: row.world_id,
@@ -44,6 +45,7 @@ export function worldResource(
     createTime: row.create_time,
     ...(inference && { inference }),
     updateTime: row.update_time,
+    ...(pauseUntil && { pauseUntil }),
     deleteTime: row.delete_time ?? undefined,
     expireTime: row.expire_time ?? undefined,
   };

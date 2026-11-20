@@ -1,7 +1,8 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../../env";
 import { execute, getDb, now, queryOne } from "../../lib/db";
-import { authorize, SCOPE_DATA_WRITE } from "../../lib/auth";
+import { authorize, forbidden, SCOPE_DATA_WRITE } from "../../lib/auth";
+import { clearPause } from "../../lib/pause";
 import { clearSdkCacheForWorld } from "../../lib/world-db";
 import { getInferenceSetting } from "../../lib/inference";
 import { respond } from "../../lib/respond";
@@ -14,6 +15,11 @@ import {
   type WorldRow,
 } from "./shared";
 
+/**
+ * Control-plane suspension (wazoo-api#22): only the admin key may suspend a
+ * world, and a suspension has no time limit. Namespace keys pause instead
+ * (POST /worlds/{worldId}/pause) with a mandatory time limit and auto-resume.
+ */
 export function registerSuspendWorld(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(suspendRoute, async (c) => {
     const env = c.env as unknown as Env;
@@ -29,19 +35,17 @@ export function registerSuspendWorld(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
-    const worldAccess = requireWorldAccess(
-      auth,
-      row,
-      worldId,
-      SCOPE_DATA_WRITE,
-    );
-    if (worldAccess) return worldAccess;
+    if (!auth.admin) {
+      return forbidden("World suspension is control-plane only");
+    }
 
     await execute(
       db,
       "UPDATE worlds SET state = 'suspended', update_time = ? WHERE world_id = ?",
       [now(), worldId],
     );
+    // A control-plane suspension supersedes any pause deadline.
+    await clearPause(env, worldId);
     const suspended = await queryOne<WorldRow>(
       db,
       "SELECT * FROM worlds WHERE world_id = ?",
@@ -59,6 +63,11 @@ export function registerSuspendWorld(app: OpenAPIHono<{ Bindings: Env }>) {
   });
 }
 
+/**
+ * Resuming is control-plane only for suspended worlds. A paused world may be
+ * resumed early by its own namespace key with data:write (the same class that
+ * set the pause), because the pause was the key's self-service action.
+ */
 export function registerResumeWorld(app: OpenAPIHono<{ Bindings: Env }>) {
   app.openapi(resumeRoute, async (c) => {
     const env = c.env as unknown as Env;
@@ -74,6 +83,11 @@ export function registerResumeWorld(app: OpenAPIHono<{ Bindings: Env }>) {
         404,
       );
     }
+    if (row.state === "suspended" && !auth.admin) {
+      return forbidden(
+        "A control-plane suspension can only be lifted by the control plane",
+      );
+    }
     const worldAccess = requireWorldAccess(
       auth,
       row,
@@ -87,6 +101,7 @@ export function registerResumeWorld(app: OpenAPIHono<{ Bindings: Env }>) {
       "UPDATE worlds SET state = 'active', update_time = ? WHERE world_id = ?",
       [now(), worldId],
     );
+    await clearPause(env, worldId);
     const resumed = await queryOne<WorldRow>(
       db,
       "SELECT * FROM worlds WHERE world_id = ?",

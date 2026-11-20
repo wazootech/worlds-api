@@ -2,12 +2,14 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Env } from "../../env";
 import { execute, getDb, now, queryOne } from "../../lib/db";
 import { authorize, SCOPE_DATA_WRITE } from "../../lib/auth";
+import { clearPause } from "../../lib/pause";
 import { clearSdkCacheForWorld } from "../../lib/world-db";
 import { getInferenceSetting, setInferenceSetting } from "../../lib/inference";
+import { setWorldState } from "../../lib/embeddings/store";
 import {
-  getCredentialForModel,
-  setWorldState,
-} from "../../lib/embeddings/store";
+  guardStateTransition,
+  requireCredentialForModelChange,
+} from "./update-guards";
 import { respond } from "../../lib/respond";
 import { updateRoute } from "./routes-write";
 import {
@@ -42,6 +44,9 @@ export function registerUpdateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
     );
     if (worldAccess) return worldAccess;
 
+    const stateGuard = guardStateTransition(auth, row, body);
+    if (stateGuard) return stateGuard;
+
     const setClauses: string[] = [];
     const setArgs: (string | number)[] = [];
 
@@ -53,26 +58,13 @@ export function registerUpdateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
       body.embeddingModel !== undefined &&
       body.embeddingModel !== row.embedding_model;
     if (modelChanged) {
-      // A model change is a state transition, not just a column write: it
-      // needs a usable credential and leaves the world stale (design 4.1).
-      const credential = await getCredentialForModel(
+      const guard = await requireCredentialForModelChange(
+        c,
         env,
         row.namespace,
         body.embeddingModel!,
       );
-      if (!credential || credential.status !== "active") {
-        return respond(
-          c,
-          {
-            error: {
-              code: "EMBEDDING_CREDENTIAL_REQUIRED",
-              message:
-                "Set an active embedding credential for the namespace before choosing an embedding model",
-            },
-          },
-          409,
-        );
-      }
+      if (guard) return guard;
       setClauses.push("embedding_model = ?");
       setArgs.push(body.embeddingModel!);
     }
@@ -87,6 +79,10 @@ export function registerUpdateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
     if (body.minScore !== undefined) {
       setClauses.push("min_score = ?");
       setArgs.push(body.minScore);
+    }
+    if (body.state !== undefined) {
+      setClauses.push("state = ?");
+      setArgs.push(body.state);
     }
 
     if (setClauses.length === 0 && body.inference === undefined) {
@@ -112,6 +108,11 @@ export function registerUpdateWorld(app: OpenAPIHono<{ Bindings: Env }>) {
     );
     if (body.inference !== undefined) {
       await setInferenceSetting(env, worldId, body.inference);
+    }
+    if (body.state !== undefined) {
+      // Leaving 'paused' retires the pause deadline; a resumed paused world
+      // must not re-pause on a stale deadline.
+      await clearPause(env, worldId);
     }
 
     if (modelChanged) {
