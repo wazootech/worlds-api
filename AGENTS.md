@@ -18,16 +18,19 @@ This repository contains the Worlds API service.
   finishing.
 - Local development brings its own resources: values come from a gitignored
   `.dev.vars` (copy `.dev.vars.example`) or your shell, and are your own, not
-  the platform's. The org vault holds only `qa` and `prod`; run QA commands
-  through `infisical run --env=qa -- <command>`. Never write vault secrets to
+  the platform's. The org vault holds only `qa` (legacy) and `prod`; run legacy QA
+  commands through `infisical run --env=qa -- <command>`. Never write vault secrets to
   disk.
 
 ## Cross-repo impact
 
-- There is no QA environment. `deploy-prod` runs on push to `main` (after
-  `verify`), followed by `canary-prod`, so a green `verify` on a pull request is
-  not evidence that the change works live and merging **is** deploying. Say so
-  explicitly in the PR body when you could not observe it.
+- Production is the only auto-deployed environment. The legacy QA Worker and D1
+  still exist but CI no longer deploys them and they are being retired; PR
+  previews (`worlds-api-preview`) reuse the QA D1/Vectorize. `deploy-prod` runs
+  on push to `main` (after `verify`), followed by `canary-prod`, so a green
+  `verify` on a pull request is not evidence that the change works live and
+  merging **is** deploying. Say so explicitly in the PR body when you could not
+  observe it.
 - Changing an OpenAPI schema or the World contract requires follow-ups in
   `worlds-client-ts`, then `wazoo-console` / `wazoo-cli`. Name the required
   merge order in the PR.

@@ -12,7 +12,7 @@ records only how worlds-api consumes it.
 - There is no `dev` environment in the vault. Local development brings its own
   resources: a gitignored `.dev.vars` copied from `.dev.vars.example`, holding
   values you choose yourself. Vault values (`qa`, `prod`) are never copied into
-  local files. Org members inject the `qa` value only for QA checks, with
+  local files. Org members inject the `qa` value (legacy QA Worker) only for QA checks, with
   `infisical run --env=qa -- <command>`.
 - `.infisical.json` at the repo root is the committed project link
   (`workspaceId`, `defaultEnvironment: qa`). It holds no secret values and is
@@ -26,11 +26,11 @@ records only how worlds-api consumes it.
 
 ## worlds-api
 
-| Secret                 | Infisical env | Prod Worker | QA Worker | Local dev   | Notes                                                                     |
-| ---------------------- | ------------- | ----------- | --------- | ----------- | ------------------------------------------------------------------------- |
-| `WORLDS_API_ADMIN_KEY` | qa, prod      | via sync    | via sync  | own value   | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
-| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | own value | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Required for embeddings: BYOK is the only embedding source and there is no mode switch, so this key is what turns it on. When absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
-| `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | Optional next KEK. Writes use the highest configured version. |
+| Secret                 | Infisical env | Prod Worker | QA Worker (legacy) | Preview Worker | Local dev   | Notes                                                                     |
+| ---------------------- | ------------- | ----------- | ------------------ | -------------- | ----------- | ------------------------------------------------------------------------- |
+| `WORLDS_API_ADMIN_KEY` | qa, prod      | via sync    | via sync           | preview-only value, set in the Cloudflare dashboard on the Worker (not synced) | own value   | Platform→data-plane admin key (`wzw_` prefix). Read by `src/env.ts` and accepted as `{ admin: true }` by `src/lib/auth.ts`, bypassing `api_keys`. |
+| `EMBEDDING_KEK_V1`     | qa, prod      | **not yet provisioned** | **provisioned** (2026-10-13) | optional, own value, set on the Worker only to exercise BYOK | own value | BYOK key-encryption key (worlds-api#1): base64 of 32 random bytes, one value per environment, QA and prod different. Required for embeddings: BYOK is the only embedding source and there is no mode switch, so this key is what turns it on. When absent the credential store fails closed (credential routes return 503, search stays keyword-only) and deploys are unaffected. Never rotate by overwriting: add `EMBEDDING_KEK_V2`; records re-wrap lazily on use; retire `_V1` only after a sweep. |
+| `EMBEDDING_KEK_V2`     | qa, prod      | rotation only | rotation only | n/a | n/a | Optional next KEK. Writes use the highest configured version. |
 
 Only `WORLDS_API_ADMIN_KEY` and the optional `EMBEDDING_KEK_V<n>` secrets are
 consumed by this service. The name is canonical
@@ -69,7 +69,8 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 | Target            | Path                                                                |
 | ----------------- | ------------------------------------------------------------------- |
 | Local dev         | `npm run dev` → `scripts/dev.mjs` → `wrangler dev`, reading your own gitignored `.dev.vars` (or shell variables, since `CLOUDFLARE_INCLUDE_PROCESS_ENV=true` makes Wrangler pass them into the Worker). No vault involvement. |
-| QA Worker         | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
+| QA Worker (legacy; no longer deployed by CI, being retired) | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
+| Preview Worker    | `worlds-api-preview` (`wrangler.preview.toml`, built by Cloudflare Workers Builds, not CI; reuses the QA D1/Vectorize). **Not** synced by Infisical: `WORLDS_API_ADMIN_KEY` is a preview-only value set in the Cloudflare dashboard on the Worker, different from the QA and prod values. |
 | Prod Worker       | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `prod`) → script `worlds-api`. Deletion protection **on**. |
 | CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-prod` uses `Infisical/secrets-action@v1.0.17` with `method: oidc`, `secret-name: CLOUDFLARE_API_TOKEN`, `secret-path: /ci` and env `prod`, authenticated as the per-repo machine identity `worlds-api-ci` (subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`) with the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables** and `permissions: id-token: write`. The deploy credential lives at vault folder `/ci`, deliberately outside any sync's scope, so no sync binds it onto a Worker. `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
 

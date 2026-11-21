@@ -117,8 +117,9 @@ skill.
 - `WORLDS_API_ADMIN_KEY`: admin key used by `wazoo-api` for provisioning and API-key
   management. This is the only secret worlds-api reads.
 
-Deployed secrets live in Infisical (`qa` and `prod`) and reach the Workers
-through the Cloudflare Workers Secret Sync. Local development brings its own
+Deployed secrets live in Infisical (`qa`, legacy, and `prod`) and reach the
+prod and legacy QA Workers through the Cloudflare Workers Secret Sync. The
+preview Worker is not synced; see [PR previews](#pr-previews). Local development brings its own
 resources and uses your own `.dev.vars`; it needs no org credentials. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and
 [secret-registry.md](secret-registry.md) for how the Workers Secret Sync and CI
@@ -132,12 +133,13 @@ database reset remains a separately approved rollout action.
 ## Health checks
 
 - Local: `pnpm run health:local`
-- QA: `pnpm run health:local https://data-qa.wazoo.dev`
+- Legacy QA (frozen, being retired): `pnpm run health:local https://data-qa.wazoo.dev`
+- A PR preview: `pnpm run health:local https://<alias>.preview.data.wazoo.dev`
 
 `/health` checks liveness and database connectivity. `/ready` checks that the
 control-plane schema matches this service. The health script probes both and
 requires `WORLDS_API_ADMIN_KEY` for its authenticated checks. Export your local
-key for a local run, or inject the `qa` value (org members) for QA:
+key for a local run, or inject the `qa` value (org members) for the legacy QA Worker:
 
 ```sh
 WORLDS_API_ADMIN_KEY=<your local key> pnpm run health:local
@@ -172,7 +174,9 @@ docker compose up
 
 GitHub Actions validates formatting, typechecking, build, Worker dry deploy,
 Docker build, publishes the GHCR image on `main`, and deploys
-`data.wazoo.dev` on `main`.
+`data.wazoo.dev` on `main`. Production is the only auto-deployed environment:
+the legacy QA Worker (`worlds-api-qa`, `data-qa.wazoo.dev`) is no longer
+deployed by CI and is being retired.
 
 ### PR previews
 
@@ -183,7 +187,7 @@ branch gets `<alias>.preview.data.wazoo.dev` (`WAZOO_ENV="preview"`), and the
 console previews at `*.preview.console.wazoo.dev` are allowed by CORS there
 (never on prod).
 
-Previews **share the QA resources** (the `worlds-api-qa` D1 database and the QA
+Previews are the QA path now. They **share the legacy QA resources** (the `worlds-api-qa` D1 database and the QA
 Vectorize index; no new resources). A PR that changes `CONTROL_PLANE_DDL` needs
 its migration applied to `worlds-api-qa` by hand before its preview works, and
 branch code has write access to that data, so treat write access to this repo
@@ -199,6 +203,7 @@ Workers Builds settings (Worker `worlds-api-preview`, connected to this repo):
   (`pnpm run versions:preview` is the same command).
 - Enable non-production branch builds. In Domains & Routes, Previews Base tab,
   keep preview URLs on and select `preview.data.wazoo.dev` as the base.
-- Secret `WORLDS_API_ADMIN_KEY` set on this Worker with a preview-only value
-  (not the QA or prod value). Set `EMBEDDING_KEK_V1` only to exercise BYOK
+- Secret `WORLDS_API_ADMIN_KEY` set in the Cloudflare dashboard on this Worker
+  with a preview-only value (not the QA or prod value); Infisical does not sync
+  it. Set `EMBEDDING_KEK_V1` only to exercise BYOK
   embeddings, also with its own value.
