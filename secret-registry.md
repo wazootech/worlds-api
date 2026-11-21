@@ -71,8 +71,7 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
 | Local dev         | `npm run dev` → `scripts/dev.mjs` → `wrangler dev`, reading your own gitignored `.dev.vars` (or shell variables, since `CLOUDFLARE_INCLUDE_PROCESS_ENV=true` makes Wrangler pass them into the Worker). No vault involvement. |
 | QA Worker         | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `qa`) → script `worlds-api-qa`. Deletion protection **on**. |
 | Prod Worker       | Infisical Secret Sync (project `wazoo-n-jx-j`, source `/worlds-api`, env `prod`) → script `worlds-api`. Deletion protection **on**. |
-| CI (`health-qa`, `smoke-qa`) | `Infisical/secrets-action@v1.0.17` with `method: oidc`, env `qa`, `secret-name: WORLDS_API_ADMIN_KEY`, per-repo machine identity subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`. Reads project `wazoo-n-jx-j` via `INFISICAL_PROJECT_SLUG`. Needs `permissions: id-token: write` and the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables**. |
-| CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-qa` and `deploy-prod` use `Infisical/secrets-action@v1.0.17` with `method: oidc` and `secret-name: CLOUDFLARE_API_TOKEN` and `secret-path: /ci`, env `qa` and `prod` respectively (same identity and variables as above). The deploy credential lives at vault folder `/ci`, deliberately outside any sync's scope, so no sync binds it onto a Worker. `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
+| CI (deploy jobs)  | Named Infisical fetch, no GitHub secret: `deploy-prod` uses `Infisical/secrets-action@v1.0.17` with `method: oidc`, `secret-name: CLOUDFLARE_API_TOKEN`, `secret-path: /ci` and env `prod`, authenticated as the per-repo machine identity `worlds-api-ci` (subject `repo:wazootech@197434733/worlds-api@1299570979:ref:refs/heads/main`) with the `INFISICAL_MACHINE_ID` / `INFISICAL_PROJECT_SLUG` repository **variables** and `permissions: id-token: write`. The deploy credential lives at vault folder `/ci`, deliberately outside any sync's scope, so no sync binds it onto a Worker. `CLOUDFLARE_ACCOUNT_ID` comes from the `CLOUDFLARE_ACCOUNT_ID` repository **variable**. Only the deploy token is injected; `wrangler deploy` sets no Worker secrets, and the Worker copy belongs to the sync. |
 
 ## Operational notes
 
@@ -93,9 +92,9 @@ vault record in `wazootech/memory` (`wiki/Infisical_(vault).md`).
   the source path. That is deliberate: the value is shared platform-wide, and an
   accidental removal would take the data plane's admin auth with it.
 - **No long-lived copies remain.** The `WORLDS_ADMIN_KEY` and
-  `WORLDS_API_ADMIN_KEY` GitHub secrets are retired: CI fetches the value via
-  OIDC and the Workers get it via the sync. No workflow reads a GitHub secret:
-  both deploy jobs fetch `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (`qa` / `prod`)
+  `WORLDS_API_ADMIN_KEY` GitHub secrets are retired: the Workers get the value via the sync, and
+  CI needs no admin key. No workflow reads a GitHub secret:
+  `deploy-prod` fetches `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (`prod`)
   and read the account ID from a repository variable. The legacy
   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets were
   deleted on 2026-10-10, after a prod deploy succeeded on the vault token
@@ -129,7 +128,7 @@ broader than the fetch.
 | [#98](https://github.com/wazootech/worlds-api/issues/98)                      | Create the `worlds-api-qa` and `worlds-api-prod` Cloudflare Workers Secret Syncs, reusing the shared App Connection | **Closed** — both `Synced`, deletion protection on |
 | [#99](https://github.com/wazootech/worlds-api/issues/99)                      | Delete the retired `WORLDS_ADMIN_KEY` and `WORLDS_API_ADMIN_KEY` GitHub Actions secrets      | **Closed** — neither name remains as a GitHub secret |
 | [#100](https://github.com/wazootech/worlds-api/issues/100)                    | Commit and PR the uncommitted working copy                                                     | **Closed** — merged as #101 / #102 |
-| [#80](https://github.com/wazootech/worlds-api/issues/80)                      | Scheduled QA canary `.github/workflows/smoke-qa.yml` (daily 06:00 UTC)                         | **Closed** — green on a real scheduled run |
+| [#80](https://github.com/wazootech/worlds-api/issues/80)                      | Scheduled QA canary `.github/workflows/smoke-qa.yml` (daily 06:00 UTC)                         | **Closed**; the workflow was removed in #199 (QA is no longer a maintained environment) |
 
 ### Remaining gap: the production deploy
 
