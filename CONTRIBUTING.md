@@ -38,7 +38,8 @@
 ## Health checks
 
 - Local: `pnpm run health:local`
-- QA: `pnpm run health:local https://data-qa.wazoo.dev`
+- Legacy QA (frozen, being retired): `pnpm run health:local https://data-qa.wazoo.dev`
+- A PR preview: `pnpm run health:local https://<alias>.preview.data.wazoo.dev`
 
 The script checks `/health` for liveness and `/ready` for the control-plane schema. Its authenticated checks require `WORLDS_API_ADMIN_KEY`.
 
@@ -48,7 +49,7 @@ Against your local instance, export the same key you put in `.dev.vars`:
 WORLDS_API_ADMIN_KEY=<your local key> pnpm run health:local
 ```
 
-Against QA, org members with vault access inject the `qa` value:
+Against the legacy QA Worker, org members with vault access inject the `qa` value:
 
 ```sh
 infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
@@ -56,8 +57,9 @@ infisical run --env=qa -- pnpm run health:local https://data-qa.wazoo.dev
 
 ## Environment files
 
-The org vault (Infisical) holds only the `qa` and `prod` environments. There is
-no shared `dev` environment: local development brings its own resources.
+The org vault (Infisical) holds only the `qa` (legacy) and `prod` environments.
+There is no shared `dev` environment: local development brings its own
+resources.
 
 - `.dev.vars` — your own local values (gitignored). Copy it from
   `.dev.vars.example`.
@@ -126,11 +128,15 @@ secrets into a job that cannot use them would only widen exposure.
 
 ### Verification after a deploy
 
-There is no QA environment. Every push to `main` runs `deploy-prod` and then
-`canary-prod`, which makes credential-free read-only GETs against production
-(`scripts/prod-canary.mjs`). The old QA gates (`health-qa` and the daily
-`smoke-qa` canary) were removed with QA. A secret that rotates with no deploy is
-no longer caught on a timer, so confirm a rotation by hand as below.
+Production is the only auto-deployed environment. Every push to `main` runs
+`deploy-prod` and then `canary-prod`, which makes credential-free read-only GETs
+against production (`scripts/prod-canary.mjs`). The legacy QA Worker
+(`worlds-api-qa`, `data-qa.wazoo.dev`) and its D1 database still exist, but CI
+no longer deploys them and they are being retired; the old QA gates
+(`health-qa` and the daily `smoke-qa` canary) were removed. PR previews
+(`worlds-api-preview`, see the README) take QA's role: they reuse the QA D1
+database and Vectorize index. A secret that rotates with no deploy is no longer
+caught on a timer, so confirm a rotation by hand as below.
 
 **Rotation procedure** — name every consumer, because a rotation that half-lands
 is the failure this repo already hit:
