@@ -173,3 +173,32 @@ docker compose up
 GitHub Actions validates formatting, typechecking, build, Worker dry deploy,
 Docker build, publishes the GHCR image on `main`, and deploys
 `data.wazoo.dev` on `main`.
+
+### PR previews
+
+GitHub Actions does not deploy pull requests. Previews come from Cloudflare
+Workers Builds using `wrangler.preview.toml`: a separate `worlds-api-preview`
+Worker whose build token is scoped to it alone, so it can't deploy prod. Each
+branch gets `<alias>.preview.data.wazoo.dev` (`WAZOO_ENV="preview"`), and the
+console previews at `*.preview.console.wazoo.dev` are allowed by CORS there
+(never on prod).
+
+Previews **share the QA resources** (the `worlds-api-qa` D1 database and the QA
+Vectorize index; no new resources). A PR that changes `CONTROL_PLANE_DDL` needs
+its migration applied to `worlds-api-qa` by hand before its preview works, and
+branch code has write access to that data, so treat write access to this repo
+as access to it. The preview has no cron trigger.
+
+Workers Builds settings (Worker `worlds-api-preview`, connected to this repo):
+
+- Root directory `/`; build command empty (wrangler bundles `src/index.ts`).
+- Deploy command (production branch `main`):
+  `npx wrangler deploy -c wrangler.preview.toml`
+- Non-production branch deploy command:
+  `npx wrangler versions upload -c wrangler.preview.toml`
+  (`pnpm run versions:preview` is the same command).
+- Enable non-production branch builds. In Domains & Routes, Previews Base tab,
+  keep preview URLs on and select `preview.data.wazoo.dev` as the base.
+- Secret `WORLDS_API_ADMIN_KEY` set on this Worker with a preview-only value
+  (not the QA or prod value). Set `EMBEDDING_KEK_V1` only to exercise BYOK
+  embeddings, also with its own value.

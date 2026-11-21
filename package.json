@@ -9,6 +9,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "deploy": "wrangler deploy",
+    "deploy:preview": "wrangler deploy -c wrangler.preview.toml",
+    "versions:preview": "wrangler versions upload -c wrangler.preview.toml",
     "typecheck": "tsc --noEmit",
     "sync:openapi": "node scripts/sync-openapi.mjs",
     "openapi:check": "vitest run tests/openapi-doc.test.ts",
