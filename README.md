@@ -173,3 +173,8 @@ docker compose up
 GitHub Actions validates formatting, typechecking, build, Worker dry deploy,
 Docker build, publishes the GHCR image on `main`, and deploys
 `data.wazoo.dev` on `main`.
+
+Staging (`data-qa.wazoo.dev`) is manual: it is not deployed on push and stays
+frozen at its last deploy. To update it from any branch, run
+`gh workflow run deploy-staging.yml --ref <branch>`. The workflow deploys that
+ref with `--env qa` and then runs `pnpm run health:local https://data-qa.wazoo.dev`.

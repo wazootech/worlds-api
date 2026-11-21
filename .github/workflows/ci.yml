@@ -89,9 +89,9 @@ jobs:
 
   # Deploy jobs fetch only the named Cloudflare API token needed by Wrangler.
   # Application secrets remain owned by the Infisical Cloudflare Workers Secret
-  # Sync; health-qa separately fetches only the admin key it needs.
-  # deploy-qa and deploy-prod each read CLOUDFLARE_API_TOKEN from their own
-  # Infisical environment (qa / prod); neither uses a GitHub secret.
+  # Sync. deploy-prod reads CLOUDFLARE_API_TOKEN from the Infisical prod
+  # environment, not from a GitHub secret. Staging (QA) is deployed only by the
+  # manual deploy-staging.yml workflow.
   # Prod is the only environment: every push to main that passes `verify` is
   # deployed. workflow_dispatch from main redeploys the current head. Deploys
   # queue rather than overlap so two merges cannot race each other.
