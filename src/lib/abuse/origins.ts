@@ -12,13 +12,14 @@ const DEFAULT_ALLOWED_ORIGINS = [
 
 // Console PR previews are served at <preview-name>.preview.console.wazoo.dev
 // (wazoo-console wrangler.preview.jsonc). They run branch code, so they are
-// trusted on the QA data plane only, never on prod.
+// trusted only by the preview data plane (WAZOO_ENV "preview", this repo's
+// wrangler.preview.toml) and, until the -qa hosts are removed, by QA. Never prod.
 const CONSOLE_PREVIEW_ORIGIN =
   /^https:\/\/[a-z0-9]([a-z0-9-]*[a-z0-9])?\.preview\.console\.wazoo\.dev$/;
 
 /**
  * Tightened CORS: exact-match against the env-configured list, or a curated
- * default plus, on QA only, the console preview origins.
+ * default plus, on preview (and legacy QA) only, the console preview origins.
  */
 export function isOriginAllowed(origin: string | null, env: Env): boolean {
   if (!origin) return false;
@@ -33,5 +34,7 @@ export function isOriginAllowed(origin: string | null, env: Env): boolean {
   }
 
   if (DEFAULT_ALLOWED_ORIGINS.includes(origin)) return true;
-  return env.WAZOO_ENV === "qa" && CONSOLE_PREVIEW_ORIGIN.test(origin);
+  // "qa" stays until data-qa.wazoo.dev is retired; then only "preview" remains.
+  const trustsPreviews = env.WAZOO_ENV === "preview" || env.WAZOO_ENV === "qa";
+  return trustsPreviews && CONSOLE_PREVIEW_ORIGIN.test(origin);
 }

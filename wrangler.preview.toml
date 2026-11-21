@@ -1,0 +1,46 @@
+# PR preview Worker for the data plane, built by Cloudflare Workers Builds (not
+# GitHub Actions, so no PR workflow holds a deploy credential; contract-lint R5).
+#
+#   Root directory:  /
+#   Build command:   (none)
+#   Deploy (main):   npx wrangler deploy -c wrangler.preview.toml
+#   Preview (PRs):   npx wrangler versions upload -c wrangler.preview.toml
+#
+# A separate Worker from worlds-api (prod) and worlds-api-qa, with a build token
+# scoped to this Worker only. Previews are served at
+# <alias>.preview.data.wazoo.dev (wildcard DNS + cert; the route below only
+# enables previews on that host and does not attach a hostname, enabled=false).
+#
+# PREVIEWS SHARE THE EXISTING QA RESOURCES. The D1 database and Vectorize index
+# below are the `env.qa` ones in wrangler.toml; nothing here creates or modifies
+# a resource. Because every preview writes to the same D1, a PR that changes
+# CONTROL_PLANE_DDL (src/lib/d1-schema.ts) needs its migration applied to
+# `worlds-api-qa` by hand before the preview is usable, and branch code runs
+# with write access to that data. Keep these ids in sync with `env.qa`.
+# No cron trigger: the daily job is owned by the QA/prod Workers, not previews.
+name = "worlds-api-preview"
+main = "src/index.ts"
+compatibility_date = "2026-07-18"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = true
+
+routes = [
+  { pattern = "preview.data.wazoo.dev", custom_domain = true, previews_enabled = true, enabled = false }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "worlds-api-qa"
+database_id = "35823dc3-c46f-43ad-9e7b-19fe1025493f"
+
+[[vectorize]]
+binding = "VECTORIZE_INDEX"
+index_name = "worlds-api-qa-v1-metadata"
+
+[vars]
+WAZOO_ENV = "preview"
+
+[observability]
+enabled = true
+head_sampling_rate = 1

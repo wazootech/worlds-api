@@ -52,6 +52,7 @@ export type Env = {
    * bypassing `api_keys`.
    */
   WORLDS_API_ADMIN_KEY?: string;
+  /** Deploy environment: "prod", "preview" (PR previews), legacy "qa", or unset locally. */
   WAZOO_ENV?: string;
   PORT?: string;
   // Abuse-prevention knobs (all optional, defaults applied in code).
