@@ -1,6 +1,10 @@
 import type { Context } from "hono";
 import type { Env } from "../../env";
 import { sparqlMaxResults, sparqlTimeoutMs } from "../../lib/abuse";
+import {
+  embeddingFailureOf,
+  embeddingFailureResponse,
+} from "../../lib/embeddings/failure";
 import { restartWindowedPass } from "../../lib/embeddings/store";
 import type { getWorldSdk } from "../../lib/world-db";
 import { respond } from "../../lib/respond";
@@ -75,6 +79,10 @@ export async function executeSparql(
         400,
       );
     }
+    // An UPDATE whose embedder threw wrote nothing: a retryable 502, not a
+    // client error.
+    const embedding = embeddingFailureOf(error);
+    if (embedding) return embeddingFailureResponse(c, embedding);
     return respond(
       c,
       {

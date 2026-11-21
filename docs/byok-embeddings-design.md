@@ -171,6 +171,12 @@ returns `chunkCount`, so the console can show "~N chunks will be embedded".
 - `completed_with_vector_errors` keeps meaning: D1/FTS complete, vectors not.
   State stays `stale` (or `partial` after the first successful upsert); search
   keeps serving hybrid for vectors that exist, with keyword covering the rest.
+- Once `@worlds/cloudflare` throws on embedding failure (worlds-cloudflare#91),
+  an embedding outage or wrong-length vector no longer arrives as
+  `embeddingFailures`. Reindex answers `502 EMBEDDING_FAILED` (or `429
+  EMBEDDING_BUDGET_EXCEEDED` for a mid-run budget), never records `ready`, and a
+  windowed pass keeps its cursor so a retry re-runs the same window. SPARQL
+  update and import answer the same 502 with nothing written.
 - Provider `429`: bounded retry with backoff inside a batch; remaining chunks
   counted as `embeddingFailures`. Never loop unbounded.
 - Provider `401/403`: stop the run immediately, report one error, mark
