@@ -185,14 +185,14 @@ importers:
         specifier: npm:@jsr/wazoo__sparql-engine@^0.5.0
         version: '@jsr/wazoo__sparql-engine@0.5.0'
       '@worlds/cloudflare':
-        specifier: npm:@jsr/worlds__cloudflare@^0.14.0
-        version: '@jsr/worlds__cloudflare@0.14.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
+        specifier: npm:@jsr/worlds__cloudflare@^0.15.1
+        version: '@jsr/worlds__cloudflare@0.15.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       '@worlds/sdk':
-        specifier: npm:@jsr/worlds__sdk@^0.9.0
-        version: '@jsr/worlds__sdk@0.9.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
+        specifier: npm:@jsr/worlds__sdk@^0.11.0
+        version: '@jsr/worlds__sdk@0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       '@worlds/sqlite':
-        specifier: npm:@jsr/worlds__sqlite@^0.6.0
-        version: '@jsr/worlds__sqlite@0.6.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(zod@4.4.3)'
+        specifier: npm:@jsr/worlds__sqlite@^0.8.1
+        version: '@jsr/worlds__sqlite@0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       hono:
         specifier: ^4.10.3
         version: 4.12.31
@@ -761,8 +761,8 @@ packages:
   '@jsr/std__ulid@1.0.0':
     resolution: {integrity: sha512-RvVolUwRoFtoSuYZROBmhCYEIuI4xsxeHjGGbJQZVDCBnDBJwfm16vOJyE1Va9+BnTl1iW7o1nCloBI+EQAWVg==, tarball: https://npm.jsr.io/~/11/@jsr/std__ulid/1.0.0.tgz}
 
-  '@jsr/wazoo__reasoner@0.4.0':
-    resolution: {integrity: sha512-Ioacdi6Yn7TMfkTzyn/p+t+p2392C3re5KXMaPCnhs6Qv+HZCTJw3lzX1jIq6aPz/ez2wEv5qi78zmmDqooneg==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__reasoner/0.4.0.tgz}
+  '@jsr/wazoo__reasoner@0.4.1':
+    resolution: {integrity: sha512-nqp8uChYcB3MqJlWgptCsAhIZV6CrDu0XMbcV7DtNZbgUdNmTg6vCyiGQ2SVmt4g8nE2Gu3DJYjawqD/p8OQnw==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__reasoner/0.4.1.tgz}
 
   '@jsr/wazoo__sparql-engine@0.4.4':
     resolution: {integrity: sha512-Qk6Sj1LyLQvyzA12cYOSuHN5hvJnr/BJPCyHsWAXFkKuifVV/t+trfLKaxbL8BHq3znDW6bL5uB0P39qfy9yIA==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__sparql-engine/0.4.4.tgz}
@@ -773,17 +773,14 @@ packages:
   '@jsr/worlds__client@0.1.0':
     resolution: {integrity: sha512-Z5iL51C6EXn4Iu1S+zTM+CGRdYRwFUZrEHOVOP2mQslCID0qNaWO7GuNNvGRZMpokjPXSBnL7pHmz72R8Yw3bA==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__client/0.1.0.tgz}
 
-  '@jsr/worlds__cloudflare@0.14.0':
-    resolution: {integrity: sha512-ZKZJ4Pqg33uXIa5mq4cK/2pU0XNvnNr3SJTY0jCVfKn5aqIeYIJaWWhhli8ncMy1WbDZNob5wERWk9L8oOJsNw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.14.0.tgz}
+  '@jsr/worlds__cloudflare@0.15.1':
+    resolution: {integrity: sha512-ZLaP/HQA5XXp5OiqA/SbpJVmnwtmeKKBvARLy1rMl3VSiObQUsR4Shm8MTQdkwdwHAVdQTwkHt9iMvaswcezLw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.15.1.tgz}
 
-  '@jsr/worlds__sdk@0.6.1':
-    resolution: {integrity: sha512-vT3XyTUFkUkLBSU5tsyBbf6Noot+pQ0JNzPhSXg5kTuVWXqeHYwMvOu62ZuFai/c89SjruOfOWCQ2VCnQkcalA==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sdk/0.6.1.tgz}
+  '@jsr/worlds__sdk@0.11.0':
+    resolution: {integrity: sha512-QRtlzcZhfB6GiQ2s0+ohf6dm4pOrEzVaU39b5jjKCLU3svxOuBSB61kPvSJhCPBmoZE8nkuqn+ihjSXIRGhtxw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sdk/0.11.0.tgz}
 
-  '@jsr/worlds__sdk@0.9.0':
-    resolution: {integrity: sha512-ucZYmVJ7st4f8ldlphEwmLlta6Z4OA2TONgGOdvMrQcc55sUxC7i93PVQn9BU6WO+mIlYrKQNkRKekhcuRzDiw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sdk/0.9.0.tgz}
-
-  '@jsr/worlds__sqlite@0.6.0':
-    resolution: {integrity: sha512-/B9PCYxjMJy9vFkLal5w3Or04oiyA92crEOAog5T0UrGs1yrTWjTG0x4Usfmy7tbvjU4iKMQ70o3h7cw12BCRQ==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sqlite/0.6.0.tgz}
+  '@jsr/worlds__sqlite@0.8.1':
+    resolution: {integrity: sha512-3AYNGVViQ/aBkndK9hZyit+hgdvNyteT2Ik8hmppnZkCBge4ASsKz2qPgnLHArCvpJZbySq0ZBu3LljeSWPdlw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sqlite/0.8.1.tgz}
 
   '@keyv/bigmap@1.3.1':
     resolution: {integrity: sha512-WbzE9sdmQtKy8vrNPa9BRnwZh5UF4s1KTmSK0KUVLo3eff5BlQNNWDnFOouNpKfPKDnms9xynJjsMYjMaT/aFQ==}
@@ -1002,6 +999,9 @@ packages:
   '@types/long@4.0.2':
     resolution: {integrity: sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==}
 
+  '@types/n3@1.26.1':
+    resolution: {integrity: sha512-TilYHzpU6ecXVJAbV+6o17Z8ZkWLWx6ZJD3IluaU4RiGHxqjU2or9fopxFHS6iXS6qcl5Mg1K3wSx9L8xxJaJQ==}
+
   '@types/node-fetch@2.6.13':
     resolution: {integrity: sha512-QGpRVpzSaUs30JBSGPjOg4Uveu384erbHBoT1zeONvyCfwQxIkUshLAOqN/k9EjGviPRmWTTe6aH2qySWKTVSw==}
 
@@ -1121,6 +1121,10 @@ packages:
   '@webgpu/types@0.1.38':
     resolution: {integrity: sha512-7LrhVKz2PRh+DD7+S+PVaFd5HxaWQvoMqBbsV9fNJO1pjUs1P8bM2vQVNfk+3URTqbuTI7gkXi0rfsN0IadoBA==}
 
+  abort-controller@3.0.0:
+    resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
+    engines: {node: '>=6.5'}
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -1174,6 +1178,9 @@ packages:
   brace-expansion@5.0.12:
     resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
     engines: {node: 20 || >=22}
+
+  buffer@6.0.3:
+    resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
 
   cacheable@2.5.0:
     resolution: {integrity: sha512-60cyAOytib/OzBw1JNSoSV/boK1AtHryDIjvVBk7XbN4ugfkM3+Sry7fEjNgPMGgOjuaZPAp8ruZ0Cxafwyq9g==}
@@ -1325,8 +1332,16 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
+  event-target-shim@5.0.1:
+    resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
+    engines: {node: '>=6'}
+
   eventemitter3@4.0.7:
     resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
+
+  events@3.3.0:
+    resolution: {integrity: sha512-mQw+2fkQbALzQ7V0MY0IqdnXNOeTtP4r0lN9z7AAawCXgqea7bDii20AYrIBrFd/Hx0M2Ocz6S111CaFkUcb0Q==}
+    engines: {node: '>=0.8.x'}
 
   eventsource-parser@3.1.1:
     resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
@@ -1435,6 +1450,9 @@ packages:
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
+
+  ieee754@1.2.1:
+    resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
 
   ignore@5.3.2:
     resolution: {integrity: sha512-hsBTNUqQTDwkWtcdYI2i06Y/nUBEsNEDJKjWdigLvegy8kDuJAS8uRlpkkcQpyEXL0Z/pjDy5HBmMjRCJ2gq+g==}
@@ -1640,6 +1658,10 @@ packages:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
     hasBin: true
 
+  n3@2.13.12:
+    resolution: {integrity: sha512-z944NsyJi58WXcYevtNkUL2JhVr0KP6nvED9AgymQq5V35TDaNn1N8kO+OWJk/kj4PR0L/ilWB3d7/bWceg1CQ==}
+    engines: {node: '>=12.0'}
+
   nanoid@3.3.16:
     resolution: {integrity: sha512-bzlKTyNJ7+LdGIIwy8ijFpIqEQIvafahV7eYykJ8Cvh42EdJeODoJ6gUJXpQJvej1BddH8OqTXZNE/KfbWAu8Q==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -1722,6 +1744,10 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
+  process@0.11.10:
+    resolution: {integrity: sha512-cdGef/drWFoydD1JsMzuFf8100nZl+GT+yacc2bEced5f9Rjk4z+WtFUTBu9PhOi9j/jfmBPu0mMEY4wIdAF8A==}
+    engines: {node: '>= 0.6.0'}
+
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
@@ -1729,6 +1755,10 @@ packages:
   qified@0.10.1:
     resolution: {integrity: sha512-+Owyggi9IxT1ePKGafcI87ubSmxol6smwJ+RAHDQlx9+9cPwFWDiKFFCPuWhr9ignlGpZ9vDQLw67N4dcTVFEA==}
     engines: {node: '>=20'}
+
+  readable-stream@4.8.0:
+    resolution: {integrity: sha512-2jhTTU3Eilp/2DMT71gbcoqC35eQHasMJH0RHkYxwlxIv3+FR6Y5xAFZIwEGLxKkjZYEFlsiMNIdwUqjK2lLHQ==}
+    engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
   regenerator-runtime@0.13.11:
     resolution: {integrity: sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==}
@@ -2423,7 +2453,7 @@ snapshots:
 
   '@jsr/std__ulid@1.0.0': {}
 
-  '@jsr/wazoo__reasoner@0.4.0':
+  '@jsr/wazoo__reasoner@0.4.1':
     dependencies:
       '@jsr/wazoo__sparql-engine': 0.4.4
       '@rdfjs/types': 2.0.1
@@ -2438,12 +2468,12 @@ snapshots:
 
   '@jsr/worlds__client@0.1.0': {}
 
-  '@jsr/worlds__cloudflare@0.14.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
+  '@jsr/worlds__cloudflare@0.15.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
-      '@jsr/wazoo__reasoner': 0.4.0
+      '@jsr/wazoo__reasoner': 0.4.1
       '@jsr/wazoo__sparql-engine': 0.5.0
-      '@jsr/worlds__sdk': 0.9.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
-      '@jsr/worlds__sqlite': 0.6.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(zod@4.4.3)
+      '@jsr/worlds__sdk': 0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
+      '@jsr/worlds__sqlite': 0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
       '@langchain/textsplitters': 1.0.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))
       '@rdfjs/types': 2.0.1
     transitivePeerDependencies:
@@ -2453,40 +2483,36 @@ snapshots:
       - seedrandom
       - zod
 
-  '@jsr/worlds__sdk@0.6.1(zod@4.4.3)':
-    dependencies:
-      '@jsr/std__encoding': 1.0.11
-      '@jsr/wazoo__sparql-engine': 0.4.4
-      '@rdfjs/types': 2.0.1
-      ai: 6.0.264(zod@4.4.3)
-    transitivePeerDependencies:
-      - zod
-
-  '@jsr/worlds__sdk@0.9.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
+  '@jsr/worlds__sdk@0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
       '@jsr/std__encoding': 1.0.11
       '@jsr/std__path': 1.1.6
-      '@jsr/wazoo__sparql-engine': 0.4.4
+      '@jsr/wazoo__sparql-engine': 0.5.0
       '@jsr/worlds__client': 0.1.0
       '@rdfjs/types': 2.0.1
       '@tensorflow/tfjs': 4.22.0(seedrandom@3.0.5)
       '@tensorflow/tfjs-backend-wasm': 4.22.0(@tensorflow/tfjs-core@4.22.0)
+      '@types/n3': 1.26.1
       ai: 6.0.264(zod@4.4.3)
+      n3: 2.13.12
     transitivePeerDependencies:
       - '@tensorflow/tfjs-core'
       - encoding
       - seedrandom
       - zod
 
-  '@jsr/worlds__sqlite@0.6.0(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(zod@4.4.3)':
+  '@jsr/worlds__sqlite@0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
-      '@jsr/wazoo__sparql-engine': 0.4.4
-      '@jsr/worlds__sdk': 0.6.1(zod@4.4.3)
+      '@jsr/wazoo__sparql-engine': 0.5.0
+      '@jsr/worlds__sdk': 0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
       '@langchain/textsplitters': 1.0.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))
       '@rdfjs/types': 2.0.1
       sqlite-vec: 0.1.9
     transitivePeerDependencies:
       - '@langchain/core'
+      - '@tensorflow/tfjs-core'
+      - encoding
+      - seedrandom
       - zod
 
   '@keyv/bigmap@1.3.1(keyv@5.6.0)':
@@ -2691,6 +2717,11 @@ snapshots:
 
   '@types/long@4.0.2': {}
 
+  '@types/n3@1.26.1':
+    dependencies:
+      '@rdfjs/types': 2.0.1
+      '@types/node': 26.1.1
+
   '@types/node-fetch@2.6.13':
     dependencies:
       '@types/node': 26.1.1
@@ -2856,6 +2887,10 @@ snapshots:
 
   '@webgpu/types@0.1.38': {}
 
+  abort-controller@3.0.0:
+    dependencies:
+      event-target-shim: 5.0.1
+
   acorn-jsx@5.3.2(acorn@8.19.0):
     dependencies:
       acorn: 8.19.0
@@ -2906,6 +2941,11 @@ snapshots:
   brace-expansion@5.0.12:
     dependencies:
       balanced-match: 4.0.4
+
+  buffer@6.0.3:
+    dependencies:
+      base64-js: 1.5.1
+      ieee754: 1.2.1
 
   cacheable@2.5.0:
     dependencies:
@@ -3095,7 +3135,11 @@ snapshots:
 
   esutils@2.0.3: {}
 
+  event-target-shim@5.0.1: {}
+
   eventemitter3@4.0.7: {}
+
+  events@3.3.0: {}
 
   eventsource-parser@3.1.1: {}
 
@@ -3192,6 +3236,8 @@ snapshots:
   hookified@2.2.0: {}
 
   html-escaper@2.0.2: {}
+
+  ieee754@1.2.1: {}
 
   ignore@5.3.2: {}
 
@@ -3349,6 +3395,11 @@ snapshots:
 
   mustache@4.2.0: {}
 
+  n3@2.13.12:
+    dependencies:
+      buffer: 6.0.3
+      readable-stream: 4.8.0
+
   nanoid@3.3.16: {}
 
   natural-compare@1.4.0: {}
@@ -3413,11 +3464,21 @@ snapshots:
 
   prettier@3.9.5: {}
 
+  process@0.11.10: {}
+
   punycode@2.3.1: {}
 
   qified@0.10.1:
     dependencies:
       hookified: 2.2.0
+
+  readable-stream@4.8.0:
+    dependencies:
+      abort-controller: 3.0.0
+      buffer: 6.0.3
+      events: 3.3.0
+      process: 0.11.10
+      string_decoder: 1.3.0
 
   regenerator-runtime@0.13.11: {}
 

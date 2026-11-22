@@ -51,22 +51,6 @@ export async function setWorldState(
 }
 
 /**
- * A write path (import) could not embed some chunks: a world that claimed
- * `ready` now has chunks without vectors, so it reports `partial` (keyword
- * still covers them) until a reindex repairs it. Never touches other states.
- */
-export async function markWorldPartial(
-  env: Env,
-  worldId: string,
-): Promise<void> {
-  await execute(
-    getDb(env),
-    "UPDATE world_embedding_state SET state = 'partial', update_time = ? WHERE world_id = ? AND state = 'ready'",
-    [now(), worldId],
-  );
-}
-
-/**
  * A write path (import, SPARQL update) landed while a windowed reindex pass is
  * in progress on a world that cannot embed it (state `stale`, cursor set).
  * Its new chunks have no vectors and may sit behind the cursor, where the

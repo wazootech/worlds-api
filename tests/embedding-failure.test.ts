@@ -26,7 +26,7 @@ vi.mock("@worlds/cloudflare", () => ({
 
 useEmbeddingsHarness();
 
-// @worlds/cloudflare (worlds-cloudflare#91, not yet released) throws when the
+// @worlds/cloudflare (worlds-cloudflare#91, released in 0.15) throws when the
 // embedding service fails, before writing anything. These tests stand in for
 // it with a stub SDK that throws what the shared core throws: its
 // "failed to vectorize literal chunk blocks" wrapper around our EmbeddingError.
