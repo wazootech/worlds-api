@@ -35,7 +35,6 @@ export {
   byokEnabled,
   computeEmbeddingStatus,
   getWorldState,
-  markWorldPartial,
   restartWindowedPass,
   setWorldState,
 } from "./store/world-state";

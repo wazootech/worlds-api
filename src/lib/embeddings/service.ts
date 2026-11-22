@@ -11,7 +11,6 @@ import {
   byokEnabled,
   getCredential,
   getWorldState,
-  markWorldPartial,
   recordAuthFailure,
   recordAuthSuccess,
   reindexMaxChunks,
@@ -152,29 +151,6 @@ export async function resolveEmbeddingService(
       },
     });
 
-    // Import-time embedding failures (budget exhausted, provider down) leave
-    // chunks without vectors while the world may still claim `ready`. The
-    // engine swallows the failure into a report the import route cannot see,
-    // so reconcile here. Reindex reconciles from its own vectorSync report and
-    // search never changes state.
-    if (options.operation === "index" && !options.forReindex) {
-      return {
-        async embed(texts: string[]) {
-          try {
-            return await inner.embed(texts);
-          } catch (error) {
-            try {
-              await markWorldPartial(env, ref.worldId);
-            } catch {
-              console.warn("embedding state not recorded after import", {
-                worldId: ref.worldId,
-              });
-            }
-            throw error;
-          }
-        },
-      };
-    }
     return inner;
   } catch (error) {
     console.warn("embedding service unavailable; keyword-only", {
