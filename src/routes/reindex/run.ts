@@ -18,6 +18,11 @@ import {
   cleanupWorldVectors,
   type VectorCleanupReport,
 } from "../../lib/embeddings/vectors";
+import {
+  embeddingFailureOf,
+  embeddingFailureResponse,
+} from "../../lib/embeddings/failure";
+import { stateAfterFailedReindex } from "./failure-state";
 import { readVectorSync, vectorSyncFailed, withCleanup } from "./vector-sync";
 
 type WorldRef = NonNullable<Awaited<ReturnType<typeof resolveWorldDatabase>>>;
@@ -100,7 +105,20 @@ export async function runReindex(
     if (typeof sdk.reindex !== "function") {
       throw new Error("Configured Worlds SDK does not support reindexing");
     }
-    const report = (await sdk.reindex()) as unknown as ReindexResponse;
+    let report: ReindexResponse;
+    try {
+      report = (await sdk.reindex()) as unknown as ReindexResponse;
+    } catch (error) {
+      // The embedder threw (outage, wrong-length vectors): the SDK wrote
+      // nothing for this window. Never `ready`; a windowed pass keeps its
+      // cursor so the next call retries the same window.
+      const failure = embeddingFailureOf(error);
+      if (!failure) throw error;
+      console.warn("reindex embedding failure", { worldId, ...failure });
+      const next = stateAfterFailedReindex(previous, plan.windowed, 0);
+      await recordState(next, plan.windowed ? cursor : null);
+      return embeddingFailureResponse(c, failure);
+    }
     const vectorSync = withCleanup(readVectorSync(report), cleanup);
     const failed = vectorSyncFailed(vectorSync);
 
@@ -124,21 +142,15 @@ export async function runReindex(
       }
       if (!failed) {
         await recordState("ready", null);
-      } else if (plan.windowed) {
-        // Keep the cursor: the next call retries this same window and
-        // never re-embeds the windows already finished.
-        const live =
-          previous?.state === "ready" || previous?.state === "partial";
-        await recordState(
-          live && vectorSync.upserted > 0
-            ? "partial"
-            : live
-              ? previous.state
-              : "stale",
-          cursor,
-        );
       } else {
-        await recordState(vectorSync.upserted > 0 ? "partial" : "stale", null);
+        // A windowed pass keeps its cursor: the next call retries this same
+        // window and never re-embeds the windows already finished.
+        const next = stateAfterFailedReindex(
+          previous,
+          plan.windowed,
+          vectorSync.upserted,
+        );
+        await recordState(next, plan.windowed ? cursor : null);
       }
     }
     return respond(c, {

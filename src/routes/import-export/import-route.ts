@@ -5,6 +5,7 @@ import {
   ImportResponseSchema,
   worldIdParam,
 } from "../../lib/schemas";
+import { EmbeddingFailureResponseSchema } from "../../lib/embeddings/failure";
 
 export const importRoute = createRoute({
   method: "post",
@@ -44,9 +45,16 @@ export const importRoute = createRoute({
     },
     429: {
       description:
-        "The namespace has used its daily database write budget (WRITE_BUDGET_EXCEEDED). Nothing was written; it resets at 00:00 UTC. Reads are unaffected.",
+        "The namespace has used its daily database write budget (WRITE_BUDGET_EXCEEDED). Nothing was written; it resets at 00:00 UTC. Reads are unaffected. A 429 EMBEDDING_BUDGET_EXCEEDED means the daily embedding budget ran out during the write; nothing was written.",
       content: {
         "application/json": { schema: ErrorResponseSchema },
+      },
+    },
+    502: {
+      description:
+        "The embedding service failed or returned vectors of the wrong length (EMBEDDING_FAILED; reason says which class). Nothing was written and the same request can be retried. Worlds that are not embedding-enabled (stale or no credential) are written keyword-only and never return this.",
+      content: {
+        "application/json": { schema: EmbeddingFailureResponseSchema },
       },
     },
   },

@@ -8,6 +8,10 @@ import type { Env } from "../env";
 import { checkRateLimit, isOriginAllowed } from "./abuse";
 import { sha256Hex } from "./crypto";
 import { ensureControlPlaneSchema } from "./d1-schema";
+import {
+  embeddingFailureOf,
+  embeddingFailureResponse,
+} from "./embeddings/failure";
 import { flushWriteUsage } from "./write-budget";
 
 type AppEnv = { Bindings: Env };
@@ -74,6 +78,10 @@ export const onAppError: ErrorHandler<AppEnv> = (err, c) => {
       400,
     );
   }
+  // A write route whose embedder threw (outage, wrong-length vectors): the
+  // SDK wrote nothing, so answer a typed, retryable 502/429, not a bare 500.
+  const embedding = embeddingFailureOf(err);
+  if (embedding) return embeddingFailureResponse(c, embedding);
   return c.json(
     {
       error: {
