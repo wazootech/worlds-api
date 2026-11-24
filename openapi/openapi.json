@@ -930,10 +930,15 @@
                       "enum": [
                         "ok"
                       ]
+                    },
+                    "gitSha": {
+                      "type": "string",
+                      "nullable": true
                     }
                   },
                   "required": [
-                    "status"
+                    "status",
+                    "gitSha"
                   ]
                 }
               }
@@ -952,12 +957,17 @@
                         "degraded"
                       ]
                     },
+                    "gitSha": {
+                      "type": "string",
+                      "nullable": true
+                    },
                     "error": {
                       "type": "string"
                     }
                   },
                   "required": [
                     "status",
+                    "gitSha",
                     "error"
                   ]
                 }
