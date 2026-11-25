@@ -4,6 +4,7 @@ import {
   EMBEDDING_PROVIDER_IDS,
   EMBEDDING_STATUSES,
 } from "./embeddings/catalog";
+import { MAX_PAUSE_SECONDS, MIN_PAUSE_SECONDS } from "./pause";
 
 /** `w_` + lowercase Crockford base32 ULID; the first char caps the 48-bit time. */
 export const WORLD_ID_PATTERN = /^w_[0-7][0-9a-hjkmnp-tv-z]{25}$/;
@@ -50,7 +51,7 @@ export const WorldResourceSchema = z
     }),
     state: z.string().openapi({
       description:
-        "Lifecycle state: active, deleted, or suspended. Deleted worlds enter a 30-day grace period before permanent purge.",
+        "Lifecycle state: active, paused, suspended, or deleted. Paused worlds auto-resume when their time limit ends; suspended worlds are a control-plane enforcement action. Deleted worlds enter a 30-day grace period before permanent purge.",
     }),
     storage: z.literal("d1").openapi({
       deprecated: true,
@@ -95,6 +96,10 @@ export const WorldResourceSchema = z
       description:
         "ISO 8601 timestamp when the world will be permanently purged after the grace period. Null if not scheduled for purge.",
     }),
+    pauseUntil: z.string().optional().openapi({
+      description:
+        "ISO 8601 timestamp when the current pause ends and the world auto-resumes. Present only while the world is paused.",
+    }),
   })
   .openapi("WorldResource");
 
@@ -126,6 +131,20 @@ export const CreateWorldRequestSchema = z
   })
   .openapi("CreateWorldRequest");
 
+export const PauseWorldRequestSchema = z
+  .object({
+    durationSeconds: z
+      .number()
+      .int()
+      .min(MIN_PAUSE_SECONDS)
+      .max(MAX_PAUSE_SECONDS)
+      .openapi({
+        description:
+          "How long the pause lasts, in seconds. Mandatory: a pause always has a time limit, between 60 seconds and 30 days. The world auto-resumes when it ends.",
+      }),
+  })
+  .openapi("PauseWorldRequest");
+
 export const UpdateWorldRequestSchema = z
   .object({
     displayName: z.string().min(1).optional().openapi({
@@ -147,6 +166,10 @@ export const UpdateWorldRequestSchema = z
     inference: InferenceSettingSchema.optional().openapi({
       description:
         "Replaces the world's inference setting. Enabling does not back-fill existing data: inferred quads appear only for later changes.",
+    }),
+    state: z.enum(["active", "suspended"]).optional().openapi({
+      description:
+        "Admin-only lifecycle transition. 'suspended' is the control-plane enforcement action with no time limit; 'active' resumes a paused or suspended world. Rejected with 403 for non-admin keys; time-limited pauses go through POST /worlds/{worldId}/pause instead.",
     }),
   })
   .openapi("UpdateWorldRequest");

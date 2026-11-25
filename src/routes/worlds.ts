@@ -7,9 +7,10 @@ import {
   registerDeleteWorld,
   registerUndeleteWorld,
 } from "./worlds/handlers-delete";
+import { registerPauseWorld } from "./worlds/handlers-pause";
 import {
-  registerSuspendWorld,
   registerResumeWorld,
+  registerSuspendWorld,
 } from "./worlds/handlers-suspend";
 import {
   registerNamespaceDelete,
@@ -25,6 +26,7 @@ export function registerWorldsRoutes(app: OpenAPIHono<{ Bindings: Env }>) {
   registerUndeleteWorld(app);
   registerSuspendWorld(app);
   registerResumeWorld(app);
+  registerPauseWorld(app);
   registerNamespaceDelete(app);
   registerPurge(app);
 }

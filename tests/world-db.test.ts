@@ -146,9 +146,12 @@ describe("resolveWorldDatabase", () => {
     expect(result).toBeNull();
     expect(queryOneMock).toHaveBeenCalledWith(
       db,
-      expect.stringContaining("WHERE w.world_id = ? AND w.state = 'active'"),
-      ["w_00000000000000000000000003"],
+      expect.stringContaining("WHERE w.world_id = ?"),
+      ["w_00000000000000000000000003", expect.any(String)],
     );
+    const [, sql] = queryOneMock.mock.calls[0];
+    expect(sql as string).toContain("w.state = 'active'");
+    expect(sql as string).toContain("world_pause_state");
   });
 
   it("maps the joined inference columns onto the ref", async () => {

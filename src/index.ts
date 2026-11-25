@@ -1,5 +1,6 @@
 import app from "./app";
 import { fromBindings } from "./env";
+import { runPauseSweep } from "./lib/pause";
 import { runPurgeSweep } from "./lib/purge";
 import { ensureControlPlaneSchema } from "./lib/d1-schema";
 
@@ -12,7 +13,9 @@ export default {
   ) {
     const bindings = fromBindings(env as Record<string, unknown>);
     ctx.waitUntil(
-      ensureControlPlaneSchema(bindings.DB).then(() => runPurgeSweep(bindings)),
+      ensureControlPlaneSchema(bindings.DB)
+        .then(() => runPurgeSweep(bindings))
+        .then(() => runPauseSweep(bindings)),
     );
   },
 };

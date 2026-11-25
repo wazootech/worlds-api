@@ -1,5 +1,5 @@
 import type { Env } from "../../env";
-import { queryOne } from "../db";
+import { now, queryOne } from "../db";
 import type { InferenceSetting } from "../inference";
 
 /**
@@ -33,7 +33,10 @@ type WorldMetadataRow = {
 /**
  * Resolves a world's metadata by its canonical world_id. Only worlds in an
  * active state are reachable by the data plane; suspended or deleted worlds
- * resolve to null and routes reject with NOT_FOUND.
+ * resolve to null and routes reject with NOT_FOUND. A paused world is
+ * unreachable until its pause deadline passes (wazoo-api#22): after the
+ * deadline, it is reachable again immediately (lazy auto-resume) and the
+ * scheduled sweep later flips the stored state back to 'active'.
  */
 export async function resolveWorldDatabase(
   env: Env,
@@ -45,8 +48,13 @@ export async function resolveWorldDatabase(
             i.enabled AS inference_enabled, i.graphs AS inference_graphs,
             i.max_asserted_quads AS inference_max_asserted_quads
      FROM worlds w LEFT JOIN world_inference i ON i.world_id = w.world_id
-     WHERE w.world_id = ? AND w.state = 'active'`,
-    [worldId],
+     WHERE w.world_id = ?
+       AND (w.state = 'active'
+            OR (w.state = 'paused' AND EXISTS (
+              SELECT 1 FROM world_pause_state p
+              WHERE p.world_id = w.world_id AND p.pause_until > ?)))
+`,
+    [worldId, now()],
   );
   if (!row) return null;
   return {
