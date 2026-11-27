@@ -182,17 +182,17 @@ importers:
         specifier: npm:@jsr/std__ulid@^1.0.0
         version: '@jsr/std__ulid@1.0.0'
       '@wazoo/sparql-engine':
-        specifier: npm:@jsr/wazoo__sparql-engine@^0.5.0
-        version: '@jsr/wazoo__sparql-engine@0.5.0'
+        specifier: npm:@jsr/wazoo__sparql-engine@^0.5.1
+        version: '@jsr/wazoo__sparql-engine@0.5.1'
       '@worlds/cloudflare':
-        specifier: npm:@jsr/worlds__cloudflare@^0.15.1
-        version: '@jsr/worlds__cloudflare@0.15.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
+        specifier: npm:@jsr/worlds__cloudflare@^0.15.2
+        version: '@jsr/worlds__cloudflare@0.15.2(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       '@worlds/sdk':
         specifier: npm:@jsr/worlds__sdk@^0.11.0
         version: '@jsr/worlds__sdk@0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       '@worlds/sqlite':
         specifier: npm:@jsr/worlds__sqlite@^0.8.1
-        version: '@jsr/worlds__sqlite@0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
+        version: '@jsr/worlds__sqlite@0.8.2(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)'
       hono:
         specifier: ^4.10.3
         version: 4.12.31
@@ -761,26 +761,23 @@ packages:
   '@jsr/std__ulid@1.0.0':
     resolution: {integrity: sha512-RvVolUwRoFtoSuYZROBmhCYEIuI4xsxeHjGGbJQZVDCBnDBJwfm16vOJyE1Va9+BnTl1iW7o1nCloBI+EQAWVg==, tarball: https://npm.jsr.io/~/11/@jsr/std__ulid/1.0.0.tgz}
 
-  '@jsr/wazoo__reasoner@0.4.1':
-    resolution: {integrity: sha512-nqp8uChYcB3MqJlWgptCsAhIZV6CrDu0XMbcV7DtNZbgUdNmTg6vCyiGQ2SVmt4g8nE2Gu3DJYjawqD/p8OQnw==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__reasoner/0.4.1.tgz}
+  '@jsr/wazoo__reasoner@0.4.2':
+    resolution: {integrity: sha512-DcuUViw6I55r8GTLBm+4pNmkPiQGNwvGe0+gbJ9t0v3ZVo8xj2SfPT1u3iq8cqjvpmiDnAoRz+zMJVmBs8Hfdg==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__reasoner/0.4.2.tgz}
 
-  '@jsr/wazoo__sparql-engine@0.4.4':
-    resolution: {integrity: sha512-Qk6Sj1LyLQvyzA12cYOSuHN5hvJnr/BJPCyHsWAXFkKuifVV/t+trfLKaxbL8BHq3znDW6bL5uB0P39qfy9yIA==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__sparql-engine/0.4.4.tgz}
-
-  '@jsr/wazoo__sparql-engine@0.5.0':
-    resolution: {integrity: sha512-tmAzzSg1UvKAwWZyB8kXjHJcS10sdiiyH5hSX5MFaFb/XwcqomZEvcrmhq7l2BZGzz9YMWp9ilZWpetOQOUKJQ==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__sparql-engine/0.5.0.tgz}
+  '@jsr/wazoo__sparql-engine@0.5.1':
+    resolution: {integrity: sha512-moFAPS6D61w6gVNLCf+eG5kPhlBrWKzQ6OQMgcWZAqm8GxDH6Z9XMucDhUnX1ugszhaeKkokeJUJmv4tzmKj6Q==, tarball: https://npm.jsr.io/~/11/@jsr/wazoo__sparql-engine/0.5.1.tgz}
 
   '@jsr/worlds__client@0.1.0':
     resolution: {integrity: sha512-Z5iL51C6EXn4Iu1S+zTM+CGRdYRwFUZrEHOVOP2mQslCID0qNaWO7GuNNvGRZMpokjPXSBnL7pHmz72R8Yw3bA==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__client/0.1.0.tgz}
 
-  '@jsr/worlds__cloudflare@0.15.1':
-    resolution: {integrity: sha512-ZLaP/HQA5XXp5OiqA/SbpJVmnwtmeKKBvARLy1rMl3VSiObQUsR4Shm8MTQdkwdwHAVdQTwkHt9iMvaswcezLw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.15.1.tgz}
+  '@jsr/worlds__cloudflare@0.15.2':
+    resolution: {integrity: sha512-JvmDb+zSx1p6fNNA5LtHpSLfGJsiebJAkLDEb0Mbo3cZ9KG5NpjrD0XAYwZfOo/OVUDR157r5/FFuNM6lMLg7Q==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__cloudflare/0.15.2.tgz}
 
   '@jsr/worlds__sdk@0.11.0':
     resolution: {integrity: sha512-QRtlzcZhfB6GiQ2s0+ohf6dm4pOrEzVaU39b5jjKCLU3svxOuBSB61kPvSJhCPBmoZE8nkuqn+ihjSXIRGhtxw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sdk/0.11.0.tgz}
 
-  '@jsr/worlds__sqlite@0.8.1':
-    resolution: {integrity: sha512-3AYNGVViQ/aBkndK9hZyit+hgdvNyteT2Ik8hmppnZkCBge4ASsKz2qPgnLHArCvpJZbySq0ZBu3LljeSWPdlw==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sqlite/0.8.1.tgz}
+  '@jsr/worlds__sqlite@0.8.2':
+    resolution: {integrity: sha512-u4hPixxKrmzU6Au+iUEBl1nqHHLohqaHPK+8yI0xyxnGvc3VCJcZGNhavsCeNtut+wdiz/fPFp/c+WAzTlGL2Q==, tarball: https://npm.jsr.io/~/11/@jsr/worlds__sqlite/0.8.2.tgz}
 
   '@keyv/bigmap@1.3.1':
     resolution: {integrity: sha512-WbzE9sdmQtKy8vrNPa9BRnwZh5UF4s1KTmSK0KUVLo3eff5BlQNNWDnFOouNpKfPKDnms9xynJjsMYjMaT/aFQ==}
@@ -2453,27 +2450,23 @@ snapshots:
 
   '@jsr/std__ulid@1.0.0': {}
 
-  '@jsr/wazoo__reasoner@0.4.1':
+  '@jsr/wazoo__reasoner@0.4.2':
     dependencies:
-      '@jsr/wazoo__sparql-engine': 0.4.4
+      '@jsr/wazoo__sparql-engine': 0.5.1
       '@rdfjs/types': 2.0.1
 
-  '@jsr/wazoo__sparql-engine@0.4.4':
-    dependencies:
-      '@rdfjs/types': 2.0.1
-
-  '@jsr/wazoo__sparql-engine@0.5.0':
+  '@jsr/wazoo__sparql-engine@0.5.1':
     dependencies:
       '@rdfjs/types': 2.0.1
 
   '@jsr/worlds__client@0.1.0': {}
 
-  '@jsr/worlds__cloudflare@0.15.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
+  '@jsr/worlds__cloudflare@0.15.2(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
-      '@jsr/wazoo__reasoner': 0.4.1
-      '@jsr/wazoo__sparql-engine': 0.5.0
+      '@jsr/wazoo__reasoner': 0.4.2
+      '@jsr/wazoo__sparql-engine': 0.5.1
       '@jsr/worlds__sdk': 0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
-      '@jsr/worlds__sqlite': 0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
+      '@jsr/worlds__sqlite': 0.8.2(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
       '@langchain/textsplitters': 1.0.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))
       '@rdfjs/types': 2.0.1
     transitivePeerDependencies:
@@ -2487,7 +2480,7 @@ snapshots:
     dependencies:
       '@jsr/std__encoding': 1.0.11
       '@jsr/std__path': 1.1.6
-      '@jsr/wazoo__sparql-engine': 0.5.0
+      '@jsr/wazoo__sparql-engine': 0.5.1
       '@jsr/worlds__client': 0.1.0
       '@rdfjs/types': 2.0.1
       '@tensorflow/tfjs': 4.22.0(seedrandom@3.0.5)
@@ -2501,9 +2494,9 @@ snapshots:
       - seedrandom
       - zod
 
-  '@jsr/worlds__sqlite@0.8.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
+  '@jsr/worlds__sqlite@0.8.2(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)':
     dependencies:
-      '@jsr/wazoo__sparql-engine': 0.5.0
+      '@jsr/wazoo__sparql-engine': 0.5.1
       '@jsr/worlds__sdk': 0.11.0(@tensorflow/tfjs-core@4.22.0)(seedrandom@3.0.5)(zod@4.4.3)
       '@langchain/textsplitters': 1.0.1(@langchain/core@1.2.3(@opentelemetry/api@1.9.1)(ws@8.21.0))
       '@rdfjs/types': 2.0.1
