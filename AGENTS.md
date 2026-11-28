@@ -26,7 +26,7 @@ This repository contains the Worlds API service.
 
 - Production is the only auto-deployed environment. The legacy QA Worker and D1
   still exist but CI no longer deploys them and they are being retired; PR
-  previews (`worlds-api-preview`, not yet set up) will reuse the QA D1/Vectorize.
+  previews (`worlds-api-preview`, uploaded by hand) reuse the QA D1/Vectorize.
   Cloudflare Workers Builds deploys every push to `main` after running the
   checks, then `post-deploy.yml` runs the canary, so a green `verify` on a pull
   request is not evidence that the change works live and merging **is**
