@@ -172,15 +172,15 @@ docker build -t ghcr.io/wazootech/worlds-api:latest .
 docker compose up
 ```
 
-GitHub Actions validates formatting, typechecking, build, Worker dry deploy,
-Docker build, publishes the GHCR image on `main`, and deploys
-`data.wazoo.dev` on `main`. Production is the only auto-deployed environment:
-the legacy QA Worker (`worlds-api-qa`, `data-qa.wazoo.dev`) is no longer
-deployed by CI and is being retired.
+GitHub Actions checks formatting, lint, types, and tests. Cloudflare Workers
+Builds deploys `data.wazoo.dev` from `main` (see [CONTRIBUTING](CONTRIBUTING.md#cicd)).
+Production is the only auto-deployed environment: the legacy QA Worker
+(`worlds-api-qa`, `data-qa.wazoo.dev`) is no longer deployed and is being
+retired.
 
 ### PR previews
 
-GitHub Actions does not deploy pull requests. Previews come from Cloudflare
+Previews are not set up yet. The intended design: they come from Cloudflare
 Workers Builds using `wrangler.preview.toml`: a separate `worlds-api-preview`
 Worker whose build token is scoped to it alone, so it can't deploy prod. Each
 branch gets `<alias>.preview.data.wazoo.dev` (`WAZOO_ENV="preview"`), and the

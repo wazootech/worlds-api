@@ -232,14 +232,9 @@ Expected: `worlds` has `world_id` as `pk=1, notnull=1`; the marker reads
 The reset alone is not the cutover. The merged code is what makes `world_id` the
 required primary key, and production is still running the pre-cutover build.
 
-`deploy-prod` is a **job inside `.github/workflows/ci.yml`**, not a separate
-workflow file. It runs only on `workflow_dispatch`, `needs: verify`, and invokes
-`pnpm run deploy` with no `--env`, which targets production.
-
-```bash
-gh workflow run ci.yml --repo wazootech/worlds-api --ref main
-gh run watch --repo wazootech/worlds-api
-```
+Cloudflare Workers Builds deploys `main`. To deploy the merged code again after
+the reset, open the `worlds-api` Worker's Deployments page and retry the latest
+`main` build.
 
 There is **no `health-prod` job.** Post-deploy verification is manual — §6.
 

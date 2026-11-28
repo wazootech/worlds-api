@@ -75,68 +75,32 @@ Cloudflare provides the D1 binding; no Turso or libSQL credentials are used.
 
 ## CI/CD
 
-CI/CD must not use an interactive login. Create a machine identity scoped to the
-minimum project and environment it needs, then either:
+GitHub Actions checks pull requests and `main`. It holds no Cloudflare or
+Infisical credential and deploys nothing.
 
-- use the Infisical OIDC GitHub Action (the pattern already used by `wazoo-api`),
-  which needs the `INFISICAL_MACHINE_ID` and `INFISICAL_PROJECT_SLUG` repository
-  variables, or
-- authenticate with Universal Auth, storing the client ID and client secret in
-  the platform's own secret store.
+### Production deploys
 
-The Cloudflare deploy token is not kept in GitHub secrets: `deploy-prod` fetches `CLOUDFLARE_API_TOKEN` from the vault folder `/ci` (outside any Worker sync), and `CLOUDFLARE_ACCOUNT_ID` is a repository **variable**. See the
-[Infisical machine identities](https://infisical.com/docs/documentation/platform/identities/machine-identities)
-and [Universal Auth](https://infisical.com/docs/documentation/platform/identities/universal-auth)
-docs.
+Cloudflare Workers Builds is connected to this repository on the `worlds-api`
+Worker. On each push to `main` it runs the checks in its build command and then
+`pnpm run deploy`, stamping the commit into `BUILD_GIT_SHA`. A failing check
+stops the deploy. The commands and the build token are Worker settings in the
+Cloudflare dashboard (Settings, Builds). Builds for other branches are off.
 
-### Current wiring
+To redeploy the current `main`, retry its latest build on the Worker's
+Deployments page.
 
-`deploy-prod` fetches `CLOUDFLARE_API_TOKEN` with `Infisical/secrets-action@v1.0.17`
-and `method: oidc`, so it arrives as a job environment variable. The workflow
-therefore needs `permissions: id-token: write` and no long-lived Infisical
-credential.
-
-This wiring is **live**. The tracking issues are all closed:
-[#97](https://github.com/wazootech/worlds-api/issues/97) (identity + variables),
-[#98](https://github.com/wazootech/worlds-api/issues/98) (Worker syncs),
-[#99](https://github.com/wazootech/worlds-api/issues/99) (retire the GitHub
-secrets), and [#100](https://github.com/wazootech/worlds-api/issues/100)
-(commit the working copy).
-
-One-time setup, once per repository:
-
-1. In Infisical, create a machine identity with the subject
-   `repo:wazootech/worlds-api:ref:refs/heads/main` and grant it read access to
-   the `qa` environment only. Machine identities are per-repository, so this
-   cannot be shared with `wazoo-api`.
-2. In the repository settings, add the **variables** `INFISICAL_MACHINE_ID` and
-   `INFISICAL_PROJECT_SLUG`. These are non-secret; a wrong slug fails the
-   action at runtime rather than at merge time.
-3. Delete the retired `WORLDS_API_ADMIN_KEY` (and the old `WORLDS_ADMIN_KEY`)
-   GitHub secrets. Nothing reads them once the OIDC step is in place.
-
-Copy the subject string from the existing `wazoo-api` identity verbatim and
-change only the repo segment. Retyping is where this goes wrong: GitHub uses an
-immutable `repo:owner@ID/repo@ID:ref:refs/heads/main` subject for repositories
-created after 2026-07-15, and a plain-format subject against an immutable-format
-token fails with a 403.
-
-The `deploy-prod` job fetches only the deploy token, no Worker secrets. `wrangler
-deploy` uploads code and sets no secrets; the deployed Worker's copy is owned
-continuously by the Infisical Cloudflare Workers Secret Sync. Injecting prod
-secrets into a job that cannot use them would only widen exposure.
+A deploy ships code, not secrets: the deployed Worker's copy is owned
+continuously by the Infisical Cloudflare Workers Secret Sync.
 
 ### Verification after a deploy
 
-Production is the only auto-deployed environment. Every push to `main` runs
-`deploy-prod` and then `canary-prod`, which makes credential-free read-only GETs
-against production (`scripts/prod-canary.mjs`). The legacy QA Worker
-(`worlds-api-qa`, `data-qa.wazoo.dev`) and its D1 database still exist, but CI
-no longer deploys them and they are being retired; the old QA gates
-(`health-qa` and the daily `smoke-qa` canary) were removed. PR previews
-(`worlds-api-preview`, see the README) take QA's role: they reuse the QA D1
-database and Vectorize index. A secret that rotates with no deploy is no longer
-caught on a timer, so confirm a rotation by hand as below.
+Production is the only auto-deployed environment. When the `Workers Builds:
+worlds-api` check passes on `main`, `post-deploy.yml` makes credential-free
+read-only GETs against production (`scripts/prod-canary.mjs`). `/health` reports
+the deployed commit as `gitSha`. The legacy QA Worker (`worlds-api-qa`,
+`data-qa.wazoo.dev`) and its D1 database still exist, but nothing deploys them
+and they are being retired. A secret that rotates with no deploy is not caught
+on a timer, so confirm a rotation by hand as below.
 
 **Rotation procedure** — name every consumer, because a rotation that half-lands
 is the failure this repo already hit:
