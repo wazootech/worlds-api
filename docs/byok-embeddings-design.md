@@ -213,7 +213,7 @@ worlds-api (OpenAPI regenerated via `pnpm run sync:openapi`, never hand-edited):
 | Reindex response: unchanged shape; `vectorSync` already present                                                                 | none                                   |
 | New error codes: `EMBEDDING_BUDGET_EXCEEDED`, `EMBEDDING_CREDENTIAL_INVALID`                                                    | additive                               |
 
-Merge order (a green `verify` is not evidence of live behavior; `deploy-prod`
+Merge order (a green `verify` is not evidence of live behavior; the production deploy
 runs on merge, so say so in each PR):
 
 1. `worlds-api` (data plane, includes the secret/KEK provisioning below).
